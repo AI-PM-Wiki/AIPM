@@ -62,6 +62,7 @@ nav:
   - 案例与资源:
     - 案例简介: case/index.md
     - 产品拆解: case/teardown.md
+    - ChatGPT 产品拆解: case/teardown-chatgpt.md
     - 自学产品经理: case/self-study.md
     - 学习路线: case/roadmap.md
     - 学习资源: case/resources.md
