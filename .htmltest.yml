@@ -1,0 +1,13 @@
+DirectoryPath: site
+
+CheckMailto: false
+
+IgnoreAltMissing: true
+IgnoreDirectoryMissingTrailingSlash: true
+IgnoreInternalEmptyHash: true
+
+# 站点部署于 /aipm/ 子路径(site_url: https://hyc.ac/aipm/),404.html 中的绝对
+# 前缀链接与主题模板的空 href(编辑链接占位)非站内坏链,htmltest 无法识别 base path,忽略
+IgnoreURLs:
+  - "^/aipm/"
+  - "^$"
