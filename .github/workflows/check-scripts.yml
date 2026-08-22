@@ -3,7 +3,7 @@ name: Check Scripts
 on:
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - scripts/**
       - package.json
