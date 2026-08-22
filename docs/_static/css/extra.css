@@ -779,3 +779,332 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     backdrop-filter: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   12. 首页 hero / 卡片网格 / 按钮(w2 模板、w3 网格的样式契约补齐)
+       复用 1-3 节 token,玻璃升级沿用 11 节模式
+   ---------------------------------------------------------------------------- */
+
+/* 12.1 首页容器:与 .md-grid 同宽,正文等宽居中 */
+.pm-home-body {
+  max-width: 61rem;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* 12.2 hero:垂直居中 + 充足留白 + 文本居中 */
+.pm-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 4rem 1rem 3rem;
+  text-align: center;
+}
+
+/* 12.2.1 品牌 logo:玻璃面板 + accent 光晕(极慢呼吸,reduced-motion 关闭) */
+.pm-hero__logo {
+  position: relative;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--pm-glass-radius);
+  background-color: var(--pm-glass-fill);
+  border: 1px solid var(--pm-glass-border);
+  box-shadow: var(--pm-glass-shadow);
+  color: var(--pm-accent-strong);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.pm-hero__logo::before {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 50% 50%,
+      color-mix(in srgb, var(--pm-accent-strong) 38%, transparent) 0%,
+      color-mix(in srgb, var(--pm-blue) 20%, transparent) 45%,
+      transparent 72%);
+  filter: blur(8px);
+  animation: pm-hero-breathe 6.5s ease-in-out infinite;
+}
+
+/* 暗色夜空:光晕增强 */
+[data-md-color-scheme="slate"] .pm-hero__logo::before {
+  background:
+    radial-gradient(circle at 50% 50%,
+      color-mix(in srgb, var(--pm-accent-strong) 55%, transparent) 0%,
+      color-mix(in srgb, var(--pm-blue) 32%, transparent) 45%,
+      transparent 74%);
+}
+
+@keyframes pm-hero-breathe {
+  0%, 100% { opacity: .7;  transform: scale(.95); }
+  50%      { opacity: 1;   transform: scale(1.08); }
+}
+
+/* 12.2.2 品牌名与副标题 */
+.pm-hero .site-name {
+  margin: 0;
+  font-size: 2.75rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+  color: var(--pm-ink);
+}
+
+.pm-hero .tagline {
+  max-width: 42rem;
+  margin: .2rem auto 0;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--pm-muted);
+}
+
+.pm-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .9rem;
+  margin-top: .4rem;
+}
+
+/* 12.3 按钮(.pm-btn 系) */
+.pm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  padding: .8em 1.6em;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 150ms ease, box-shadow 150ms ease,
+              background-color 150ms ease, border-color 150ms ease,
+              color 150ms ease, filter 150ms ease;
+}
+
+.pm-btn:hover,
+.pm-btn:focus-visible {
+  transform: translateY(-2px);
+}
+
+.pm-btn:active {
+  transform: translateY(0);
+}
+
+.pm-btn:focus-visible {
+  outline: 2px solid var(--pm-accent-strong);
+  outline-offset: 2px;
+}
+
+/* 12.3.1 主按钮:accent 渐变底 + 白字 + hover 提亮 */
+.pm-btn--primary {
+  color: #FFFCF0;
+  background-image: linear-gradient(135deg, var(--pm-blue), var(--pm-cyan));
+  box-shadow: 0 1px 2px rgba(16, 15, 15, .08),
+              0 6px 18px color-mix(in srgb, var(--pm-blue) 32%, transparent),
+              inset 0 1px 0 0 rgba(255, 255, 255, .25);
+}
+
+.pm-btn--primary:hover,
+.pm-btn--primary:focus-visible {
+  filter: brightness(1.08) saturate(1.05);
+  box-shadow: 0 2px 4px rgba(16, 15, 15, .1),
+              0 10px 26px color-mix(in srgb, var(--pm-blue) 45%, transparent),
+              inset 0 1px 0 0 rgba(255, 255, 255, .25);
+}
+
+/* 12.3.2 幽灵按钮:玻璃底 + 细描边 + hover 底色加深 */
+.pm-btn--ghost {
+  color: var(--pm-ink);
+  background-color: var(--pm-glass-fill);
+  border-color: var(--pm-glass-border);
+  box-shadow: var(--pm-glass-shadow);
+}
+
+.pm-btn--ghost:hover,
+.pm-btn--ghost:focus-visible {
+  background-color: var(--pm-accent-soft);
+  border-color: color-mix(in srgb, var(--md-accent-fg-color) 40%, transparent);
+  color: var(--pm-accent-strong);
+  box-shadow: 0 0 0 3px var(--md-accent-fg-color--transparent),
+              0 10px 24px color-mix(in srgb, var(--md-accent-fg-color) 22%, transparent);
+}
+
+/* 12.3.3 搜索按钮:胶囊 + 放大镜图标(纯样式,点击聚焦行为在模板) */
+.pm-btn--search {
+  border-radius: 999px;
+  color: var(--pm-muted);
+  background-color: var(--pm-glass-fill);
+  border-color: var(--pm-glass-border);
+  box-shadow: var(--pm-glass-shadow);
+}
+
+.pm-btn--search::before {
+  content: "";
+  display: inline-block;
+  width: 1.05em;
+  height: 1.05em;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.2'%20stroke-linecap='round'%3E%3Ccircle%20cx='11'%20cy='11'%20r='7'/%3E%3Cline%20x1='16.4'%20y1='16.4'%20x2='21'%20y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml;utf8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.2'%20stroke-linecap='round'%3E%3Ccircle%20cx='11'%20cy='11'%20r='7'/%3E%3Cline%20x1='16.4'%20y1='16.4'%20x2='21'%20y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+.pm-btn--search:hover,
+.pm-btn--search:focus-visible {
+  color: var(--pm-ink);
+  background-color: var(--pm-accent-soft);
+  border-color: color-mix(in srgb, var(--md-accent-fg-color) 40%, transparent);
+  box-shadow: 0 0 0 3px var(--md-accent-fg-color--transparent),
+              0 10px 24px color-mix(in srgb, var(--md-accent-fg-color) 22%, transparent);
+}
+
+/* 12.4 卡片网格:桌面 3 列 → 平板 2 列 → 移动 1 列 */
+.pm-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  padding: 1.5rem 0 3rem;
+}
+
+@media screen and (max-width: 960px) {
+  .pm-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .pm-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 12.5 栏目卡片:玻璃面板 + hover 上浮 + 边框 accent 化 */
+:root {
+  --pm-card-hover-shadow: 0 4px 12px rgba(16, 15, 15, .07),
+                          0 16px 34px rgba(16, 15, 15, .12),
+                          inset 0 1px 0 0 var(--pm-glass-border);
+}
+
+[data-md-color-scheme="slate"] {
+  --pm-card-hover-shadow: 0 4px 14px rgba(0, 0, 0, .45),
+                          0 18px 40px rgba(0, 0, 0, .5),
+                          inset 0 1px 0 0 var(--pm-glass-border);
+}
+
+.pm-card {
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  padding: 1.25rem;
+  border: 1px solid var(--pm-line);
+  border-radius: 16px;
+  background-color: var(--pm-glass-fill);
+  box-shadow: var(--pm-glass-shadow);
+  color: var(--pm-ink);
+  text-decoration: none;
+  transition: transform 150ms ease, box-shadow 150ms ease,
+              border-color 150ms ease, background-color 150ms ease;
+}
+
+.pm-card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--pm-ink);
+  transition: color 150ms ease;
+}
+
+.pm-card__desc {
+  font-size: .85rem;
+  line-height: 1.65;
+  color: var(--pm-muted);
+}
+
+.pm-card:hover,
+.pm-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--md-accent-fg-color) 45%, transparent);
+  background-color: color-mix(in srgb, var(--pm-glass-fill) 82%, var(--pm-accent-soft));
+  box-shadow: var(--pm-card-hover-shadow);
+}
+
+.pm-card:hover .pm-card__title,
+.pm-card:focus-visible .pm-card__title {
+  color: var(--pm-accent-strong);
+}
+
+/* 暗色:描边更亮(玻璃底由 12.6 升级为更透的 fill-blur) */
+[data-md-color-scheme="slate"] .pm-card {
+  border-color: var(--pm-glass-border);
+}
+
+/* 12.6 玻璃升级:同 11 节模式,半透明回退 → 磨砂玻璃 */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .pm-hero__logo,
+  .pm-btn--ghost,
+  .pm-btn--search,
+  .pm-card {
+    background-color: var(--pm-glass-fill-blur);
+    -webkit-backdrop-filter: blur(var(--pm-glass-blur)) saturate(var(--pm-glass-sat));
+    backdrop-filter: blur(var(--pm-glass-blur)) saturate(var(--pm-glass-sat));
+  }
+}
+
+/* 12.7 响应式 hero 与按钮 */
+@media screen and (max-width: 600px) {
+  .pm-home-body {
+    padding: 0 .6rem;
+  }
+
+  .pm-hero {
+    padding: 3rem 1rem 2.5rem;
+  }
+
+  .pm-hero .site-name {
+    font-size: 2.1rem;
+  }
+
+  .pm-hero__cta {
+    flex-direction: column;
+    gap: .7rem;
+  }
+
+  .pm-hero__cta .pm-btn,
+  .pm-btn--search {
+    width: 100%;
+  }
+}
+
+/* 12.8 减少动态:关闭呼吸动画与位移过渡 */
+@media (prefers-reduced-motion: reduce) {
+  .pm-hero__logo::before {
+    animation: none;
+  }
+
+  .pm-btn,
+  .pm-card {
+    transition: none;
+  }
+
+  .pm-btn:hover,
+  .pm-btn:focus-visible,
+  .pm-card:hover,
+  .pm-card:focus-visible {
+    transform: none;
+  }
+}
