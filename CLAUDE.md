@@ -6,22 +6,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **AI-PM** is a Chinese AI product management knowledge wiki built with MkDocs, using a customized Material for MkDocs theme. It is a collaborative educational resource covering AI product methodology, LLM capabilities and tools, prompt engineering, agent workflows, and evaluation.
 
+## 信息源与外部资料
+
+- 需要外部资料时,先读 `docs/case/info-sources.md`(信息源索引):校内 CC98、中文社区(linux.do、知乎)、
+  微信公众号检索、国内外产品经理博客与 Newsletter、X 与海外社区、教程类(人人都是产品经理、GitHub 教程),
+  每类注明访问方式(含登录墙等门槛)与 Agent 使用提示。
+- **CC98**(浙大校内论坛,高质量一手信息:实习/校招、课程、技术讨论):本机已配置 CC98 MCP
+  (`mcp__cc98__*` 工具),直接搜索、读帖;访问需校内网络或 WebVPN。
+- **微信公众号文章**检索用搜狗微信搜索,模板 `https://weixin.sogou.com/weixin?type=2&query=%s`
+  (`%s` 替换为 URL 编码后的关键词),不要用通用网页搜索代替。
+- **linux.do 等论坛**:用浏览器访问(Playwright MCP)。
+- **登录墙**(X、知乎等):只能读公开页面;登录态内容请用户协助。
+- 本地门禁以 `.claude/workflow.json` 的 `gates` 为准(`git diff --check` / `uv run mkdocs build -q` /
+  `python3 scripts/check-characters.py`);package.json 的 yarn 脚本依赖 node_modules(当前未装,不可用);
+  外链完整性由 CI 的 htmltest 校验(排除 `/aipm/` 前缀)。
+
 ## Architecture & Structure
 
 ### Documentation Structure
-- **docs/**: Main documentation content organized by topics:
-  - `basic/`: Fundamental algorithms and complexity
-  - `graph/`: Graph theory and algorithms
-  - `dp/`: Dynamic programming techniques
-  - `ds/`: Data structures
-  - `math/`: Mathematics for competitive programming
-  - `string/`: String algorithms
-  - `geometry/`: Computational geometry
-  - `search/`: Search algorithms
-  - `lang/`: Programming language tutorials (C++, Python, Java)
-  - `tools/`: Development tools and environments
-  - `contest/`: Competition-specific knowledge
-  - `misc/`: Miscellaneous algorithms and techniques
+- **docs/**: 主要文档内容,按主题分为:
+  - `intro/`:简介(关于、产品经理黑话速查、FAQ、能力模型等)
+  - `pm/`:产品方法论(需求、用户研究、设计、项目管理、AI 生命周期、PRD、商业化)
+  - `ai/`:AI 基础(LLM 能力、多模态、提示词、RAG、Agent、评测、架构)
+  - `practice/`:AI 产品实战(聊天机器人、知识库问答、Agent 产品、Copilot、工作流、合规)
+  - `tools/`:工具与平台(LLM API、成本、框架、提示词工具、数据、效率工具)
+  - `case/`:案例与资源(产品拆解、自学、学习路线、学习资源、信息源索引、面试)
+  - `job/`:求职专题(如存在)
+  - `_static/` 与站点文件(favicon、manifest 等)
 
 ### Build System
 - **MkDocs** with custom Material theme (in `mkdocs-material/`)
@@ -46,6 +57,9 @@ uv run mkdocs serve -v
 # Build static site
 uv run mkdocs build -v
 ```
+
+> 注意:本地门禁以 `.claude/workflow.json` 的 `gates` 为准;`yarn run docs:format:check` 等脚本需先
+> `yarn install`(当前 node_modules 未安装,不可用)。
 
 ### Code Quality & Checking
 ```bash
