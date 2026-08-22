@@ -1,0 +1,17 @@
+{
+  "_comment": "claude-boss-workflow 适配配置(AI-PM wiki / Hi-Yincan/aipm)。静态 MkDocs 站点适配要点:①门禁 = mkdocs build + 字符检查 + git diff --check(package.json 无 scripts,CLAUDE.md 里的 yarn 命令已不存在);②批次/扫描目录放 .claude/ 下,避免 .md 被 mkdocs 构建发布到 site/;③worktree 依赖处理(子模块 mkdocs-material + .venv)见 .claude/workflow-notes.md。",
+  "workflow_root": ".claude",
+  "parallel_sessions_dir": ".claude/parallel-sessions",
+  "quality_scans_dir": ".claude/quality-scans",
+  "worktree_prefix": "../aipm-wt-",
+  "main_branch": "main",
+  "integrate_branch": "dev",
+  "gates": [
+    "git diff --check",
+    "uv run mkdocs build -q",
+    "python3 scripts/check-characters.py"
+  ],
+  "design_system_skills": [],
+  "design_style": "遵循项目现有 MkDocs 文档风格:内容页与既有页面保持一致(frontmatter 标题/时间、admonition 提示块、相对引图、图片放同目录 images/);新增页面必须登记到 mkdocs.yml 的 nav;不引入独立视觉系统,不做 UI 布局图。",
+  "env_only": []
+}
