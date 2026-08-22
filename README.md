@@ -30,7 +30,6 @@ uv sync --index-url https://pypi.tuna.tsinghua.edu.cn/simple/
 # - url
 # scripts/pre-build/install-theme-vendor.sh:
 # - MATHJAX_URL
-# - MATERIAL_ICONS_URL
 ./scripts/pre-build/install-theme.sh
 
 # 两种方法（选其一即可）：
