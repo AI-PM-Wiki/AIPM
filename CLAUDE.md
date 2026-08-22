@@ -1,10 +1,29 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件为在 AI-PM 仓库工作的 Claude Code 会话提供项目事实、门禁与开发约定。
+以 `.claude/workflow.json`、`docs/intro/format.md` 与仓库实际为准,不沿用任何上游模板。
 
-## Project Overview
+## 项目概述
 
-**AI-PM** is a Chinese AI product management knowledge wiki built with MkDocs, using a customized Material for MkDocs theme. It is a collaborative educational resource covering AI product methodology, LLM capabilities and tools, prompt engineering, agent workflows, and evaluation.
+**AI-PM** 是一个中文 AI 产品管理知识 wiki(https://hyc.ac/aipm/),用 MkDocs 构建、
+定制 Material for MkDocs 主题(主题为 git 子模块 `mkdocs-material`,fork 自 Hi-Yincan/mkdocs-material)。
+纯静态站点,无后端、无数据库。内容为协作维护的原创中文资料,覆盖 AI 产品方法论、LLM 能力与工具、
+提示词工程、Agent 工作流、评测与求职专题等。
+
+## 文档结构
+
+`docs/` 按主题分为六个区块 + 求职专题:
+
+- `intro/`:简介(关于、如何参与、格式手册、FAQ、产品经理黑话速查、能力模型)
+- `pm/`:产品方法论(需求分析、用户研究、设计、项目管理、AI 生命周期、PRD、商业化)
+- `ai/`:AI 基础(LLM 能力、多模态、提示词工程、RAG、Agent、评测、架构)
+- `practice/`:AI 产品实战(对话助手、知识库问答、Agent 产品、Copilot、工作流、合规)
+- `tools/`:工具与平台(LLM API、成本测算、框架、提示词与评测工具、数据、效率工具)
+- `case/`:案例与资源(产品拆解、自学、学习路线、学习资源、读书笔记、信息源索引、面试)
+- `job/`:求职专题(大厂与架构、岗位与 JD、面经、真实感悟)
+- `_static/` 与根目录站点文件:站点资源(favicon、manifest、CSS/JS、robots.txt、service-worker.js 等)
+
+导航结构以 `mkdocs.yml` 的 `nav` 为准;新增页面必须登记进去。
 
 ## 信息源与外部资料
 
@@ -17,242 +36,76 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   (`%s` 替换为 URL 编码后的关键词),不要用通用网页搜索代替。
 - **linux.do 等论坛**:用浏览器访问(Playwright MCP)。
 - **登录墙**(X、知乎等):只能读公开页面;登录态内容请用户协助。
-- 本地门禁以 `.claude/workflow.json` 的 `gates` 为准(`git diff --check` / `uv run mkdocs build -q` /
-  `python3 scripts/check-characters.py`);package.json 的 yarn 脚本依赖 node_modules(当前未装,不可用);
-  外链完整性由 CI 的 htmltest 校验(排除 `/aipm/` 前缀)。
+- 外部资料获取与门禁的本地事实见下两节。
 
-## Architecture & Structure
+## 开发命令
 
-### Documentation Structure
-- **docs/**: 主要文档内容,按主题分为:
-  - `intro/`:简介(关于、产品经理黑话速查、FAQ、能力模型等)
-  - `pm/`:产品方法论(需求、用户研究、设计、项目管理、AI 生命周期、PRD、商业化)
-  - `ai/`:AI 基础(LLM 能力、多模态、提示词、RAG、Agent、评测、架构)
-  - `practice/`:AI 产品实战(聊天机器人、知识库问答、Agent 产品、Copilot、工作流、合规)
-  - `tools/`:工具与平台(LLM API、成本、框架、提示词工具、数据、效率工具)
-  - `case/`:案例与资源(产品拆解、自学、学习路线、学习资源、信息源索引、面试)
-  - `job/`:求职专题(如存在)
-  - `_static/` 与站点文件(favicon、manifest 等)
+Python 依赖由 uv 管理(`pyproject.toml` + `uv.lock`,仓库根已有 `.venv/`):
 
-### Build System
-- **MkDocs** with custom Material theme (in `mkdocs-material/`)
-- **Python dependencies**: Managed via uv (`pyproject.toml`)
-- **Node.js dependencies**: Managed via Yarn (`package.json`)
-- **Build pipeline**: Multi-stage process with pre/post build scripts
-
-## Development Commands
-
-### Local Development
 ```bash
-# Install dependencies
-uv sync --index-url https://pypi.tuna.tsinghua.edu.cn/simple/
-yarn install
+# 安装 Python 依赖(国内网络可加 --index-url https://pypi.tuna.tsinghua.edu.cn/simple/)
+uv sync
 
-# Install theme and assets
+# 安装主题与资源(确保 mkdocs-material 子模块检出并安装 vendor 资源)
 ./scripts/pre-build/install-theme.sh
 
-# Start local development server
+# 本地预览
 uv run mkdocs serve -v
 
-# Build static site
+# 构建静态站点(产物在 site/)
 uv run mkdocs build -v
 ```
 
-> 注意:本地门禁以 `.claude/workflow.json` 的 `gates` 为准;`yarn run docs:format:check` 等脚本需先
-> `yarn install`(当前 node_modules 未安装,不可用)。
+> `package.json` 有 4 个 scripts(`docs:format:check` 等,依赖 ts-node 与 remark),需先
+> `yarn install` 装 node_modules 才能用——当前未安装且被 .gitignore,**不可用**;
+> 门禁刻意只选零 Node 依赖的命令(见下)。
 
-### Code Quality & Checking
+## 门禁
+
+本地门禁以 `.claude/workflow.json` 的 `gates` 为准,改动提交前必须全过:
+
 ```bash
-# Check documentation formatting
-yarn run docs:format:check
-
-# Format documentation
-yarn run docs:format:remark
-
-# TypeScript code formatting
-yarn run scripts:format
-yarn run scripts:format:check
-
-# Run comprehensive markdown checks
-node --loader ts-node/esm scripts/checker/checker.ts
-
-# Check for problematic characters
-python3 scripts/check-characters.py
+git diff --check        # 无空白错误
+uv run mkdocs build -q  # 站点能构建(-q 只留告警)
+python3 scripts/check-characters.py  # 无问题字符
 ```
 
-### Production Build
-```bash
-# Full production build (used in CI/CD)
-scripts/netlify/build.sh
-```
+- CI(GitHub Actions)另有 htmltest 外链校验:配置见 `.htmltest.yml`,忽略 `^/aipm/` 前缀与
+  空 href——站点部署于 `/aipm/` 子路径,htmltest 无法识别 base path。
+- CI 工作流(format/test/check-characters/check-quotes/check-scripts)本地可复现的是
+  mkdocs build 与 `check-characters.py`;Netlify 用于 PR 预览(`netlify.toml`,构建脚本
+  `scripts/netlify/build.sh`)。
 
-## File Types & Conventions
+## 开发工作流
 
-### Documentation Files
-- **Markdown**: `.md` files with MkDocs extensions
-- **Images**: `.png`, `.svg`, `.jpg` in `images/` subdirectories
-- **Code examples**: Inline code blocks and separate files in `code/` dirs
-- **Configuration**: YAML frontmatter in markdown files
+- **worktree-first 并行开发**(parallel-development skill):每个 workstream 从 `dev` 切出
+  独立 worktree(命名 `aipm-wt-<ws>`);worktree 缺依赖时:`.venv` symlink 主仓库的
+  (uv 的 .venv 可跨目录用),子模块用 `git submodule update --init --recursive` 检出;
+  完成后由 merger 按序 `--no-ff` 合并回 `dev`。
+- **分支**:`dev` = 集成分支;`main` = 发布分支,**绝不直接 push,只走 PR**
+  (main 上的 push 触发 GitHub Actions 构建并部署到 gh-pages)。
+- **批次/扫描目录**:在 `meta/development/`(parallel-sessions 与 quality-scans,已 gitignore),
+  不放 `.claude/`——headless 会话的 Write 拒绝 `.claude/` 等敏感路径。
+- **提交**:小步 Conventional Commit(如 `docs(ai): ...`);`git add` 只加当前 workstream
+  拥有的文件,不碰他人文件。
+- 开发 worker 绝不 push/merge/操作 worktree,由 merger/boss 统一执行。
 
-### Build Configuration
-- **mkdocs.yml**: Main MkDocs configuration
-- **pyproject.toml**: Python dependencies
-- **package.json**: Node.js dependencies and scripts
-- **netlify.toml**: Netlify deployment configuration
+## 内容约定
 
-### Scripts & Automation
-- **TypeScript**: Build and quality checking scripts in `scripts/`
-- **Python**: Utility scripts for content validation
-- **Bash**: Build and deployment scripts
+- 写作规范见 `docs/intro/format.md`:frontmatter、标题从 `##` 起、中文全角标点、中英文之间
+  留空格、admonition(`note`/`warning`/`tip`/`example`)、站内链接用相对路径、图片放文章同级
+  `images/` 子目录(小写英文、下划线命名)并带 alt 文本、代码块指明语言。
+- 新增页面/系列必须登记 `mkdocs.yml` 的 `nav`;新增外部信息渠道时登记到
+  `docs/case/info-sources.md`(与 `resources.md` 互补:那页是内容精选,本页是渠道索引)。
+- 引用规范:以官方文档、作者原书、一手博客、linux.do、woshipm 等为权威来源;正文就近行内引用,
+  文末附「来源说明」;原创撰写,禁止大段照抄;事实标注「以官方页面为准」并附引用日期。
+- 锚点稳定:部分页面是全站引用枢纽(如 `docs/ai/evaluation.md` 被 6+ 岗位页引用),
+  其 H2/H3 标题不做改动,只扩正文。
 
-## Key Development Workflows
+## 环境
 
-### Content Contribution
-1. Edit/add `.md` files in appropriate `docs/` subdirectories
-2. Add images to corresponding `images/` directories
-3. Run format checking: `yarn run docs:format:check`
-4. Test locally: `uv run mkdocs serve`
-5. Build and verify: `uv run mkdocs build`
-
-### Adding New Topics
-1. Create new `.md` file in appropriate directory
-2. Add to `mkdocs.yml` navigation structure
-3. Include code examples in `code/` subdirectory if needed
-4. Add supporting images in `images/` subdirectory
-5. Follow existing formatting conventions
-
-### Code Quality Checks
-- **Markdown linting**: Uses remark with custom rules
-- **Character validation**: Checks for problematic Unicode characters
-- **Link validation**: Verifies internal/external links
-- **Math rendering**: Validates LaTeX math expressions
-
-## Environment Setup
-
-### Requirements
-- **Python**: 3.10+ (via uv)
-- **Node.js**: 20+ (via Yarn)
-- **Git**: For submodule management
-
-### Development Environment
-```bash
-# Clone with submodules (推送到你自己的仓库后替换下方地址)
-git clone https://github.com/Hi-Yincan/aipm.git --depth=1
-cd AIPM
-
-# Install Python dependencies
-uv sync
-
-# Install Node.js dependencies
-yarn install
-
-# Install theme assets
-./scripts/pre-build/install-theme.sh
-```
-
-## Common Issues & Solutions
-
-### Build Failures
-- **Missing dependencies**: Ensure both `uv sync` and `yarn install` complete successfully
-- **Theme issues**: Run `./scripts/pre-build/install-theme.sh` to reinstall theme assets
-- **Python version**: Use Python 3.10+ as specified in pyproject.toml
-
-### Content Issues
-- **Broken links**: Run link validation checks
-- **Math rendering**: Check LaTeX syntax in mathematical content
-- **Image paths**: Ensure images are in correct `images/` subdirectories
-
-### Performance
-- **Large builds**: Use incremental builds during development (`mkdocs serve`)
-- **Memory issues**: Increase Node.js memory limit if needed (`NODE_OPTIONS="--max_old_space_size=3072"`)
-
-## CI/CD Pipeline
-
-### GitHub Actions Workflows
-The project uses comprehensive GitHub Actions for continuous integration and deployment:
-
-#### Main Build Workflow (`build.yml`)
-- **Triggers**: Push to master, PR to master, manual dispatch
-- **Environment**: Ubuntu-latest, Python 3.10, Node.js 20
-- **Steps**:
-  1. Install Python dependencies via uv
-  2. Install Node.js dependencies via yarn
-  3. Pre-build setup (theme installation)
-  4. MkDocs build with verbose output
-  5. HTML post-processing (commits info, math rendering, external links)
-  6. HTML minification
-  7. Redirect generation
-  8. Link validation (internal links only)
-  9. Deploy to gh-pages (on push events)
-  10. Baidu search submission (production only)
-
-#### Code Quality Workflows
-- **Format checking** (`check-format.yml`): Markdown formatting, C++ code formatting
-- **Code testing** (`test.yml`): C++ code compilation and correctness testing
-- **Character validation** (`check-characters.yml`): Unicode character checks
-- **Quote validation** (`check-quotes.yml`): Chinese punctuation validation
-- **Script validation** (`check-scripts.yml`): TypeScript formatting and linting
-
-#### Specialized Builds
-- **PDF generation** (`build-pdf.yml`): LaTeX-based PDF builds using xelatex
-- **Typst PDF** (`build-pdf-typst.yml`): Modern PDF generation with Typst
-- **Author cache** (`build-authors-cache.yml`): Contributor statistics caching
-
-#### Cross-Platform Testing
-The test workflow runs C++ code validation across multiple platforms:
-- Ubuntu (x86_64)
-- macOS (ARM64)
-- Windows (x86_64)
-- Alpine Linux (x86_64)
-- RISC-V Ubuntu (via Docker)
-
-### Pre-commit Checks
-Before pushing changes, ensure:
-```bash
-# Format checking
-yarn docs:format:check -a
-
-# Code compilation (if adding C++ examples)
-python3 scripts/correctness_check.py
-
-# Character validation
-python3 scripts/check-characters.py
-
-# Link validation (local)
-node --loader ts-node/esm scripts/checker/checker.ts
-```
-
-### Deployment Strategy
-- **Production**: Automatic deployment from master branch to GitHub Pages
-- **Preview**: Netlify builds for PR previews
-- **Mirror**: Automatic sync to Gitee (Chinese mirror)
-- **CDN**: Multi-region deployment with status monitoring
-
-### Environment Variables
-Key environment variables used in CI/CD:
-- `GITHUB_TOKEN`: GitHub API access
-- `BAIDU_TOKEN`: Chinese search engine submission
-- `NODE_OPTIONS="--max_old_space_size=3072"`: Memory optimization
-- `PYTHONIOENCODING=UTF-8`: UTF-8 encoding for Python scripts
-
-## Testing Content
-
-### Local Testing
-- Use `mkdocs serve` for live reloading during development
-- Test on multiple browsers for MathJax compatibility
-- Verify responsive design on mobile devices
-
-### Link Validation
-- Check internal links between documents
-- Verify external links are accessible
-- Test anchor links within documents
-
-### Content Quality
-- Follow established markdown formatting conventions
-- Ensure mathematical notation renders correctly
-- Verify code examples compile and run as expected
-
-### Cross-Platform Compatibility
-- Test C++ code examples on different compilers (GCC, Clang, MSVC)
-- Validate UTF-8 encoding across platforms
-- Check LaTeX math rendering in different environments
+- Python 3.10+(uv 管理,`uv sync` 装依赖;`.venv/` 在仓库根)
+- Node.js 20+(package.json 声明;当前项目脚本未用,node_modules 未装)
+- Git 子模块:`mkdocs-material`(定制主题,见「开发命令」)
+- 站点部署于 `/aipm/` 子路径(site_url: https://hyc.ac/aipm/),根目录有 CNAME、
+  robots.txt 等发布文件
