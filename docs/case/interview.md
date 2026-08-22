@@ -230,3 +230,5 @@
 **来源声明**：本文题型分类结构参考[破壁BreakingWall 的 AIPM Wiki](https://github.com/archlizheng/AIPM-Wiki)面试题库板块（CC BY-NC-SA 4.0），题目与解析由本站自行撰写。
 
 欢迎贡献更多典型题与答题框架（见[如何参与](../intro/htc.md)）。
+
+**相关阅读**:求职全流程资源(公司、岗位、面经、过来人感悟)见[求职专题](../job/index.md)。

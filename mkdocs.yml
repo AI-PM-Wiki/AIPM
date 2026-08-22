@@ -66,6 +66,36 @@ nav:
     - 学习路线: case/roadmap.md
     - 学习资源: case/resources.md
     - AI 产品经理面试: case/interview.md
+  - 求职专题:
+    - 求职专题简介: job/index.md
+    - 常见大厂与架构:
+      - 大厂与架构简介: job/companies/index.md
+      - 字节跳动: job/companies/bytedance.md
+      - 阿里巴巴: job/companies/alibaba.md
+      - 腾讯: job/companies/tencent.md
+      - 百度与美团: job/companies/baidu-meituan.md
+      - 华为: job/companies/huawei.md
+      - 大模型创业公司: job/companies/ai-startups.md
+    - 常见岗位与JD:
+      - 岗位与JD简介: job/positions/index.md
+      - AI 产品经理: job/positions/ai-pm.md
+      - 大模型应用工程师: job/positions/llm-app-engineer.md
+      - 算法工程师: job/positions/algorithm-engineer.md
+      - 提示词工程师: job/positions/prompt-engineer.md
+      - 数据与评测类岗位: job/positions/data-ai-trainer.md
+    - 面经:
+      - 面经简介: job/interviews/index.md
+      - 面试流程全览: job/interviews/interview-process.md
+      - 校招面经: job/interviews/campus-interviews.md
+      - 社招面经: job/interviews/social-interviews.md
+      - 面试复盘方法论: job/interviews/review-methodology.md
+      - 谈薪与 Offer 选择: job/interviews/offer-negotiation.md
+    - 真实感悟:
+      - 真实感悟简介: job/insights/index.md
+      - 入行感悟: job/insights/newcomers.md
+      - 职业发展感悟: job/insights/career.md
+      - 踩坑教训: job/insights/lessons.md
+      - 心态感悟: job/insights/mindset.md
 
 # Theme
 theme:
