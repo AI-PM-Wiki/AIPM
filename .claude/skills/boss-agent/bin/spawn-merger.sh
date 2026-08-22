@@ -25,6 +25,11 @@ cat > "$INST" <<EOF
 - 读 \`$BATCH/README.md\`(manifest:分支清单+合并顺序)与 \`$BATCH/reports/<ws>.md\`(确认每分支完成、门禁自测通过)。
 - 按 parallel-development 的 Merge orchestration 执行:
   1. Preflight:\`git switch dev && git pull --ff-only origin dev\`;\`git status --short\` 主树干净。
+     已知容许项(本次预检,与批次无关的既有状态,不要因它们 BLOCKED):
+     - \`mkdocs-material\` 子模块 HEAD 漂移(用户既有状态,勿 \`git submodule update\`);
+     - \`.playwright-mcp/\` 未跟踪目录(工具缓存);
+     - \`meta/development/\` 工作流状态(若出现在 git status 中,属批次自身文件,已 gitignore)。
+     其余未预期改动请停下报告。
   2. 按 manifest 顺序逐个 \`git merge --no-ff <branch>\` → 跑门禁(\`uv run mkdocs build -q\`;\`python3 scripts/check-characters.py\`;\`git diff --check\`)→ 任一红则停。
   3. 每个成功分支:\`git push origin dev\`;\`git worktree remove <worktree> 2>/dev/null || true\`;\`git branch -d <branch> 2>/dev/null || true\`。
 - 冲突以各分支 prompt 的「不碰」为据解决,解决后重跑完整门禁。
