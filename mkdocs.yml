@@ -22,6 +22,7 @@ nav:
     - 格式手册: intro/format.md
     - AI-PM 不是什么: intro/what-ai-pm-is-not.md
     - F.A.Q.: intro/faq.md
+    - 产品经理黑话速查: intro/glossary.md
     - AI 产品经理能力模型: intro/capability.md
   - 产品方法论:
     - 产品方法论简介: pm/index.md
@@ -32,7 +33,6 @@ nav:
     - AI 产品开发生命周期(CC/CD): pm/ai-lifecycle.md
     - AI 产品 PRD: pm/prd.md
     - 商业化与增长: pm/monetization.md
-    - 产品经理黑话速查: pm/glossary.md
   - AI 基础:
     - AI 基础简介: ai/index.md
     - 大模型基础: ai/llm-basics.md
