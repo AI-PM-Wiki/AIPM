@@ -11,7 +11,7 @@ body:
       
       ---
       
-      欢迎为 OI Wiki 提出新的 Issue！烦请填写以下表单：
+      欢迎为 AI-PM 提出新的 Issue！烦请填写以下表单：
 - type: textarea
   id: content
   attributes:
