@@ -6,7 +6,11 @@
 ## 项目概述
 
 **AI-PM** 是一个中文 AI 产品管理知识 wiki(https://hyc.ac/aipm/),用 MkDocs 构建、
-定制 Material for MkDocs 主题(主题为 git 子模块 `mkdocs-material`,fork 自 Hi-Yincan/mkdocs-material)。
+定制 Material for MkDocs 主题(主题为 git 子模块 `mkdocs-material`;fork 链:
+squidfunk/mkdocs-material → oi-wiki 深度定制 → Hi-Yincan/mkdocs-material,基线 9.6.15)。
+站内搜索使用**官方本地搜索**(`site/search/search_index.json`),已不是 oi-wiki 时代的远程服务端搜索。
+该仓库继承自 oi-wiki 深度 fork,曾遭 oi-wiki 残留污染(远程搜索端点、上游域名、CI 与脚本引用等),
+2026-08 已彻查清理并建立防残留检查(见「门禁」)。
 纯静态站点,无后端、无数据库。内容为协作维护的原创中文资料,覆盖 AI 产品方法论、LLM 能力与工具、
 提示词工程、Agent 工作流、评测与求职专题等。
 
@@ -65,16 +69,19 @@ uv run mkdocs build -v
 本地门禁以 `.claude/workflow.json` 的 `gates` 为准,改动提交前必须全过:
 
 ```bash
-git diff --check        # 无空白错误
-uv run mkdocs build -q  # 站点能构建(-q 只留告警)
-python3 scripts/check-characters.py  # 无问题字符
+git diff --check                       # 无空白错误
+uv run mkdocs build -q                 # 站点能构建(-q 只留告警)
+python3 scripts/check-characters.py    # 无问题字符
+bash scripts/check-upstream-remnants.sh  # 无上游 fork 残留(2026-08 新增,防 oi-wiki 残留回流)
 ```
 
-- CI(GitHub Actions)另有 htmltest 外链校验:配置见 `.htmltest.yml`,忽略 `^/aipm/` 前缀与
+- CI(GitHub Actions)现有工作流:check-characters.yml、check-upstream-remnants.yml(上游残留检查,
+  2026-08 新增)、lint_pr_title.yml、build.yml(构建 + gh-pages 部署)、suggest-pr-reopen.yml、
+  check-scripts.yml(视清理结果保留与否)等;其中门禁项(git diff --check、mkdocs build、
+  check-characters.py、check-upstream-remnants.sh)本地零 Node 依赖可复现。
+- CI 另有 htmltest 外链校验:配置见 `.htmltest.yml`,忽略 `^/aipm/` 前缀与
   空 href——站点部署于 `/aipm/` 子路径,htmltest 无法识别 base path。
-- CI 工作流(format/test/check-characters/check-quotes/check-scripts)本地可复现的是
-  mkdocs build 与 `check-characters.py`;Netlify 用于 PR 预览(`netlify.toml`,构建脚本
-  `scripts/netlify/build.sh`)。
+- Netlify 用于 PR 预览(`netlify.toml`,构建脚本 `scripts/netlify/build.sh`)。
 
 ## 开发工作流
 
