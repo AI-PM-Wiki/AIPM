@@ -29,12 +29,12 @@ description: 开发 Agent 角色(执行者)。你是某个 workstream 的独立�
 ### 2. 创建 worktree(第一步,必做)
 按 prompt 里的命令(branch 名以 prompt 为准),或缺省:
 ```bash
-# 确认在仓库根目录 /Users/acccan/ai-pm-wiki
+# 确认在仓库根目录 /Users/acccan/Repos/Hi-Yincan/ai-pm-wiki
 git switch dev && git pull --ff-only origin dev
 git worktree add -b feature/<scope> ../aipm-wt-<slug> dev
 cd ../aipm-wt-<slug>
 # worktree 依赖(缺了门禁跑不过):
-ln -s /Users/acccan/ai-pm-wiki/.venv ./.venv
+ln -s /Users/acccan/Repos/Hi-Yincan/ai-pm-wiki/.venv ./.venv
 git submodule update --init --recursive   # mkdocs-material 子模块,用共享缓存检出
 ```
 - 之后的提交都发生在该 worktree 的分支上。

@@ -21,7 +21,7 @@ mergeable and the main working tree stable. Branch flow: `dev` → `feature/…`
 ## Create a worktree
 
 A fresh agent session **creates its own worktree** as its first step — do not
-ask the user to pre-create it. From the repo root (`/Users/acccan/ai-pm-wiki`):
+ask the user to pre-create it. From the repo root (`/Users/acccan/Repos/Hi-Yincan/ai-pm-wiki`):
 
 ```bash
 # from repo root, with dev current
@@ -39,7 +39,7 @@ cd ../aipm-wt-<scope>
 
 ```bash
 # .venv:symlink 主仓库的,免去每个 worktree 重新 uv sync
-ln -s /Users/acccan/ai-pm-wiki/.venv ./.venv
+ln -s /Users/acccan/Repos/Hi-Yincan/ai-pm-wiki/.venv ./.venv
 # mkdocs-material 是子模块:worktree 里用共享缓存检出(通常不重新下载)
 git submodule update --init --recursive
 ```
@@ -56,7 +56,7 @@ git submodule update --init --recursive
 ## Merge back to `dev`
 
 ```bash
-cd /Users/acccan/ai-pm-wiki          # back on the main tree
+cd /Users/acccan/Repos/Hi-Yincan/ai-pm-wiki          # back on the main tree
 git switch dev && git pull --ff-only origin dev
 git merge --no-ff feature/<scope>   # keep a merge commit per feature
 git worktree remove ../aipm-wt-<scope>

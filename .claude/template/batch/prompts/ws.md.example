@@ -2,7 +2,7 @@
 
 > boss-agent 派发的 headless worker 任务。**worktree 已由 boss 预建,不需要你创建**。
 
-- worktree 绝对路径:`<worktreeAbs,如 /Users/acccan/aipm-wt-w1>`
+- worktree 绝对路径:`<worktreeAbs,如 /Users/acccan/Repos/Hi-Yincan/aipm-wt-w1>`
 - 批次目录:`<batchDirAbs>`
 - 汇报文件:`<batchDirAbs>/reports/<ws>.md`
 - **不要 merge 回集成分支、不要 push**(boss 统一收尾)。
