@@ -1,3 +1,657 @@
+/* ============================================================================
+   AI-PM — Flexoki × liquid-glass 主题样式(extra.css)
+
+   唯一的全站自定义样式层(Material 主题产物不可重编译,全部覆盖走本文件)。
+   设计契约:
+   - Flexoki 色板为骨架:暖纸墨色、低饱和、仿印刷墨气质
+   - 暗色模式:深蓝夜空感(黑底 + 蓝紫光晕),克制科技感
+   - liquid-glass:backdrop-filter blur+saturate、顶部 1px 高光、大圆角,
+     背景必须有彩色光斑层(纯色底玻璃不可见)
+   - 玻璃仅用于 chrome(header/tabs/sidebar/toc/搜索/卡片);正文实底高对比
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   1. Flexoki 设计 token(亮色)
+   ---------------------------------------------------------------------------- */
+:root {
+  /* 纸墨 */
+  --pm-paper: #FFFCF0;
+  --pm-ink: #100F0F;
+  --pm-muted: #575653;
+  --pm-faint: #878580;
+  --pm-line: #DAD8CE;
+
+  /* 强调色(flexoki 亮档 400) */
+  --pm-red: #D14D41;
+  --pm-orange: #DA702C;
+  --pm-yellow: #D0A215;
+  --pm-green: #879A39;
+  --pm-cyan: #3AA99F;
+  --pm-blue: #4385BE;
+  --pm-purple: #8B7EC8;
+  --pm-magenta: #CE5D97;
+
+  /* 玻璃系统 */
+  --pm-glass-blur: 14px;
+  --pm-glass-sat: 150%;
+  --pm-glass-radius: 18px;
+  --pm-glass-border: rgba(255, 255, 255, .55);
+  --pm-glass-highlight: linear-gradient(180deg, rgba(255, 255, 255, .65), transparent 40%);
+
+  /* 玻璃辅助变量(本文件内部使用) */
+  --pm-glass-fill: rgba(242, 240, 229, .92);        /* 无 backdrop-filter 时的回退底 */
+  --pm-glass-fill-blur: rgba(242, 240, 229, .62);   /* 支持 backdrop-filter 时的玻璃底 */
+  --pm-glass-shadow: 0 1px 2px rgba(16, 15, 15, .05),
+                     0 10px 28px rgba(16, 15, 15, .09),
+                     inset 0 1px 0 0 var(--pm-glass-border);
+  --pm-code-fill: rgba(242, 240, 229, .78);
+  --pm-code-border: rgba(206, 205, 195, .9);        /* base-200 细描边 */
+  --pm-code-shadow: 0 1px 2px rgba(16, 15, 15, .05),
+                    0 8px 20px rgba(16, 15, 15, .07),
+                    inset 0 1px 0 0 rgba(255, 255, 255, .5);
+  --pm-accent-soft: color-mix(in srgb, var(--pm-cyan) 14%, transparent);
+  --pm-accent-strong: var(--pm-cyan);
+  --pm-zebra: rgba(16, 15, 15, .025);
+}
+
+/* ----------------------------------------------------------------------------
+   2. Material 主题变量映射(亮色)
+      双属性选择器:与 palette.css 的同级规则持平,靠加载顺序取胜
+   ---------------------------------------------------------------------------- */
+[data-md-color-scheme="default"][data-md-color-scheme="default"] {
+  --md-default-bg-color: var(--pm-paper);
+  --md-default-bg-color--light: rgba(255, 252, 240, .85);
+  --md-default-bg-color--lighter: rgba(255, 252, 240, .55);
+  --md-default-bg-color--lightest: rgba(255, 252, 240, .28);
+
+  --md-default-fg-color: rgba(16, 15, 15, .87);
+  --md-default-fg-color--light: rgba(16, 15, 15, .58);
+  --md-default-fg-color--lighter: rgba(16, 15, 15, .34);
+  --md-default-fg-color--lightest: rgba(16, 15, 15, .09);
+
+  --md-primary-fg-color: var(--pm-blue);
+  --md-primary-fg-color--light: color-mix(in srgb, var(--pm-blue) 70%, var(--pm-paper));
+  --md-primary-fg-color--dark: #205EA6;
+  --md-primary-bg-color: var(--pm-paper);
+  --md-primary-bg-color--light: rgba(255, 252, 240, .75);
+
+  --md-accent-fg-color: var(--pm-cyan);
+  --md-accent-fg-color--transparent: color-mix(in srgb, var(--pm-cyan) 14%, transparent);
+  --md-accent-bg-color: var(--pm-paper);
+
+  --md-typeset-a-color: var(--pm-blue);
+
+  --md-code-fg-color: #403E3C;
+  --md-code-bg-color: #F2F0E5;
+  --md-code-hl-color: #4385BE;
+  --md-code-hl-color--light: rgba(67, 133, 190, .12);
+  --md-code-hl-number-color: #DA702C;
+  --md-code-hl-special-color: #CE5D97;
+  --md-code-hl-function-color: #8B7EC8;
+  --md-code-hl-constant-color: #D0A215;
+  --md-code-hl-keyword-color: #4385BE;
+  --md-code-hl-string-color: #879A39;
+  --md-code-hl-name-color: var(--md-code-fg-color);
+  --md-code-hl-operator-color: #878580;
+  --md-code-hl-punctuation-color: #878580;
+  --md-code-hl-comment-color: #9F9D96;
+  --md-code-hl-generic-color: #878580;
+  --md-code-hl-variable-color: #575653;
+
+  --md-typeset-mark-color: rgba(208, 162, 21, .35);
+  --md-typeset-del-color: rgba(209, 77, 65, .16);
+  --md-typeset-ins-color: rgba(135, 154, 57, .16);
+  --md-typeset-kbd-color: #F2F0E5;
+  --md-typeset-kbd-accent-color: #E6E4D9;
+  --md-typeset-kbd-border-color: #CECDC3;
+  --md-typeset-table-color: rgba(16, 15, 15, .13);
+  --md-typeset-table-color--light: rgba(16, 15, 15, .035);
+
+  --md-admonition-fg-color: var(--pm-ink);
+  --md-admonition-bg-color: var(--pm-paper);
+  --md-warning-fg-color: var(--pm-ink);
+  --md-warning-bg-color: rgba(208, 162, 21, .3);
+
+  --md-footer-fg-color: var(--pm-muted);
+  --md-footer-fg-color--light: color-mix(in srgb, var(--pm-muted) 72%, transparent);
+  --md-footer-fg-color--lighter: color-mix(in srgb, var(--pm-muted) 45%, transparent);
+  --md-footer-bg-color: transparent;
+  --md-footer-bg-color--dark: transparent;
+
+  --md-shadow-z1: 0 .2rem .5rem rgba(16, 15, 15, .06), 0 0 .05rem rgba(16, 15, 15, .1);
+  --md-shadow-z2: 0 .2rem .5rem rgba(16, 15, 15, .12), 0 0 .05rem rgba(16, 15, 15, .25);
+  --md-shadow-z3: 0 .2rem .5rem rgba(16, 15, 15, .18), 0 0 .05rem rgba(16, 15, 15, .35);
+}
+
+/* ----------------------------------------------------------------------------
+   3. 深色模式:深蓝夜空 × flexoki 深档(600)
+      深色提亮一律 color-mix(..., white 20-35%),不硬编码未给出色值
+   ---------------------------------------------------------------------------- */
+[data-md-color-scheme="slate"] {
+  /* 纸墨 */
+  --pm-paper: #100F0F;
+  --pm-ink: #E6E4D9;
+  --pm-muted: #B7B5AC;
+  --pm-faint: #878580;
+  --pm-line: #403E3C;
+
+  /* 强调色(flexoki 深档 600 + 提亮) */
+  --pm-red: color-mix(in srgb, #AF3029, white 25%);
+  --pm-orange: color-mix(in srgb, #BC5215, white 25%);
+  --pm-yellow: color-mix(in srgb, #AD8301, white 25%);
+  --pm-green: color-mix(in srgb, #66800B, white 25%);
+  --pm-cyan: color-mix(in srgb, #24837B, white 28%);
+  --pm-blue: color-mix(in srgb, #205EA6, white 30%);
+  --pm-purple: color-mix(in srgb, #5E409D, white 30%);
+  --pm-magenta: color-mix(in srgb, #A02F6F, white 25%);
+
+  /* 玻璃系统 */
+  --pm-glass-border: rgba(255, 252, 240, .14);
+  --pm-glass-highlight: linear-gradient(180deg, rgba(255, 252, 240, .16), transparent 40%);
+  --pm-glass-fill: rgba(40, 39, 38, .92);
+  --pm-glass-fill-blur: rgba(28, 27, 26, .55);
+  --pm-glass-shadow: 0 1px 2px rgba(0, 0, 0, .4),
+                     0 12px 32px rgba(0, 0, 0, .45),
+                     inset 0 1px 0 0 var(--pm-glass-border);
+  --pm-code-fill: rgba(28, 27, 26, .8);
+  --pm-code-border: rgba(255, 252, 240, .1);
+  --pm-code-shadow: 0 1px 2px rgba(0, 0, 0, .35),
+                    0 10px 24px rgba(0, 0, 0, .4),
+                    inset 0 1px 0 0 rgba(255, 252, 240, .07);
+  --pm-accent-soft: color-mix(in srgb, var(--pm-cyan) 18%, transparent);
+  --pm-accent-strong: var(--pm-cyan);
+  --pm-zebra: rgba(255, 252, 240, .03);
+}
+
+[data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
+  --md-default-bg-color: var(--pm-paper);
+  --md-default-bg-color--light: rgba(16, 15, 15, .85);
+  --md-default-bg-color--lighter: rgba(16, 15, 15, .55);
+  --md-default-bg-color--lightest: rgba(16, 15, 15, .28);
+
+  --md-default-fg-color: rgba(230, 228, 217, .87);
+  --md-default-fg-color--light: rgba(230, 228, 217, .58);
+  --md-default-fg-color--lighter: rgba(230, 228, 217, .34);
+  --md-default-fg-color--lightest: rgba(230, 228, 217, .1);
+
+  --md-primary-fg-color: var(--pm-blue);
+  --md-primary-fg-color--light: color-mix(in srgb, var(--pm-blue) 70%, #100F0F);
+  --md-primary-fg-color--dark: #205EA6;
+  --md-primary-bg-color: #100F0F;
+  --md-primary-bg-color--light: rgba(16, 15, 15, .75);
+
+  --md-accent-fg-color: var(--pm-cyan);
+  --md-accent-fg-color--transparent: color-mix(in srgb, var(--pm-cyan) 18%, transparent);
+  --md-accent-bg-color: #100F0F;
+
+  --md-typeset-a-color: var(--pm-blue);
+
+  --md-code-fg-color: #DAD8CE;
+  --md-code-bg-color: #1C1B1A;
+  --md-code-hl-color: color-mix(in srgb, #205EA6, white 30%);
+  --md-code-hl-color--light: rgba(94, 153, 210, .18);
+  --md-code-hl-number-color: color-mix(in srgb, #BC5215, white 25%);
+  --md-code-hl-special-color: color-mix(in srgb, #A02F6F, white 25%);
+  --md-code-hl-function-color: color-mix(in srgb, #5E409D, white 25%);
+  --md-code-hl-constant-color: color-mix(in srgb, #AD8301, white 25%);
+  --md-code-hl-keyword-color: color-mix(in srgb, #205EA6, white 30%);
+  --md-code-hl-string-color: color-mix(in srgb, #66800B, white 25%);
+  --md-code-hl-name-color: var(--md-code-fg-color);
+  --md-code-hl-operator-color: #878580;
+  --md-code-hl-punctuation-color: #878580;
+  --md-code-hl-comment-color: #878580;
+  --md-code-hl-generic-color: #878580;
+  --md-code-hl-variable-color: #B7B5AC;
+
+  --md-typeset-mark-color: rgba(173, 131, 1, .45);
+  --md-typeset-del-color: rgba(175, 48, 41, .22);
+  --md-typeset-ins-color: rgba(102, 128, 11, .22);
+  --md-typeset-kbd-color: rgba(255, 252, 240, .08);
+  --md-typeset-kbd-accent-color: rgba(255, 252, 240, .14);
+  --md-typeset-kbd-border-color: rgba(255, 252, 240, .35);
+  --md-typeset-table-color: rgba(255, 252, 240, .14);
+  --md-typeset-table-color--light: rgba(255, 252, 240, .04);
+
+  --md-admonition-fg-color: var(--pm-ink);
+  --md-admonition-bg-color: var(--pm-paper);
+  --md-warning-fg-color: var(--pm-ink);
+  --md-warning-bg-color: rgba(173, 131, 1, .35);
+
+  --md-footer-fg-color: var(--pm-muted);
+  --md-footer-fg-color--light: color-mix(in srgb, var(--pm-muted) 72%, transparent);
+  --md-footer-fg-color--lighter: color-mix(in srgb, var(--pm-muted) 45%, transparent);
+  --md-footer-bg-color: transparent;
+  --md-footer-bg-color--dark: transparent;
+
+  --md-shadow-z1: 0 .2rem .5rem rgba(0, 0, 0, .2), 0 0 .05rem rgba(0, 0, 0, .4);
+  --md-shadow-z2: 0 .2rem .5rem rgba(0, 0, 0, .3), 0 0 .05rem rgba(0, 0, 0, .5);
+  --md-shadow-z3: 0 .2rem .5rem rgba(0, 0, 0, .4), 0 0 .05rem rgba(0, 0, 0, .6);
+}
+
+/* ----------------------------------------------------------------------------
+   4. 背景光斑层:玻璃必须有光可透
+      body::before 固定层,负 z-index 置于正文之下、body 底色之上
+   ---------------------------------------------------------------------------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(38rem 30rem at 8% -6%, rgba(67, 133, 190, .14), transparent 62%),
+    radial-gradient(34rem 26rem at 92% 2%, rgba(58, 169, 159, .12), transparent 62%),
+    radial-gradient(36rem 30rem at 78% 92%, rgba(218, 112, 44, .09), transparent 62%);
+  filter: blur(60px);
+  animation: pm-drift 42s ease-in-out infinite alternate;
+}
+
+/* 暗色:蓝紫夜空光晕 */
+body[data-md-color-scheme="slate"]::before {
+  background-image:
+    radial-gradient(38rem 30rem at 8% -6%, rgba(32, 94, 166, .22), transparent 62%),
+    radial-gradient(34rem 26rem at 92% 2%, rgba(94, 64, 157, .2), transparent 62%),
+    radial-gradient(36rem 30rem at 70% 90%, rgba(36, 131, 123, .13), transparent 62%);
+}
+
+@keyframes pm-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(1.5%, 1%, 0) scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+}
+
+/* ----------------------------------------------------------------------------
+   9. 响应式(≤760px)
+   ---------------------------------------------------------------------------- */
+@media screen and (max-width: 760px) {
+  :root {
+    --pm-glass-radius: 12px;
+  }
+
+  #myBtn {
+    right: 10px;
+    bottom: 84px;
+  }
+
+  .md-content__inner:has(> h1:first-child + hr + blockquote.page-copyright) {
+    padding: 2rem 1.2rem;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   5.1 顶栏 .md-header
+   ---------------------------------------------------------------------------- */
+.md-header {
+  background-color: var(--pm-glass-fill);
+  border-bottom: 1px solid var(--pm-glass-border);
+  box-shadow: var(--pm-glass-shadow);
+  color: var(--pm-ink);
+}
+
+/* 顶部 1px 渐变高光 */
+.md-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--pm-glass-highlight);
+}
+
+/* 滚动时阴影增强(JS 切换 md-header--shadow) */
+.md-header.md-header--shadow {
+  box-shadow: 0 8px 24px rgba(16, 15, 15, .1),
+              inset 0 1px 0 0 var(--pm-glass-border);
+}
+
+.md-header__button:hover {
+  background-color: var(--pm-accent-soft);
+  color: var(--pm-ink);
+}
+
+/* ----------------------------------------------------------------------------
+   5.2 Tab 栏 .md-tabs
+   ---------------------------------------------------------------------------- */
+.md-tabs {
+  background-color: var(--pm-glass-fill);
+  border-bottom: 1px solid var(--pm-glass-border);
+  box-shadow: 0 1px 2px rgba(16, 15, 15, .04);
+  color: var(--pm-ink);
+}
+
+.md-tabs__link {
+  border-radius: 999px;
+  transition: color 125ms, background-color 125ms, box-shadow 125ms;
+}
+
+.md-tabs__link:hover {
+  color: var(--md-accent-fg-color);
+}
+
+/* 激活项胶囊高亮 */
+.md-tabs__item--active .md-tabs__link {
+  background-color: var(--pm-accent-soft);
+  color: var(--pm-accent-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-accent-fg-color) 25%, transparent);
+  opacity: 1;
+}
+
+/* ----------------------------------------------------------------------------
+   5.3 侧边栏(nav 与 toc)玻璃面板
+   ---------------------------------------------------------------------------- */
+.md-sidebar__inner {
+  background-color: var(--pm-glass-fill);
+  border: 1px solid var(--pm-glass-border);
+  border-radius: var(--pm-glass-radius);
+  box-shadow: var(--pm-glass-shadow);
+}
+
+.md-nav__link {
+  border-radius: .6rem;
+  transition: color 125ms, background-color 125ms, box-shadow 125ms;
+}
+
+.md-nav__link:hover {
+  color: var(--md-accent-fg-color);
+}
+
+/* 当前页面(nav 激活项 + toc 当前标题):accent 胶囊 */
+.md-sidebar .md-nav__item--active > .md-nav__link,
+.md-nav--secondary .md-nav__link--active {
+  background-color: var(--pm-accent-soft);
+  color: var(--md-accent-fg-color);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-accent-fg-color) 22%, transparent);
+  position: static;
+}
+
+/* ----------------------------------------------------------------------------
+   5.4 搜索
+   ---------------------------------------------------------------------------- */
+.md-search__form {
+  background-color: var(--pm-glass-fill);
+  border: 1px solid var(--pm-glass-border);
+  border-radius: 999px;
+  box-shadow: var(--pm-glass-shadow);
+}
+
+.md-header .md-search__form:focus-within {
+  border-color: color-mix(in srgb, var(--md-accent-fg-color) 55%, transparent);
+  box-shadow: 0 0 0 3px var(--md-accent-fg-color--transparent),
+              0 0 18px color-mix(in srgb, var(--md-accent-fg-color) 28%, transparent);
+}
+
+.md-search__input { color: var(--pm-ink); }
+.md-search__input::placeholder { color: var(--pm-faint); }
+.md-search__suggest { color: var(--pm-faint); }
+
+/* 搜索结果下拉 */
+.md-search__output {
+  background-color: var(--pm-glass-fill);
+  border: 1px solid var(--pm-glass-border);
+  border-radius: var(--pm-glass-radius);
+  box-shadow: var(--pm-glass-shadow);
+}
+
+/* ----------------------------------------------------------------------------
+   5.5 底栏 .md-footer
+   ---------------------------------------------------------------------------- */
+.md-footer {
+  background-color: var(--pm-glass-fill);
+  border-top: 1px solid var(--pm-glass-border);
+  border-radius: var(--pm-glass-radius) var(--pm-glass-radius) 0 0;
+  box-shadow: var(--pm-glass-shadow);
+  color: var(--pm-muted);
+}
+
+.md-footer-meta { background-color: transparent; }
+
+.md-footer__link:hover,
+.md-footer__link:focus {
+  color: var(--md-accent-fg-color);
+}
+
+/* ----------------------------------------------------------------------------
+   5.6 回顶按钮 .md-top(浮动控件;#myBtn 见第 10 节)
+   ---------------------------------------------------------------------------- */
+.md-top {
+  background-color: var(--pm-glass-fill);
+  border: 1px solid var(--pm-glass-border);
+  border-radius: 999px;
+  box-shadow: var(--pm-glass-shadow);
+  color: var(--pm-muted);
+}
+
+.md-top:hover {
+  background-color: var(--pm-accent-soft);
+  color: var(--pm-ink);
+}
+
+/* ----------------------------------------------------------------------------
+   6. 内容区
+   ---------------------------------------------------------------------------- */
+/* 6.1 表格:玻璃容器 + 1px 细边框 + 斑马纹 + 圆角 */
+.md-typeset table:not([class]) {
+  background-color: var(--pm-glass-fill);
+  border-color: var(--pm-code-border);
+  border-width: 1px;
+  border-radius: var(--pm-glass-radius);
+  box-shadow: var(--pm-glass-shadow);
+}
+
+.md-typeset table:not([class]) tbody tr:nth-child(odd) {
+  background-color: var(--pm-zebra);
+}
+
+.md-typeset table:not([class]) tbody tr:hover {
+  background-color: var(--md-accent-fg-color--transparent);
+}
+
+/* 6.2 代码块:玻璃面板 + 圆角 + 柔和阴影 */
+.md-typeset pre {
+  background-color: var(--pm-code-fill);
+  border: 1px solid var(--pm-code-border);
+  border-radius: calc(var(--pm-glass-radius) - 6px);
+  box-shadow: var(--pm-code-shadow);
+}
+
+/* 行号区弱化 */
+.md-typeset .linenos {
+  background-color: transparent;
+  color: var(--pm-faint);
+}
+
+.md-typeset .linenodiv pre {
+  color: var(--pm-faint);
+}
+
+/* 6.3 admonition / details:玻璃卡片 + 左侧 accent 色条 + 圆角 */
+.md-typeset .admonition,
+.md-typeset details {
+  background-color: var(--pm-glass-fill);
+  border-left-width: .22rem;
+  border-radius: var(--pm-glass-radius);
+  box-shadow: var(--pm-glass-shadow);
+}
+
+.md-typeset details:not([class]) {
+  border-color: var(--pm-blue);
+}
+
+/* admonition 类型色(flexoki 映射) */
+.md-typeset .admonition.note,    .md-typeset details.note    { border-color: var(--pm-blue); }
+.md-typeset .admonition.abstract, .md-typeset details.abstract { border-color: var(--pm-cyan); }
+.md-typeset .admonition.info,     .md-typeset details.info     { border-color: var(--pm-cyan); }
+.md-typeset .admonition.tip,      .md-typeset details.tip      { border-color: var(--pm-green); }
+.md-typeset .admonition.success,  .md-typeset details.success  { border-color: var(--pm-green); }
+.md-typeset .admonition.question, .md-typeset details.question { border-color: var(--pm-yellow); }
+.md-typeset .admonition.warning,  .md-typeset details.warning  { border-color: var(--pm-orange); }
+.md-typeset .admonition.failure,  .md-typeset details.failure  { border-color: var(--pm-red); }
+.md-typeset .admonition.danger,   .md-typeset details.danger   { border-color: var(--pm-red); }
+.md-typeset .admonition.bug,      .md-typeset details.bug      { border-color: var(--pm-magenta); }
+.md-typeset .admonition.example,  .md-typeset details.example  { border-color: var(--pm-purple); }
+.md-typeset .admonition.quote,    .md-typeset details.quote    { border-color: var(--pm-faint); }
+
+/* admonition 图标同色 */
+.md-typeset .note > .admonition-title:before,      .md-typeset .note > summary:before      { background-color: var(--pm-blue); }
+.md-typeset .abstract > .admonition-title:before,  .md-typeset .abstract > summary:before  { background-color: var(--pm-cyan); }
+.md-typeset .info > .admonition-title:before,      .md-typeset .info > summary:before      { background-color: var(--pm-cyan); }
+.md-typeset .tip > .admonition-title:before,       .md-typeset .tip > summary:before       { background-color: var(--pm-green); }
+.md-typeset .success > .admonition-title:before,   .md-typeset .success > summary:before   { background-color: var(--pm-green); }
+.md-typeset .question > .admonition-title:before,  .md-typeset .question > summary:before  { background-color: var(--pm-yellow); }
+.md-typeset .warning > .admonition-title:before,   .md-typeset .warning > summary:before   { background-color: var(--pm-orange); }
+.md-typeset .failure > .admonition-title:before,   .md-typeset .failure > summary:before   { background-color: var(--pm-red); }
+.md-typeset .danger > .admonition-title:before,    .md-typeset .danger > summary:before    { background-color: var(--pm-red); }
+.md-typeset .bug > .admonition-title:before,       .md-typeset .bug > summary:before       { background-color: var(--pm-magenta); }
+.md-typeset .example > .admonition-title:before,   .md-typeset .example > summary:before   { background-color: var(--pm-purple); }
+.md-typeset .quote > .admonition-title:before,     .md-typeset .quote > summary:before     { background-color: var(--pm-faint); }
+
+/* 6.4 任务列表:勾选状态 accent 化 */
+.md-typeset .task-list-indicator:before {
+  background-color: var(--pm-line);
+}
+
+.md-typeset [type="checkbox"]:checked + .task-list-indicator:before {
+  background-color: var(--md-accent-fg-color);
+}
+
+/* 6.5 链接与按钮 */
+.md-typeset a {
+  transition: color 125ms, text-shadow 125ms;
+}
+
+.md-typeset a:hover {
+  text-shadow: 0 0 12px color-mix(in srgb, var(--md-typeset-a-color) 45%, transparent);
+}
+
+.md-button {
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(16, 15, 15, .06), 0 4px 14px rgba(16, 15, 15, .08);
+  transition: color 125ms, background-color 125ms, border-color 125ms, box-shadow 125ms;
+}
+
+.md-button:hover,
+.md-button:focus {
+  box-shadow: 0 0 0 3px var(--md-accent-fg-color--transparent),
+              0 4px 14px color-mix(in srgb, var(--md-accent-fg-color) 30%, transparent);
+}
+
+/* 6.6 引用:flexoki orange 墨感 */
+.md-typeset blockquote {
+  border-left-color: color-mix(in srgb, var(--pm-orange) 55%, var(--pm-paper));
+  color: var(--pm-muted);
+}
+
+/* 页首/页尾 meta 引用(保留原有语义,换 flexoki 色) */
+blockquote.page-time {
+  margin: 20px 0 !important;
+  border-left-color: var(--pm-blue) !important;
+}
+
+blockquote.page-copyright {
+  margin: 20px 0 !important;
+  border-left-color: var(--pm-red) !important;
+}
+
+blockquote.page-copyright i.md-icon {
+  display: inline-block;
+  margin-right: 5px;
+  transform: translateY(3.5px);
+  width: 18px;
+}
+
+/* 6.7 图片:圆角 + 轻描边;暗色下亮度/对比度微调 */
+.md-typeset img {
+  border: 1px solid var(--pm-line);
+  border-radius: .75rem;
+}
+
+[data-md-color-scheme="slate"] .md-typeset img {
+  background: #FFFCF0;
+  filter: brightness(.88) contrast(1.05);
+}
+
+[data-md-color-scheme="slate"] .md-typeset img[src$=".svg"] {
+  border: 2px solid #FFFCF0;
+}
+
+/* ----------------------------------------------------------------------------
+   7. 404 页与 giscus 评论区:玻璃卡片
+   ---------------------------------------------------------------------------- */
+#__comments {
+  margin-top: 2rem;
+  padding: .8rem 1rem;
+  background-color: var(--pm-glass-fill);
+  border: 1px solid var(--pm-glass-border);
+  border-radius: var(--pm-glass-radius);
+  box-shadow: var(--pm-glass-shadow);
+}
+
+.giscus {
+  width: 100%;
+}
+
+/* 404 静态页:正文只有 页面标题 + hr + page-copyright + 评论区 */
+.md-content__inner:has(> h1:first-child + hr + blockquote.page-copyright) {
+  margin-top: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  background-color: var(--pm-glass-fill);
+  border: 1px solid var(--pm-glass-border);
+  border-radius: var(--pm-glass-radius);
+  box-shadow: var(--pm-glass-shadow);
+}
+
+/* ----------------------------------------------------------------------------
+   8. 滚动条:细圆角(亮暗共用 token)
+   ---------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--pm-line);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--pm-faint);
+}
+
+html {
+  scrollbar-color: var(--pm-faint) transparent;
+  scrollbar-width: thin;
+}
+
+/* ----------------------------------------------------------------------------
+   9. 响应式(≤760px)
+   ---------------------------------------------------------------------------- */
+@media screen and (max-width: 760px) {
+  :root {
+    --pm-glass-radius: 12px;
+  }
+
+  #myBtn {
+    right: 10px;
+    bottom: 84px;
+  }
+
+  .md-content__inner:has(> h1:first-child + hr + blockquote.page-copyright) {
+    padding: 2rem 1.2rem;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   10. 保留的既有站点样式(语义不变)
+   ---------------------------------------------------------------------------- */
 /* Logo title */
 .md-header__topic:first-child {
   font-weight: initial !important;
@@ -24,37 +678,26 @@ details > summary + .highlight > .highlighttable { margin: 0 !important; }
 
 .md-nav__link[for=__toc] .md-icon { margin-left: auto !important; }
 
-blockquote.page-time {
-  margin: 20px 0 !important;
-  border-left-color: #64b5f6 !important; /* Just change the color value and that's it*/
-}
-blockquote.page-copyright {
-  margin: 20px 0 !important;
-  border-left-color: #ff1700 !important; /* Just change the color value and that's it*/
-}
-blockquote.page-copyright i.md-icon {
-  display: inline-block;
-  margin-right: 5px;
-  transform: translateY(3.5px);
-  width: 18px;
-}
-
 #myBtn {
     display: none;
-    position: fixed; 
-    bottom: 100px; 
-    right: 16px; 
-    z-index: 99; 
-    border: none;
-    outline: none; 
-    color: #8590a6;
-    cursor: pointer; 
-    padding: .7rem; 
-    border-radius: .4rem;
+    position: fixed;
+    bottom: 100px;
+    right: 16px;
+    z-index: 99;
+    border: 1px solid var(--pm-glass-border);
+    outline: none;
+    color: var(--pm-muted);
+    background-color: var(--pm-glass-fill);
+    cursor: pointer;
+    padding: .7rem;
+    border-radius: 999px;
+    box-shadow: var(--pm-glass-shadow);
+    transition: background-color 125ms, color 125ms;
 }
- 
+
 #myBtn:hover {
-    background-color: #d3d3d3; 
+    background-color: var(--pm-accent-soft);
+    color: var(--pm-ink);
 }
 
 #color-button > button {
@@ -86,21 +729,53 @@ mjx-container > img {
   height: 0;
 }
 
-[data-md-color-scheme="slate"] {
-  --md-primary-fg-color: #2e303e;
-  --md-accent-fg-color: #00bda4;
-  --md-typeset-a-color: #526cfe;
-}
-
-[data-md-color-scheme="slate"] .md-typeset img {
-  background: white;
-  filter: brightness(0.9);
-}
-
-[data-md-color-scheme="slate"] .md-typeset img[src$=".svg"] {
-  border: 4px solid white;
-}
-
 div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   overflow: visible;
+}
+
+/* ----------------------------------------------------------------------------
+   11. 玻璃系统(置于全部规则之后:组件基础规则提供纯色半透明回退,
+       @supports 内升级为磨砂玻璃,靠加载顺序保证玻璃底生效)
+   ---------------------------------------------------------------------------- */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .md-header,
+  .md-tabs,
+  .md-sidebar__inner,
+  .md-search__form,
+  .md-search__output,
+  .md-footer,
+  .md-top,
+  #myBtn,
+  #__comments,
+  .md-content__inner:has(> h1:first-child + hr + blockquote.page-copyright),
+  .md-typeset table:not([class]),
+  .md-typeset .highlighttable,
+  .md-typeset .highlight > pre,
+  .md-typeset pre,
+  .md-typeset .admonition,
+  .md-typeset details {
+    background-color: var(--pm-glass-fill-blur);
+    -webkit-backdrop-filter: blur(var(--pm-glass-blur)) saturate(var(--pm-glass-sat));
+    backdrop-filter: blur(var(--pm-glass-blur)) saturate(var(--pm-glass-sat));
+  }
+
+  /* 代码块玻璃底更深一层(暗色下加深) */
+  .md-typeset .highlighttable,
+  .md-typeset .highlight > pre,
+  .md-typeset pre {
+    background-color: var(--pm-code-fill);
+  }
+
+  /* 玻璃面板内部(pre/admonition/details/表格)不再叠加玻璃 */
+  .md-typeset .highlighttable pre,
+  .md-typeset .highlighttable .highlight > pre,
+  .md-typeset details pre,
+  .md-typeset .admonition pre,
+  .md-typeset .md-typeset__scrollwrap pre {
+    background-color: transparent;
+    border: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
