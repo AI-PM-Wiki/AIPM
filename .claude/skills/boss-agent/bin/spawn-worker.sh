@@ -22,7 +22,7 @@ claude -p \
   --agent boss-worker \
   --name "boss-w-$WS" \
   --output-format text \
-  --allowedTools "Read, Edit, Write, Grep, Glob, Search, Bash(cd*), Bash(git status*), Bash(git log*), Bash(git diff*), Bash(git show*), Bash(git branch*), Bash(git add*), Bash(git commit*), Bash(git merge dev), Bash(git checkout --*), Bash(uv run mkdocs*), Bash(python3 scripts/check-characters.py*), Bash(cat*), Bash(grep*), Bash(find*), Bash(ls*), Bash(pwd)" \
+  --allowedTools "Read, Edit, Write, Grep, Glob, Search, Bash(cd*), Bash(git status*), Bash(git log*), Bash(git diff*), Bash(git show*), Bash(git branch*), Bash(git add*), Bash(git commit*), Bash(git merge dev), Bash(git checkout --*), Bash(uv run mkdocs*), Bash(uv run --with*), Bash(python3 scripts/check-characters.py*), Bash(cat*), Bash(grep*), Bash(find*), Bash(ls*), Bash(pwd)" \
   --disallowedTools "Bash(git push*), Bash(git worktree*), Bash(git switch*), Bash(git checkout dev), Bash(git checkout main), Bash(git checkout master), Bash(git checkout -b*), Bash(git reset --hard*), Bash(git rebase*), Bash(git clean*), Bash(git stash*), Bash(uv sync*), Bash(uv add*), Bash(uv remove*), Bash(yarn install*), Bash(yarn add*), Bash(npm install*), Bash(npm ci*), Bash(npm audit*), Bash(npx*), Bash(export*), Bash(chmod*), Bash(rm -rf*), Bash(sudo*)" \
   --add-dir "$BATCH" \
   < "$BATCH/prompts/$WS.md" \
