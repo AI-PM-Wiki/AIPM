@@ -159,7 +159,7 @@ plugins:
     theme: material
     toggle_button: all
 
-# TODO(theme-swap): hooks/on_env.py 提供 nav_math 过滤器,仅旧版 oi-wiki 主题模板需要;
+# TODO(theme-swap): hooks/on_env.py 提供 nav_math 过滤器,仅旧版主题模板需要;
 # 主题子模块切换到官方 material 后可将本段与 hooks/on_env.py 一并删除。
 hooks:
   - hooks/on_env.py
