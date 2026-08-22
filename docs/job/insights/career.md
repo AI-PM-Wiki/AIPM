@@ -58,7 +58,7 @@
 ## 相关阅读
 
 -   [求职专题首页](../index.md)
--   [岗位与机会](../positions/index.md)
+-   [常见岗位与JD](../positions/index.md)
 -   [入行感悟](newcomers.md)
 -   [踩坑教训](lessons.md)
 -   [心态感悟](mindset.md)

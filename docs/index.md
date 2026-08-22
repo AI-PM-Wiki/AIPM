@@ -26,6 +26,10 @@ template: home.html
     <span class="pm-card__title">案例与资源</span>
     <span class="pm-card__desc">产品拆解、学习路线、学习资源</span>
   </a>
+  <a class="pm-card" href="job/">
+    <span class="pm-card__title">求职专题</span>
+    <span class="pm-card__desc">常见岗位与 JD、大厂架构、面经与真实感悟</span>
+  </a>
   <a class="pm-card" href="intro/about/">
     <span class="pm-card__title">关于</span>
     <span class="pm-card__desc">项目介绍、如何参与、格式手册、FAQ</span>
