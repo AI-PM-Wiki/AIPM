@@ -7,6 +7,9 @@
 #   squidfunk/mkdocs-material → oi-wiki 深度定制 → Hi-Yincan/mkdocs-material)。
 #   2026-08 已彻查清理 oi-wiki 残留(远程搜索端点、上游域名、CI 与脚本引用等)。
 #   本脚本防止类似残留回流:命中致命词表即 exit 1。
+#   白名单机制:命中词表但确属「已知合法引用」的文件(如 README.md 依 SATA
+#   许可致谢 OI Wiki,必然含 oi-wiki.org / OI-wiki/OI-wiki)登记在
+#   LEGAL_EXCEPTIONS 中,命中输出 WARN(合法引用)不置 FAIL;其余命中仍 FAIL。
 #
 # 模式:
 #   默认(本地门禁):
@@ -19,13 +22,17 @@
 #     并校验构建产物(仅当 site/ 存在时执行,不存在则跳过并注明,避免 CI 双重构建)。
 #   --quiet:
 #     不输出命中明细(错误信息仍输出到 stderr),仅返回 exit code
-#     (0 = 无残留,1 = 有残留或校验失败),供其他流程复用。
+#     (0 = 无 FAIL 命中,1 = 有 FAIL 命中或校验失败;WARN 不计 FAIL),
+#     供其他流程复用。
 #
 # 词表维护方法:
 #   - 在 FATAL_PATTERNS 中追加/修改 grep -E 正则,每行注释说明残留来源。
 #   - 新增疑似残留词时,先 `grep -rniE '<词>' docs/` 确认 docs/ 无合法用法再入表。
 #   - 合法例外说明:词表刻意不含 squidfunk——squidfunk.github.io(官方主题来源)
 #     是合法引用(见 docs/intro/about.md),靠「词表不含该词」天然放行,无需白名单。
+#   - 白名单维护:新增合法引用(如 README 依 SATA 致谢 OI Wiki)时,先在
+#     LEGAL_EXCEPTIONS 登记文件名,再运行脚本确认输出 WARN(合法引用)而非 FAIL;
+#     若同时出现 FAIL 命中,先修掉真正残留,避免白名单掩盖新残留。
 #   - 脚本以 --exclude 排除自身文件:词表与注释含致命词原文,否则会自命中。
 # =============================================================================
 set -euo pipefail
@@ -43,6 +50,11 @@ FATAL_PATTERNS=(
   'oiwiki-feedback-sys-frontend'  # 上游反馈系统前端 npm 包
   'oi-wiki\.com'                  # 上游彩蛋域名(含域名判断逻辑)
 )
+
+# ---- 已知合法引用白名单(basename 匹配) ------------------------------------------
+# 命中词表但确属「已知合法引用」的文件,输出 WARN(合法引用)不置 FAIL;
+# 其余文件命中仍 FAIL。维护方法见头部注释「词表维护方法」。
+LEGAL_EXCEPTIONS=('README.md')   # 依 SATA 许可致谢 OI Wiki,必然含 oi-wiki.org / OI-wiki/OI-wiki
 
 # ---- 扫描范围 ----------------------------------------------------------------
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -86,7 +98,7 @@ for arg in "$@"; do
     --full) MODE=full ;;
     --quiet) QUIET=1 ;;
     -h|--help)
-      sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,44p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -113,9 +125,8 @@ scan() {
       [ "$QUIET" -eq 0 ] && echo "NOTE: 跳过不存在的目标: $t"
     fi
   done
-  if grep -rniE --binary-files=without-match "${INCLUDE_OPTS[@]}" "${EXCLUDE_OPTS[@]}" "$PATTERN" "$@" >> "$RESULTS" 2>/dev/null; then
-    FAIL=1
-  fi
+  # 命中先收集到 RESULTS,是否置 FAIL 由下方白名单判定决定
+  grep -rniE --binary-files=without-match "${INCLUDE_OPTS[@]}" "${EXCLUDE_OPTS[@]}" "$PATTERN" "$@" >> "$RESULTS" 2>/dev/null || true
 }
 
 scan "${DEFAULT_TARGETS[@]}"
@@ -145,14 +156,43 @@ if [ "$MODE" = full ]; then
   fi
 fi
 
+# ---- 白名单判定 ----------------------------------------------------------------
+# 命中行格式「文件:行:内容」:文件在 LEGAL_EXCEPTIONS 中 → WARN(合法引用,不计 FAIL),
+# 其余 → FAIL 命中。用进程替换保持 while 循环在当前 shell 执行(管道会开子 shell,
+# FAIL_COUNT 无法回写)。
+is_legal() {
+  local f="$1" e
+  for e in "${LEGAL_EXCEPTIONS[@]}"; do
+    [ "$f" = "$e" ] && return 0
+  done
+  return 1
+}
+
+WARN_COUNT=0
+FAIL_COUNT=0
+if [ -s "$RESULTS" ]; then
+  while IFS=: read -r fpath rest; do
+    if is_legal "$(basename "$fpath")"; then
+      WARN_COUNT=$((WARN_COUNT + 1))
+      [ "$QUIET" -eq 0 ] && echo "WARN(合法引用): $fpath:$rest"
+    else
+      FAIL_COUNT=$((FAIL_COUNT + 1))
+      [ "$QUIET" -eq 0 ] && echo "$fpath:$rest"
+    fi
+  done < <(sort -u "$RESULTS")
+fi
+[ "$FAIL_COUNT" -gt 0 ] && FAIL=1
+
 # ---- 输出 ---------------------------------------------------------------------
 if [ "$QUIET" -eq 0 ]; then
-  if [ -s "$RESULTS" ]; then
-    # 按文件排序去重(多目标可能重叠命中同一文件)
-    sort -u "$RESULTS"
+  if [ "$FAIL_COUNT" -gt 0 ]; then
     echo
-    echo "FAIL: 检测到上游残留(共 $(sort -u "$RESULTS" | wc -l | tr -d ' ') 处),详见上方清单。"
-  else
+    echo "FAIL: 检测到上游残留(共 $FAIL_COUNT 处),详见上方清单。"
+  fi
+  if [ "$WARN_COUNT" -gt 0 ]; then
+    echo "WARN: $WARN_COUNT 处命中位于合法引用白名单(${LEGAL_EXCEPTIONS[*]}),不计 FAIL。"
+  fi
+  if [ "$FAIL_COUNT" -eq 0 ] && [ "$WARN_COUNT" -eq 0 ]; then
     echo "OK: 无上游残留"
   fi
   if [ -n "$SITE_CHECKS" ]; then
