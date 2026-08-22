@@ -1,26 +1,26 @@
 # scripts
 
-本目录存放了用于测试、构建和整理代码的一些脚本。
+本目录存放用于构建、检查和辅助的脚本。
 
 -   `pre-build` 运行于构建前的脚本
-    - `install-theme.sh, install-theme-vendor.sh` 安装 mkdocs 主题，与主题中所用的第三方库
-    - `pre-build.sh` 在 CI 上构建生产环境站点时所运行的脚本，包括安装主题与调整配置
+    - `install-theme.sh, install-theme-vendor.sh` 安装 mkdocs 主题，以及主题所需的第三方库
+      （资源下载链接可通过环境变量配置，如 `MATHJAX_URL`）
+    - `pre-build.sh` 在 CI 上构建生产环境站点前运行的脚本（安装主题）
 -   `post-build` 运行于构建后的脚本
-    - `commits-info` 渲染每个页面中与 Git commits 有关的信息（更新时间，贡献者列表等）
-    - `math` 渲染每个页面中的数学公式（**注：** 在预览构建中，公式在前端渲染）
-    - `redirect` 生成跳转页面
--   `post-deploy` 运行于主站生产环境部署后的脚本
-    - `baidu-push.sh, convert-sitemap.py` 将 sitemap 转换并推送到百度搜索
--   `netlify` 用于 Netlify 上的预览构建的脚本（参见 `/netlify.toml`）
-    - `build.sh` 在 Netlify 上的构建全过程（手动安装依赖）
-    - `install-python.sh` 在 Netlify 上安装指定版本的 Python
+    - `html-postprocess.ts` 后处理任务框架：对 `site/` 下每个 HTML 文件顺序执行指定任务，
+      任务目录需包含 `task-handler.ts`（当前构建仅启用 `external-links`）
+    - `external-links` 处理站外链接（自动添加 `target="_blank"`，站内判定基于站点 `site_url`）
+    - `commits-info` 根据 Git 历史与 GitHub API 渲染页面的更新日期与贡献者列表（需 `GITHUB_TOKEN`，
+      并依赖 `authors-cache` 分支的 `authors.json`；当前构建未启用）
+    - `minify-html` 压缩构建产物中的 HTML
+-   `post-deploy` 部署后的辅助脚本
+    - `convert-sitemap.py` 将 XML sitemap 转换为百度收录推送所需的 TXT 格式（推送脚本已移除，当前未接入构建流程）
+-   `netlify` 用于 Netlify 上的预览构建（参见 `/netlify.toml`）
+    - `build.sh` 在 Netlify 上的构建全过程（安装 Python/Node 依赖、安装主题、构建并做 HTML 后处理）
 
-以下是与构建无关的脚本：
+其他脚本：
 
-- `test.py` 测试文档中的实例代码正常编译
-- `check-characters.py` 扫描修改的 Markdown 与 TeX 文件中的异常非可见字符与可替换为对应 CJK 字符的部首（和笔画字符）
-- `celebration.py` 自动创建庆祝 star 数量的 issue
-- `linter_patch.py` 用于协助 bot 修正错误的文档格式化结果
--   `linter` `linter_patch.py` 的一部分，详见 `linter/README.md`
--   `utils` 一些工具
-    - `find_jk.py` 寻找源文件中非中文码位的汉字字符
+- `check-characters.py` 扫描 Markdown 文件中的异常非可见字符，以及可替换为对应 CJK 字符的部首
+  （和笔画字符）；字符数据见同目录 `char-map.json`。为仓库门禁之一。
+- `gen-favicon.py` 生成站点 favicon（用法见文件头部注释）
+- `utils/find_jk.py` 遗留小工具：查找源文件中非中文码位的汉字字符
