@@ -57,9 +57,3 @@ uv run mkdocs --help
 除特别注明外，项目中除了代码部分均采用 <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">(Creative Commons BY-SA 4.0) 知识共享署名 - 相同方式共享 4.0 国际许可协议</a>及附加的 [The Star And Thank Author License](https://github.com/zTrix/sata-license) 进行许可。
 
 换言之，使用过程中您可以自由地共享、演绎，但是必须署名、以相同方式共享、分享时没有附加限制。
-
-* * *
-
-## 鸣谢
-
-本项目基于 [OI Wiki](https://github.com/OI-wiki/OI-wiki) 搭建，主题、构建流程与格式规范均参考其设计，在此致以诚挚感谢！

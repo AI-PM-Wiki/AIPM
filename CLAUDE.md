@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**AI-PM** is a Chinese AI product management knowledge wiki built with MkDocs, forked from the OI Wiki template. It is a collaborative educational resource covering AI product methodology, LLM capabilities and tools, prompt engineering, agent workflows, and evaluation. Note: `docs/` content is still largely inherited from OI Wiki and is in the process of being replaced with AI-PM content.
+**AI-PM** is a Chinese AI product management knowledge wiki built with MkDocs, using a customized Material for MkDocs theme. It is a collaborative educational resource covering AI product methodology, LLM capabilities and tools, prompt engineering, agent workflows, and evaluation.
 
 ## Architecture & Structure
 

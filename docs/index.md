@@ -25,7 +25,7 @@ title: AI-PM
 -   **知识自由**：本站源于社区，提倡知识自由，不商业化
 
 ???+ note "正在建设中"
-    本站以 [OI Wiki](https://github.com/OI-wiki/OI-wiki) 为模板搭建，目前大部分页面还是骨架，欢迎[参与贡献](intro/htc.md)一起完善！
+    本站目前大部分页面还是骨架，欢迎[参与贡献](intro/htc.md)一起完善！
 
 <script>
   // #758

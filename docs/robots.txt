@@ -1,1 +1,1 @@
-Sitemap: https://oi-wiki.org/sitemap.xml
+Sitemap: https://hyc.ac/aipm/sitemap.xml

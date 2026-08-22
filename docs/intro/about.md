@@ -5,7 +5,7 @@
 
 ## 为什么做这个站点
 
-AI 产品发展迅速，但相关知识大多散落在公众号文章、播客、Twitter 和各种博客中，缺乏一个系统的知识整合站点。我们希望像 OI Wiki 之于编程竞赛那样，为 AI 产品领域建立一个系统、可信、持续更新的知识库。
+AI 产品发展迅速，但相关知识大多散落在公众号文章、播客、Twitter 和各种博客中，缺乏一个系统的知识整合站点。我们希望像编程竞赛领域的 OI Wiki 那样，为 AI 产品领域建立一个系统、可信、持续更新的知识库。
 
 ## 内容方向
 
@@ -17,7 +17,7 @@ AI 产品发展迅速，但相关知识大多散落在公众号文章、播客�
 
 ## 项目技术
 
--   基于 [MkDocs](https://www.mkdocs.org/) 构建，使用 [OI Wiki](https://github.com/OI-wiki/OI-wiki) 的自定义 Material 主题
+-   基于 [MkDocs](https://www.mkdocs.org/) 构建，使用 [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) 主题
 -   站点源码托管在 GitHub，欢迎通过 [Issues](https://github.com/Hi-Yincan/aipm/issues) 交流讨论
 
 ## 交流方式
