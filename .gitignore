@@ -9,3 +9,4 @@ site/
 node_modules/
 *.pyc
 /meta/
+/.claude/
