@@ -87,8 +87,8 @@ theme:
   include_search_page: false
   search_index_only: true
   favicon: 'favicon.svg'
-  icon:
-    logo: 'material/school'
+  logo: 'favicon.svg'
+  icon: {}
   features:
     - content.action.edit
     - navigation.tabs
