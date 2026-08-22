@@ -875,7 +875,12 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   margin-top: .4rem;
 }
 
-/* 12.3 按钮(.pm-btn 系) */
+/* 12.3 按钮(.pm-btn 系)
+   注:`.md-typeset a`(0,1,1)与 `md-typeset a:focus/:hover`(0,2,1)的链接色
+   优先级高于 `.pm-btn`(0,1,0),会覆盖按钮文字色;故所有作用于 <a> 按钮的规则
+   都配 `.md-typeset a.pm-btn…` 前置选择器提权(0,2,1/0,3,1)。
+   `.pm-btn--search` 是 <button>,不适用,保留原选择器。 */
+.md-typeset a.pm-btn,
 .pm-btn {
   display: inline-flex;
   align-items: center;
@@ -897,21 +902,26 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
               color 150ms ease, filter 150ms ease;
 }
 
+.md-typeset a.pm-btn:hover,
+.md-typeset a.pm-btn:focus-visible,
 .pm-btn:hover,
 .pm-btn:focus-visible {
   transform: translateY(-2px);
 }
 
+.md-typeset a.pm-btn:active,
 .pm-btn:active {
   transform: translateY(0);
 }
 
+.md-typeset a.pm-btn:focus-visible,
 .pm-btn:focus-visible {
   outline: 2px solid var(--pm-accent-strong);
   outline-offset: 2px;
 }
 
 /* 12.3.1 主按钮:accent 渐变底 + 白字 + hover 提亮 */
+.md-typeset a.pm-btn--primary,
 .pm-btn--primary {
   color: #FFFCF0;
   background-image: linear-gradient(135deg, var(--pm-blue), var(--pm-cyan));
@@ -920,6 +930,8 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
               inset 0 1px 0 0 rgba(255, 255, 255, .25);
 }
 
+.md-typeset a.pm-btn--primary:hover,
+.md-typeset a.pm-btn--primary:focus-visible,
 .pm-btn--primary:hover,
 .pm-btn--primary:focus-visible {
   filter: brightness(1.08) saturate(1.05);
@@ -929,6 +941,7 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
 }
 
 /* 12.3.2 幽灵按钮:玻璃底 + 细描边 + hover 底色加深 */
+.md-typeset a.pm-btn--ghost,
 .pm-btn--ghost {
   color: var(--pm-ink);
   background-color: var(--pm-glass-fill);
@@ -936,6 +949,8 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   box-shadow: var(--pm-glass-shadow);
 }
 
+.md-typeset a.pm-btn--ghost:hover,
+.md-typeset a.pm-btn--ghost:focus-visible,
 .pm-btn--ghost:hover,
 .pm-btn--ghost:focus-visible {
   background-color: var(--pm-accent-soft);
@@ -1096,11 +1111,14 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     animation: none;
   }
 
+  .md-typeset a.pm-btn,
   .pm-btn,
   .pm-card {
     transition: none;
   }
 
+  .md-typeset a.pm-btn:hover,
+  .md-typeset a.pm-btn:focus-visible,
   .pm-btn:hover,
   .pm-btn:focus-visible,
   .pm-card:hover,
