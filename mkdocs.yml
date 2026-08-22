@@ -47,6 +47,7 @@ nav:
     - 实战简介: practice/index.md
     - 对话助手: practice/chatbot.md
     - 知识库问答: practice/kb-qa.md
+    - RAG 产品化实战: practice/rag-practice.md
     - Agent 产品: practice/agent-product.md
     - Copilot: practice/copilot.md
     - 工作流自动化: practice/workflow.md
