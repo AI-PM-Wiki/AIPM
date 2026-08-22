@@ -6,6 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **AI-PM** is a Chinese AI product management knowledge wiki built with MkDocs, using a customized Material for MkDocs theme. It is a collaborative educational resource covering AI product methodology, LLM capabilities and tools, prompt engineering, agent workflows, and evaluation.
 
+## 信息源与外部资料
+
+- 需要外部资料时,先读 `docs/case/info-sources.md`(信息源索引):校内 CC98、中文社区(linux.do、知乎)、
+  微信公众号检索、国内外产品经理博客与 Newsletter、X 与海外社区、教程类(人人都是产品经理、GitHub 教程),
+  每类注明访问方式(含登录墙等门槛)与 Agent 使用提示。
+- **CC98**(浙大校内论坛,高质量一手信息:实习/校招、课程、技术讨论):本机已配置 CC98 MCP
+  (`mcp__cc98__*` 工具),直接搜索、读帖;访问需校内网络或 WebVPN。
+- **微信公众号文章**检索用搜狗微信搜索,模板 `https://weixin.sogou.com/weixin?type=2&query=%s`
+  (`%s` 替换为 URL 编码后的关键词),不要用通用网页搜索代替。
+- **linux.do 等论坛**:用浏览器访问(Playwright MCP)。
+- **登录墙**(X、知乎等):只能读公开页面;登录态内容请用户协助。
+- 本地门禁以 `.claude/workflow.json` 的 `gates` 为准(`git diff --check` / `uv run mkdocs build -q` /
+  `python3 scripts/check-characters.py`);package.json 的 yarn 脚本依赖 node_modules(当前未装,不可用);
+  外链完整性由 CI 的 htmltest 校验(排除 `/aipm/` 前缀)。
+
 ## Architecture & Structure
 
 ### Documentation Structure
