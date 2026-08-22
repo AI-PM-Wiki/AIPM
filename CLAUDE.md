@@ -123,8 +123,8 @@ scripts/netlify/build.sh
 ### Development Environment
 ```bash
 # Clone with submodules (推送到你自己的仓库后替换下方地址)
-git clone https://github.com/Hi-Yincan/ai-pm-wiki.git --depth=1
-cd ai-pm-wiki
+git clone https://github.com/Hi-Yincan/AIPM.git --depth=1
+cd AIPM
 
 # Install Python dependencies
 uv sync

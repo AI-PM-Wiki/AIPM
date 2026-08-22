@@ -6,7 +6,7 @@
 ## 贡献方式
 
 -   **编写/修改文章**：在 `docs/` 下对应的目录新建或修改 Markdown 文件
--   **反馈问题**：在 [Issues](https://github.com/Hi-Yincan/ai-pm-wiki/issues) 中提出内容错误、补充建议
+-   **反馈问题**：在 [Issues](https://github.com/Hi-Yincan/AIPM/issues) 中提出内容错误、补充建议
 -   **讨论方向**：参与 Issue 中关于内容规划的讨论
 
 ## 贡献流程
