@@ -90,6 +90,10 @@ nav:
       - 研发工程师: job/positions/rd-engineer.md
       - 测试工程师: job/positions/test-engineer.md
       - 硬件相关岗位: job/positions/hardware-pm.md
+      - AI 训练相关岗位: job/positions/ai-trainer.md
+      - AI Infra 相关岗位: job/positions/ai-infra.md
+      - FDE(前沿部署工程师): job/positions/fde.md
+      - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
     - 面经:
       - 面经简介: job/interviews/index.md
       - 面试流程全览: job/interviews/interview-process.md
