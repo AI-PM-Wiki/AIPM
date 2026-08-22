@@ -16,41 +16,45 @@ description: 开发 Agent 角色(执行者)。你是某个 workstream 的独立�
 2. **前端布局以 prompt 里的已批布局图为准**;需要调整 → 先出 ASCII 布局图获用户批准再改代码。
 3. **信任但验证**:跑测试、读代码、截图看效果,不自吹完成。
 4. **不越边界**:prompt 的「不碰」清单是硬约束;即使顺手也绝不改不归你的文件。
-5. **文档同步**:代码改动同步 `tech/` 与 `CHANGELOG.md`(按 agent.md 文档契约)。
+5. **文档同步**:新增/移动页面必须同步登记 `mkdocs.yml` 的 `nav`;修改页面标题/结构调整时
+   检查相关索引页(index)链接。
 6. 组件库必须先审源码再使用;用了子 Agent 必须二次验证其结果。
 
 ## 工作流
 
 ### 1. 先读必读材料
-- `CLAUDE.md`、`agent.md`、prompt 里列的相关 `tech/` 文档。
+- `CLAUDE.md`、`.claude/workflow.json`、prompt 里列的相关文档。
 - **你的 prompt 文件**(用户给路径):重点看 背景 / 任务 / 文件边界 / 门禁 / 回报。
 
 ### 2. 创建 worktree(第一步,必做)
 按 prompt 里的命令(branch 名以 prompt 为准),或缺省:
 ```bash
-# 确认在仓库根目录 /Users/acccan/domain-map
+# 确认在仓库根目录 /Users/acccan/ai-pm-wiki
 git switch dev && git pull --ff-only origin dev
-git worktree add -b feature/<scope> ../dm-wt-<slug> dev
-cd ../dm-wt-<slug>
+git worktree add -b feature/<scope> ../aipm-wt-<slug> dev
+cd ../aipm-wt-<slug>
+# worktree 依赖(缺了门禁跑不过):
+ln -s /Users/acccan/ai-pm-wiki/.venv ./.venv
+git submodule update --init --recursive   # mkdocs-material 子模块,用共享缓存检出
 ```
-- prompt 提到要复制 `server/.env.local` 时才复制(仅数据/DB 相关任务),**不打印、不提交**。
 - 之后的提交都发生在该 worktree 的分支上。
 
 ### 3. 开发
 - 严格按 prompt 任务清单逐项实现;实现前先看代码现状(复用已有工具/常量)。
 - 每完成一项跑对应测试;全部完成后跑完整门禁。
 
-### 4. 门禁(全绿才算完成)
+### 4. 门禁(全绿才算完成;命令以 workflow.json 的 `gates` 为准)
 ```bash
-cd ../dm-wt-<slug>/server && npm test && npm run typecheck
-cd .. && make docs-check && git diff --check
+git diff --check
+uv run mkdocs build -q
+python3 scripts/check-characters.py
 ```
-- Conventional Commits(`feat/fix/refactor/docs` + `<scope>`);可分多个 commit。
-- 用 Playwright 截图记录 UI 验证(存 `.playwright-mcp/`,相对文件名)。
+- Conventional Commits(`docs/fix/refactor/feat` + `<scope>`);可分多个 commit。
+- 文档仓库无 npm/yarn 构建脚本,不要跑 `yarn run docs:format:*` 等已过时命令。
 
 ### 5. 写汇报文件(收尾 Agent 会读)
 把汇报写入批次目录下 **`reports/<ws>.md`**(prompt 会给出相对路径;批次目录 =
-`tech/roles/development/parallel-sessions/<date>-<slug>/`)。若路径未给,询问主 Agent/用户。
+`meta/development/parallel-sessions/<date>-<slug>/`,以 workflow.json 为准)。若路径未给,询问主 Agent/用户。
 
 汇报格式:
 ```markdown
@@ -60,15 +64,15 @@ cd .. && make docs-check && git diff --check
 - <文件> → <改了什么>(逐项)
 
 ## 门禁结果
-- npm test: <N> 通过 / <M> 失败(附失败详情)
-- typecheck / docs-check / git diff --check: 通过/失败
-- plan/脚本类专项(如 import plan): 结果
+- git diff --check: 通过/失败
+- mkdocs build: 通过/失败(有告警则附摘要)
+- check-characters: 通过/失败
 
 ## 遇到的问题
 - <问题> → <如何处理/是否需主 Agent 决策>
 
 ## 证据
-- 测试输出摘要、Playwright 截图路径、复现序列等
+- 测试输出摘要、构建输出摘要、复现序列等
 ```
 
 ### 6. 回报用户
@@ -79,6 +83,6 @@ cd .. && make docs-check && git diff --check
 ## 完成后自查清单
 - [ ] 只动了「拥有」文件;「不碰」零改动
 - [ ] 门禁全绿(测试/typecheck/docs-check/diff-check)
-- [ ] 文档(CHANGELOG / tech/)已同步
+- [ ] 文档(mkdocs.yml nav / 索引页)已同步
 - [ ] 汇报已写入 `reports/<ws>.md` 并回报路径
 - [ ] 未 merge 回 dev,分支/worktree 留原地

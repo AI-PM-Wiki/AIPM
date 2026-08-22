@@ -1,14 +1,21 @@
 # claude-boss-workflow 项目适配笔记(AI-PM wiki)
 
 > 本文件记录本项目的适配决定,供后续维护者/boss 会话参考。权威配置在 `workflow.json`。
+> 批次/扫描的可拷贝脚手架在 `.claude/template/`(batch 与 quality-scans 两套)。
+
+## 批次目录位置(重要)
+
+批次与扫描目录在 **`meta/development/`**(已 gitignore),**不在 `.claude/` 下**:
+headless 会话(`claude -p`)的 Write 工具把 `.claude/` 等点目录视为「敏感路径」拒绝写入,
+扫描报告/worker 汇报会因此落不了盘。`meta/` 位于 docs/ 之外,mkdocs 也不会发布它。
 
 ## 项目事实(与模板参考项目 Domain Map 的差异)
 
 - **静态站点**:MkDocs + 自定义 Material 主题(主题是 git 子模块 `mkdocs-material`,fork 自
   Hi-Yincan/mkdocs-material)。无后端、无 server 目录、无数据库。
-- **没有 Node 构建脚本**:`package.json` 只有包元数据,`scripts` 为空。CLAUDE.md 里写的
-  `yarn run docs:format:check` / `yarn run docs:format:remark` 等命令**已不存在**,不要用。
-  `node_modules/` 未安装、已被 .gitignore。
+- **Node 脚本存在但依赖未装**:`package.json` 有 4 个 scripts(`docs:format:check` 等,依赖
+  ts-node 与 remark),但 `node_modules/` 未安装且被 .gitignore。门禁刻意只选零 Node 依赖的
+  命令(见下);将来 `yarn install` 后可在 gates 加回 `yarn run docs:format:check`。
 - **Python 依赖**:uv 管理(`pyproject.toml` + `uv.lock`),本仓库根已有 `.venv/`。
 - **发布链路**:`main` 分支 → GitHub Actions `build.yml` 构建 → 部署到 `gh-pages`
   (hyc.ac/aipm)。`main` 绝不能直接 push,只走 PR(与 workflow 默认一致)。
@@ -24,9 +31,8 @@ python3 scripts/check-characters.py
 ```
 
 - `uv run mkdocs build -q`:真正的静态站门禁(失败=站建不出来,必须修)。`-q` 只留告警。
-- 若以后 `yarn install` 安装了依赖并补回 scripts,可把下面这条加回门禁(链接/引用完整性检查,
-  较慢,网络可用时才有意义):
-  `node --loader ts-node/esm scripts/checker/checker.ts`
+- 将来 `yarn install` 装好依赖后,可把下面这条加回门禁(链接/引用完整性检查,较慢):
+  `yarn run docs:format:check`(即 `node --loader ts-node/esm scripts/checker/checker.ts -i`)
 
 ## worktree 依赖处理(DISPATCH 阶段,worktree 缺依赖时)
 

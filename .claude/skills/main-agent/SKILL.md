@@ -23,26 +23,29 @@ description: 主 Agent 角色(派发者)。接收用户的一组开发目标,拆
 ## 工作流
 
 ### 1. 理解目标
-- 读相关 `tech/` 文档、`agent.md`、`CLAUDE.md`;必要时并行派 Explore agent 摸清结构。
+- 读 `CLAUDE.md`、`.claude/workflow.json`(批次目录/门禁以它为准);必要时并行派 Explore agent 摸清结构。
 - 目标含糊或方向冲突 → 用 AskUserQuestion 澄清(可给推荐项)。
 
 ### 2. 前端布局图审批(仅当目标含前端 UI)
 - 为每处 UI 改动产出 **ASCII 布局图**(现状 vs 目标,标注尺寸/颜色/交互)。
 - 用 AskUserQuestion 逐个/分组给用户批准;用户批注需并入修订版,再复批。
 - **只有用户明确批准后才能把布局图写进 prompt 并派发。**
+- 本项目是文档站点:内容页不产出布局图,遵循 `workflow.json` 的 `design_style`
+  (与既有 MkDocs 页面一致 + 登记 mkdocs.yml nav)。
 
 ### 3. 划分 workstream(文件边界)
 - 每个 workstream 一张表:**分支名 / 主题 / 拥有文件 / 不碰**。
-- 边界原则:文件尽量不相交;共享文件(如 `map-shell.tsx` 不同段、`modes.ts`)各分支
+- 边界原则:文件尽量不相交;共享文件(如 `mkdocs.yml` 不同段、章节 index)各分支
   只动自己那一段,冲突留给收尾 Agent 按「不碰」为据解决。
-- 独立的数据修正/纯 bug 诊断单独成 WS(如 `fix/...`)。
+- 独立的文档修正/纯诊断单独成 WS(如 `fix/...`)。
 
 ### 4. 确定合并顺序
 - **依赖序**:foundation/schema/数据先,前端消费方后,最独立的放最后。
 - 每个前端分支注明"并行注意":与哪些分支共文件、只改哪段。
 
 ### 5. 建批次目录 + 生成 prompt 文件
-批次目录:**`tech/roles/development/parallel-sessions/<YYYYMMDD>-<slug>/`**
+批次目录:**`meta/development/parallel-sessions/<YYYYMMDD>-<slug>/`**(以 workflow.json 的
+`parallel_sessions_dir` 为准)
 ```
 <YYYYMMDD>-<slug>/
 ├── README.md        # manifest:批次说明、workstream 表、合并顺序、文件约定
@@ -79,13 +82,15 @@ description: 主 Agent 角色(派发者)。接收用户的一组开发目标,拆
 ```markdown
 # Session Prompt — <ws>:<主题>
 
-> 独立开发会话。先读 `CLAUDE.md`、`agent.md`、相关 `tech/` 文档,再开工。
+> 独立开发会话。先读 `CLAUDE.md`、`.claude/workflow.json`,再开工。
 > **第一步(必做):创建 worktree**(branch `<分支名>`):
 > ```bash
 > git switch dev && git pull --ff-only origin dev
-> git worktree add -b <分支名> ../dm-wt-<slug> dev
-> cd ../dm-wt-<slug>
+> git worktree add -b <分支名> ../aipm-wt-<slug> dev
+> cd ../aipm-wt-<slug>
 > ```
+> worktree 依赖(缺了门禁跑不过):`ln -s <REPO_ROOT>/.venv ./.venv` 与
+> `git submodule update --init --recursive`(详见 .claude/workflow-notes.md)。
 > 所有改动/提交都在 worktree 内;**不要在主工作树(dev)上改文件,也不要 merge 回 dev**
 > (收尾 Agent 统一合并)。完成后分支与 worktree 留原地,按「回报」写汇报。
 
@@ -100,10 +105,11 @@ description: 主 Agent 角色(派发者)。接收用户的一组开发目标,拆
 **不碰**:<文件列表>
 **并行注意**:<与其他 WS 共文件时只改哪段>
 
-## 门禁(全部通过才算完成)
+## 门禁(全部通过才算完成;命令以 workflow.json 的 `gates` 为准)
 ```bash
-cd ../dm-wt-<slug>/server && npm test && npm run typecheck
-cd .. && make docs-check && git diff --check
+git diff --check
+uv run mkdocs build -q
+python3 scripts/check-characters.py
 ```
 - Conventional Commits;<ws 名> scope。
 

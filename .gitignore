@@ -8,3 +8,4 @@ site/
 .well-known/
 node_modules/
 *.pyc
+/meta/

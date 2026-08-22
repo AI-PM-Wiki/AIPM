@@ -15,14 +15,14 @@ description: 收尾 Agent 角色(合并者)。本批 workstream 全部完成后�
 1. **先加载 `.claude/skills/parallel-development/` skill**,按其中的「Merge orchestration」节执行——skill 是执行指令,本 skill 是角色化补充。
 2. **严格按 manifest 的合并顺序,逐个串行,红则停**:任一分支门禁失败即停,报告由用户决定,绝不合并残缺分支。
 3. **绝不 force-push / clobber**;冲突以各分支 prompt 的「不碰」为据解决。
-4. **Env-only 步骤不做**(迁移 apply、`import:seed:apply`、AMap geocode 等是用户的)。
+4. **Env-only 步骤不做**(发布分支 push/deploy、gh-pages 同步、Baidu 提交等是用户的)。
 5. 只做合并编排,不补开发缺口;发现分支未完成 → 停下报告。
 
 ## 工作流
 
 ### 1. 读必读材料
-- `CLAUDE.md`、`agent.md`、`parallel-development` skill、`tech/20-development-plan.md`。
-- **批次 manifest**:`tech/roles/development/parallel-sessions/<date>-<slug>/README.md`(用户给批次目录)。
+- `CLAUDE.md`、`parallel-development` skill、`.claude/workflow.json`。
+- **批次 manifest**:`meta/development/parallel-sessions/<date>-<slug>/README.md`(用户给批次目录)。
 - 各分支汇报:`reports/<ws>.md`(确认每个分支确实完成、门禁自测通过)。
 
 ### 2. Preflight
@@ -37,8 +37,9 @@ git worktree list         # 各分支 worktree 存在
 对每个分支:
 ```bash
 git merge --no-ff <branch>
-cd server && npm test && npm run typecheck
-make docs-check && git diff --check
+git diff --check
+uv run mkdocs build -q
+python3 scripts/check-characters.py
 ```
 - 门禁任一红 → **停**,记录该分支失败原因,回报用户,不继续。
 - 冲突:在 dev 工作树 merge 时解决;按各 prompt 的「不碰」合并语义取舍;
@@ -47,7 +48,7 @@ make docs-check && git diff --check
 ### 4. 每个成功分支收尾
 ```bash
 git push origin dev
-git worktree remove ../dm-wt-<slug> 2>/dev/null || true
+git worktree remove ../aipm-wt-<slug> 2>/dev/null || true
 git branch -d <branch> 2>/dev/null || true   # 容忍已清理
 ```
 
@@ -61,7 +62,7 @@ git branch -d <branch> 2>/dev/null || true   # 容忍已清理
 - 失败/遗留: <ws> x M + 原因
 
 ## 逐分支明细
-| WS | 分支 | merge | 门禁(npm test/typecheck/docs-check/diff) | 冲突解决 |
+| WS | 分支 | merge | 门禁(mkdocs build/check-characters/diff) | 冲突解决 |
 |---|---|---|---|---|
 | ws-b | fix/... | ✅ | 271 通过 / ✅ | 无 |
 
