@@ -1,5 +1,6 @@
 ---
 title: AI-PM
+template: home.html
 ---
 
 **AI-PM**（AI Product Manager，AI 产品经理）是一个面向 AI 产品从业者的知识整合站点，致力于系统整理 AI 产品设计的方法论、AI 能力的技术边界、主流工具与平台，以及可复用的实战案例。
