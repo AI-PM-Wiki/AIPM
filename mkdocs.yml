@@ -84,6 +84,10 @@ nav:
       - 算法工程师: job/positions/algorithm-engineer.md
       - 提示词工程师: job/positions/prompt-engineer.md
       - 数据与评测类岗位: job/positions/data-ai-trainer.md
+      - 设计师: job/positions/designer.md
+      - 研发工程师: job/positions/rd-engineer.md
+      - 测试工程师: job/positions/test-engineer.md
+      - 硬件相关岗位: job/positions/hardware-pm.md
     - 面经:
       - 面经简介: job/interviews/index.md
       - 面试流程全览: job/interviews/interview-process.md
