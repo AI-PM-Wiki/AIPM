@@ -1,0 +1,42 @@
+# Session Prompt — <ws>:<主题>
+
+> boss-agent 派发的 headless worker 任务。**worktree 已由 boss 预建,不需要你创建**。
+
+- worktree 绝对路径:`<worktreeAbs,如 /Users/acccan/aipm-wt-w1>`
+- 批次目录:`<batchDirAbs>`
+- 汇报文件:`<batchDirAbs>/reports/<ws>.md`
+- **不要 merge 回集成分支、不要 push**(boss 统一收尾)。
+
+## 背景
+
+<为什么做:目标、已探明事实(带 file:line)、用户决策/口径>
+
+## 任务
+
+<具体任务清单,含已批准布局图(如适用)>
+
+## 文件边界
+
+**拥有**:<文件列表>
+**不碰**:<文件列表,硬约束>
+**并行注意**:<与其他 WS 共文件时只改哪段>
+
+## 门禁(全部通过才算完成;命令以 workflow.json 的 gates 为准)
+
+```bash
+cd <worktreeAbs> && git diff --check
+uv run mkdocs build -q
+python3 scripts/check-characters.py
+```
+- Conventional Commits;<ws 名> scope;小步 commit。
+- `git add` 只加你改的具体文件,绝不用 `git add -A` / `git add .`。
+
+## 回报
+
+写汇报到上述汇报文件路径(格式:实际改动 / 门禁结果 / 遇到的问题 / 证据),
+**末两行必须精确**:
+```
+门禁: PASSED | FAILED
+结论: OK | BLOCKED: <一句话问题>
+```
+stdout 只输出 ≤3 行:改动概要 + 门禁结果 + 汇报路径。不 dump 文件内容。

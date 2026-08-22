@@ -1,0 +1,33 @@
+# Boss State — <slug>
+
+## meta
+- slug / date / batch_dir / goal: <slug> / <YYYY-MM-DD> / <batch_dir_abs> / <目标>
+- owner: boss-agent
+
+## stage
+- current: <PLAN|LAYOUT|DISPATCH|COLLECT|ADJUDICATE|SCAN|MERGE|VERIFY|NEXT>
+- updated_at: <YYYY-MM-DD>
+
+## workstreams
+| ws | branch | worktree | prompt | report | status | last_tip | dispatched_at | finished_at | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| w1 | feature/<scope> | <worktreeAbs> | prompts/w1.md | reports/w1.md | PENDING | - | - | - | - |
+
+> status: PENDING → RUNNING → DONE|BLOCKED → FOLLOWUP → MERGED|FAILED
+> last_tip: 该分支当前 tip commit(对账用;每次 dispatch/完成后更新)
+
+## merge_order
+1. w1(独立) → 2. w2 → …
+
+## adjudication_log
+- <ts> | <ws> | <问题> | <裁决> | <结果>
+
+## deferred_notes
+- <ts> | <类型: UI设计/Env-only/其他> | <内容>
+
+## next_plan
+- 当前 milestone / 剩余步骤 / 下一步(下一批 slug 或 fix 批次)
+
+## recovery
+- last_stage_written: <阶段>
+- resume_history: <ts> | <对账结果>

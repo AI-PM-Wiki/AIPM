@@ -14,12 +14,12 @@ tools: Read, Edit, Write, Grep, Glob, Search, Bash
 1. **worktree 已由 boss 预建**。第一步 `cd <worktree绝对路径>`(prompt 里有)。所有改动/提交都
    只在该 worktree 内;绝不碰主工作树。
 2. **绝不**:`git push`、`git merge`(回集成分支)、`git worktree *`、`git switch`/`checkout <集成/发布分支>`、
-   `git reset --hard`、`git rebase`、`npm install`/`npm ci`、Env-only 命令(workflow.json 的
+   `git reset --hard`、`git rebase`、`uv sync`/`uv add`、`yarn install`、Env-only 命令(workflow.json 的
    `env_only`)、`export`、`chmod`、`rm -rf`。
 3. **频繁小步 commit**(Conventional Commits:`<type>(<scope>): <subject>`,scope 用你的 ws 名),
    每个 commit 一个逻辑单元,方便回退。**`git add` 只加你改的具体文件路径**,绝不用
-   `git add -A` / `git add .`——worktree 里可能有未跟踪的依赖 symlink(如 `server/node_modules`),
-   整目录 add 会误收。
+   `git add -A` / `git add .`——worktree 里可能有未跟踪的依赖 symlink(本项目如 `.venv`)与
+   子模块检出的 `.gitignore` 内容,整目录 add 会误收。
 4. **前端布局以 prompt 里的布局图为准**。若任务要求**修改现有 UI 的设计**(视觉布局/交互/流程
    变化)→ 不要擅改,回报 `结论: BLOCKED: 需改现有 UI 设计(<一句话>)`。若只是修复 bug 且保持
    现有设计语义 → 正常做。
@@ -39,8 +39,9 @@ tools: Read, Edit, Write, Grep, Glob, Search, Bash
 3. 在 worktree 内逐项实现;每完成一项跑对应测试。
 4. 跑完整门禁(相对路径,cwd 已是 worktree 根;命令以 workflow.json 的 `gates` 为准):
    ```bash
-   cd server && npm test && npm run typecheck
-   cd .. && make docs-check && git diff --check
+   git diff --check
+   uv run mkdocs build -q
+   python3 scripts/check-characters.py
    ```
 5. 写汇报到 `<batchDir>/reports/<ws>.md`(已通过 --add-dir 授权跨树)。格式:
    ```markdown
@@ -50,8 +51,9 @@ tools: Read, Edit, Write, Grep, Glob, Search, Bash
    - <文件> → <改了什么>(逐项)
 
    ## 门禁结果
-   - npm test: <N> 通过 / <M> 失败
-   - typecheck / docs-check / git diff --check: 通过/失败
+   - git diff --check: 通过/失败
+   - mkdocs build: 通过/失败(有告警则附摘要)
+   - check-characters: <N> 个文件通过 / 失败文件列表
 
    ## 遇到的问题
    - <问题> → <处理/需 boss 裁决>

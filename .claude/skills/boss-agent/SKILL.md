@@ -84,6 +84,8 @@ NEXT 全自动回环,直到整个目标完成(含 fix 迭代),然后一次性总
 ```bash
 git worktree add -b <branch> <worktree_prefix><ws> <integrate_branch>
 ln -s <REPO_ROOT>/<依赖目录> <WORKTREE>/<依赖目录>   # 如 server/node_modules,worktree 缺依赖时
+# 本项目(AI-PM wiki)worktree 依赖处理见 .claude/workflow-notes.md:主仓库 .venv 直接
+# ln -s;mkdocs-material 子模块在 worktree 内 git submodule update --init --recursive(共享缓存,不重下载)
 ```
 并行 spawn worker(每 WS 一个 Bash 工具调用,`run_in_background=true`):
 ```bash
@@ -144,8 +146,8 @@ worker(进程外,主通道;cwd 必须是 worktree):
 ```bash
 cd <WORKTREE> && claude -p \
   --agent boss-worker --name "boss-w-<ws>" --output-format text \
-  --allowedTools "Read, Edit, Write, Grep, Glob, Search, Bash(cd*), Bash(git status*), Bash(git log*), Bash(git diff*), Bash(git show*), Bash(git branch*), Bash(git add*), Bash(git commit*), Bash(git merge <integrate>), Bash(git checkout --*), Bash(npm*), Bash(make docs-check*), Bash(cat*), Bash(grep*), Bash(find*), Bash(ls*), Bash(pwd)" \
-  --disallowedTools "Bash(git push*), Bash(git worktree*), Bash(git switch*), Bash(git checkout <integrate>), Bash(git checkout <main>), Bash(git checkout master), Bash(git checkout -b*), Bash(git reset --hard*), Bash(git rebase*), Bash(git clean*), Bash(git stash*), Bash(npm install*), Bash(npm ci*), Bash(<env_only 前缀>*), Bash(npx*), Bash(export*), Bash(chmod*), Bash(rm -rf*), Bash(sudo*)" \
+  --allowedTools "Read, Edit, Write, Grep, Glob, Search, Bash(cd*), Bash(git status*), Bash(git log*), Bash(git diff*), Bash(git show*), Bash(git branch*), Bash(git add*), Bash(git commit*), Bash(git merge <integrate>), Bash(git checkout --*), Bash(uv run mkdocs*), Bash(python3 scripts/check-characters.py*), Bash(cat*), Bash(grep*), Bash(find*), Bash(ls*), Bash(pwd)" \
+  --disallowedTools "Bash(git push*), Bash(git worktree*), Bash(git switch*), Bash(git checkout <integrate>), Bash(git checkout <main>), Bash(git checkout master), Bash(git checkout -b*), Bash(git reset --hard*), Bash(git rebase*), Bash(git clean*), Bash(git stash*), Bash(uv sync*), Bash(uv add*), Bash(uv remove*), Bash(yarn install*), Bash(yarn add*), Bash(npm install*), Bash(npm ci*), Bash(npx*), Bash(export*), Bash(chmod*), Bash(rm -rf*), Bash(sudo*)" \
   --add-dir <batchDir> \
   < <batchDir>/prompts/<ws>.md > <batchDir>/logs/<ws>.log 2>&1
 ```
@@ -153,8 +155,8 @@ merge worker(全部绿后,cwd=主仓库):
 ```bash
 cd <REPO_ROOT> && claude -p \
   --agent boss-merger --name "boss-merger" --output-format text \
-  --allowedTools "Read, Grep, Glob, Edit, Write, Bash(cd*), Bash(git switch <integrate>), Bash(git pull --ff-only origin <integrate>), Bash(git status*), Bash(git log*), Bash(git branch --merged*), Bash(git worktree list), Bash(git worktree remove*), Bash(git branch -d*), Bash(git merge --no-ff*), Bash(git push origin <integrate>), Bash(git diff*), Bash(git add*), Bash(git commit*), Bash(git checkout --*), Bash(npm*), Bash(make docs-check*), Bash(cat*), Bash(grep*), Bash(ls*), Bash(pwd)" \
-  --disallowedTools "Bash(git push origin <main>), Bash(git push --force*), Bash(git reset --hard*), Bash(git rebase*), Bash(git worktree add*), Bash(git checkout <integrate>), Bash(git checkout <main>), Bash(npm install*), Bash(npm ci*), Bash(<env_only 前缀>*), Bash(npx*), Bash(export*), Bash(chmod*), Bash(rm -rf*), Bash(sudo*)" \
+  --allowedTools "Read, Grep, Glob, Edit, Write, Bash(cd*), Bash(git switch <integrate>), Bash(git pull --ff-only origin <integrate>), Bash(git status*), Bash(git log*), Bash(git branch --merged*), Bash(git worktree list), Bash(git worktree remove*), Bash(git branch -d*), Bash(git merge --no-ff*), Bash(git push origin <integrate>), Bash(git diff*), Bash(git add*), Bash(git commit*), Bash(git checkout --*), Bash(uv run mkdocs*), Bash(python3 scripts/check-characters.py*), Bash(cat*), Bash(grep*), Bash(ls*), Bash(pwd)" \
+  --disallowedTools "Bash(git push origin <main>), Bash(git push --force*), Bash(git reset --hard*), Bash(git rebase*), Bash(git worktree add*), Bash(git checkout <integrate>), Bash(git checkout <main>), Bash(uv sync*), Bash(uv add*), Bash(uv remove*), Bash(yarn install*), Bash(yarn add*), Bash(npm install*), Bash(npm ci*), Bash(npx*), Bash(export*), Bash(chmod*), Bash(rm -rf*), Bash(sudo*)" \
   --add-dir <batchDir> \
   < <batchDir>/merge-instructions.md > <batchDir>/logs/merge.log 2>&1
 ```

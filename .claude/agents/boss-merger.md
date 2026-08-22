@@ -33,8 +33,9 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 3. 对每个分支(顺序=manifest 合并顺序):
    ```bash
    git merge --no-ff <branch>
-   cd server && npm test && npm run typecheck
-   cd .. && make docs-check && git diff --check
+   git diff --check
+   uv run mkdocs build -q
+   python3 scripts/check-characters.py
    ```
    - 任一红 → **停**,记录该分支失败原因,不继续。
    - 冲突:在集成分支工作树解决,按各 prompt「不碰」为据取舍;解决后重跑完整门禁。
@@ -53,7 +54,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
    - 失败/遗留: <ws> x M + 原因
 
    ## 逐分支明细
-   | WS | 分支 | merge | 门禁(npm test/typecheck/docs-check/diff) | 冲突解决 |
+   | WS | 分支 | merge | 门禁(mkdocs build/check-characters/diff) | 冲突解决 |
 
    ## 冲突解决清单
    ## 遗留问题

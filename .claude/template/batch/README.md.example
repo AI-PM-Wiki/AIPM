@@ -1,0 +1,31 @@
+# <YYYYMMDD>-<slug> — <中文批次说明>
+
+> **创建**:<YYYY-MM-DD>(boss-agent)
+> **背景**:<为什么做;已探明事实/根因(带 file:line);用户已定口径>
+
+## 目标
+
+<一句话/清单:本批要做什么>
+
+## Workstream 表
+
+| WS | 分支 | 主题 | prompt | 汇报 | 不碰 |
+|---|---|---|---|---|---|
+| w1 | feature/<scope> | <主题> | prompts/w1.md | reports/w1.md | <文件清单> |
+| w2 | fix/<scope> | <主题> | prompts/w2.md | reports/w2.md | <文件清单> |
+
+## 合并顺序(收尾 Agent 按此逐个 merge,红则停)
+
+1. **w1**(独立) → 2. **w2**(依赖 w1) → …
+- 冲突集中的文件 + 谁先谁后(如「w2/w3 都动 X,w2 先行」)。
+
+## 角色分配
+
+- 开发:`boss-worker`(headless,`spawn-worker.sh <ws> …`)
+- 收尾:`boss-merger`(headless,`spawn-merger.sh …`)
+
+## 参考(根因定位,来自 boss 探索)
+
+| # | 问题 | 根因 | 位置(file:line) |
+|---|---|---|---|
+| 1 | … | … | … |

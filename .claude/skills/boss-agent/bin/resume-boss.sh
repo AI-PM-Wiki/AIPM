@@ -55,7 +55,7 @@ if [ "$MODE" = "--headless" ]; then
   printf '读 .claude/skills/boss-agent/SKILL.md,严格按其 --resume 对账协议,以 headless 方式恢复批次 %s。要点:串行续派未完成 workstream(用 bash .claude/skills/boss-agent/bin/spawn-worker.sh,阻塞至完成;幂等——已提交/已完成的跳过不重做),逐份读 reports 的 token,再派 merger(spawn-merger.sh),把恢复结果写 %s/logs/resume-report.md,末行输出 结论: RESUME_DONE | BLOCKED: <原因>。\n' "$BATCH" "$BATCH" \
   | claude -p --output-format text \
       --allowedTools "Read, Grep, Glob, Search, Bash(cd*), Bash(git status*), Bash(git log*), Bash(git diff*), Bash(git worktree*), Bash(bash .claude/skills/boss-agent/bin/spawn-worker.sh*), Bash(bash .claude/skills/boss-agent/bin/spawn-merger.sh*), Bash(tail*), Bash(cat*), Bash(ls*), Bash(pwd), Bash(echo*), Bash(sleep*)" \
-      --disallowedTools "Bash(git push*), Bash(git add*), Bash(git commit*), Bash(git merge*), Bash(git reset --hard*), Bash(git rebase*), Bash(git worktree add*), Bash(npm run import:*), Bash(npm run geocode:*), Bash(npx*), Bash(export*), Bash(chmod*), Bash(rm -rf*), Bash(sudo*)" \
+      --disallowedTools "Bash(git push*), Bash(git add*), Bash(git commit*), Bash(git merge*), Bash(git reset --hard*), Bash(git rebase*), Bash(git worktree add*), Bash(uv sync*), Bash(uv add*), Bash(yarn install*), Bash(npm install*), Bash(npx*), Bash(export*), Bash(chmod*), Bash(rm -rf*), Bash(sudo*)" \
       > "$LOG.headless" 2>&1
   echo "[resume-boss] headless 恢复完成:$LOG.headless" | tee -a "$LOG"
 else
