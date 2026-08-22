@@ -1,0 +1,644 @@
+# Project Information
+site_name: AI-PM
+site_description: AI-PM 是一个 AI 产品经理知识整合站点，提供有趣又实用的 AI 产品、模型、工具与工作流知识，帮助广大 AI 产品从业者更快更深入地学习与实践
+site_author: AI-PM Wiki Team
+site_url: https://example.com/ai-pm-wiki  # TODO: 部署后改为你自己的站点地址
+strict: false
+
+# Repository
+# TODO: 推送到你自己的仓库后，取消注释并填写，站点右上角才会出现仓库链接和「编辑」按钮
+# repo_name: 'your-name/ai-pm-wiki'
+# repo_url: 'https://github.com/your-name/ai-pm-wiki'
+# edit_uri: ''
+
+# Copyright
+copyright: 'Copyright &copy; 2026 AI-PM Wiki Team'
+
+# Contents
+nav:
+  - 简介:
+    - Getting Started: index.md
+    - 关于本项目: intro/about.md
+    - 如何参与: intro/htc.md
+    - OI Wiki 不是什么: intro/what-oi-wiki-is-not.md
+    - 格式手册: intro/format.md
+    - 数学符号表: intro/symbol.md
+    - F.A.Q.: intro/faq.md
+    - 镜像站列表: intro/mirrors.md
+    - 致谢: intro/thanks.md
+  - 比赛相关:
+    - 比赛相关简介: contest/index.md
+    - 赛事:
+      - OI 赛事与赛制: contest/oi.md
+      - ICPC/CCPC 赛事与赛制: contest/icpc.md
+    - 题型:
+      - 题型概述: contest/problems.md
+      - 交互题: contest/interaction.md
+    - 学习路线: contest/roadmap.md
+    - 学习资源: contest/resources.md
+    - 技巧:
+      - 读入、输出优化: contest/io.md
+      - 分段打表: contest/dictionary.md
+      - 常见错误: contest/common-mistakes.md
+      - 常见技巧: contest/common-tricks.md
+    - 出题: contest/problemsetting.md
+  - 工具软件:
+    - 工具软件简介: tools/index.md
+    - 代码编辑工具:
+      - Vim: tools/editor/vim.md
+      - Emacs: tools/editor/emacs.md
+      - VS Code: tools/editor/vscode.md
+      - Atom: tools/editor/atom.md
+      - Eclipse: tools/editor/eclipse.md
+      - Notepad++: tools/editor/npp.md
+      - Kate: tools/editor/kate.md
+      - Dev-C++: tools/editor/devcpp.md
+      - CLion: tools/editor/clion.md
+      - Geany: tools/editor/geany.md
+      - Xcode: tools/editor/xcode.md
+      - GUIDE: tools/editor/guide.md
+      - Sublime Text: tools/editor/sublime.md
+      - CP Editor: tools/editor/cpeditor.md
+      - Code::Blocks: tools/editor/codeblocks.md
+    - 评测工具: 
+      - 评测工具简介: tools/judger/index.md
+      - Arbiter: tools/judger/arbiter.md
+      - Cena: tools/judger/cena.md
+      - CCR Plus: tools/judger/ccr-plus.md
+      - Lemon: tools/judger/lemon.md
+    - 命令行: tools/cmd.md
+    - 命令行编译与调试: tools/compile-debug.md
+    - 编译器: tools/compiler.md
+    - WSL (Windows 10): tools/wsl.md
+    - Special Judge: tools/special-judge.md
+    - Testlib:
+      - Testlib 简介: tools/testlib/index.md
+      - 通用: tools/testlib/general.md
+      - Generator: tools/testlib/generator.md
+      - Validator: tools/testlib/validator.md
+      - Interactor: tools/testlib/interactor.md
+      - Checker: tools/testlib/checker.md
+    - Polygon: tools/polygon.md
+    - OJ 工具: tools/oj-tool.md
+    - LaTeX 入门: tools/latex.md
+    - Git: tools/git.md
+  - 语言基础:
+    - 语言基础简介: lang/index.md
+    - C++ 基础:
+      - Hello, World!: lang/helloworld.md
+      - C++ 语法基础: lang/basic.md
+      - 变量: lang/var.md
+      - 运算: lang/op.md
+      - 流程控制语句:
+        - 分支: lang/branch.md
+        - 循环: lang/loop.md
+      - 高级数据类型:
+        - 数组: lang/array.md
+        - 结构体: lang/struct.md
+        - 联合体: lang/union.md
+        - 指针: lang/pointer.md
+      - 函数: lang/func.md
+      - 文件操作: lang/file-op.md
+    - C++ 标准库:
+      - C++ 标准库简介: lang/csl/index.md
+      - STL 容器:
+        - STL 容器简介: lang/csl/container.md
+        - 迭代器: lang/csl/iterator.md
+        - 序列式容器: lang/csl/sequence-container.md
+        - 关联式容器: lang/csl/associative-container.md
+        - 无序关联式容器: lang/csl/unordered-container.md
+        - 容器适配器: lang/csl/container-adapter.md
+      - STL 算法: lang/csl/algorithm.md
+      - bitset: lang/csl/bitset.md
+      - string: lang/csl/string.md
+      - pair: lang/csl/pair.md
+    - C++ 进阶:
+      - 类: lang/class.md
+      - 命名空间: lang/namespace.md
+      - 值类别: lang/value-category.md
+      - 重载运算符: lang/op-overload.md
+      - 引用: lang/reference.md
+      - 常量: lang/const.md
+      - 新版 C++ 特性: lang/new.md
+      - Lambda 表达式: lang/lambda.md
+      - pb_ds:
+        - pb_ds 简介: lang/pb-ds/index.md
+        - 堆: lang/pb-ds/pq.md
+        - 平衡树: lang/pb-ds/tree.md
+      - 编译优化: lang/optimizations.md
+    - C++ 与其他常用语言的区别: lang/cpp-other-langs.md
+    - Pascal 转 C++ 急救: lang/pas-cpp.md
+    - Python 速成: lang/python.md
+    - Java 速成: lang/java.md
+    - Java 进阶: lang/java-pro.md
+  - 算法基础:
+    - 算法基础简介: basic/index.md
+    - 复杂度: 
+      - 复杂度简介: basic/complexity.md
+      - 均摊复杂度: basic/amortized-analysis.md
+    - 枚举: basic/enumerate.md
+    - 模拟: basic/simulate.md
+    - 递归 & 分治: basic/divide-and-conquer.md
+    - 贪心: basic/greedy.md
+    - 排序:
+      - 排序简介: basic/sort-intro.md
+      - 选择排序: basic/selection-sort.md
+      - 冒泡排序: basic/bubble-sort.md
+      - 插入排序: basic/insertion-sort.md
+      - 计数排序: basic/counting-sort.md
+      - 基数排序: basic/radix-sort.md
+      - 快速排序: basic/quick-sort.md
+      - 归并排序: basic/merge-sort.md
+      - 堆排序: basic/heap-sort.md
+      - 桶排序: basic/bucket-sort.md
+      - 希尔排序: basic/shell-sort.md
+      - 锦标赛排序: basic/tournament-sort.md
+      - Tim 排序: basic/tim-sort.md
+      - 排序相关 STL: basic/stl-sort.md
+      - 排序应用: basic/use-of-sort.md
+    - 前缀和 & 差分: basic/prefix-sum.md
+    - 二分: basic/binary.md
+    - 倍增: basic/binary-lifting.md
+    - 构造: basic/construction.md
+  - 搜索:
+    - 搜索部分简介: search/index.md
+    - DFS（搜索）: search/dfs.md
+    - BFS（搜索）: search/bfs.md
+    - 双向搜索: search/bidirectional.md
+    - 启发式搜索: search/heuristic.md
+    - A*: search/astar.md
+    - 迭代加深搜索: search/iterative.md
+    - IDA*: search/idastar.md
+    - 回溯法: search/backtracking.md
+    - Dancing Links: search/dlx.md
+    - Alpha–Beta 剪枝: search/alpha-beta.md
+    - 优化: search/opt.md
+  - 动态规划:
+    - 动态规划部分简介: dp/index.md
+    - 动态规划基础: dp/basic.md
+    - 记忆化搜索: dp/memo.md
+    - 背包 DP: dp/knapsack.md
+    - 区间 DP: dp/interval.md
+    - DAG 上的 DP: dp/dag.md
+    - 树形 DP: dp/tree.md
+    - 状压 DP: dp/state.md
+    - 数位 DP: dp/number.md
+    - 插头 DP: dp/plug.md
+    - 计数 DP: dp/count.md
+    - 动态 DP: dp/dynamic.md
+    - 概率 DP: dp/probability.md
+    - DP 套 DP: dp/dp-of-dp.md
+    - DP 优化:
+      - DP 优化简介: dp/opt/dp-opt.md
+      - 单调队列/单调栈优化: dp/opt/monotonic-queue-stack.md
+      - 斜率优化: dp/opt/slope.md
+      - 四边形不等式优化: dp/opt/quadrangle.md
+      - Slope Trick 优化: dp/opt/slope-trick.md
+      - WQS 二分: dp/opt/wqs-binary-search.md
+      - 状态设计优化: dp/opt/state.md
+    - 其它 DP 方法: dp/misc.md
+  - 字符串:
+    - 字符串部分简介: string/index.md
+    - 字符串基础: string/basic.md
+    - 标准库: string/lib-func.md
+    - 字符串匹配: string/match.md
+    - 字符串哈希: string/hash.md
+    - 字典树 (Trie): string/trie.md
+    - 前缀函数与 KMP 算法: string/kmp.md
+    - Boyer–Moore 算法: string/bm.md
+    - Z 函数（扩展 KMP）: string/z-func.md
+    - AC 自动机: string/ac-automaton.md
+    - 后缀数组 (SA):
+      - 后缀数组简介: string/sa.md
+      - 最优原地后缀排序算法: string/sa-optimal-inplace.md
+    - 后缀自动机 (SAM): string/sam.md
+    - 后缀平衡树: string/suffix-bst.md
+    - 广义后缀自动机: string/general-sam.md
+    - 后缀树: string/suffix-tree.md
+    - Manacher: string/manacher.md
+    - 回文树: string/pam.md
+    - 序列自动机: string/seq-automaton.md
+    - 最小表示法: string/minimal-string.md
+    - Lyndon 分解: string/lyndon.md
+    - Main–Lorentz 算法: string/main-lorentz.md
+  - 数学:
+    - 数学部分简介: math/index.md
+    - 布尔代数: math/boolean-algebra.md
+    - 数字系统:
+      - 数字系统简介: math/numeral-sys/intro.md
+      - 进位制: math/numeral-sys/base.md
+      - 平衡三进制: math/numeral-sys/balanced-ternary.md
+      - 格雷码: math/numeral-sys/gray-code.md
+    - 位操作: math/bit.md
+    - 二进制集合操作: math/binary-set.md
+    - 高精度计算: math/bignum.md
+    - 快速幂: math/binary-exponentiation.md
+    - 置换和排列: math/permutation.md
+    - 弧度制与坐标系: math/coordinate.md
+    - 复数: math/complex.md
+    - 数论:
+      - 数论基础: math/number-theory/basic.md
+      - 模算术简介: math/number-theory/mod-arithmetic.md
+      - 素数: math/number-theory/prime.md
+      - 最大公约数: math/number-theory/gcd.md
+      - 欧拉函数: math/number-theory/euler-totient.md
+      - 筛法: math/number-theory/sieve.md
+      - 分解质因数: math/number-theory/pollard-rho.md
+      - 裴蜀定理 & 一次不定方程: math/number-theory/bezouts.md
+      - 费马小定理 & 欧拉定理: math/number-theory/fermat.md
+      - 模逆元: math/number-theory/inverse.md
+      - 线性同余方程: math/number-theory/linear-equation.md
+      - 中国剩余定理: math/number-theory/crt.md
+      - 升幂引理: math/number-theory/lift-the-exponent.md
+      - 阶乘取模: math/number-theory/factorial.md
+      - 卢卡斯定理: math/number-theory/lucas.md
+      - 同余方程: math/number-theory/congruence-equation.md
+      - 二次剩余: math/number-theory/quad-residue.md
+      - 阶 & 原根: math/number-theory/primitive-root.md
+      - 离散对数: math/number-theory/discrete-logarithm.md
+      - 高次剩余 & 单位根: math/number-theory/residue.md
+      - 数论分块: math/number-theory/sqrt-decomposition.md
+      - 狄利克雷卷积: math/number-theory/dirichlet.md
+      - 莫比乌斯反演: math/number-theory/mobius.md
+      - 杜教筛: math/number-theory/du.md
+      - Powerful Number 筛: math/number-theory/powerful-number.md
+      - Min_25 筛: math/number-theory/min-25.md
+      - 洲阁筛: math/number-theory/zhou.md
+      - 类欧几里德算法: math/number-theory/euclidean.md
+      - Meissel–Lehmer 算法: math/number-theory/meissel-lehmer.md
+      - 连分数: math/number-theory/continued-fraction.md
+      - Stern–Brocot 树与 Farey 序列: math/number-theory/stern-brocot.md
+      - 二次域: math/number-theory/quadratic.md
+      - Pell 方程: math/number-theory/pell-equation.md
+    - 多项式与生成函数:
+      - 多项式与生成函数简介: math/poly/intro.md
+      - 代数基本定理: math/poly/fundamental.md
+      - 快速傅里叶变换: math/poly/fft.md
+      - 快速数论变换: math/poly/ntt.md
+      - 快速沃尔什变换: math/poly/fwt.md
+      - Chirp Z 变换: math/poly/czt.md
+      - 多项式牛顿迭代: math/poly/newton.md
+      - 多项式多点求值|快速插值: math/poly/multipoint-eval-interpolation.md
+      - 多项式初等函数: math/poly/elementary-func.md
+      - 常系数齐次线性递推: math/poly/linear-recurrence.md
+      - 多项式平移|连续点值平移: math/poly/shift.md
+      - 符号化方法: math/poly/symbolic-method.md
+      - Lagrange 反演: math/poly/lagrange-inversion.md
+      - 形式幂级数复合|复合逆: math/poly/comp-rev.md
+      - 普通生成函数: math/poly/ogf.md
+      - 指数生成函数: math/poly/egf.md
+    - 组合数学:
+      - 排列组合: math/combinatorics/combination.md
+      - 抽屉原理: math/combinatorics/drawer-principle.md
+      - 容斥原理: math/combinatorics/inclusion-exclusion-principle.md
+      - 斐波那契数列: math/combinatorics/fibonacci.md
+      - 错位排列: math/combinatorics/derangement.md
+      - 卡特兰数: math/combinatorics/catalan.md
+      - 斯特林数: math/combinatorics/stirling.md
+      - 贝尔数: math/combinatorics/bell.md
+      - 伯努利数: math/combinatorics/bernoulli.md
+      - Entringer Number: math/combinatorics/entringer.md
+      - Eulerian Number: math/combinatorics/eulerian.md
+      - 分拆数: math/combinatorics/partition.md
+      - 范德蒙德卷积: math/combinatorics/vandermonde-convolution.md
+      - Pólya 计数: math/combinatorics/polya.md
+      - 图论计数: math/combinatorics/graph-enumeration.md
+    - 线性代数:
+      - 线性代数简介: math/linear-algebra/index.md
+      - 向量: math/linear-algebra/vector.md
+      - 内积和外积: math/linear-algebra/product.md
+      - 矩阵: math/linear-algebra/matrix.md
+      - 初等变换: math/linear-algebra/elementary-operations.md
+      - 行列式: math/linear-algebra/determinant.md
+      - 线性空间: math/linear-algebra/vector-space.md
+      - 线性基: math/linear-algebra/basis.md
+      - 线性映射: math/linear-algebra/linear-mapping.md
+      - 特征多项式: math/linear-algebra/char-poly.md
+      - 对角化: math/linear-algebra/diagonalization.md
+      - Jordan标准型: math/linear-algebra/jordan.md
+    - 线性规划:
+      - 线性规划基础: math/linear-programming.md
+      - 单纯形法: math/simplex.md
+    - 抽象代数:
+      - 基本概念: math/algebra/basic.md
+      - 群论: math/algebra/group-theory.md
+      - 环论: math/algebra/ring-theory.md
+      - 域论: math/algebra/field-theory.md
+      - Schreier–Sims 算法: math/algebra/schreier-sims.md
+    - 概率论:
+      - 基本概念: math/probability/basic-conception.md
+      - 条件概率与独立性: math/probability/conditional-probability.md
+      - 随机变量: math/probability/random-variable.md
+      - 随机变量的数字特征: math/probability/exp-var.md
+      - 概率不等式: math/probability/concentration-inequality.md
+    - 博弈论: 
+      - 博弈论简介: math/game-theory/intro.md
+      - 公平组合游戏: math/game-theory/impartial-game.md
+      - 零和游戏: math/game-theory/zero-sum-game.md
+      - 非公平组合游戏: math/game-theory/partizan-game.md
+    - 数值算法:
+      - 插值: math/numerical/interp.md
+      - 数值积分: math/numerical/integral.md
+      - 高斯消元: math/numerical/gauss.md
+      - 牛顿迭代法: math/numerical/newton.md
+    - 序理论: math/order-theory.md
+    - 杨氏矩阵: math/young-tableau.md
+    - 拟阵: math/matroid.md
+    - Berlekamp–Massey 算法: math/berlekamp-massey.md
+  - 数据结构:
+    - 数据结构部分简介: ds/index.md
+    - 栈: ds/stack.md
+    - 队列: ds/queue.md
+    - 链表: ds/linked-list.md
+    - 哈希表: ds/hash.md
+    - 并查集:
+      - 并查集: ds/dsu.md
+      - 并查集复杂度: ds/dsu-complexity.md
+    - 堆:
+      - 堆简介: ds/heap.md
+      - 二叉堆: ds/binary-heap.md
+      - 配对堆: ds/pairing-heap.md
+      - 左偏树: ds/leftist-tree.md
+    - 块状数据结构:
+      - 分块思想: ds/decompose.md
+      - 块状数组: ds/block-array.md
+      - 块状链表: ds/block-list.md
+      - 树分块: ds/tree-decompose.md
+      - Sqrt Tree: ds/sqrt-tree.md
+    - 单调栈: ds/monotonic-stack.md
+    - 单调队列: ds/monotonic-queue.md
+    - ST 表: ds/sparse-table.md
+    - 树状数组: ds/fenwick.md
+    - 线段树:
+      - 线段树基础: ds/seg.md
+      - 线段树合并 & 分裂: ds/seg-merge-split.md
+      - 李超线段树: ds/li-chao-tree.md
+      - 猫树: ds/cat-tree.md
+      - 区间最值操作 & 区间历史最值: ds/seg-beats.md
+      - Kinetic Tournament Tree: ds/kinetic-tournament-tree.md
+    - 划分树: ds/dividing.md
+    - 二叉搜索树 & 平衡树:
+      - 二叉搜索树 & 平衡树: ds/bst.md
+      - Treap: ds/treap.md
+      - Splay 树: ds/splay.md
+      - WBLT: ds/wblt.md
+      - 替罪羊树: ds/sgt.md
+      - 笛卡尔树: ds/cartesian-tree.md
+      - Size Balanced Tree: ds/sbt.md
+      - AVL 树: ds/avl.md
+      - 红黑树: ds/rbtree.md
+      - 左偏红黑树: ds/llrbt.md
+      - AA 树: ds/aa-tree.md
+    - 跳表: ds/skiplist.md
+    - 可持久化数据结构:
+      - 可持久化数据结构简介: ds/persistent.md
+      - 可持久化线段树: ds/persistent-seg.md
+      - 可持久化块状数组: ds/persistent-block-array.md
+      - 可持久化平衡树: ds/persistent-balanced.md
+      - 可持久化字典树: ds/persistent-trie.md
+      - 可持久化可并堆: ds/persistent-heap.md
+    - 树套树:
+      - 线段树套线段树: ds/seg-in-seg.md
+      - 平衡树套线段树: ds/seg-in-balanced.md
+      - 线段树套平衡树: ds/balanced-in-seg.md
+      - 树状数组套权值线段树: ds/seg-in-bit.md
+      - 分块套树状数组: ds/bit-in-block-array.md
+    - K-D Tree: ds/kdt.md
+    - 动态树:
+      - Link Cut Tree: ds/lct.md
+      - 全局平衡二叉树: ds/global-bst.md
+      - Euler Tour Tree: ds/ett.md
+      - Top Tree: ds/top-tree.md
+    - 析合树: ds/divide-combine.md
+    - PQ 树: ds/pq-tree.md
+    - 手指树: ds/finger-tree.md
+    - 霍夫曼树: ds/huffman-tree.md
+  - 图论:
+    - 图论部分简介: graph/index.md
+    - 图论相关概念: graph/concept.md
+    - 图的存储: graph/save.md
+    - DFS（图论）: graph/dfs.md
+    - BFS（图论）: graph/bfs.md
+    - 树上问题:
+      - 树基础: graph/tree-basic.md
+      - 树的直径: graph/tree-diameter.md
+      - 树的中心: graph/tree-center.md
+      - 树的重心: graph/tree-centroid.md
+      - 最近公共祖先: graph/lca.md
+      - 树链剖分: graph/hld.md
+      - 树上启发式合并: graph/dsu-on-tree.md
+      - 虚树: graph/virtual-tree.md
+      - 树分治: graph/tree-divide.md
+      - 动态树分治: graph/dynamic-tree-divide.md
+      - AHU 算法: graph/tree-ahu.md
+      - 树哈希: graph/tree-hash.md
+      - 树上随机游走: graph/tree-random-walk.md
+    - 有向无环图: graph/dag.md
+    - 拓扑排序: graph/topo.md
+    - 最短路问题:
+      - 最短路: graph/shortest-path.md
+      - 差分约束: graph/diff-constraints.md
+      - k 短路: graph/kth-path.md
+      - 同余最短路: graph/mod-shortest-path.md
+    - 生成树问题:
+      - 最小生成树: graph/mst.md
+      - 最小树形图: graph/dmst.md
+      - 最小直径生成树: graph/mdst.md
+    - 斯坦纳树: graph/steiner-tree.md
+    - 拆点: graph/node.md
+    - 连通性相关:
+      - 强连通分量: graph/scc.md
+      - 双连通分量: graph/bcc.md
+      - 割点和桥: graph/cut.md
+      - 圆方树: graph/block-forest.md
+      - 点/边连通度: graph/connectivity.md
+    - 环计数问题: graph/rings-count.md
+    - 最小环: graph/min-cycle.md
+    - 2-SAT: graph/2-sat.md
+    - 欧拉图: graph/euler.md
+    - 哈密顿图: graph/hamilton.md
+    - 二分图: graph/bi-graph.md
+    - 平面图: graph/planar.md
+    - 弦图: graph/chord.md
+    - 图的着色: graph/color.md
+    - 网络流:
+      - 网络流简介: graph/flow.md
+      - 最大流: graph/flow/max-flow.md
+      - 最小割: graph/flow/min-cut.md
+      - 费用流: graph/flow/min-cost.md
+      - 上下界网络流: graph/flow/bound.md
+      - Stoer–Wagner 算法: graph/stoer-wagner.md
+    - 图的匹配:
+      - 图匹配: graph/graph-matching/graph-match.md
+      - 二分图最大匹配: graph/graph-matching/bigraph-match.md
+      - 二分图最大权匹配: graph/graph-matching/bigraph-weight-match.md
+      - 一般图最大匹配: graph/graph-matching/general-match.md
+      - 一般图最大权匹配: graph/graph-matching/general-weight-match.md
+      - 稳定匹配: graph/graph-matching/stable-match.md
+    - Prüfer 序列: graph/prufer.md
+    - 矩阵树定理: graph/matrix-tree.md
+    - LGV 引理: graph/lgv.md
+    - 最大团搜索算法: graph/max-clique.md
+    - 支配树: graph/dominator-tree.md
+    - 图上随机游走: graph/graph-random-walk.md
+  - 计算几何:
+    - 计算几何部分简介: geometry/index.md
+    - 二维计算几何基础: geometry/2d.md
+    - 三维计算几何基础: geometry/3d.md
+    - 距离: geometry/distance.md
+    - Pick 定理: geometry/pick.md
+    - 三角剖分: geometry/triangulation.md
+    - 凸包: geometry/convex-hull.md
+    - 扫描线: geometry/scanning.md
+    - 旋转卡壳: geometry/rotating-calipers.md
+    - 半平面交: geometry/half-plane.md
+    - 平面最近点对: geometry/nearest-points.md
+    - 随机增量法: geometry/random-incremental.md
+    - 反演变换: geometry/inverse.md
+    - 计算几何杂项: geometry/misc.md
+  - 杂项:
+    - 杂项简介: misc/index.md
+    - 离散化: misc/discrete.md
+    - 双指针: misc/two-pointer.md
+    - 离线算法:
+      - 离线算法简介: misc/offline.md
+      - CDQ 分治: misc/cdq-divide.md
+      - 整体二分: misc/parallel-binsearch.md
+      - 莫队算法:
+        - 莫队算法简介: misc/mo-algo-intro.md
+        - 普通莫队算法: misc/mo-algo.md
+        - 带修改莫队: misc/modifiable-mo-algo.md
+        - 树上莫队: misc/mo-algo-on-tree.md
+        - 回滚莫队: misc/rollback-mo-algo.md
+        - 二维莫队: misc/mo-algo-2dimen.md
+        - 莫队二次离线: misc/mo-algo-secondary-offline.md
+        - 莫队配合 bitset: misc/mo-algo-with-bitset.md
+    - 分数规划: misc/frac-programming.md
+    - 随机化:
+      - 随机函数: misc/random.md
+      - 随机化技巧: misc/rand-technique.md
+      - 爬山算法: misc/hill-climbing.md
+      - 模拟退火: misc/simulated-annealing.md
+    - 悬线法: misc/hoverline.md
+    - 有限状态自动机: misc/fsm.md
+    - 计算理论基础: misc/cc-basic.md
+    - 字节顺序: misc/endianness.md
+    - 约瑟夫问题: misc/josephus.md
+    - 表达式求值: misc/expression.md
+    - 在一台机器上规划任务: misc/job-order.md
+    - 主元素问题: misc/main-element.md
+    - Garsia–Wachs 算法: misc/garsia-wachs.md
+    - 15-puzzle: misc/15-puzzle.md
+    - Kahan 求和: misc/kahan-summation.md
+    - 珂朵莉树/颜色段均摊: misc/odt.md
+    - 空间优化简介: misc/space-optimization.md
+  - 专题:
+    - RMQ: topic/rmq.md
+    - 并查集应用: topic/dsu-app.md
+    - 括号序列: topic/bracket.md
+    - 线段树与离线询问: topic/segment-tree-offline.md
+
+# Theme
+theme:
+  name: null
+  custom_dir: 'mkdocs-material/material/templates'
+  static_templates:
+    - 404.html
+  language: 'zh'
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: red
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  include_search_page: false
+  search_index_only: true
+  favicon: 'favicon.ico'
+  icon:
+    logo: 'material/school'
+  features:
+    - content.action.edit
+    - navigation.tabs
+    - navigation.instant
+    - content.code.copy
+  font:
+    text: 'Fira Sans'
+    code: 'Fira Mono'
+
+plugins:
+- toggle-sidebar:
+    theme: material
+    toggle_button: all
+
+hooks:
+  - hooks/on_env.py
+
+# Customization
+extra:
+  # disqus: 'your-disqus-shortname'  # TODO: 需要评论区时填写
+  copyright: '<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">CC BY-SA 4.0</a> 和 <a href="https://github.com/zTrix/sata-license">SATA</a>'
+  pagetime: 'on'
+  manifest: 'manifest.webmanifest'
+  githash: ''
+  # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
+  #   provider: google
+  #   property: YOUR-GA-ID
+
+extra_javascript:
+  - '_static/js/math-csr.js?math-csr'
+  - 'assets/vendor/mathjax/tex-mml-chtml.js?math-csr'
+
+extra_css:
+  - '_static/css/extra.css?v=16'
+  # - '_static/css/offset-inject-debug.css'
+
+# Extensions
+markdown_extensions:
+  - document-offsets-injection:
+      # debug: true
+  - admonition
+  - def_list
+  - footnotes
+  - meta
+  - toc:
+      permalink: ""
+      slugify: !!python/name:pymdownx.slugs.uslugify
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+  - pymdownx.highlight:
+      linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.progressbar
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: math
+          class: arithmatex
+          format: !!python/name:pymdownx.arithmatex.fence_mathjax_format
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - pymdownx.tabbed:
+      alternate_style: true

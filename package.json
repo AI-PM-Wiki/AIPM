@@ -1,0 +1,73 @@
+{
+  "name": "ai-pm-wiki",
+  "version": "1.0.0",
+  "description": "AI-PM - AI Product Manager Wiki",
+  "main": "index.js",
+  "type": "module",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "postinstall": "patch-package",
+    "scripts:format": "prettier --write \"scripts/**/*.ts\"",
+    "scripts:format:check": "prettier --check \"scripts/**/*.ts\"",
+    "docs:format:remark": "remark docs/ -o",
+    "docs:format:check": "node --loader ts-node/esm scripts/checker/checker.ts -i"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-name/ai-pm-wiki.git"
+  },
+  "keywords": [
+    "AI",
+    "Product Manager",
+    "wiki",
+    "LLM"
+  ],
+  "author": "AI-PM Wiki Team",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/your-name/ai-pm-wiki/issues"
+  },
+  "homepage": "https://github.com/your-name/ai-pm-wiki#readme",
+  "dependencies": {
+    "@mathjax/src": "^4.1.0",
+    "@swc/core": "^1.2.210",
+    "chalk": "^4.1.0",
+    "colors": "^1.4.0",
+    "cross-env": "^7.0.3",
+    "klaw": "^4.0.1",
+    "node-fetch": "^3.2.8",
+    "node-html-parser": "^5.3.3",
+    "octokit": "^4.0.2",
+    "oiwiki-feedback-sys-frontend": "^0.5.16",
+    "patch-package": "^6.5.1",
+    "postinstall-postinstall": "^2.1.0",
+    "remark": "^14.0.2",
+    "remark-clang-format": "2.4.5",
+    "remark-cli": "^10.0.1",
+    "remark-copywriting-correct": "0.6.0",
+    "remark-details": "^5.0.1",
+    "remark-gfm": "^3.0.1",
+    "remark-lint-final-newline": "^2.1.1",
+    "remark-lint-no-duplicate-headings-in-section": "^4.0.1",
+    "remark-lint-no-tabs": "^3.1.1",
+    "remark-math": "^5.1.1",
+    "remark-math-space": "^2.1",
+    "remark-parse": "^10.0.1",
+    "remark-preset-lint-markdown-style-guide": "^5.1.2",
+    "remark-stringify": "^10.0.2",
+    "remark-tabbed": "^0.1.0",
+    "ts-node": "^10.8.2",
+    "unified": "^10.1.2",
+    "unist-util-visit": "^4.1.0",
+    "yargs": "^17.5.1"
+  },
+  "devDependencies": {
+    "@types/klaw": "^3.0.3",
+    "@types/yargs": "^17.0.10",
+    "prettier": "^2.7.1",
+    "typescript": "^4.7.4"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
