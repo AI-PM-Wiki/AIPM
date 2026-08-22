@@ -18,4 +18,4 @@ uv run mkdocs build -v
 
 # Post-build scripts
 export NODE_OPTIONS="--max_old_space_size=3072"
-node --loader ts-node/esm scripts/post-build/html-postprocess.ts math external-links
+node --loader ts-node/esm scripts/post-build/html-postprocess.ts external-links
