@@ -6,7 +6,7 @@ labels: ["Content Bug / 页面内容有误", "help wanted / 需要帮助"]
 body:
 - type: markdown
   attributes:
-    value: 欢迎为 OI Wiki 提出新的 Issue！烦请填写以下表单：
+    value: 欢迎为 AI-PM 提出新的 Issue！烦请填写以下表单：
 - type: checkboxes
   id: confirm
   attributes:
