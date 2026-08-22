@@ -18,11 +18,11 @@ AI 产品发展迅速，但相关知识大多散落在公众号文章、播客�
 ## 项目技术
 
 -   基于 [MkDocs](https://www.mkdocs.org/) 构建，使用 [OI Wiki](https://github.com/OI-wiki/OI-wiki) 的自定义 Material 主题
--   站点源码托管在 GitHub，欢迎通过 [Issues](https://github.com/Hi-Yincan/AIPM/issues) 交流讨论
+-   站点源码托管在 GitHub，欢迎通过 [Issues](https://github.com/Hi-Yincan/aipm/issues) 交流讨论
 
 ## 交流方式
 
-本项目主要使用 [Issues](https://github.com/Hi-Yincan/AIPM/issues) 进行交流沟通。
+本项目主要使用 [Issues](https://github.com/Hi-Yincan/aipm/issues) 进行交流沟通。
 
 ???+ note "Note"
     原则上来讲，Issues 是 **AI-PM 讨论区**，请尽量不要在 Issues 中发表与 **AI-PM** 无关的内容。

@@ -6,8 +6,8 @@ site_url: https://hyc.ac/aipm/
 strict: false
 
 # Repository
-repo_name: 'Hi-Yincan/AIPM'
-repo_url: 'https://github.com/Hi-Yincan/AIPM'
+repo_name: 'Hi-Yincan/aipm'
+repo_url: 'https://github.com/Hi-Yincan/aipm'
 edit_uri: 'edit/main/docs/'
 
 # Copyright

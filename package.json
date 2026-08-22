@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Hi-Yincan/AIPM.git"
+    "url": "git+https://github.com/Hi-Yincan/aipm.git"
   },
   "keywords": [
     "AI",
@@ -27,9 +27,9 @@
   "author": "AI-PM Wiki Team",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/Hi-Yincan/AIPM/issues"
+    "url": "https://github.com/Hi-Yincan/aipm/issues"
   },
-  "homepage": "https://github.com/Hi-Yincan/AIPM#readme",
+  "homepage": "https://github.com/Hi-Yincan/aipm#readme",
   "dependencies": {
     "@mathjax/src": "^4.1.0",
     "@swc/core": "^1.2.210",
