@@ -298,7 +298,6 @@
 
 .md-sidebar .md-nav__item--active > .md-nav__link,
 .md-nav--secondary .md-nav__link--active {
-  background-color: var(--pm-accent-soft);
   color: var(--pm-accent);
   position: static;
 }
