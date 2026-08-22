@@ -95,8 +95,8 @@ theme:
     - navigation.instant
     - content.code.copy
   font:
-    text: 'Fira Sans'
-    code: 'Fira Mono'
+    text: 'Noto Sans'
+    code: 'JetBrains Mono'
 
 plugins:
 - toggle-sidebar:
@@ -122,7 +122,7 @@ extra_javascript:
   - 'assets/vendor/mathjax/tex-mml-chtml.js?math-csr'
 
 extra_css:
-  - '_static/css/extra.css?v=17'
+  - '_static/css/extra.css?v=18'
   # - '_static/css/offset-inject-debug.css'
 
 # Extensions
