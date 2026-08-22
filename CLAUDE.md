@@ -58,6 +58,9 @@ uv run mkdocs serve -v
 uv run mkdocs build -v
 ```
 
+> 注意:本地门禁以 `.claude/workflow.json` 的 `gates` 为准;`yarn run docs:format:check` 等脚本需先
+> `yarn install`(当前 node_modules 未安装,不可用)。
+
 ### Code Quality & Checking
 ```bash
 # Check documentation formatting
