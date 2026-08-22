@@ -1,22 +1,35 @@
-disqus:
-pagetime:
+---
 title: AI-PM
+---
 
-## 欢迎来到 **AI-PM**！
+**AI-PM**（AI Product Manager，AI 产品经理）是一个面向 AI 产品从业者的知识整合站点，致力于系统整理 AI 产品设计的方法论、AI 能力的技术边界、主流工具与平台，以及可复用的实战案例。
 
-**AI-PM**（AI Product Manager，AI 产品经理）是一个面向 AI 产品从业者的知识整合站点，致力于系统整理 AI 产品设计的方法论、AI 能力的技术边界、主流工具与平台，以及可复用的实战案例，帮助大家更快更深入地学习和实践 AI 产品设计。
-
-## 内容结构
-
-本站内容分为五个部分：
-
-| 栏目 | 内容 |
-| --- | --- |
-| [产品方法论](pm/index.md) | 需求分析、用户研究、产品设计、项目管理、商业化 |
-| [AI 基础](ai/index.md) | 大模型能力与边界、提示词工程、RAG、Agent、评估评测 |
-| [AI 产品实战](practice/index.md) | 对话助手、知识库问答、Agent 产品、Copilot 等产品形态 |
-| [工具与平台](tools/index.md) | LLM API、开源框架、评测工具、数据标注 |
-| [案例与资源](case/index.md) | 产品拆解、学习路线、学习资源 |
+<div class="pm-card-grid">
+  <a class="pm-card" href="pm/">
+    <span class="pm-card__title">产品方法论</span>
+    <span class="pm-card__desc">需求分析、用户研究、产品设计与原型、项目管理与迭代、商业化与增长</span>
+  </a>
+  <a class="pm-card" href="ai/">
+    <span class="pm-card__title">AI 基础</span>
+    <span class="pm-card__desc">大模型基础、提示词工程、RAG、Agent、评估评测</span>
+  </a>
+  <a class="pm-card" href="practice/">
+    <span class="pm-card__title">AI 产品实战</span>
+    <span class="pm-card__desc">对话助手、知识库问答、Agent 产品、Copilot、工作流自动化</span>
+  </a>
+  <a class="pm-card" href="tools/">
+    <span class="pm-card__title">工具与平台</span>
+    <span class="pm-card__desc">LLM API、开源框架、提示词与评测工具、数据标注</span>
+  </a>
+  <a class="pm-card" href="case/">
+    <span class="pm-card__title">案例与资源</span>
+    <span class="pm-card__desc">产品拆解、学习路线、学习资源</span>
+  </a>
+  <a class="pm-card" href="intro/about/">
+    <span class="pm-card__title">关于</span>
+    <span class="pm-card__desc">项目介绍、如何参与、格式手册、FAQ</span>
+  </a>
+</div>
 
 ## 本站的原则
 
@@ -26,8 +39,3 @@ title: AI-PM
 
 ???+ note "正在建设中"
     本站目前大部分页面还是骨架，欢迎[参与贡献](intro/htc.md)一起完善！
-
-<script>
-  // #758
-  document.getElementsByClassName('md-nav__title')[1].click()
-</script>
