@@ -48,5 +48,5 @@
 
 -   [百度与美团](baidu-meituan.md)：同为「场景落地 + 平台能力」路线的对比
 -   [大模型创业公司](ai-startups.md)：创业公司与大厂的岗位差异
--   [AI 产品经理面试](../../case/interview.md)：题型结构与答题框架
+-   [AI 产品经理面试](../interviews/interview-guide.md)：题型结构与答题框架
 -   [求职专题简介](../index.md)

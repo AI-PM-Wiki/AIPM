@@ -35,23 +35,53 @@ nav:
     - 商业化与增长: pm/monetization.md
   - AI 基础:
     - AI 基础简介: ai/index.md
-    - 大模型基础: ai/llm-basics.md
-    - 模型能力与边界: ai/capabilities.md
-    - 多模态: ai/multimodal.md
-    - 提示词工程: ai/prompting.md
-    - RAG: ai/rag.md
-    - Agent 与工作流: ai/agent.md
+    - 机器学习与深度学习:
+      - 机器学习基础: ai/ml-basics.md
+      - 深度学习基础: ai/dl-basics.md
+      - Transformer 架构: ai/transformer.md
+    - 大模型:
+      - 大模型基础: ai/llm-basics.md
+      - 模型训练与对齐: ai/llm-training.md
+      - 模型推理与部署: ai/llm-inference.md
+      - 模型能力与边界: ai/capabilities.md
+    - 多模态:
+      - 多模态理解: ai/multimodal.md
+      - 图像生成: ai/image-generation.md
+      - 视频生成: ai/video-generation.md
+      - 语音与音频: ai/audio.md
+    - 提示词工程:
+      - 提示词工程: ai/prompting.md
+      - 高级提示词技巧: ai/prompt-advanced.md
+      - 提示词安全: ai/prompt-security.md
+    - RAG 与知识检索:
+      - RAG 基础: ai/rag.md
+      - 检索技术: ai/rag-retrieval.md
+      - 高级 RAG: ai/rag-advanced.md
+    - Agent:
+      - Agent 与工作流: ai/agent.md
+      - 工具调用与 MCP: ai/agent-tools.md
+      - Agent 架构与多智能体: ai/agent-architecture.md
     - 评估与评测: ai/evaluation.md
     - AI 系统架构: ai/architecture.md
   - AI 产品实战:
     - 实战简介: practice/index.md
-    - 对话助手: practice/chatbot.md
-    - 知识库问答: practice/kb-qa.md
-    - RAG 产品化实战: practice/rag-practice.md
-    - Agent 产品: practice/agent-product.md
-    - Copilot: practice/copilot.md
-    - 工作流自动化: practice/workflow.md
-    - 出海与合规: practice/compliance.md
+    - 对话助手类产品:
+      - 对话助手: practice/chatbot.md
+      - 客服自动化: practice/support-bot.md
+    - 知识库问答类产品:
+      - 知识库问答: practice/kb-qa.md
+      - RAG 产品化实战: practice/rag-practice.md
+    - Agent 产品类:
+      - Agent 产品设计: practice/agent-product.md
+      - Agent 工具与 MCP 产品化: practice/agent-tools.md
+      - 多 Agent 与人机协作: practice/multi-agent.md
+    - 嵌入与自动化类产品:
+      - Copilot 产品: practice/copilot.md
+      - 工作流自动化: practice/workflow.md
+    - 安全与合规类:
+      - 出海与合规: practice/compliance.md
+      - 内容安全与护栏: practice/content-safety.md
+      - 数据隐私与用户控制: practice/data-privacy.md
   - 工具与平台:
     - 工具简介: tools/index.md
     - LLM API 与供应商: tools/llm-api.md
@@ -74,7 +104,6 @@ nav:
       - 启示录（INSPIRED）: case/books/inspired.md
       - 精益创业（The Lean Startup）: case/books/lean-startup.md
     - 信息源索引: case/info-sources.md
-    - AI 产品经理面试: case/interview.md
   - 求职专题:
     - 求职专题简介: job/index.md
     - 常见大厂与架构:
@@ -102,6 +131,7 @@ nav:
       - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
     - 面经:
       - 面经简介: job/interviews/index.md
+      - AI 产品经理面试指南: job/interviews/interview-guide.md
       - 面试流程全览: job/interviews/interview-process.md
       - 校招面经: job/interviews/campus-interviews.md
       - 社招面经: job/interviews/social-interviews.md
@@ -164,20 +194,27 @@ plugins:
 # 主题子模块切换到官方 material 后可将本段与 hooks/on_env.py 一并删除。
 hooks:
   - hooks/on_env.py
+  - hooks/chat_agent.py
 
 # Customization
 extra:
   # disqus: 'your-disqus-shortname'  # TODO: 需要评论区时填写
   copyright: '<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">CC BY-SA 4.0</a> 和 <a href="https://github.com/zTrix/sata-license">SATA</a>'
   manifest: 'manifest.webmanifest'
+  # 文档问答 Agent 前端 widget(注入由 hooks/chat_agent.py 完成):
+  # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
+  chat_agent:
+    enabled: true
+    version: 7
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   provider: google
   #   property: YOUR-GA-ID
 
 extra_javascript:
   - '_static/js/banner.js?v=7'
+  - '_static/js/header-line.js?v=1'
 extra_css:
-  - '_static/css/extra.css?v=23'
+  - '_static/css/extra.css?v=29'
   # - '_static/css/offset-inject-debug.css'
 
 # Extensions
