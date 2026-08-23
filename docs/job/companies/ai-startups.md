@@ -46,5 +46,5 @@
 
 -   [字节跳动](bytedance.md)、[阿里巴巴](alibaba.md)：大厂岗位与协作方式的对比
 -   [常见岗位与JD](../positions/index.md)：创业公司里「AI 产品经理」职责边界更宽，可对照岗位解读
--   [AI 产品经理面试](../../case/interview.md)：题型结构与答题框架
+-   [AI 产品经理面试](../interviews/interview-guide.md)：题型结构与答题框架
 -   [求职专题简介](../index.md)

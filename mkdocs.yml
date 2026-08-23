@@ -74,7 +74,6 @@ nav:
       - 启示录（INSPIRED）: case/books/inspired.md
       - 精益创业（The Lean Startup）: case/books/lean-startup.md
     - 信息源索引: case/info-sources.md
-    - AI 产品经理面试: case/interview.md
   - 求职专题:
     - 求职专题简介: job/index.md
     - 常见大厂与架构:
@@ -102,6 +101,7 @@ nav:
       - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
     - 面经:
       - 面经简介: job/interviews/index.md
+      - AI 产品经理面试指南: job/interviews/interview-guide.md
       - 面试流程全览: job/interviews/interview-process.md
       - 校招面经: job/interviews/campus-interviews.md
       - 社招面经: job/interviews/social-interviews.md

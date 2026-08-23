@@ -29,7 +29,7 @@
 
 1.  **看公司**：先读[常见大厂与架构](companies/index.md)，了解目标公司的 AI 组织形态与岗位分布，圈定目标清单
 2.  **选岗位**：对照[常见岗位与JD](positions/index.md)，明确各岗位的职责边界，判断自己匹配哪个方向
-3.  **备面试**：读[面经](interviews/index.md)了解真实流程与常见问题，再配合[AI 产品经理面试](../case/interview.md)的答题框架做针对性练习
+3.  **备面试**：读[面经](interviews/index.md)了解真实流程与常见问题，再配合[AI 产品经理面试](interviews/interview-guide.md)的答题框架做针对性练习
 4.  **查黑话**：面试用词必须准确，出口前查[产品经理黑话速查](../intro/glossary.md)
 5.  **做复盘**：每场面试后按[面试复盘方法论](interviews/review-methodology.md)系统复盘，避免在同一处跌倒两次
 6.  **定心态**：焦虑、纠结时读[真实感悟](insights/index.md)，看看过来人是怎么走过来的
@@ -40,6 +40,6 @@ AI 行业变化极快，组织架构、岗位 JD 与薪酬信息**以最新公�
 
 ## 相关阅读
 
--   [AI 产品经理面试](../case/interview.md)：题型结构与典型题答题框架
+-   [AI 产品经理面试](interviews/interview-guide.md)：题型结构与典型题答题框架
 -   [产品经理黑话速查](../intro/glossary.md)：面试用语准确性的保障
 -   [如何参与](../intro/htc.md)：贡献面经、公司观察与感悟，帮助后来者

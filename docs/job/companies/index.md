@@ -28,5 +28,5 @@
 
 -   [求职专题简介](../index.md)
 -   [常见岗位与JD](../positions/index.md)：岗位职责与 JD 解读
--   [AI 产品经理面试](../../case/interview.md)：答题框架与典型题
+-   [AI 产品经理面试](../interviews/interview-guide.md)：答题框架与典型题
 -   [如何参与](../../intro/htc.md)：欢迎补充你所在公司的组织观察
