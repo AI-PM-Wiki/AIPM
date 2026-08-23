@@ -1,0 +1,13 @@
+/authors.json
+_build/
+site/
+.vscode/
+.debug/
+.DS_Store
+.env
+.well-known/
+node_modules/
+*.pyc
+/meta/
+/.claude/
+scripts/banner/output/

@@ -1,0 +1,213 @@
+# Project Information
+site_name: AI-PM
+site_description: AI-PM 是一个 AI 产品经理知识整合站点，提供有趣又实用的 AI 产品、模型、工具与工作流知识，帮助广大 AI 产品从业者更快更深入地学习与实践
+site_author: AI-PM Wiki Team
+site_url: https://hyc.ac/aipm/
+strict: false
+
+# Repository
+repo_name: 'Hi-Yincan/aipm'
+repo_url: 'https://github.com/Hi-Yincan/aipm'
+edit_uri: 'edit/main/docs/'
+
+# Copyright
+copyright: 'Copyright &copy; 2026 AI-PM Wiki Team'
+
+# Contents
+nav:
+  - 简介:
+    - Getting Started: index.md
+    - 关于本项目: intro/about.md
+    - 如何参与: intro/htc.md
+    - 格式手册: intro/format.md
+    - AI-PM 不是什么: intro/what-ai-pm-is-not.md
+    - F.A.Q.: intro/faq.md
+    - 产品经理黑话速查: intro/glossary.md
+    - AI 产品经理能力模型: intro/capability.md
+  - 产品方法论:
+    - 产品方法论简介: pm/index.md
+    - 需求分析: pm/requirements.md
+    - 用户研究: pm/user-research.md
+    - 产品设计与原型: pm/design.md
+    - 项目管理与迭代: pm/project-management.md
+    - AI 产品开发生命周期(CC/CD): pm/ai-lifecycle.md
+    - AI 产品 PRD: pm/prd.md
+    - 商业化与增长: pm/monetization.md
+  - AI 基础:
+    - AI 基础简介: ai/index.md
+    - 大模型基础: ai/llm-basics.md
+    - 模型能力与边界: ai/capabilities.md
+    - 多模态: ai/multimodal.md
+    - 提示词工程: ai/prompting.md
+    - RAG: ai/rag.md
+    - Agent 与工作流: ai/agent.md
+    - 评估与评测: ai/evaluation.md
+    - AI 系统架构: ai/architecture.md
+  - AI 产品实战:
+    - 实战简介: practice/index.md
+    - 对话助手: practice/chatbot.md
+    - 知识库问答: practice/kb-qa.md
+    - RAG 产品化实战: practice/rag-practice.md
+    - Agent 产品: practice/agent-product.md
+    - Copilot: practice/copilot.md
+    - 工作流自动化: practice/workflow.md
+    - 出海与合规: practice/compliance.md
+  - 工具与平台:
+    - 工具简介: tools/index.md
+    - LLM API 与供应商: tools/llm-api.md
+    - LLM 成本测算: tools/llm-cost.md
+    - 开源框架: tools/frameworks.md
+    - 提示词与评测工具: tools/prompt-tools.md
+    - 数据与标注: tools/data.md
+    - 效率工具: tools/misc.md
+  - 案例与资源:
+    - 案例简介: case/index.md
+    - 产品拆解: case/teardown.md
+    - ChatGPT 产品拆解: case/teardown-chatgpt.md
+    - 自学产品经理: case/self-study.md
+    - 学习路线: case/roadmap.md
+    - 学习资源: case/resources.md
+    - 读书笔记:
+      - 读书笔记索引: case/books/index.md
+      - 俞军产品方法论: case/books/yujun-product-methodology.md
+      - 人人都是产品经理 2.0: case/books/pm-2-0.md
+      - 启示录（INSPIRED）: case/books/inspired.md
+      - 精益创业（The Lean Startup）: case/books/lean-startup.md
+    - 信息源索引: case/info-sources.md
+    - AI 产品经理面试: case/interview.md
+  - 求职专题:
+    - 求职专题简介: job/index.md
+    - 常见大厂与架构:
+      - 大厂与架构简介: job/companies/index.md
+      - 字节跳动: job/companies/bytedance.md
+      - 阿里巴巴: job/companies/alibaba.md
+      - 腾讯: job/companies/tencent.md
+      - 百度与美团: job/companies/baidu-meituan.md
+      - 华为: job/companies/huawei.md
+      - 大模型创业公司: job/companies/ai-startups.md
+    - 常见岗位与JD:
+      - 岗位与JD简介: job/positions/index.md
+      - AI 产品经理: job/positions/ai-pm.md
+      - 大模型应用工程师: job/positions/llm-app-engineer.md
+      - 算法工程师: job/positions/algorithm-engineer.md
+      - 提示词工程师: job/positions/prompt-engineer.md
+      - 数据、评测与训练类岗位: job/positions/data-ai-trainer.md
+      - 设计师: job/positions/designer.md
+      - 研发工程师: job/positions/rd-engineer.md
+      - 测试工程师: job/positions/test-engineer.md
+      - 硬件相关岗位: job/positions/hardware-pm.md
+      - AI 训练相关岗位: job/positions/ai-trainer.md
+      - AI Infra 相关岗位: job/positions/ai-infra.md
+      - FDE(前沿部署工程师): job/positions/fde.md
+      - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
+    - 面经:
+      - 面经简介: job/interviews/index.md
+      - 面试流程全览: job/interviews/interview-process.md
+      - 校招面经: job/interviews/campus-interviews.md
+      - 社招面经: job/interviews/social-interviews.md
+      - 面试复盘方法论: job/interviews/review-methodology.md
+      - 谈薪与 Offer 选择: job/interviews/offer-negotiation.md
+    - 真实感悟:
+      - 真实感悟简介: job/insights/index.md
+      - 入行感悟: job/insights/newcomers.md
+      - 职业发展感悟: job/insights/career.md
+      - 踩坑教训: job/insights/lessons.md
+      - 心态感悟: job/insights/mindset.md
+
+# Theme
+theme:
+  name: null
+  custom_dir: 'mkdocs-material/material/templates'
+  static_templates:
+    - 404.html
+  language: 'zh'
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: red
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  favicon: 'favicon.svg'
+  logo: 'favicon.svg'
+  icon:
+    repo: fontawesome/brands/github-alt
+  features:
+    - content.action.edit
+    - navigation.tabs
+    - navigation.instant
+    - content.code.copy
+  font:
+    text: 'Noto Sans'
+    code: 'JetBrains Mono'
+
+plugins:
+- search:
+    lang: zh
+    separator: '[\s\-]'
+- toggle-sidebar:
+    theme: material
+    toggle_button: all
+
+# TODO(theme-swap): hooks/on_env.py 提供 nav_math 过滤器,仅旧版主题模板需要;
+# 主题子模块切换到官方 material 后可将本段与 hooks/on_env.py 一并删除。
+hooks:
+  - hooks/on_env.py
+
+# Customization
+extra:
+  # disqus: 'your-disqus-shortname'  # TODO: 需要评论区时填写
+  copyright: '<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">CC BY-SA 4.0</a> 和 <a href="https://github.com/zTrix/sata-license">SATA</a>'
+  manifest: 'manifest.webmanifest'
+  # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
+  #   provider: google
+  #   property: YOUR-GA-ID
+
+extra_javascript:
+  - '_static/js/banner.js?v=7'
+extra_css:
+  - '_static/css/extra.css?v=23'
+  # - '_static/css/offset-inject-debug.css'
+
+# Extensions
+markdown_extensions:
+  - document-offsets-injection:
+      # debug: true
+  - admonition
+  - def_list
+  - footnotes
+  - meta
+  - toc:
+      permalink: ""
+      slugify: !!python/name:pymdownx.slugs.uslugify
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+  - pymdownx.highlight:
+      linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - pymdownx.tabbed:
+      alternate_style: true
