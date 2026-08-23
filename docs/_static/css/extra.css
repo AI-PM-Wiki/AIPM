@@ -722,36 +722,34 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   margin-left: auto;
 }
 
-/* 11.2 hero:留白克制(原 4rem/3rem 减半),层级 h1 > tagline > 按钮 */
+/* 11.2 hero:层级 eyebrow > banner > h1 > tagline > 按钮;子元素入场编排见 11.8 */
 .pm-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: .9rem;
   padding: 2.75rem 1rem 2.25rem;
   text-align: center;
 }
 
-/* 品牌 logo:小号图标(装饰),无径向光斑、无呼吸动画 */
-.pm-hero__logo {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background-color: var(--pm-accent-soft);
+/* 眉题:等宽大写小字,与 banner 的 micro 标签同语言 */
+.pm-hero__eyebrow {
+  margin: 0;
+  font-family: var(--md-code-font);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
   color: var(--pm-accent);
-  font-size: 1.6rem;
-  line-height: 1;
 }
 
 .pm-hero .site-name {
   margin: 0;
-  font-size: 2rem; /* 32px */
+  font-size: 2.4rem;
   font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -.01em;
+  line-height: 1.2;
+  letter-spacing: -.02em;
   color: var(--pm-ink);
 }
 
@@ -761,6 +759,7 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   font-size: 1rem;
   line-height: 1.7;
   color: var(--pm-muted);
+  text-wrap: balance; /* 避免末行孤字 */
 }
 
 .pm-hero__cta {
@@ -920,6 +919,20 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
               border-color 150ms ease, background-color 150ms ease;
 }
 
+/* 卡片图标:手绘 stroke 风(lucide 语言),faint → hover accent */
+.pm-card__icon {
+  width: 22px;
+  height: 22px;
+  margin-bottom: .1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--pm-faint);
+  transition: color 150ms ease;
+}
+
 .pm-card__title {
   font-size: 1rem;
   font-weight: 700;
@@ -943,6 +956,11 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
 
 .pm-card:hover .pm-card__title,
 .pm-card:focus-visible .pm-card__title {
+  color: var(--pm-accent);
+}
+
+.pm-card:hover .pm-card__icon,
+.pm-card:focus-visible .pm-card__icon {
   color: var(--pm-accent);
 }
 
@@ -987,4 +1005,125 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   .pm-card:focus-visible {
     transform: none;
   }
+}
+
+/* 11.8 首屏入场编排:hero 子元素(眉题/banner/品牌/CTA/搜索)依次淡入上浮,
+   再轮到卡片网格;RM 降级在此块内部末尾,保证覆盖上面的 animation 声明 */
+@keyframes pm-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.pm-hero > * {
+  animation: pm-rise .55s cubic-bezier(.2, .7, .3, 1) both;
+}
+
+.pm-hero > :nth-child(2) { animation-delay: .06s; }
+.pm-hero > :nth-child(3) { animation-delay: .12s; }
+.pm-hero > :nth-child(4) { animation-delay: .18s; }
+.pm-hero > :nth-child(5) { animation-delay: .24s; }
+
+.pm-banner {
+  animation: pm-rise .6s cubic-bezier(.2, .7, .3, 1) .28s both;
+}
+
+.pm-card {
+  animation: pm-rise .5s cubic-bezier(.2, .7, .3, 1) both;
+}
+
+.pm-card:nth-child(1) { animation-delay: .36s; }
+.pm-card:nth-child(2) { animation-delay: .41s; }
+.pm-card:nth-child(3) { animation-delay: .46s; }
+.pm-card:nth-child(4) { animation-delay: .51s; }
+.pm-card:nth-child(5) { animation-delay: .56s; }
+.pm-card:nth-child(6) { animation-delay: .61s; }
+.pm-card:nth-child(7) { animation-delay: .66s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-hero > *,
+  .pm-banner,
+  .pm-card {
+    animation: none;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   12. 首页 banner:「等势线地形 · Carved AIPM」(WebGL,2026-08-23 第三版,
+       取代粒子聚字版——粒子散开可读性差、与等势线同层打架)
+       WebGL fragment shader 实时渲染 domain-warped fbm 标量场;AIPM 字形纹理
+       在 shader 内把场压平成盆地——等势线字内消失、字缘堆叠成环;另取字形
+       遮罩 0.5 等值线常绘边缘轮廓(呼吸 + 指针增亮,多数时段清晰),
+       字母由地形负形 + 轮廓线显现 + 极淡 accent 洗色;3 颗环境电荷游走,
+       指针移入注入第四颗。
+       双层 canvas(--gl 场层 + --ink 标签层,仅 6 枚主题 micro 标签),
+       无 WebGL 降级为 2D 静态帧;prefers-reduced-motion 单帧;
+       实现详见 _static/js/banner.js。
+       token 七色:细线/计曲线/网格/字形洗色/正文/浅淡(标签)/强调,
+       亮暗各一套;JS 只解析 hex/rgb()/rgba(),token 请勿用 hsl()/hsla()。
+   ---------------------------------------------------------------------------- */
+:root {
+  --pm-banner-line: rgba(64, 81, 181, .2);
+  --pm-banner-major: rgba(64, 81, 181, .6);
+  --pm-banner-grid: rgba(0, 0, 0, .05);
+  --pm-banner-glyph: rgba(64, 81, 181, .09);
+  --pm-banner-ink: rgba(30, 36, 54, .78);
+  --pm-banner-faint: rgba(30, 36, 54, .42);
+  --pm-banner-accent: rgba(64, 81, 181, .95);
+}
+
+[data-md-color-scheme="slate"] {
+  --pm-banner-line: rgba(142, 166, 255, .3);
+  --pm-banner-major: rgba(142, 166, 255, .78);
+  --pm-banner-grid: rgba(255, 255, 255, .06);
+  --pm-banner-glyph: rgba(142, 166, 255, .12);
+  --pm-banner-ink: rgba(232, 233, 238, .85);
+  --pm-banner-faint: rgba(232, 233, 238, .5);
+  --pm-banner-accent: rgba(142, 166, 255, .95);
+}
+
+/* 12.1 容器:圆角卡片,与站点卡片语言一致(1px 描边 + 大圆角);
+   位于首页 hero(替代原 logo 位),宽度收敛到 61rem 与正文同宽 */
+.pm-banner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 2;
+  min-height: 210px;
+  margin: .9rem 0 1.4rem;
+  border: 1px solid var(--pm-line);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--md-default-bg-color);
+  isolation: isolate;
+}
+
+.pm-hero .pm-banner {
+  max-width: 61rem;
+  margin: .4rem 0 .2rem;
+}
+
+@media (max-width: 640px) {
+  .pm-banner {
+    aspect-ratio: 2 / 1;
+  }
+}
+
+/* 12.2 画布:WebGL 场层(--gl)与 2D 标签层(--ink)叠放,均由 banner.js 驱动 */
+.pm-banner__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 12.3 图注:左下角等宽小字,呼应站点 11px/等宽 的图注语气 */
+.pm-banner__caption {
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  margin: 0;
+  font-family: "JetBrains Mono", "Fira Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--pm-faint);
 }
