@@ -1,164 +1,182 @@
 /* ============================================================================
-   AI-PM 文档问答助手(chat-widget.css,2026-08-23)
+   AI-PM 文档问答助手(chat-widget.css,2026-08-24)
 
-   液态玻璃(liquid-glass)悬浮球 + 对话面板:
-   - FAB 右下角吸附(z-index 60);面板 z-index 70
-   - 桌面端(≥1220px,主题 76.25em 断点):面板 fixed 对齐右侧 TOC 槽位,
-     槽位几何(宽/高/右缘)由 JS 运行时实测并写 inline style(docked 模式)
-   - 移动端(<1220px,无右侧栏):面板降级为全屏覆盖
-   - 基础玻璃(全浏览器):backdrop-filter blur(24px) saturate(160%) +
-     半透明渐变背景 + 内高光 + 圆角 + 悬浮阴影
-   - Chromium 增强:内联 SVG displacement filter 边缘折射(滤镜由
-     chat-widget.js 注入的 #aipm-chat-refract 提供);Safari/Firefox 无法
-     解析 filter:url() 自动降级为纯毛玻璃
+   扁平化胶囊入口 + 全高右侧栏面板:
+   - FAB 右下角扁平胶囊(图标 + 「询问助手」引导语,z-index 60);
+     面板 z-index 70
+   - 桌面端(≥1220px,主题 76.25em 断点):面板 fixed 侧栏——左缘对齐三列
+     网格右栏(TOC 栏)左缘(不切入正文列,JS 实测 inline left/width;
+     无 TOC 页回落为 clamp(21rem,32vw,30rem) 贴右缘;↗ 加宽 min(46rem,94vw)),
+     右缘贯通视口,顶边 = 吸顶导航栏(md-header/md-tabs)下缘(不盖住导航,
+     随滚动跟随),底边停在 mkdocs 页脚(md-footer)上缘(不遮挡页脚,
+     随滚动重算);移动端(<1220px):全屏覆盖;点击立即弹出/收起(无滑入动画)
+   - 头部:spark 图标 + 「助手」+ 图标按钮(清空/加宽/关闭);
+     消息区顶部常驻免责条
+   - 输入区为卡片式:无边框 textarea + 底部图标行(回形针附件 / 圆形
+     发送),附件 chips 内嵌卡片顶部
    - 颜色全部走 Material --md-* 变量,亮/暗主题自动适配
-   - prefers-reduced-motion:禁位移/弹性动画
+   - prefers-reduced-motion:禁位移动画
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. FAB 悬浮球
+   1. FAB 扁平胶囊(图标 + 引导语)
    ---------------------------------------------------------------------------- */
 .aipm-chat__fab {
   position: fixed;
   right: 1.25rem;
   bottom: 1.25rem;
   z-index: 60;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 50%;
+  gap: .38rem;
+  height: 2.5rem;
+  padding: 0 .95rem 0 .72rem;
+  border: 0;
+  border-radius: 999px;
   cursor: pointer;
-  color: var(--md-default-fg-color);
-  background: linear-gradient(150deg,
-    var(--md-default-bg-color--light),
-    var(--md-default-bg-color--lighter) 55%,
-    var(--md-default-bg-color--lightest));
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid var(--md-default-fg-color--lightest);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, .16),
-              inset 0 1px 0 rgba(255, 255, 255, .18);
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+  font-family: inherit;
+  font-size: .8125rem;
+  font-weight: 500;
   transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease;
 }
+/* hover:微微放大 + 阴影加深(参考 Claude 文档站点右下角按钮) */
 .aipm-chat__fab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, .22),
-              inset 0 1px 0 rgba(255, 255, 255, .2);
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .26);
 }
 .aipm-chat__fab:active {
-  transform: scale(.96);
+  transform: scale(.97);
 }
 .aipm-chat__fab svg {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
   fill: currentColor;
+}
+.aipm-chat__fab-label {
+  white-space: nowrap;
 }
 /* 面板打开时收起 FAB(面板自带关闭按钮与 Escape) */
 .aipm-chat__fab.is-hidden {
   opacity: 0;
-  transform: scale(.8);
+  transform: scale(.85);
   pointer-events: none;
 }
 
 /* ----------------------------------------------------------------------------
-   2. 面板骨架(液态玻璃容器)
+   2. 面板骨架(文档流内 sticky 右侧栏,扁平实色)
    ---------------------------------------------------------------------------- */
+/* position: sticky + top calc(2.4rem + 1px):面板插在页头交界线
+   (.md-header__line)之后 —— 页顶时随流贴在 tabs 下缘(flow 位置),
+   滚动后吸附到页头下缘(与线同位);与页头/线同为 sticky 一族,弹性
+   过滚动时浏览器对 sticky 做什么它就做什么,结构上不可能与页头脱节。
+   高度/左边距由 JS(align)写入;关闭态高度 0 不占文档。 */
 .aipm-chat {
-  position: fixed;
+  position: sticky;
+  top: calc(2.4rem + 1px);
   z-index: 70;
   display: flex;
   flex-direction: column;
+  width: clamp(21rem, 32vw, 30rem);
+  height: 0;                    /* 关闭态不占文档高;打开后 JS 写入 */
+  margin-left: auto;            /* 水平几何由 JS 写 inline margin-left */
   overflow: hidden;
-  border-radius: 1rem;
   color: var(--md-default-fg-color);
   font-family: var(--md-text-font-family, var(--md-text-font, system-ui, sans-serif));
   font-size: .8125rem;
   line-height: 1.55;
-  background: linear-gradient(150deg,
-    var(--md-default-bg-color--light),
-    var(--md-default-bg-color--lighter) 60%,
-    var(--md-default-bg-color--lightest));
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid var(--md-default-fg-color--lightest);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, .22),
-              inset 0 1px 0 rgba(255, 255, 255, .16);
-  opacity: 0;
+  background: var(--md-default-bg-color);
+  /* 与主题分栏一致的分隔方式:仅一条发丝线,不用投影(投影会像浮层) */
+  border-left: 1px solid var(--md-default-fg-color--lightest);
   visibility: hidden;
-  transform: translateY(10px) scale(.985);
-  transition: opacity .16s ease, transform .16s ease,
-              visibility 0s linear .16s;
 }
+/* 点击按钮立即弹出/收起,无滑入动画 */
 .aipm-chat.is-open {
-  opacity: 1;
   visibility: visible;
-  transform: none;
-  transition: opacity .16s ease, transform .16s ease;
 }
-/* Chromium 边缘折射(liquid-glass 增强);Safari/Firefox 忽略 filter:url()
-   自动降级纯毛玻璃 */
-@media (prefers-reduced-motion: no-preference) {
-  .aipm-chat.is-open {
-    filter: url(#aipm-chat-refract);
-  }
+/* 加宽模式(↗ 切换,JS 记忆) */
+.aipm-chat--docked.aipm-chat--wide {
+  width: min(46rem, 94vw);
 }
-/* 移动端 / 桌面无右侧栏且 JS 未给 fallback 定位时:全屏覆盖 */
-.aipm-chat:not(.aipm-chat--docked):not(.aipm-chat--fallback) {
+/* 移动端(<1220px):全屏覆盖(fixed 覆盖,不参与流内 sticky) */
+.aipm-chat:not(.aipm-chat--docked) {
+  position: fixed;
+  inset: 0;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: auto !important;
   height: auto !important;
-  border-radius: 0;
-  border: 0;
+  margin: 0 !important;
+  width: auto;
+  border-left: 0;
 }
 
 /* ----------------------------------------------------------------------------
-   3. 头部
+   3. 头部(spark 图标 + 标题 + 图标按钮)
    ---------------------------------------------------------------------------- */
 .aipm-chat__head {
   flex: none;
   display: flex;
   align-items: center;
-  gap: .25rem;
-  padding: .6rem .75rem .5rem;
-  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  gap: .35rem;
+  padding: .8rem .6rem .8rem 1rem;
+}
+.aipm-chat__head-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-accent-fg-color);
+}
+.aipm-chat__head-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: currentColor;
 }
 .aipm-chat__title {
   flex: 1;
-  font-size: .8125rem;
+  min-width: 0;
+  font-size: .9375rem;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.aipm-chat__clear,
-.aipm-chat__close {
+.aipm-chat__iconbtn {
   flex: none;
-  padding: .25rem .45rem;
-  border-radius: .3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: .45rem;
   color: var(--md-default-fg-color--light);
+  background: transparent;
   cursor: pointer;
   transition: color .12s ease, background-color .12s ease;
 }
-.aipm-chat__clear:hover,
-.aipm-chat__close:hover {
+.aipm-chat__iconbtn:hover {
   color: var(--md-default-fg-color);
-  background: var(--md-accent-fg-color--transparent);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-chat__iconbtn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: currentColor;
 }
 
 /* ----------------------------------------------------------------------------
-   4. 消息区与气泡
+   4. 消息区(常驻免责条 / 空态 / 气泡 / 操作行)
    ---------------------------------------------------------------------------- */
 .aipm-chat__msgs {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: .6rem;
-  padding: .75rem .75rem .5rem;
+  gap: .75rem;
+  padding: .25rem 1rem 1rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -171,6 +189,69 @@
   background: var(--md-default-fg-color--lightest);
   border-radius: .3rem;
 }
+
+/* 常驻顶部免责条 */
+.aipm-chat__disclaimer {
+  margin: 0;
+  padding: .35rem 0 .2rem;
+  text-align: center;
+  font-size: .6875rem;
+  color: var(--md-default-fg-color--lighter);
+}
+
+/* 空态:欢迎语 + 建议问题 */
+.aipm-chat__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .8rem;
+  margin: auto 0;
+  padding: .5rem .25rem;
+  text-align: center;
+}
+.aipm-chat__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
+.aipm-chat__empty-icon svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: currentColor;
+}
+.aipm-chat__empty-text {
+  margin: 0;
+  color: var(--md-default-fg-color--light);
+}
+.aipm-chat__suggest {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  width: 100%;
+}
+.aipm-chat__suggest-btn {
+  width: 100%;
+  padding: .5rem .7rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .6rem;
+  background: transparent;
+  color: var(--md-default-fg-color);
+  font-family: inherit;
+  font-size: .75rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+.aipm-chat__suggest-btn:hover {
+  border-color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
 .aipm-chat__msg {
   display: flex;
 }
@@ -179,11 +260,13 @@
 }
 .aipm-chat__msg--ai {
   justify-content: flex-start;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .aipm-chat__bubble {
   max-width: 94%;
-  padding: .45rem .65rem;
-  border-radius: .8rem;
+  padding: .5rem .75rem;
+  border-radius: .9rem;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -201,6 +284,37 @@
   background: rgba(229, 72, 77, .1);
   border-color: rgba(229, 72, 77, .45);
   color: #e5484d;
+}
+
+/* 用户消息内的附件 chips(不可交互,仅展示) */
+.aipm-chat__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .45rem;
+}
+.aipm-chat__file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  max-width: 100%;
+  padding: .18rem .5rem;
+  border-radius: .35rem;
+  font-size: .75rem;
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.aipm-chat__file-chip svg {
+  width: .85rem;
+  height: .85rem;
+  flex: none;
+  fill: var(--md-default-fg-color--light);
+}
+.aipm-chat__file-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 消息内 markdown-lite 排版(不引库) */
@@ -282,68 +396,216 @@
   color: var(--md-default-fg-color--lighter);
 }
 
+/* AI 回答气泡下方常驻操作行:复制 / 重新生成(不随 hover 显隐) */
+.aipm-chat__actions {
+  display: flex;
+  align-items: center;
+  gap: .15rem;
+  margin-top: .35rem;
+}
+.aipm-chat__actions[hidden] {
+  display: none;
+}
+.aipm-chat__act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: .3rem;
+  color: var(--md-default-fg-color--lighter);
+  background: transparent;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease;
+}
+.aipm-chat__act:hover {
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-chat__act svg {
+  width: .95rem;
+  height: .95rem;
+  fill: currentColor;
+}
+/* 复制成功:勾替换剪贴板并短暂变 accent */
+.aipm-chat__act .aipm-chat__icon-check {
+  display: none;
+}
+.aipm-chat__act.is-copied .aipm-chat__icon-copy {
+  display: none;
+}
+.aipm-chat__act.is-copied .aipm-chat__icon-check {
+  display: block;
+}
+.aipm-chat__act.is-copied {
+  color: var(--md-accent-fg-color);
+}
+
 /* ----------------------------------------------------------------------------
-   5. 输入区
+   5. 输入区(卡片式:附件 chips + 无边框 textarea + 底部图标行)
    ---------------------------------------------------------------------------- */
 .aipm-chat__composer {
   flex: none;
   display: flex;
-  align-items: flex-end;
-  gap: .4rem;
-  padding: .5rem .65rem .65rem;
-  border-top: 1px solid var(--md-default-fg-color--lightest);
+  flex-direction: column;
+  margin: .5rem .75rem .8rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .9rem;
+  background: transparent;
+  transition: border-color .12s ease, box-shadow .12s ease,
+              background-color .12s ease;
 }
-.aipm-chat__input {
-  flex: 1;
-  min-height: 2rem;
-  max-height: 9rem;
-  padding: .4rem .55rem;
-  border-radius: .6rem;
+.aipm-chat__composer:focus-within {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0 0 2px var(--md-accent-fg-color--transparent);
+}
+.aipm-chat__composer.is-dragover {
+  border-style: dashed;
+  border-color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
+/* 待发送附件 chips(可移除,内嵌卡片顶部) */
+.aipm-chat__attachbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  padding: .55rem .7rem 0;
+}
+.aipm-chat__attachbar[hidden] {
+  display: none;
+}
+.aipm-chat__attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  max-width: 100%;
+  padding: .22rem .3rem .22rem .5rem;
+  border-radius: .4rem;
+  font-size: .75rem;
   border: 1px solid var(--md-default-fg-color--lightest);
   background: var(--md-default-bg-color--lighter);
+  white-space: nowrap;
+}
+.aipm-chat__attach-chip svg {
+  width: .85rem;
+  height: .85rem;
+  flex: none;
+  fill: var(--md-default-fg-color--light);
+}
+.aipm-chat__attach-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aipm-chat__attach-x {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-size: .8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease;
+}
+.aipm-chat__attach-x:hover {
+  color: #e5484d;
+  background: rgba(229, 72, 77, .12);
+}
+
+.aipm-chat__input {
+  width: 100%;
+  min-height: 3rem;
+  max-height: 10rem;
+  padding: .7rem .75rem .25rem;
+  border: 0;
+  background: transparent;
   color: var(--md-default-fg-color);
   font-family: inherit;
   font-size: inherit;
-  line-height: 1.45;
+  line-height: 1.5;
   resize: none;
   outline: none;
-  transition: border-color .12s ease, box-shadow .12s ease;
-}
-.aipm-chat__input:focus {
-  border-color: var(--md-accent-fg-color);
-  box-shadow: 0 0 0 2px var(--md-accent-fg-color--transparent);
+  overflow-y: auto;
 }
 .aipm-chat__input::placeholder {
   color: var(--md-default-fg-color--lighter);
 }
-.aipm-chat__send {
-  flex: none;
+
+/* 卡片底部图标行:左回形针、右圆形发送 */
+.aipm-chat__inputrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .25rem .5rem .55rem;
+}
+.aipm-chat__attach {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease;
+}
+.aipm-chat__attach:hover,
+.aipm-chat__attach.is-active {
+  color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+.aipm-chat__attach svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: currentColor;
+}
+.aipm-chat__send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 1px solid transparent;
   border-radius: 50%;
   color: var(--md-accent-bg-color);
   background: var(--md-accent-fg-color);
   cursor: pointer;
-  transition: opacity .12s ease, transform .12s ease;
+  transition: opacity .12s ease, transform .12s ease,
+              color .12s ease, background-color .12s ease,
+              border-color .12s ease;
 }
 .aipm-chat__send:hover {
-  transform: scale(1.06);
+  transform: scale(1.08);
 }
+/* 空内容:描边圆形弱化态 */
 .aipm-chat__send:disabled {
-  opacity: .45;
+  color: var(--md-default-fg-color--lighter);
+  background: transparent;
+  border-color: var(--md-default-fg-color--lightest);
   cursor: default;
   transform: none;
 }
 /* 发送中:按钮变「停止」 */
 .aipm-chat__send.is-stop {
+  color: #fff;
   background: #e5484d;
 }
 .aipm-chat__send svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1rem;
+  height: 1rem;
   fill: currentColor;
 }
 
@@ -361,12 +623,10 @@
   color: var(--md-default-fg-color--light);
   background: var(--md-default-bg-color--lighter);
   border: 1px solid var(--md-default-fg-color--lightest);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
 }
 
 /* ----------------------------------------------------------------------------
-   7. prefers-reduced-motion:禁用位移/弹性动画与折射
+   7. prefers-reduced-motion:禁用位移动画
    ---------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .aipm-chat__fab,
@@ -374,13 +634,11 @@
     transition: none;
   }
   .aipm-chat__fab:hover,
-  .aipm-chat__fab:active {
+  .aipm-chat__fab:active,
+  .aipm-chat__send:hover {
     transform: none;
   }
   .aipm-chat__thinking .aipm-chat__dots::after {
     animation: none;
-  }
-  .aipm-chat.is-open {
-    filter: none;
   }
 }

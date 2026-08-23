@@ -175,15 +175,16 @@ extra:
   # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
   chat_agent:
     enabled: true
-    version: 1
+    version: 7
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   provider: google
   #   property: YOUR-GA-ID
 
 extra_javascript:
   - '_static/js/banner.js?v=7'
+  - '_static/js/header-line.js?v=1'
 extra_css:
-  - '_static/css/extra.css?v=23'
+  - '_static/css/extra.css?v=29'
   # - '_static/css/offset-inject-debug.css'
 
 # Extensions
