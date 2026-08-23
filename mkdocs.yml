@@ -141,7 +141,8 @@ theme:
         name: Switch to light mode
   favicon: 'favicon.svg'
   logo: 'favicon.svg'
-  icon: {}
+  icon:
+    repo: fontawesome/brands/github-alt
   features:
     - content.action.edit
     - navigation.tabs
@@ -173,8 +174,10 @@ extra:
   #   provider: google
   #   property: YOUR-GA-ID
 
+extra_javascript:
+  - '_static/js/banner.js?v=7'
 extra_css:
-  - '_static/css/extra.css?v=18'
+  - '_static/css/extra.css?v=23'
   # - '_static/css/offset-inject-debug.css'
 
 # Extensions
