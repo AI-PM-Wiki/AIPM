@@ -17,7 +17,7 @@ import { WikiIndex } from './search.ts';
 import { runAgent } from './agent.ts';
 import type { AgentErrorCode } from './agent.ts';
 import { truncateHistory } from './history.ts';
-import { SlidingWindowLimiter, Semaphore, hashIp } from './rate-limit.ts';
+import { SlidingWindowLimiter, Semaphore, SemaphoreError, hashIp } from './rate-limit.ts';
 import { initSseResponse, startHeartbeat, writeSseEvent } from './sse.ts';
 
 const ChatBodySchema = z.object({
@@ -91,6 +91,9 @@ export function createApp(deps: ServerDeps) {
 
   async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const requestId = randomUUID();
+    // 断连取消尽早接线:排队期间客户端关闭也要中止(不占槽位、不写响应)
+    const abortController = new AbortController();
+    req.once('close', () => abortController.abort());
     const origin = req.headers.origin;
     const corsHeaders: Record<string, string> = {
       'Access-Control-Allow-Origin': origin === undefined ? '' : origin,
@@ -113,12 +116,23 @@ export function createApp(deps: ServerDeps) {
       return;
     }
 
-    const release = semaphore.tryAcquire();
-    if (release === null) {
-      const headers = { 'Retry-After': '5', ...corsHeaders };
-      sendError(req, res, 503, 'concurrency_limit', '服务繁忙,请稍后再试', headers);
-      return;
+    const acquired = await semaphore.acquire({ signal: abortController.signal }).then(
+      (release) => ({ ok: true as const, release }),
+      (err: unknown) => ({ ok: false as const, err }),
+    );
+    if (!acquired.ok) {
+      if (acquired.err instanceof SemaphoreError) {
+        if (acquired.err.code === 'aborted') return; // 客户端已断开,静默
+        const retryAfter = acquired.err.code === 'queue_full' ? '10' : '1';
+        const message =
+          acquired.err.code === 'queue_full' ? '服务繁忙,请稍后再试' : '排队超时,请稍后再试';
+        const headers = { 'Retry-After': retryAfter, ...corsHeaders };
+        sendError(req, res, 503, 'concurrency_limit', message, headers);
+        return;
+      }
+      throw acquired.err;
     }
+    const release = acquired.release;
 
     let body = '';
     const contentLength = Number(req.headers['content-length'] ?? 0);
@@ -177,10 +191,6 @@ export function createApp(deps: ServerDeps) {
     };
     safeWrite('ready', { requestId });
     const stopHeartbeat = startHeartbeat(res);
-
-    const abortController = new AbortController();
-    const onClientClose = () => abortController.abort();
-    req.once('close', onClientClose);
 
     let answerChars = 0;
     let thinkingChars = 0;

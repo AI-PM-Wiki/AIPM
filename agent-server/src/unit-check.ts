@@ -24,7 +24,7 @@ import { initSseResponse, writeSseEvent, startHeartbeat } from './sse.ts';
       return true;
     },
     end: () => {},
-  } as unknown as import('node:http').ServerResponse;
+  } as unknown as import('node:http').ServerResponse & { _headers: Record<string, unknown> };
 
   initSseResponse(res, { 'Access-Control-Allow-Origin': 'https://hyc.ac' });
   check('SSE: Content-Type', res._headers['Content-Type'] === 'text/event-stream; charset=utf-8', String(res._headers['Content-Type']));
@@ -128,13 +128,36 @@ await index.load();
   lim2.tryAcquire(key);
   await new Promise((r) => setTimeout(r, 25));
   check('限流: 窗口过期后可放行', lim2.tryAcquire(key));
-  const sem = new Semaphore(2);
-  const r1 = sem.tryAcquire();
-  const r2 = sem.tryAcquire();
-  check('信号量: 满 2 时拒绝第 3 个', r1 !== null && r2 !== null && sem.tryAcquire() === null);
+  const sem = new Semaphore(2, { waitMs: 200, queueLimit: 2 });
+  const r1 = await sem.acquire();
+  const r2 = await sem.acquire();
+  check('信号量: 前 2 个立即获得', typeof r1 === 'function' && typeof r2 === 'function');
+  const t0 = Date.now();
+  const w1 = await sem.acquire({ timeoutMs: 30 }).then(() => null, (e: unknown) => e);
+  check('信号量: 排队超时(>25ms)拒绝', w1 instanceof Error && Date.now() - t0 >= 25);
+  const w2 = sem.acquire();
+  const w3 = sem.acquire();
+  check('信号量: 排队中(深度 2/2)', sem.waitingCount === 2);
+  const w4 = await sem.acquire().then(() => null, (e: unknown) => e);
+  check(
+    '信号量: 队列满拒绝 queue_full',
+    w4 instanceof Error && (w4 as { code?: string }).code === 'queue_full',
+  );
   r1!();
-  check('信号量: 释放后可再取', sem.tryAcquire() !== null);
+  const rel2 = await w2;
+  check('信号量: 释放后排队者 FIFO 获得', typeof rel2 === 'function' && sem.waitingCount === 1);
+  const ac = new AbortController();
+  const w5 = sem.acquire({ signal: ac.signal });
+  ac.abort();
+  const w5r = await w5.then(() => 'granted', (e: unknown) => (e as { code?: string }).code);
+  check('信号量: 排队中 abort 取消', w5r === 'aborted' && sem.waitingCount === 1);
+  rel2!();
+  const rel3 = await w3;
+  rel3!();
   r2!();
+  const r3 = await sem.acquire();
+  check('信号量: 全部释放后可再取', typeof r3 === 'function' && sem.activeCount === 1);
+  r3!();
 }
 
 console.log(`\n${failed === 0 ? '全部通过' : `${failed} 项失败`}`);

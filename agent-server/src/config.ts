@@ -21,6 +21,8 @@ export interface Config {
   rateLimitMax: number;
   rateLimitWindowMs: number;
   concurrencyLimit: number;
+  queueLimit: number;
+  queueWaitMs: number;
   bodyLimitBytes: number;
   trustProxy: boolean;
   scratchDir: string;
@@ -45,6 +47,8 @@ const EnvSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).default(600_000),
   CONCURRENCY_LIMIT: z.coerce.number().int().min(1).max(64).default(4),
+  QUEUE_LIMIT: z.coerce.number().int().min(0).max(256).default(10),
+  QUEUE_WAIT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
   BODY_LIMIT_BYTES: z.coerce.number().int().min(1024).default(65_536),
   TRUST_PROXY: z.string().default('false'),
   SCRATCH_DIR: z.string().min(1).default('/tmp/aipm-agent-scratch'),
@@ -79,6 +83,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rateLimitMax: e.RATE_LIMIT_MAX,
     rateLimitWindowMs: e.RATE_LIMIT_WINDOW_MS,
     concurrencyLimit: e.CONCURRENCY_LIMIT,
+    queueLimit: e.QUEUE_LIMIT,
+    queueWaitMs: e.QUEUE_WAIT_MS,
     bodyLimitBytes: e.BODY_LIMIT_BYTES,
     trustProxy: parseBool(e.TRUST_PROXY),
     scratchDir: e.SCRATCH_DIR,

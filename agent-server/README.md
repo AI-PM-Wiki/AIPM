@@ -35,7 +35,8 @@ POST /api/chat ──► server.ts (node:http 路由/CORS/限流/并发)
 | `MODEL` / `EFFORT` / `MAX_BUDGET_USD` / `MAX_TURNS` | SDK 会话参数(预算与轮数由 SDK 强制) |
 | `SEARCH_INDEX_URL` / `INDEX_REFRESH_MS` | 索引地址与后台刷新间隔(默认 30 分钟) |
 | `ALLOWED_ORIGINS` | 精确 Origin 白名单,逗号分隔,无通配符、无凭据 |
-| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` / `CONCURRENCY_LIMIT` | 每 IP 滑动窗口限流 + 并发信号量 |
+| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` / `CONCURRENCY_LIMIT` | 每 IP 滑动窗口限流 + 并发信号量(成本护栏) |
+| `QUEUE_LIMIT` / `QUEUE_WAIT_MS` | 并发满时排队深度(默认 10)与等待上限(默认 60s),超限 503 + Retry-After |
 | `TRUST_PROXY` | 置 `true` 时从 `Fly-Client-IP` 取客户端 IP(否则 socket 地址) |
 
 ## 开发与运行
@@ -66,7 +67,10 @@ SSE 协议(事件流,15s 心跳注释行 `: ping`):
 ## 部署注意
 
 - **单实例假设**:限流与并发信号量是进程内状态,横向扩容需改为共享存储
-  (Redis 等);并发上限 4 对应 SDK 子进程数,实例数 × 4 为总并发。
+  (Redis 等);并发上限 4 对应 SDK 子进程数,实例数 × 4 为总并发。并发满时
+  请求进入有界队列(`QUEUE_LIMIT`/`QUEUE_WAIT_MS`),不排队失败——这是成本
+  护栏而非性能瓶颈:每个槽位背后是实打实的 LLM 调用,宁可让用户稍等也不可
+  无上限并发烧穿月度预算。
 - **索引刷新滞后**:内容更新后最多 `INDEX_REFRESH_MS`(默认 30 分钟)才会被问答读到;
   刷新失败不重启,`/healthz` 的 `stale` 标记可见。
 - 日志不含原始 IP 与明文 prompt(限流事件只记 IP 的 sha256 前缀)。
