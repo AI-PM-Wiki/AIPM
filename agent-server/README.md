@@ -21,6 +21,12 @@ POST /api/chat ──► server.ts (node:http 路由/CORS/限流/并发)
   索引加载失败即启动失败,后台刷新失败则保留旧索引并在 `/healthz` 标记 `stale`。
 - 中文分词:归一化 → 拉丁/数字 token → CJK 连续段 unigram + 字符 bigram
   (「提示词工程」→ 提/示/词/工/程/提示/示词/词工/工程);BM25(k1=1.5, b=0.75, tf 上限 3)。
+- 召回质量(2026-08-24 实测调优,零依赖、纯数据驱动):
+  - 索引侧:标题 token ×3 并入正文——「RAG」「提示词工程」这类专名页靠标题命中
+    顶格召回(「什么是 RAG」从 top-8 外 → 正典页第一);
+  - 查询侧:df 占比 >40% 的单字(是/的/了…虚词)剔除;二字 token 若 df>40% 或由
+    两个 df>30% 的超高频单字组成(什么/么是/是什/怎么 这类虚词组合)同样剔除——
+    「什么是 X」不再被标题命中的虚词组合反杀。全部被剔除时回退原 token。
 - 工具面:`tools: []` 禁用全部内置工具,只剩 `mcp__wiki__search_wiki` / `mcp__wiki__read_wiki_page`;
   `disallowedTools` 列 9 项内置工具纵深防御;`strictMcpConfig` + `settingSources: []` 隔离宿主配置。
 - SDK 子进程工作目录指向空 scratch 目录(`SCRATCH_DIR`),`persistSession: false`。
@@ -75,3 +81,22 @@ SSE 协议(事件流,15s 心跳注释行 `: ping`):
   刷新失败不重启,`/healthz` 的 `stale` 标记可见。
 - 日志不含原始 IP 与明文 prompt(限流事件只记 IP 的 sha256 前缀)。
 - 首次启动需要能访问 `SEARCH_INDEX_URL`;SDK 需要能访问 Anthropic API(或配置代理)。
+
+## 部署(fly.io)
+
+仓库自带 `Dockerfile` + `fly.toml`(也可在任意支持 Docker 的 VPS 上跑):
+
+```bash
+cd agent-server
+fly launch --no-deploy --name aipm-agent-server   # 或 flyctl launch --no-deploy
+fly secrets set ANTHROPIC_API_KEY=xxx             # 必填密钥(其余环境变量走 [env]/默认值)
+fly deploy
+```
+
+- 前端 widget 生产环境请求 `https://docs-agent.hyc.ac`(见 `docs/_static/js/chat-widget.js`
+  的 `API_BASE`),需为该域名加 CNAME 到 `<app>.fly.dev`,Fly 自动签发证书;
+  `ALLOWED_ORIGINS` 保持默认(`https://hyc.ac` + localhost),非浏览器请求不受限。
+- `fly.toml` 已置 `TRUST_PROXY=true`(限流取 `Fly-Client-IP`)与 `/healthz` 健康检查;
+  单机常驻(`auto_stop_machines = "off"`)避免首包冷启动。
+- 扩容:同一 key 下 `fly machines scale count 2` 即可,但限流/信号量随之变为
+  每实例独立计数(单实例假设),需要严格护栏时保持单实例。

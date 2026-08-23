@@ -1,0 +1,37 @@
+# fly.io 部署配置(fly.toml)。
+# 前提:
+#   1. fly launch 时选择本文件(Dockerfile 构建);
+#   2. fly secrets set ANTHROPIC_API_KEY=xxx 注入密钥;
+#   3. DNS:docs-agent.hyc.ac CNAME → <app>.fly.dev(Fly 自动签证书)。
+# 非敏感配置走 [env](config.ts 里已有同名默认值,这里只覆盖部署环境需要的)。
+
+app = "aipm-agent-server"
+
+# 用户邻近区域可改(如 sin/hkg/nrt);中国内地访问延迟与出口稳定性以实测为准。
+primary_region = "hkg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8787"
+  # 生产请求来自 wiki(hyc.ac),取 Fly 代理设置的客户端 IP 做限流
+  TRUST_PROXY = "true"
+  # 索引 30 分钟刷新一次(默认值,显式写出便于调整)
+  INDEX_REFRESH_MS = "1800000"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  # 成本护栏靠进程内并发上限(默认 4),不依赖机器休眠;
+  # 保持常驻避免问答首包冷启动延迟
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.checks]
+    [http_service.checks.healthz]
+      interval = "30s"
+      timeout = "5s"
+      grace_period = "15s"
+      path = "/healthz"
