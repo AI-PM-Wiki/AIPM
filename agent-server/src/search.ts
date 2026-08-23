@@ -113,6 +113,39 @@ const BM25_K1 = 1.5;
 const BM25_B = 0.75;
 const TF_CAP = 3;
 
+/** 单字 token 的 df 占比超过此值视为无信息虚词(是/的/了…),查询端剔除。 */
+const DROP_COMMON_DF_FRAC = 0.4;
+/** 二字 token 的构成单字 df 占比均超过此值 → 虚词组合(什么/么是/怎么…),剔除。 */
+const DROP_COMPOSITE_DF_FRAC = 0.3;
+
+/**
+ * 查询端停用词过滤(纯数据驱动,无手工词表):
+ *  - 单字 token df/N > DROP_COMMON_DF_FRAC → 剔除(如 是/的/了,几无区分度)
+ *  - 二字 token df/N > DROP_COMMON_DF_FRAC 或由两个超高频单字组成 → 剔除
+ *    (「什么是 X」的 什么/么是/是什 这类虚词组合会靠标题命中反杀真正主题词;
+ *     内容词如 产品/经理 的构成字通常达不到 0.3,不受影响)
+ * 全部被剔除时回退原 token,退化查询保底旧行为。
+ */
+export function filterQueryTokens(
+  tokens: string[],
+  docFreq: Map<string, number>,
+  docCount: number,
+): string[] {
+  const filtered = tokens.filter((tok) => {
+    const df = docFreq.get(tok) ?? 0;
+    if (df / docCount > DROP_COMMON_DF_FRAC) return false;
+    if (tok.length === 2) {
+      const dfA = docFreq.get(tok[0]!) ?? 0;
+      const dfB = docFreq.get(tok[1]!) ?? 0;
+      if (dfA / docCount > DROP_COMPOSITE_DF_FRAC && dfB / docCount > DROP_COMPOSITE_DF_FRAC) {
+        return false;
+      }
+    }
+    return true;
+  });
+  return filtered.length > 0 ? filtered : tokens;
+}
+
 export function bm25Score(
   queryTokens: string[],
   docFreq: Map<string, number>,
@@ -281,7 +314,10 @@ export class WikiIndex {
     const docFreq = new Map<string, number>();
     let totalLen = 0;
     for (let i = 0; i < docs.length; i++) {
-      const toks = tokenize(docs[i]!.text);
+      // 标题 token ×3 并入正文(标题命中是「RAG」这类专名页最强的召回信号;
+      // tf 上限 3 使标题 token 天然顶格,正文重复不计入更多)
+      const titleToks = tokenize(docs[i]!.title);
+      const toks = [...titleToks, ...titleToks, ...titleToks, ...tokenize(docs[i]!.text)];
       docTokens[i] = toks;
       totalLen += toks.length;
       const seen = new Set<string>();
@@ -344,7 +380,11 @@ export class WikiIndex {
   /** BM25 top-N 检索,只求召回(agent 会再读全文)。 */
   search(query: string, topN = 8): SearchHit[] {
     if (this.docs.length === 0) return [];
-    const queryTokens = [...new Set(tokenize(query))];
+    const queryTokens = filterQueryTokens(
+      [...new Set(tokenize(query))],
+      this.docFreq,
+      this.docs.length,
+    );
     if (queryTokens.length === 0) return [];
     const scored: Array<{ idx: number; score: number }> = [];
     for (let i = 0; i < this.docs.length; i++) {

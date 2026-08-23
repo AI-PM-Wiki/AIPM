@@ -5,7 +5,7 @@
  * 覆盖:分词、BM25 相关性、resolvePage 定位、历史截断、限流/信号量。
  * 依赖网络(下载线上索引);不需要 npm 包与 ANTHROPIC_API_KEY。
  */
-import { WikiIndex, tokenize, normalizeText } from './search.ts';
+import { WikiIndex, tokenize, normalizeText, filterQueryTokens } from './search.ts';
 import { truncateHistory } from './history.ts';
 import { SlidingWindowLimiter, Semaphore, hashIp } from './rate-limit.ts';
 import { initSseResponse, writeSseEvent, startHeartbeat } from './sse.ts';
@@ -80,6 +80,47 @@ await index.load();
   check('检索: snippet 无 HTML 标签', !top1.snippet.includes('<'), top1.snippet.slice(0, 40));
   check('检索: snippet ≤300 字', top1.snippet.length <= 300, `len=${top1.snippet.length}`);
   check('检索: url 完整', top1.url.startsWith('https://hyc.ac/aipm/'), top1.url);
+}
+
+// ---- 查询端停用词过滤 ----
+{
+  const df = new Map<string, number>([
+    ['是', 550], ['什', 300], ['么', 350], ['什么', 300], ['么是', 23],
+    ['rag', 96], ['提示', 120], ['工程', 200], ['产品', 300], ['经理', 150],
+    ['幻', 200], ['觉', 300], ['幻觉', 250],
+  ]);
+  const N = 887;
+  const f = (toks: string[]) => filterQueryTokens([...new Set(toks)], df, N);
+  const ragQ = f(tokenize('什么是 RAG'));
+  check('停用词: 什么是 RAG → 剔除 是/什么/么是/是什', !ragQ.includes('是') && !ragQ.includes('什么') && !ragQ.includes('么是') && !ragQ.includes('是什'), ragQ.join('/'));
+  const pmQ = f(tokenize('产品经理'));
+  check('停用词: 内容词 产品/经理 保留', pmQ.includes('产品') && pmQ.includes('经理'), pmQ.join('/'));
+  const huanQ = f(tokenize('幻觉问题'));
+  check('停用词: 内容词 幻觉 保留', huanQ.includes('幻觉'), huanQ.join('/'));
+  const emptyQ = f(tokenize('是什么'));
+  check('停用词: 虚词剔除后保留有区分度单字', emptyQ.join('/') === '什/么', emptyQ.join('/'));
+  const allDropped = filterQueryTokens(['是', '的'], new Map([['是', 800], ['的', 700]]), 887);
+  check('停用词: 全部被剔除时回退原 token', allDropped.join('') === '是的');
+}
+
+// ---- 标题加权 + 停用词过滤的端到端召回(线上索引) ----
+{
+  const rag = index.search('什么是 RAG', 8);
+  const ragHit = rag.findIndex((h) => h.location.startsWith('ai/rag'));
+  check('召回: 什么是 RAG → 正典 RAG 页进 top-5', ragHit >= 0 && ragHit < 5, `rank=${ragHit + 1}, top1=${rag[0]?.title}`);
+  const rag2 = index.search('RAG 是什么', 8);
+  const rag2Hit = rag2.findIndex((h) => h.location.startsWith('ai/rag'));
+  check('召回: RAG 是什么 → 正典 RAG 页进 top-5', rag2Hit >= 0 && rag2Hit < 5, `rank=${rag2Hit + 1}`);
+  const prompt = index.search('提示词工程', 8);
+  check('召回: 提示词工程 → ai/prompting 第一', (prompt[0]?.location.startsWith('ai/prompting') ?? false), prompt[0]?.title);
+  const kb = index.search('知识库问答', 8);
+  check('召回: 知识库问答 → practice/kb-qa 第一', (kb[0]?.location.startsWith('practice/kb-qa') ?? false), kb[0]?.title);
+  const halluc = index.search('幻觉问题怎么解决', 8);
+  check(
+    '召回: 幻觉问题 → top-8 含相关页(幻觉护栏/坑三)',
+    halluc.some((h) => h.location.includes('幻觉护栏') || h.location.includes('lessons')),
+    halluc[0]?.title,
+  );
 }
 
 // ---- resolvePage ----
