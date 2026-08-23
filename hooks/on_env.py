@@ -54,7 +54,9 @@ def on_post_build(config, **kwargs):
         index = json.load(f)
     for doc in index.get("docs", []):
         text = doc.get("text")
-        if not text or "<p>" in text:
+        # 已切块(以 <p> 开头)或正文里本就有 <p> 字样的跳过;用 startswith
+        # 而不是 "in",避免正文含代码示例("<p>")的文档被误判为已处理
+        if not text or text.startswith("<p>"):
             continue
         chunks = _chunk_sentences(text)
         if len(chunks) > 1:
