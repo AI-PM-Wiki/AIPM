@@ -35,12 +35,32 @@ nav:
     - 商业化与增长: pm/monetization.md
   - AI 基础:
     - AI 基础简介: ai/index.md
-    - 大模型基础: ai/llm-basics.md
-    - 模型能力与边界: ai/capabilities.md
-    - 多模态: ai/multimodal.md
-    - 提示词工程: ai/prompting.md
-    - RAG: ai/rag.md
-    - Agent 与工作流: ai/agent.md
+    - 机器学习与深度学习:
+      - 机器学习基础: ai/ml-basics.md
+      - 深度学习基础: ai/dl-basics.md
+      - Transformer 架构: ai/transformer.md
+    - 大模型:
+      - 大模型基础: ai/llm-basics.md
+      - 模型训练与对齐: ai/llm-training.md
+      - 模型推理与部署: ai/llm-inference.md
+      - 模型能力与边界: ai/capabilities.md
+    - 多模态:
+      - 多模态理解: ai/multimodal.md
+      - 图像生成: ai/image-generation.md
+      - 视频生成: ai/video-generation.md
+      - 语音与音频: ai/audio.md
+    - 提示词工程:
+      - 提示词工程: ai/prompting.md
+      - 高级提示词技巧: ai/prompt-advanced.md
+      - 提示词安全: ai/prompt-security.md
+    - RAG 与知识检索:
+      - RAG 基础: ai/rag.md
+      - 检索技术: ai/rag-retrieval.md
+      - 高级 RAG: ai/rag-advanced.md
+    - Agent:
+      - Agent 与工作流: ai/agent.md
+      - 工具调用与 MCP: ai/agent-tools.md
+      - Agent 架构与多智能体: ai/agent-architecture.md
     - 评估与评测: ai/evaluation.md
     - AI 系统架构: ai/architecture.md
   - AI 产品实战:
