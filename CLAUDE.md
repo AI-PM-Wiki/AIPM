@@ -100,7 +100,8 @@ bash scripts/check-upstream-remnants.sh  # 无上游 fork 残留(2026-08 新增,
 
 - **worktree-first 并行开发**(parallel-development skill):每个 workstream 从 `dev` 切出
   独立 worktree(命名 `aipm-wt-<ws>`);worktree 缺依赖时:`.venv` symlink 主仓库的
-  (uv 的 .venv 可跨目录用),子模块用 `git submodule update --init --recursive` 检出;
+  (uv 的 .venv 可跨目录用),子模块用 `git submodule update --init --recursive` 检出
+  (mkdocs-material 为构建必需;agent-server 只在开发/部署该服务时检出,mkdocs 构建不依赖);
   完成后由 merger 按序 `--no-ff` 合并回 `dev`。
 - **分支**:`dev` = 集成分支;`main` = 发布分支,**绝不直接 push,只走 PR**
   (main 上的 push 触发 GitHub Actions 构建并部署到 gh-pages)。
@@ -126,6 +127,9 @@ bash scripts/check-upstream-remnants.sh  # 无上游 fork 残留(2026-08 新增,
 
 - Python 3.10+(uv 管理,`uv sync` 装依赖;`.venv/` 在仓库根)
 - Node.js 20+(package.json 声明;当前项目脚本未用,node_modules 未装)
-- Git 子模块:`mkdocs-material`(定制主题,见「开发命令」)
+- Git 子模块:
+  - `mkdocs-material`(定制主题,见「开发命令」;改动立即推子模块远端,防 gitlink 断链)
+  - `agent-server`(站内文档问答 Agent 后端,独立仓库 Hi-Yincan/aipm-agent-server;
+    技术栈 Node + Agent SDK,与本站无构建依赖;开发/部署/命令见其仓库 README)
 - 站点部署于 `/aipm/` 子路径(site_url: https://hyc.ac/aipm/),根目录有 CNAME、
   robots.txt 等发布文件
