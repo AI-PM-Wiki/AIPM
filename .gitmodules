@@ -1,0 +1,3 @@
+[submodule "mkdocs-material"]
+	path = mkdocs-material
+	url = https://github.com/Hi-Yincan/mkdocs-material
