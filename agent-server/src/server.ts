@@ -43,7 +43,10 @@ export function createApp(deps: ServerDeps) {
     config.rateLimitMax,
     config.rateLimitWindowMs,
   );
-  const semaphore = new Semaphore(config.concurrencyLimit);
+  const semaphore = new Semaphore(config.concurrencyLimit, {
+    queueLimit: config.queueLimit,
+    waitMs: config.queueWaitMs,
+  });
   const startedAt = Date.now();
 
   function originAllowed(origin: string | undefined): boolean {
@@ -62,11 +65,17 @@ export function createApp(deps: ServerDeps) {
     return addr === undefined ? 'unknown' : addr;
   }
 
-  function writeJson(res: ServerResponse, status: number, body: unknown): void {
+  function writeJson(
+    res: ServerResponse,
+    status: number,
+    body: unknown,
+    extraHeaders: Record<string, string> = {},
+  ): void {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'no-store',
       Vary: 'Origin',
+      ...extraHeaders,
     };
     res.writeHead(status, headers);
     res.end(JSON.stringify(body));
@@ -81,12 +90,12 @@ export function createApp(deps: ServerDeps) {
     extraHeaders: Record<string, string> = {},
   ): void {
     const requestId = req.headers['x-request-id'] ?? randomUUID();
-    writeJson(res, status, {
-      error: code,
-      message,
-      requestId: String(requestId),
-      ...extraHeaders,
-    });
+    writeJson(
+      res,
+      status,
+      { error: code, message, requestId },
+      extraHeaders, // 真正的 HTTP 头(Retry-After / CORS),不是响应体字段
+    );
   }
 
   async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -130,6 +139,15 @@ export function createApp(deps: ServerDeps) {
         const retryAfter = acquired.err.code === 'queue_full' ? '10' : '1';
         const message =
           acquired.err.code === 'queue_full' ? '服务繁忙,请稍后再试' : '排队超时,请稍后再试';
+        console.log(
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            requestId,
+            event: 'concurrency_limit',
+            code: acquired.err.code,
+            ipHash: ipKey.slice(0, 16),
+          }),
+        );
         const headers = { 'Retry-After': retryAfter, ...corsHeaders };
         sendError(req, res, 503, 'concurrency_limit', message, headers);
         return;
