@@ -67,6 +67,6 @@
 
 -   [大厂面试流程全览](interview-process.md):社招轮次与通过标准
 -   [面试复盘方法论](review-methodology.md):每场面试后的复盘方法
--   [AI 产品经理面试指南](../../case/interview.md):答题框架
+-   [AI 产品经理面试指南](interview-guide.md):答题框架
 -   [谈薪与 Offer 选择](offer-negotiation.md):谈薪与 Offer 选择
 -   [产品经理黑话速查](../../intro/glossary.md):面试用词准确
