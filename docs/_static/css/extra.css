@@ -302,6 +302,29 @@
   position: static;
 }
 
+/* 5.3.1 导航栏与文章交界线(粘性发丝线,由 header-line.js 注入,
+   位于 .md-tabs 与正文之间):
+   - 页顶两栏(tabs 常驻):线在 tabs 底缘(tabs 下方一条);
+     滚动时线随内容上移,直到吸顶页头下缘(top 2.4rem)粘住 ——
+     中间过渡段始终只有这一条线;
+   - 一栏(tabs 随断点收起 display:none):线紧跟页头,页面顶/滚动后
+     都在页头下缘一条;
+   - z-index 与页头同级,盖过滚动正文与 tabs,始终唯一;
+   - 高度 0 + border-top,不占布局。 */
+.md-header__line {
+  position: sticky;
+  top: 2.4rem;                    /* 吸顶页头高度,线贴页头下缘 */
+  z-index: 4;                     /* 与页头同级,晚于页头在 DOM 中 */
+  height: 0;
+  border-top: 1px solid var(--pm-line);
+  pointer-events: none;
+}
+@media print {
+  .md-header__line {
+    display: none;
+  }
+}
+
 /* 5.4 搜索:顶栏浅灰胶囊,下拉纯色卡片 */
 .md-header .md-search__form {
   background-color: rgba(0, 0, 0, .05);

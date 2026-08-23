@@ -194,20 +194,27 @@ plugins:
 # 主题子模块切换到官方 material 后可将本段与 hooks/on_env.py 一并删除。
 hooks:
   - hooks/on_env.py
+  - hooks/chat_agent.py
 
 # Customization
 extra:
   # disqus: 'your-disqus-shortname'  # TODO: 需要评论区时填写
   copyright: '<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">CC BY-SA 4.0</a> 和 <a href="https://github.com/zTrix/sata-license">SATA</a>'
   manifest: 'manifest.webmanifest'
+  # 文档问答 Agent 前端 widget(注入由 hooks/chat_agent.py 完成):
+  # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
+  chat_agent:
+    enabled: true
+    version: 7
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   provider: google
   #   property: YOUR-GA-ID
 
 extra_javascript:
   - '_static/js/banner.js?v=7'
+  - '_static/js/header-line.js?v=1'
 extra_css:
-  - '_static/css/extra.css?v=23'
+  - '_static/css/extra.css?v=29'
   # - '_static/css/offset-inject-debug.css'
 
 # Extensions
