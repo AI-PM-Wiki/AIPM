@@ -1115,15 +1115,3 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   width: 100%;
   height: 100%;
 }
-
-/* 12.3 图注:左下角等宽小字,呼应站点 11px/等宽 的图注语气 */
-.pm-banner__caption {
-  position: absolute;
-  left: 18px;
-  bottom: 14px;
-  margin: 0;
-  font-family: "JetBrains Mono", "Fira Mono", ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: .08em;
-  color: var(--pm-faint);
-}
