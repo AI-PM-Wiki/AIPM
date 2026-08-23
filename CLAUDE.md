@@ -14,6 +14,19 @@ squidfunk/mkdocs-material → oi-wiki 深度定制 → Hi-Yincan/mkdocs-material
 纯静态站点,无后端、无数据库。内容为协作维护的原创中文资料,覆盖 AI 产品方法论、LLM 能力与工具、
 提示词工程、Agent 工作流、评测与求职专题等。
 
+### 搜索架构与主题维护(2026-08 定案:不装包、深定制 fork)
+
+- 主题经 `custom_dir` 加载(`theme.name: null`),**不安装** `material` Python 包,故 mkdocs.yml 的
+  `- search:` 解析为 **mkdocs 内置 search 插件**(`config.plugins` 键为 `search`,非 `material/search`)。
+- 兼容契约:主题 `partials/header.html` 的搜索检查用双键
+  `"material/search" in config.plugins or "search" in config.plugins`(子模块已改,勿改回单键)。
+- `hooks/on_env.py` 的 `on_config` 摘除内置插件注入的 `search/main.js`(经典主题死代码,依赖
+  `base_url`,每页抛 ReferenceError)。
+- 主题子模块改动一律**提交后立即推送**子模块远端,防止 gitlink 指向远端不存在的 commit
+  导致 clone/CI/submodule update 失败(2026-08-23 踩过:主题 4 个 commit 未推,整链断裂)。
+- 规模思考:搜索引擎可换(换 mkdocs 插件即可,内容零改动);真正的长期投资在内容结构
+  (锚点稳定、frontmatter/tags、区块目录),不锁定任何搜索方案。
+
 ## 文档结构
 
 `docs/` 按主题分为六个区块 + 求职专题:
