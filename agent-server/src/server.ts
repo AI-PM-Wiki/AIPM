@@ -91,9 +91,13 @@ export function createApp(deps: ServerDeps) {
 
   async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const requestId = randomUUID();
-    // 断连取消尽早接线:排队期间客户端关闭也要中止(不占槽位、不写响应)
+    // 断连取消尽早接线:排队期间客户端关闭也要中止(不占槽位、不写响应)。
+    // 注意必须监听响应侧 close 而非 req 的 close——IncomingMessage 'close'
+    // 在请求体读完时就触发(Node 语义),监听 req 会把正常请求误判为断连。
     const abortController = new AbortController();
-    req.once('close', () => abortController.abort());
+    res.once('close', () => {
+      if (!res.writableEnded) abortController.abort();
+    });
     const origin = req.headers.origin;
     const corsHeaders: Record<string, string> = {
       'Access-Control-Allow-Origin': origin === undefined ? '' : origin,
