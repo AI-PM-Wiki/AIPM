@@ -41,7 +41,7 @@
      ================================================================ */
   const API_BASE = location.hostname === "localhost" || location.hostname === "127.0.0.1"
     ? "http://127.0.0.1:8787"
-    : "https://docs-agent.hyc.ac";
+    : "https://docs-agent.nvc.ac";
   const HISTORY_KEY = "aipm-chat-history";
   const WIDE_KEY = "aipm-chat-wide";
   const HISTORY_MAX = 20;              // localStorage 条数上限
