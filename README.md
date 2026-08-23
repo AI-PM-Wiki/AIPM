@@ -30,7 +30,6 @@ uv sync --index-url https://pypi.tuna.tsinghua.edu.cn/simple/
 # - url
 # scripts/pre-build/install-theme-vendor.sh:
 # - MATHJAX_URL
-# - MATERIAL_ICONS_URL
 ./scripts/pre-build/install-theme.sh
 
 # 两种方法（选其一即可）：
@@ -57,3 +56,11 @@ uv run mkdocs --help
 除特别注明外，项目中除了代码部分均采用 <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">(Creative Commons BY-SA 4.0) 知识共享署名 - 相同方式共享 4.0 国际许可协议</a>及附加的 [The Star And Thank Author License](https://github.com/zTrix/sata-license) 进行许可。
 
 换言之，使用过程中您可以自由地共享、演绎，但是必须署名、以相同方式共享、分享时没有附加限制。
+
+* * *
+
+## 致谢
+
+本站特别感谢 [OI Wiki](https://oi-wiki.org)（[GitHub 仓库](https://github.com/OI-wiki/OI-wiki)）及其社区：本站主题子模块（mkdocs-material 定制 fork 链：squidfunk/mkdocs-material → OI Wiki 深度定制 → Hi-Yincan）的定制基础源自 OI Wiki 的定制版本，站内构建与工作流结构亦受其影响；站点内容为 AI-PM 原创，上游残留已于 2026-08 彻查清理。
+
+本站文档采用 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.zh) 与 [SATA（The Star And Thank Author License）](https://github.com/zTrix/sata-license) 双重许可，本致谢依 SATA 条款作出。

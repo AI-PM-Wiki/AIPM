@@ -6,7 +6,7 @@ labels: ["Feature Request / 功能请求", "help wanted / 需要帮助"]
 body:
 - type: markdown
   attributes:
-    value: 欢迎为 OI Wiki 提出新的 Issue！烦请填写以下表单：
+    value: 欢迎为 AI-PM 提出新的 Issue！烦请填写以下表单：
 - type: textarea
   id: page
   attributes:

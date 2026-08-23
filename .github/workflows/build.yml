@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    name: OI-Wiki Page Build
+    name: AI-PM Build & Deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -49,7 +49,7 @@ jobs:
           uv run mkdocs build -v
       - name: Post-process HTML
         # https://github.com/TypeStrong/ts-node/issues/1997
-        run: node --loader ts-node/esm scripts/post-build/html-postprocess.ts math external-links
+        run: node --loader ts-node/esm scripts/post-build/html-postprocess.ts external-links
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_OPTIONS: --max_old_space_size=3072
@@ -66,46 +66,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
           force_orphan: true
-      - name: Push to Baidu
-        if: ${{ github.event_name == 'push' && github.repository_owner == 'oi-wiki' }}
-        env:
-          SITE: oi-wiki.org
-          BAIDU_TOKEN: ${{ secrets.BaiduToken }}
-        run: ./scripts/post-deploy/baidu-push.sh
-
-  update_feedback_sys_meta:
-    name: Update OI-Wiki Feedback System Meta
-    needs: build
-    runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/master' }}
-    steps:
-      - name: Checkout latest
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Get changed files
-        uses: tj-actions/changed-files@v47
-        with:
-          files: docs/**/*.md
-          include_all_old_new_renamed_files: true
-          write_output_files: true
-      - name: Checkout before
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.before }}
-          path: before
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-            python-version: '3.10'
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          version: "latest"
-      - name: Install Python dependencies
-        run: uv sync
-      - name: Update meta
-        run: |
-          uv run python scripts/update-feedback-sys-meta.py --modified .github/outputs/modified_files.txt --renamed .github/outputs/renamed_files.txt  --all_old_new_renamed .github/outputs/all_old_new_renamed_files.txt --before_dir before
-        env:
-          ADMINISTRATOR_SECRET: ${{ secrets.FEEDBACK_SYS_ADMINISTRATOR_SECRET }}
