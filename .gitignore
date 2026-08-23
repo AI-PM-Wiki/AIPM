@@ -10,3 +10,4 @@ node_modules/
 *.pyc
 /meta/
 /.claude/
+scripts/banner/output/

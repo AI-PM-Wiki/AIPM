@@ -174,7 +174,8 @@ extra:
   #   provider: google
   #   property: YOUR-GA-ID
 
-# extra_javascript: banner.js 由 banner workstream 提交时再启用(文件尚未入库)
+extra_javascript:
+  - '_static/js/banner.js?v=7'
 extra_css:
   - '_static/css/extra.css?v=23'
   # - '_static/css/offset-inject-debug.css'
