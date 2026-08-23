@@ -5,7 +5,8 @@ Usage:
     uv run --with resvg-py --with pillow python3 scripts/gen-favicon.py
 
 Input:
-    docs/favicon.svg  -- 64x64 brand SVG icon (favicon + header logo)
+    docs/favicon.svg  -- brand SVG icon, viewBox 0 0 1254 1254
+                         (blue tile + white "Pm"; transparent corners)
 
 Outputs (written to docs/):
     favicon_512x512.png  -- 512x512 RGBA render

@@ -1,18 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#6fc3ff"/>
-      <stop offset="0.55" stop-color="#1a73e8"/>
-      <stop offset="1" stop-color="#0b47b1"/>
+    <!-- tile: subtle vertical blue gradient -->
+    <linearGradient id="tile" x1="0" y1="125" x2="0" y2="1143" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f6afc"/>
+      <stop offset="1" stop-color="#035af6"/>
     </linearGradient>
+    <!-- P stem bottom: white fading into tile blue toward the baseline -->
+    <linearGradient id="stemfade" gradientUnits="userSpaceOnUse" x1="0" y1="730" x2="0" y2="855">
+      <stop offset="0" stop-color="#0f69fd" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#0f69fd" stop-opacity="0.15"/>
+    </linearGradient>
+    <filter id="blur20" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+    <filter id="blur14" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round">
-    <!-- P -->
-    <path d="M 6 14 V 50"/>
-    <path d="M 6 14 H 20 A 5 12 0 0 1 20 38 H 6"/>
-    <!-- m -->
-    <path d="M 34 50 V 29 A 6 6 0 0 1 46 29 V 50"/>
-    <path d="M 46 50 V 29 A 6 6 0 0 1 58 29 V 50"/>
+
+  <!-- rounded-square tile -->
+  <rect x="113" y="125" width="1026" height="1018" rx="250" fill="url(#tile)"/>
+
+  <!-- m: two arches, white strokes; sits behind the P -->
+  <path d="M 571 858 L 571 736 A 96 96 0 0 1 763 736 L 763 858
+           M 763 858 L 763 730 A 90 90 0 0 1 943 730 L 943 858"
+        stroke="#ffffff" stroke-width="80" fill="none" stroke-linecap="butt"/>
+
+  <!-- P offset cast shadow: darkens the tile gap, tints m's left arch (sheen) -->
+  <g opacity="0.32" filter="url(#blur20)" transform="translate(36,58)">
+    <rect x="284" y="370" width="93" height="485" rx="15" fill="#0247bf"/>
+    <path d="M 304 370 H 525 A 111 111 0 0 1 636 481 V 595 A 111 111 0 0 1 525 706 H 304 A 20 20 0 0 1 284 686 V 390 A 20 20 0 0 1 304 370 Z" fill="#0247bf"/>
   </g>
+
+  <!-- soft glow below m baseline -->
+  <rect x="540" y="856" width="430" height="68" fill="#ffffff" opacity="0.28" filter="url(#blur14)"/>
+
+  <!-- P: stem + bowl (rounded geometric) -->
+  <rect x="284" y="370" width="93" height="485" rx="15" fill="#ffffff"/>
+  <path d="M 304 370 H 525 A 111 111 0 0 1 636 481 V 595 A 111 111 0 0 1 525 706 H 304 A 20 20 0 0 1 284 686 V 390 A 20 20 0 0 1 304 370 Z" fill="#ffffff"/>
+
+  <!-- bowl counter (hole showing tile blue) -->
+  <rect x="378" y="450" width="178" height="168" rx="44" fill="#0a64f8"/>
+
+  <!-- stem bottom fade -->
+  <polygon points="284,855 377,730 377,855" fill="url(#stemfade)"/>
 </svg>
