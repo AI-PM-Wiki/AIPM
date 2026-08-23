@@ -65,13 +65,23 @@ nav:
     - AI 系统架构: ai/architecture.md
   - AI 产品实战:
     - 实战简介: practice/index.md
-    - 对话助手: practice/chatbot.md
-    - 知识库问答: practice/kb-qa.md
-    - RAG 产品化实战: practice/rag-practice.md
-    - Agent 产品: practice/agent-product.md
-    - Copilot: practice/copilot.md
-    - 工作流自动化: practice/workflow.md
-    - 出海与合规: practice/compliance.md
+    - 对话助手类产品:
+      - 对话助手: practice/chatbot.md
+      - 客服自动化: practice/support-bot.md
+    - 知识库问答类产品:
+      - 知识库问答: practice/kb-qa.md
+      - RAG 产品化实战: practice/rag-practice.md
+    - Agent 产品类:
+      - Agent 产品设计: practice/agent-product.md
+      - Agent 工具与 MCP 产品化: practice/agent-tools.md
+      - 多 Agent 与人机协作: practice/multi-agent.md
+    - 嵌入与自动化类产品:
+      - Copilot 产品: practice/copilot.md
+      - 工作流自动化: practice/workflow.md
+    - 安全与合规类:
+      - 出海与合规: practice/compliance.md
+      - 内容安全与护栏: practice/content-safety.md
+      - 数据隐私与用户控制: practice/data-privacy.md
   - 工具与平台:
     - 工具简介: tools/index.md
     - LLM API 与供应商: tools/llm-api.md
