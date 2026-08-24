@@ -1,0 +1,63 @@
+# Origin code from https://github.com/Myriad-Dreamin/tinymist/blob/0fce237d579aebe233a9c80f9dfe3f6d9d1c0cd3/.github/workflows/lint_pr_title.yml
+# Changed By Alphagocc
+name: Lint PR Title
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  main:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        id: lint_pr_title
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Configure which types are allowed (newline-delimited).
+          # Default: https://github.com/commitizen/conventional-commit-types
+          # extraType: dev: internal development
+          types: |
+            dev
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          ignoreLabels: |
+            bot
+            ignore-semantic-pull-request
+      - uses: marocchino/sticky-pull-request-comment@v3
+        # When the previous steps fails, the workflow would stop. By adding this
+        # condition you can continue the execution with the populated error message.
+        if: always() && (steps.lint_pr_title.outputs.error_message != null)
+        with:
+          header: pr-title-lint-error
+          message: |
+            感谢你对 AI-PM 的关注！ 👋🏼
+
+            我们需要你遵守 [PR 信息格式规范](https://aipm.ac/intro/htc/)（Conventional Commits，如 `feat(pm/xx.md): ...`、`fix(ai/xx.md): ...`）并据此调整 PR 标题。
+
+            这样，你的 PR 才有可能被 Merge。
+
+            错误信息:
+
+            ```
+            ${{ steps.lint_pr_title.outputs.error_message }}
+            ```
+      # Delete a previous comment when the issue has been resolved
+      - if: ${{ steps.lint_pr_title.outputs.error_message == null }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint-error
+          delete: true

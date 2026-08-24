@@ -1,0 +1,19 @@
+# Configuration for new-issue-welcome - https://github.com/behaviorbot/new-issue-welcome
+
+# Comment to be posted to on first time issues
+newIssueWelcomeComment: >
+  感谢你对 AI-PM 的关注！记得在 Issue 中表达清楚自己的意思哦～
+
+# Configuration for new-pr-welcome - https://github.com/behaviorbot/new-pr-welcome
+
+# Comment to be posted to on PRs from first time contributors in your repository
+newPRWelcomeComment: >
+  感谢你对 AI-PM 的关注！请先阅读[如何参与](https://aipm.ac/intro/htc/)与[格式手册](https://aipm.ac/intro/format/)，与项目风格统一的 Pull Request 会更容易被合并～
+
+# Configuration for first-pr-merge - https://github.com/behaviorbot/first-pr-merge
+
+# Comment to be posted to on pull requests merged by a first time user
+firstPRMergeComment: >
+  恭喜！你的第一个 Pull Request 被合并了！ :smile:
+
+# It is recommend to include as many gifs and emojis as possible

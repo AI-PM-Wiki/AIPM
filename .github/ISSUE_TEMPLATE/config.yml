@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 查看我们的 F.A.Q.
+    url: https://aipm.ac/intro/faq/
+    about: 提问之前先阅读一下 F.A.Q. 哦~
+  - name: 浏览信息源索引
+    url: https://aipm.ac/case/info-sources/
+    about: 查找外部资料渠道（校内论坛、社区、公众号、产品博客等）

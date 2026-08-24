@@ -1,0 +1,11 @@
+DirectoryPath: site
+
+CheckMailto: false
+
+IgnoreAltMissing: true
+IgnoreDirectoryMissingTrailingSlash: true
+IgnoreInternalEmptyHash: true
+
+# 主题模板的空 href(编辑链接占位)非站内坏链,忽略
+IgnoreURLs:
+  - "^$"
