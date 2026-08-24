@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/AI-PM-Wiki/aipm#readme",
   "dependencies": {
-    "@mathjax/src": "^4.1.0",
+    "@mathjax/src": "^4.1.3",
     "@swc/core": "^1.2.210",
     "chalk": "^4.1.0",
     "colors": "^1.4.0",
