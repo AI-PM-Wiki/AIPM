@@ -8,13 +8,15 @@
   头部 ↗ 可切加宽模式,允许压过正文);移动端降级为全屏覆盖。零依赖原生 JS。
 
   工程契约:
-  - FAB / 面板全部 append 到 document.body 顶层,不带 data-md-component
-    属性 → instant 导航换页整体替换 [data-md-component=container] 时本组件
-    与对话状态存活
+  - FAB append 到 document.body 顶层,不带 data-md-component 属性,instant
+    换页不触碰;面板插在页头交界线之后(与线同族参与 sticky 布局),而
+    instant 导航换页整体替换 [data-md-component=container] 时面板会随旧
+    容器被摘除 —— body 级 MutationObserver 在下一帧按同一规则挂回新
+    容器,对话状态(消息、滚动、流式)原样存活,不随文档跳转消失
   - 打开时隐藏右侧 TOC(md-sidebar--secondary 内层 nav);面板顶边锚定
     页头交界发丝线(.md-header__line,粘性,与吸顶页头同进退),底边停在
     mkdocs 页脚上缘;面板打开期间用 rAF 逐帧对齐 —— 弹性过滚动(滚到
-    顶/底继续拖拽)时浏览器抑制滚动事件,fixed 面板靠逐帧同步不脱节
+    顶/底继续拖拽)时浏览器抑制滚动事件,面板靠逐帧同步不脱节
   - MutationObserver 盯 body 子树:instant 导航换页后新页 TOC 随 container
     重建出现,观察器重新应用隐藏;关闭时还原
   - 与后端契约:POST {message, history} → text/event-stream,帧事件
@@ -124,10 +126,19 @@
       "</div>" +
       '<input type="file" class="aipm-chat__file" multiple hidden>' +
     "</form>";
-  /* 插到页头交界线之后(文档流内,与线一同参与 sticky 布局 —— 结构上
-     不可能与页头/线脱节);线缺失时回退为 body 尾部 */
-  const lineAnchor = document.querySelector(".md-header__line");
-  if (lineAnchor) lineAnchor.after(panel); else document.body.appendChild(panel);
+  /* 挂载点:插到页头交界线之后(文档流内,与线一同参与 sticky 布局 ——
+     结构上不可能与页头/线脱节);线缺失时按 tabs → header → body 回退。
+     instant 换页整体替换 [data-md-component=container],面板随旧容器被
+     摘除,sync() 观察器发现面板脱离文档时按同一规则挂回新容器 */
+  const mount = () => {
+    if (panel.isConnected) return;
+    const anchor = document.querySelector(".md-header__line")
+      || document.querySelector(".md-tabs")
+      || document.querySelector(".md-header");
+    if (anchor) anchor.after(panel);
+    else document.body.appendChild(panel);
+  };
+  mount();
 
   els.fab = fab;
   els.panel = panel;
@@ -750,20 +761,28 @@
 
   /* 面板打开期间逐帧修正高度/水平几何(顶部几何为 sticky 布局自带,
      无需测量):弹性过滚动(滚到顶/底继续拖拽)时浏览器抑制滚动事件,
-     逐帧循环保证高度/边距与页脚、TOC 栏实时一致 */
+     逐帧循环保证高度/边距与页脚、TOC 栏实时一致。
+     alignOn 标志防重复启动:sync 在每次结构变化(含流式输出逐块重写
+     消息区)时都会触发,没有标志会叠出多条并行的逐帧循环 */
+  let alignOn = false;
   const alignLoop = () => {
-    if (!panel.classList.contains("is-open")) return;
+    if (!alignOn) return;
     align();
     requestAnimationFrame(alignLoop);
   };
 
   let rafId = 0;
-  /* 结构变化时统一同步:重新隐藏 TOC(instant 换页后新页 TOC 随 container
-     重建)+ 启动/恢复逐帧对齐循环 */
+  /* 结构变化时统一同步:先把面板挂回文档(instant 换页后旧容器被整体
+     替换,面板随之被摘除,需按 mount 规则重挂到新容器)—— 再重新隐藏
+     新页 TOC(新页 TOC 随 container 重建出现)+ 启动/恢复逐帧对齐循环 */
   const sync = () => {
+    mount();
     if (!panel.classList.contains("is-open")) return;
     applyTocHide(true);
-    alignLoop();
+    if (!alignOn) {
+      alignOn = true;
+      requestAnimationFrame(alignLoop);
+    }
   };
   const scheduleSync = () => {
     cancelAnimationFrame(rafId);
@@ -804,7 +823,10 @@
     panel.setAttribute("aria-hidden", "false");
     els.fab.classList.add("is-hidden");
     applyTocHide(true);
-    alignLoop();   // 启动逐帧对齐(关闭时自停)
+    if (!alignOn) {
+      alignOn = true;
+      requestAnimationFrame(alignLoop);   // 启动逐帧对齐(关闭时自停)
+    }
     scrollBottom(true);
     els.input.focus();
   };
@@ -814,6 +836,7 @@
     panel.setAttribute("aria-hidden", "true");
     els.fab.classList.remove("is-hidden");
     applyTocHide(false);
+    alignOn = false;                      // 停掉逐帧对齐循环
     els.fab.focus();
   };
 
