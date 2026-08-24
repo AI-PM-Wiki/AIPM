@@ -9,6 +9,18 @@ import { TaskHandler, log } from "../html-postprocess.js";
 
 const execFileAsync = util.promisify(child_process.execFile);
 
+/**
+ * git 提交者姓名/邮箱可含任意字符(引号、尖括号等),入 innerHTML 前必须转义。
+ */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function readCommitsLog(sourceFilePath: string): Promise<{ commitDate: Date; authorEmails: string[] }[]> {
   const { stdout: log } = await execFileAsync(
     "bash",
@@ -143,9 +155,11 @@ export const taskHandler = new (class implements TaskHandler<AuthorUserMap> {
       $(".page_contributors").innerHTML = authors
         .map(author => {
           const [name, type, email] = author.split("\n");
+          const safeName = escapeHtml(name);
+          const safeEmail = escapeHtml(email);
           return type === "github"
-            ? `<a href="https://github.com/${name}" target="_blank">${name}</a>`
-            : `<a href="mailto:${email}" target="_blank">${name}</a>`;
+            ? `<a href="https://github.com/${safeName}" target="_blank">${safeName}</a>`
+            : `<a href="mailto:${safeEmail}" target="_blank">${safeName}</a>`;
         })
         .join(", ");
     } else {

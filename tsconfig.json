@@ -12,6 +12,7 @@
     "strictBindCallApply": true,
     "skipLibCheck": true
   },
+  "include": ["scripts/**/*.ts"],
   "exclude": ["node_modules"],
   "ts-node": {
     "swc": true
