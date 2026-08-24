@@ -1,0 +1,54 @@
+name: Bump Submodules
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: bump-submodules
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 1
+      - name: Sync submodule gitlinks
+        run: |
+          set -euo pipefail
+          changed=0
+          for sm in agent-server mkdocs-material; do
+            url=$(git config -f .gitmodules --get "submodule.$sm.url")
+            branch=$(git config -f .gitmodules --get "submodule.$sm.branch")
+            remote_head=$(git ls-remote "$url" "refs/heads/$branch" | awk '{print $1}')
+            pinned=$(git ls-tree HEAD "$sm" | awk '{print $3}')
+            if [ -z "$remote_head" ]; then
+              echo "::warning::$sm 无法获取 $branch 远端 HEAD,跳过"
+              continue
+            fi
+            if [ "$remote_head" = "$pinned" ]; then
+              echo "$sm: 已是最新 ($pinned)"
+              continue
+            fi
+            echo "::notice::$sm: gitlink $pinned -> $remote_head"
+            git submodule update --init "$sm"
+            git -C "$sm" fetch origin "$branch"
+            git -C "$sm" checkout -q "$remote_head"
+            git add "$sm"
+            changed=1
+          done
+          if [ "$changed" -eq 1 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(deps): 子模块 gitlink 自动同步至远端 HEAD"
+            git push origin dev
+            echo "已推送 dev"
+          else
+            echo "所有子模块均已是最新"
+          fi

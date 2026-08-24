@@ -1,6 +1,8 @@
 [submodule "mkdocs-material"]
 	path = mkdocs-material
 	url = https://github.com/AI-PM-Wiki/mkdocs-material
+	branch = master
 [submodule "agent-server"]
 	path = agent-server
 	url = https://github.com/AI-PM-Wiki/aipm-agent-server
+	branch = main
