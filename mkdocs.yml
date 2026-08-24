@@ -28,7 +28,15 @@ nav:
     - 产品方法论简介: pm/index.md
     - 需求分析: pm/requirements.md
     - 用户研究: pm/user-research.md
-    - 产品设计与原型: pm/design.md
+    - 产品设计与原型:
+      - 产品设计与原型总览: pm/design.md
+      - 设计哲学与设计思维: pm/design-philosophy.md
+      - 视觉设计基础: pm/design-visual.md
+      - 交互设计基础: pm/design-interaction.md
+      - 设计系统与规范: pm/design-systems.md
+      - 原型与设计交付: pm/design-prototyping.md
+      - 设计评审与可用性度量: pm/design-evaluation.md
+      - 设计师黑话速查: pm/design-jargon.md
     - 项目管理与迭代: pm/project-management.md
     - AI 产品开发生命周期(CC/CD): pm/ai-lifecycle.md
     - AI 产品 PRD: pm/prd.md
