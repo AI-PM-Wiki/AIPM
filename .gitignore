@@ -16,3 +16,4 @@ node_modules/
 /.clang-format
 /.gitpod.yml
 scripts/banner/output/
+.playwright-mcp/
