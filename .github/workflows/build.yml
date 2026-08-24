@@ -36,6 +36,8 @@ jobs:
           check-latest: true
       - name: Install Python dependencies
         run: uv sync --frozen
+      - name: Check nav vs docs consistency
+        run: uv run python scripts/check-nav.py
       - name: Cache Node.js dependencies
         uses: actions/cache@v5
         id: cache-node

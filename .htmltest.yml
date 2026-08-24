@@ -1,3 +1,11 @@
+# 外链盲区与人工核验路径(2026-08):
+# - CI(build.yml 的 htmltest)固定 skip_external: true,站外链接不在自动检查
+#   范围——外链检查对网络抖动/第三方站点变更敏感,不适合作为 PR 门禁;
+# - 需要核验外链时,本地操作:
+#     1. uv run mkdocs build -q
+#     2. 从 https://github.com/wjdp/htmltest/releases 下载对应平台二进制
+#     3. 将本文件 skip_external 改为 false 后运行 ./htmltest(核验完还原),
+#        或另写一份临时配置用 `./htmltest -c <临时配置>` 执行
 DirectoryPath: site
 
 CheckMailto: false
