@@ -36,7 +36,7 @@ author: your-github-id  # 可选：你的 GitHub ID
         这是提示内容。
     ```
 
--   常见类型：`note`、`warning`、`tip`、`example`
+-   常见类型：`note`、`warning`、`tip`、`info`、`todo`、`example`；不带标题的匿名块（`???` 折叠 / `!!!` 展开）同样支持
 -   引用外部资料时附上链接
 
 ## 链接
