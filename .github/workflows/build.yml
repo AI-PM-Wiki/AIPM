@@ -17,29 +17,29 @@ jobs:
   build:
     name: AI-PM Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.1.0
         with:
-          version: "latest"
-      - uses: actions/setup-node@v6
+          version: "0.12.5"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '20.x'
-          check-latest: true
+          node-version: '20.20.2'
       - name: Install Python dependencies
         run: uv sync --frozen
       - name: Check nav vs docs consistency
         run: uv run python scripts/check-nav.py
       - name: Cache Node.js dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         id: cache-node
         with:
           path: node_modules
@@ -56,9 +56,11 @@ jobs:
           uv run mkdocs build -v
       - name: Post-process HTML
         # https://github.com/TypeStrong/ts-node/issues/1997
+        # 安全说明:external-links 是纯 DOM 处理,不需要 GITHUB_TOKEN。
+        # commits-info(唯一需要 GITHUB_TOKEN 的后处理任务)当前未启用;
+        # 若未来启用,必须只在受信任的 push/deploy 环境注入 token,不得在 pull_request 构建注入。
         run: node --loader ts-node/esm scripts/post-build/html-postprocess.ts external-links
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_OPTIONS: --max_old_space_size=3072
       - name: Minify html
         run: ./scripts/post-build/minify-html/minify-html.sh
@@ -67,7 +69,7 @@ jobs:
         with:
           skip_external: true
       - name: Upload site artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: site
           path: ./site
@@ -78,17 +80,18 @@ jobs:
     needs: build
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # 仅部署 job 需要写权限;构建 job 一律 contents: read
     permissions:
       contents: write
     steps:
       - name: Download site artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: site
           path: ./site
       - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
