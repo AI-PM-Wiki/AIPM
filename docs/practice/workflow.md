@@ -1,4 +1,6 @@
 ---
+---
+
 ## 工作流自动化
 
 工作流自动化（Workflow）让 AI 串联多个步骤和工具，把「重复的脑力劳动」变成「一条流水线」：收集 → 整理 → 生成 → 分发。与 Agent 不同，工作流的步骤由**预先编排的代码路径**调度——每一步做什么、按什么顺序在实现时写死，模型只在节点内部发挥作用（[Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)）。

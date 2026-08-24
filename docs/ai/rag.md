@@ -1,4 +1,6 @@
 ---
+---
+
 ## RAG 基础
 
 RAG（Retrieval-Augmented Generation，检索增强生成）是让模型「知道」私有知识、降低幻觉的主流方案：**先检索相关资料，再让模型基于资料回答**。这一范式由 Lewis 等人于 2020 年提出，核心是把「参数化记忆」（模型权重中固化的知识）与「非参数化记忆」（外部资料库）结合：回答知识密集型问题时先查资料、再作答（[Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)）。

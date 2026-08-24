@@ -1,4 +1,6 @@
 ---
+---
+
 ## 精益创业（The Lean Startup）
 
 > Eric Ries 著，Crown Business 2011 年（英文原版；中文版《精益创业》，吴彤 译，中信出版社 2012）。
