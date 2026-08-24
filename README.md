@@ -47,7 +47,14 @@ uv run mkdocs --help
 
 ## 如何参与完善 AI-PM
 
-我们非常欢迎你为 **AI-PM** 编写内容，将自己的所学所得与大家分享。
+我们非常欢迎你为 **AI-PM** 编写内容，将自己的所学所得与大家分享。参与方式、写作规范与提交流程见[如何参与](docs/intro/htc.md)。
+
+所有改动需通过以下门禁（提交前在本地跑完）：
+
+-   `git diff --check`：空白错误检查
+-   `uv run mkdocs build -q`：站点构建
+-   `python3 scripts/check-characters.py`：字符规范检查
+-   `bash scripts/check-upstream-remnants.sh`：上游残留检查
 
 * * *
 
@@ -61,6 +68,6 @@ uv run mkdocs --help
 
 ## 致谢
 
-本站特别感谢 [OI Wiki](https://oi-wiki.org)（[GitHub 仓库](https://github.com/OI-wiki/OI-wiki)）及其社区：本站主题子模块（mkdocs-material 定制 fork 链：squidfunk/mkdocs-material → OI Wiki 深度定制 → Hi-Yincan）的定制基础源自 OI Wiki 的定制版本，站内构建与工作流结构亦受其影响；站点内容为 AI-PM 原创，上游残留已于 2026-08 彻查清理。
+本站特别感谢 [OI Wiki](https://oi-wiki.org)（[GitHub 仓库](https://github.com/OI-wiki/OI-wiki)）及其社区：本站主题子模块（mkdocs-material 定制 fork 链：squidfunk/mkdocs-material → OI Wiki 深度定制 → AI-PM-Wiki/mkdocs-material）的定制基础源自 OI Wiki 的定制版本，站内构建与工作流结构亦受其影响；站点内容为 AI-PM 原创，上游残留已于 2026-08 彻查清理。
 
 本站文档采用 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.zh) 与 [SATA（The Star And Thank Author License）](https://github.com/zTrix/sata-license) 双重许可，本致谢依 SATA 条款作出。
