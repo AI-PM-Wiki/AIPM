@@ -1,27 +1,32 @@
 import json
 import os
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from scripts.char_check import find_bad_chars, str_2_unicode
 
 CHAR_MAP = json.load(open("scripts/char-map.json"))
 changed_files = os.environ.get("CHANGED_FILES", "")
 successed_list, skipped_list, failed_list = [], [], {}
 
 
-def str_2_unicode(s):
-    return s.encode("unicode-escape").decode()
-
-
 def summary(message):
     if os.environ.get("GITHUB_ACTIONS") == "true":
-        os.system(f'echo "{message}" >> $GITHUB_STEP_SUMMARY')
+        # 直接向 $GITHUB_STEP_SUMMARY 文件追加。文件名来自 PR,含引号/$
+        # 等特殊字符时经 shell 展开有命令注入风险,故绝不经过 shell。
+        summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary_path:
+            with open(summary_path, "a") as f:
+                f.write(message + "\n")
     print(message)
 
 
 def error(filename, line, col, message):
     if os.environ.get("GITHUB_ACTIONS") == "true":
-        os.system(
-            f'echo "::error file={filename},line={line},col={col}::Check Characters: {message}"'
-        )
+        # ::error 工作流命令由 runner 从 stdout 解析,直接 print 即可,
+        # 不拼 shell(文件名来自 PR,可能含引号/特殊字符)。
+        print(f"::error file={filename},line={line},col={col}::Check Characters: {message}")
     print(f"Check Characters: {filename} {line}:{col} {message}")
 
 
@@ -30,15 +35,14 @@ def check(filename):
         skipped_list.append(filename)
         return
     failed = False
-    check = open(filename)
-    data = check.read()
-    for key, value in CHAR_MAP.items():
-        if data.find(key) != -1:
-            failed = True
-            if filename in failed_list.keys():
-                failed_list[filename].append(key)
-            else:
-                failed_list[filename] = [key]
+    with open(filename) as f:
+        data = f.read()
+    for key in find_bad_chars(data, CHAR_MAP):
+        failed = True
+        if filename in failed_list:
+            failed_list[filename].append(key)
+        else:
+            failed_list[filename] = [key]
     if not failed:
         successed_list.append(filename)
 

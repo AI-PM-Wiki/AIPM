@@ -411,6 +411,7 @@
   const ERROR_TEXT = {
     rate_limited: "请求过于频繁,请稍后再试",
     budget_exceeded: "服务预算已用尽,请明天再试",
+    budget_exhausted: "服务预算已用尽,请明天再试",
     max_turns: "本轮对话已到达轮次上限,请清空对话后重试",
     model_error: "模型服务暂时不可用,请稍后重试",
     internal: "服务内部错误,请稍后重试",

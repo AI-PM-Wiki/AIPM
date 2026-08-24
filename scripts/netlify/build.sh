@@ -8,7 +8,7 @@ if ! command -v uv &> /dev/null; then
 fi
 
 # Install dependencies
-uv sync --index-url ${PYPI_MIRROR:-https://pypi.org/simple/}
+uv sync --frozen --index-url ${PYPI_MIRROR:-https://pypi.org/simple/}
 yarn --frozen-lockfile --production
 
 # Install themes and etc.

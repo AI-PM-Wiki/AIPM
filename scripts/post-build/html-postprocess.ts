@@ -7,7 +7,7 @@ import { parse, HTMLElement } from "node-html-parser";
 import klaw from "klaw";
 import chalk from "chalk";
 
-const TASKS = ["commits-info", "math", "external-links"];
+const TASKS = ["commits-info", "external-links"];
 const SITE_DIR = "site";
 
 const siteDir = path.resolve(SITE_DIR);
@@ -173,7 +173,7 @@ function measureTime<T>(operation: () => T): T extends Promise<any> ? Promise<nu
       workers.push(worker);
     }
 
-    // Intialize all workers
+    // Initialize all workers
     await Promise.all(
       workers.map((worker, workerId) =>
         communicate(
@@ -233,7 +233,7 @@ function measureTime<T>(operation: () => T): T extends Promise<any> ? Promise<nu
         .on("end", () => Promise.all(promises).then(resolve));
     });
 
-    // Intialize all workers
+    // Initialize all workers
     const finishedMessages = await Promise.all(workers.map(worker => communicate(worker, "finalize", "finished")));
     const totalTimeByTask = Object.fromEntries(
       tasks.map(task => [task, finishedMessages.reduce((s, message) => s + message.totalTimeByTask[task], 0)])
