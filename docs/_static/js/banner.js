@@ -499,16 +499,6 @@ void main(){
       prog = null; U = {}; glyphTex = null;
     };
 
-    // 只读调试钩子(不影响运行)
-    window.__pmBanner = {
-      state: () => ({
-        renderer: gl ? "webgl" : "fallback",
-        visible, motionOK, running: !!raf, disposed,
-        t: Math.round(tCur * 10) / 10,
-        pointer: { x: Math.round(ptr.x), y: Math.round(ptr.y), s: Math.round(ptr.s * 100) / 100 },
-      }),
-    };
-
     return { dispose };
   };
 
