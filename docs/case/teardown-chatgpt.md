@@ -78,7 +78,7 @@ UI 结构与全端覆盖:网页、iOS、Android、桌面端全覆盖;模型选�
 - 明确的数据承诺:免费内容可用于改进模型但可通过数据控制关闭,Team/Enterprise 内容不用于训练([记忆公告](https://openai.com/index/memory-and-new-controls-for-chatgpt/))
 - 出错兜底:对话本身就是纠错机制——用户可以追问、澄清、重新生成
 
-体验的现实落差:真实用户侧,额度与风控是体验的一部分——社区讨论中免费与低额度用户常抱怨「降智」(高峰期模型被自动降级),[linux.do 的讨论帖](https://linux.do/t/topic/2792653) 记录了用户如何识别被限流的 IP 与应对方案;拆解视角则指出,对话交互降低了门槛,但模型能力的不确定性需要产品层持续兜底(做产品的马丁,《万字长文:AI 产品经理视角下的 ChatGPT 全解析》,[人人都是产品经理社区](http://www.163.com/dy/article/HSTHH2HB0511805E.html))。
+体验的现实落差:真实用户侧,额度与风控是体验的一部分——社区讨论中免费与低额度用户常抱怨「降智」(高峰期模型被自动降级),[linux.do 的讨论帖](https://linux.do/t/topic/2792653) 记录了用户如何识别被限流的 IP 与应对方案;拆解视角则指出,对话交互降低了门槛,但模型能力的不确定性需要产品层持续兜底(做产品的马丁,《万字长文:AI 产品经理视角下的 ChatGPT 全解析》,[人人都是产品经理社区](https://www.163.com/dy/article/HSTHH2HB0511805E.html))。
 
 ### 商业模式
 
@@ -164,6 +164,6 @@ Gemini(Google):2023-12-06 发布 Gemini 1.0,「从零构建的原生多模态」
 - [CNMO:ChatGPT 周活跃用户逼近 10 亿,订阅用户突破 5000 万](https://ai.cnmo.com/news/804593.html) — 用户规模(OpenAI 披露),实测可达
 - [CNMO:上线不足四年,ChatGPT 周活跃用户即将突破 10 亿](https://ai.cnmo.com/news/814488.html) — 用户规模趋势(OpenAI 披露),实测可达
 - [澎湃新闻:豆包回应收费争议,3.45 亿月活扛不住算力账单?](https://m.thepaper.cn/newsDetail_forward_33312176)(2026-06) — 国内竞争与 unit economics 对照,实测可达
-- [做产品的马丁:万字长文,AI 产品经理视角下的 ChatGPT 全解析(人人都是产品经理社区)](http://www.163.com/dy/article/HSTHH2HB0511805E.html) — 中文拆解视角,实测可达
+- [做产品的马丁:万字长文,AI 产品经理视角下的 ChatGPT 全解析(人人都是产品经理社区)](https://www.163.com/dy/article/HSTHH2HB0511805E.html) — 中文拆解视角,实测可达
 - [linux.do:关于最近 GPT/Codex 降智的个人解决方案](https://linux.do/t/topic/2792653)(2026-08) — 额度与风控的真实用户侧讨论,浏览器实测可达
 - [《幕后产品》读书笔记](https://book.douban.com/review/13487610/)与[产品人才的核心素养读书分享](https://juejin.cn/post/6844903976953970701) — 王诗沐方法论引用,实测可达
