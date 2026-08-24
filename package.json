@@ -56,7 +56,7 @@
     "remark-stringify": "^10.0.2",
     "remark-tabbed": "^0.1.0",
     "ts-node": "^10.8.2",
-    "unified": "^10.1.2",
+    "unified": "^11.0.5",
     "unist-util-visit": "^4.1.0",
     "yargs": "^17.5.1"
   },
