@@ -1,14 +1,14 @@
 import json
 import os
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from scripts.char_check import find_bad_chars, str_2_unicode
 
 CHAR_MAP = json.load(open("scripts/char-map.json"))
 changed_files = os.environ.get("CHANGED_FILES", "")
 successed_list, skipped_list, failed_list = [], [], {}
-
-
-def str_2_unicode(s):
-    return s.encode("unicode-escape").decode()
 
 
 def summary(message):
@@ -35,15 +35,14 @@ def check(filename):
         skipped_list.append(filename)
         return
     failed = False
-    check = open(filename)
-    data = check.read()
-    for key, value in CHAR_MAP.items():
-        if data.find(key) != -1:
-            failed = True
-            if filename in failed_list.keys():
-                failed_list[filename].append(key)
-            else:
-                failed_list[filename] = [key]
+    with open(filename) as f:
+        data = f.read()
+    for key in find_bad_chars(data, CHAR_MAP):
+        failed = True
+        if filename in failed_list:
+            failed_list[filename].append(key)
+        else:
+            failed_list[filename] = [key]
     if not failed:
         successed_list.append(filename)
 
