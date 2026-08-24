@@ -8,6 +8,11 @@
 # 注意:gitsubmodule 生态覆盖 .gitmodules 里**全部**子模块,包括定制主题
 # mkdocs-material——主题是手动维护的定制 fork,收到其 PR 直接忽略即可,
 # 不要自动合并。
+#
+# 曾配置的 npm/pip 扫描已于 2026-08-24 移除:package.json 依赖为 oi-wiki
+# fork 遗留且本项目刻意不用(node_modules 未装、门禁零 Node 依赖);pip 依赖
+# 由 uv.lock 权威锁定(pyproject 精确 `==`),升级走 `uv update` 人工跑门禁,
+# Dependabot 只改 pyproject 不动 lockfile,只会开半成品 PR。
 version: 2
 updates:
   - package-ecosystem: "gitsubmodule"
@@ -17,23 +22,5 @@ updates:
       day: "monday"
       time: "09:30"
     open-pull-requests-limit: 2
-    commit-message:
-      prefix: "chore(deps)"
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:30"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "chore(deps)"
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:30"
-    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
