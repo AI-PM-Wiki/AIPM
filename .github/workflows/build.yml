@@ -63,8 +63,7 @@ jobs:
       - name: Minify html
         run: ./scripts/post-build/minify-html/minify-html.sh
       - name: Check links
-        # TODO(pin): @master 为可变引用,应固定到完整 commit SHA(需联网解析,待补充)
-        uses: wjdp/htmltest-action@master
+        uses: wjdp/htmltest-action@31be84a95c860a331e0cf9a99f71e3eb39d2f86b
         with:
           skip_external: true
       - name: Upload site artifact

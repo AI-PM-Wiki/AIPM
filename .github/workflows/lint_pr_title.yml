@@ -37,8 +37,7 @@ jobs:
           ignoreLabels: |
             bot
             ignore-semantic-pull-request
-      # TODO(pin): 固定到完整 commit SHA 需联网解析,待补充
-      - uses: marocchino/sticky-pull-request-comment@v3
+      - uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88
         # When the previous steps fails, the workflow would stop. By adding this
         # condition you can continue the execution with the populated error message.
         if: always() && (steps.lint_pr_title.outputs.error_message != null)
@@ -58,7 +57,7 @@ jobs:
             ```
       # Delete a previous comment when the issue has been resolved
       - if: ${{ steps.lint_pr_title.outputs.error_message == null }}
-        uses: marocchino/sticky-pull-request-comment@v3
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88
         with:
           header: pr-title-lint-error
           delete: true
