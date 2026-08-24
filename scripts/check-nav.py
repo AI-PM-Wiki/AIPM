@@ -18,6 +18,17 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+class _ConfigLoader(yaml.SafeLoader):
+    """mkdocs.yml 含 python 标签(如 slugify: !!python/name:pymdownx.slugs.uslugify),
+    本脚本只读取 nav/docs_dir/exclude_docs,未知 python 标签一律按普通标量忽略。"""
+
+
+_ConfigLoader.add_multi_constructor(
+    "tag:yaml.org,2002:python/",
+    lambda loader, tag_suffix, node: loader.construct_scalar(node),
+)
+
+
 def collect_nav_paths(nav, paths):
     """递归收集 nav 中的源文件路径(相对 docs_dir)。"""
     if isinstance(nav, dict):
@@ -35,7 +46,10 @@ def collect_nav_paths(nav, paths):
 
 
 def main():
-    config = yaml.safe_load((REPO_ROOT / "mkdocs.yml").read_text(encoding="utf-8"))
+    config = yaml.load(
+        (REPO_ROOT / "mkdocs.yml").read_text(encoding="utf-8"),
+        Loader=_ConfigLoader,
+    )
     docs_dir = REPO_ROOT / config.get("docs_dir", "docs")
     exclude_docs = set((config.get("exclude_docs") or {}).keys())
 
