@@ -92,7 +92,7 @@
 
 ### 多模型路由与混合部署
 
--   **路由思路**:Anthropic 官方工程博客给出可操作做法——简单/常见问题路由给便宜快模型(示例为 Claude Haiku 4.5),难/罕见问题路由给强模型(Claude Sonnet 4.5),并提醒「Agent 系统通常以延迟和成本换取任务表现,应评估这种取舍是否值得」,复杂度只在评测证明有效时引入([Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents))。
+-   **路由思路**:Anthropic 官方工程博客给出可操作做法——简单/常见问题路由给便宜快模型(示例为 Claude Haiku 4.5),难/罕见问题路由给强模型(示例为 Claude Sonnet 4.5,博客写作时点模型,现为 Sonnet 5),并提醒「Agent 系统通常以延迟和成本换取任务表现,应评估这种取舍是否值得」,复杂度只在评测证明有效时引入([Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents))。
 -   **两种路由粒度**:模型间路由(快模型 ↔ 推理模型,按任务分类或启发式规则)与模型内路由(同一模型调 `effort` / `thinking_level`,OpenAI none→max、DeepSeek low→max、Gemini minimal→high 各档均可映射为策略);先做模型内调节,再做模型间路由,并尽量保持提示词与缓存前缀一致。
 -   **简单的路由启发式**:输入信号取任务类型(意图识别结果)、输入长度、历史成功率、用户付费层级。示例:客服对话首轮走快模型;代码调试与数据分析走推理模型;用户连续追问两次或前一次低置信时自动升级;用评测集校准阈值,上线后监控每档位的命中率与成本占比——路由本身也需要评测,不要凭感觉切。
 -   **何时不路由**:任务形态单一、调用量小、或评测证明两档无差异时,单一模型更简单可靠——「先找最简单的方案,只在评测证明必要时增加复杂度」是官方明确原则([Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents))。

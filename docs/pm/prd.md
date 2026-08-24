@@ -96,7 +96,7 @@ spike 的评审尤其容易踩坑：评审会要求"顺手把功能也做了"。
 **加深——角色链路、频次、现状替代品、容忍度**：
 
 -   **角色链路**：谁发起、谁审批、谁日常使用、谁为结果负责。客服场景里主管是验收人、一线客服是日常用户，两者的诉求常冲突（主管要效率、客服要省事），写清各角色的验收口径
--   **频次**：日均与峰值调用量——决定成本量级、缓存策略和并发设计（估算方法见 [LLM 成本估算](../tools/llm-cost.md)）
+-   **频次**：日均与峰值调用量——决定成本量级、缓存策略和并发设计（估算方法见 [LLM 成本测算](../tools/llm-cost.md)）
 -   **现状替代品**：用户现在怎么解决（人工、旧工具、规则引擎），替代成本是多少——这是"AI 必须显著优于现状"的对照基准
 -   **容忍度**：用户等多久会放弃、多少错误会流失。写清容忍度，延迟预算和通过线的松紧就有依据
 
@@ -167,7 +167,7 @@ spike 的评审尤其容易踩坑：评审会要求"顺手把功能也做了"。
 
 -   **写什么**：单次调用成本估算（输入/输出 token × 单价）、按业务量折算的月成本、**成本护栏**（超限怎么办，如降级到小模型或直接关停）
 -   **例如**："单次约 0.02 元，月 300 万次调用 ≈ 6 万元；护栏：日成本超 2500 元自动降级"
--   **为什么**：成本是 AI 产品的"跑冒滴漏"，一次调用几分钱、一天百万次就是巨款——算账方法见 [LLM 成本估算](../tools/llm-cost.md)
+-   **为什么**：成本是 AI 产品的"跑冒滴漏"，一次调用几分钱、一天百万次就是巨款——算账方法见 [LLM 成本测算](../tools/llm-cost.md)
 
 **加深——token 公式、峰值假设、缓存策略、单位经济、预算熔断**：
 
@@ -415,7 +415,7 @@ spike 的评审尤其容易踩坑：评审会要求"顺手把功能也做了"。
 -   [评估与评测](../ai/evaluation.md)：评测集怎么建、怎么用
 -   [AI 产品开发生命周期（CC/CD）](ai-lifecycle.md)：从能力范围到评测修复的完整循环
 -   [Agent 产品](../practice/agent-product.md)：代理权、人工接管与失败恢复设计
--   [LLM 成本估算](../tools/llm-cost.md)：调用成本怎么算
+-   [LLM 成本测算](../tools/llm-cost.md)：调用成本怎么算
 -   [数据与标注](../tools/data.md)：埋点、标注与反馈回流
 -   [出海与合规](../practice/compliance.md)：合规检查项
 
@@ -429,4 +429,4 @@ spike 的评审尤其容易踩坑：评审会要求"顺手把功能也做了"。
     -   **官方文档与博客**：[Anthropic — Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)（工作流与 Agent 的取舍）、[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)（验证闭环与权限）、[OpenAI Agents 指南](https://developers.openai.com/api/docs/guides/agents)（Agent 能力边界）
     -   **经典著作与论文**：Marty Cagan, 2018, INSPIRED（产品发现与四类风险）；Ryan Singer, 2019, Shape Up（决策记录与时间盒）；Kano et al., 1984（需求分层）；Eric Ries, 2011, The Lean Startup（MVP 与验证式学习）
     -   **仓库原创读书笔记**：本站 [《启示录》精读笔记](../case/books/inspired.md)、[《精益创业》精读笔记](../case/books/lean-startup.md)、[《俞军产品方法论》精读笔记](../case/books/yujun-product-methodology.md)、[《人人都是产品经理 2.0》精读笔记](../case/books/pm-2-0.md)
-    -   **站内体系**：评测与灰度见 [评估与评测](../ai/evaluation.md)，成本公式见 [LLM 成本估算](../tools/llm-cost.md)，合规红线见 [出海与合规](../practice/compliance.md)
+    -   **站内体系**：评测与灰度见 [评估与评测](../ai/evaluation.md)，成本公式见 [LLM 成本测算](../tools/llm-cost.md)，合规红线见 [出海与合规](../practice/compliance.md)

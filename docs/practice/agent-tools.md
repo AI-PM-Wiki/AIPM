@@ -217,7 +217,7 @@ MCP（Model Context Protocol）是让工具可插拔的协议层：工具提供�
 
 #### 自建工具网关的落地模块
 
-平台型产品接第三方 MCP 时，工具网关至少要有五个模块（对应 [工具调用与 MCP](../ai/agent-tools.md) 的「自建 MCP Registry / Tool Gateway」）：
+平台型产品接第三方 MCP 时，工具网关至少要有五个模块（对应 [工具调用与 MCP](../ai/agent-tools.md) 的「生态现状」小节）：
 
 | 模块 | 职责 | 缺了会怎样 |
 | --- | --- | --- |

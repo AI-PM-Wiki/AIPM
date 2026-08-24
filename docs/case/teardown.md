@@ -45,7 +45,7 @@
 -   区分"事实"与"推测"
 -   欢迎投稿到本站（见[如何参与](../intro/htc.md)）
 
-???+ todo "待补充"
+???+ todo "欢迎更多拆解投稿"
     欢迎贡献具体产品拆解文章，投稿即收录。
 
-完整案例示范 → [ChatGPT 产品拆解:一个 AI 原生产品的全文走查](teardown-chatgpt.md)。
+完整案例示范 → [ChatGPT 产品拆解：一个 AI 原生产品的全文走查](teardown-chatgpt.md)。
