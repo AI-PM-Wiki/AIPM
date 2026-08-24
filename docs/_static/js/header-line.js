@@ -7,7 +7,8 @@
   页头 —— 任何状态下始终只有一条线,样式见 extra.css 5.3.1。
 
   重复注入防护:class 已存在即跳过;MutationObserver 兜底 instant 导航
-  换页(header/tabs 不会整体替换,但保险起见)。
+  换页([data-md-component=container] 整体替换,线随旧容器被摘除,由
+  观察器按同一规则重新注入)。
 */
 (() => {
   "use strict";
