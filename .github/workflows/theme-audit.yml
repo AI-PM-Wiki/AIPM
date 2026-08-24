@@ -1,0 +1,61 @@
+# =============================================================================
+# theme-audit.yml — mkdocs-material 子模块依赖定期审计
+# -----------------------------------------------------------------------------
+# 审计基线(2026-08-25):
+#   - 生产依赖(7 个:clipboard / escape-html / focus-visible / fuzzaldrin-plus /
+#     lunr / lunr-languages / rxjs):npm audit 为 0 项漏洞。
+#   - dev 依赖:完整 npm audit 共 17 项漏洞(2 critical / 12 high,其余
+#     medium/low;涉及 form-data、shell-quote、minimatch、postcss、svgo 等),
+#     全部位于 devDependencies。
+#
+# 为何 dev 依赖链采用「观察」模式(非硬门禁):
+#   mkdocs-material 子模块经 custom_dir(mkdocs-material/material/templates)以
+#   已构建产物加载,本站 CI 不运行其 dev 构建链;dev 依赖升级属于 fork 仓库
+#   (AI-PM-Wiki/mkdocs-material)的独立动作,需同步升级子模块,待用户决策。
+#
+# 若日后升级子模块 dev 依赖,请同步更新上方基线注释。
+# =============================================================================
+name: Theme Audit
+
+on:
+  schedule:
+    # 每周一 06:43 UTC,避开整点高峰
+    - cron: "43 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  theme-audit:
+    name: 主题子模块依赖审计
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        # actions/checkout v6.1.0(固定 SHA,不用 tag)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Init mkdocs-material submodule (shallow)
+        run: |
+          set -euo pipefail
+          git submodule update --init --depth 1 --recursive mkdocs-material
+
+      - name: 生产依赖审计(硬性门禁)
+        run: |
+          set -euo pipefail
+          cd mkdocs-material
+          # npm audit 从 package-lock.json 读取,无需 npm install;
+          # 存在 >= high 漏洞时退出码非 0,job 即失败(当前基线:0 项)
+          npm audit --omit=dev --audit-level=high
+
+      - name: 开发依赖审计(观察模式,不阻塞)
+        continue-on-error: true
+        run: |
+          cd mkdocs-material
+          set +e
+          npm audit --audit-level=high 2>&1 | tee "$RUNNER_TEMP/theme-audit-dev.log"
+          npm_rc=${PIPESTATUS[0]}
+          grep -E "found [0-9]+ vulnerabilities" "$RUNNER_TEMP/theme-audit-dev.log" \
+            || echo "(未捕获 'found N vulnerabilities' 汇总行,以完整输出为准)"
+          echo "dev 依赖审计完成(npm 退出码 $npm_rc;观察模式,不阻塞门禁)"
+          exit 0
