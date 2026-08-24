@@ -56,9 +56,11 @@ jobs:
           uv run mkdocs build -v
       - name: Post-process HTML
         # https://github.com/TypeStrong/ts-node/issues/1997
+        # 安全说明:external-links 是纯 DOM 处理,不需要 GITHUB_TOKEN。
+        # commits-info(唯一需要 GITHUB_TOKEN 的后处理任务)当前未启用;
+        # 若未来启用,必须只在受信任的 push/deploy 环境注入 token,不得在 pull_request 构建注入。
         run: node --loader ts-node/esm scripts/post-build/html-postprocess.ts external-links
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_OPTIONS: --max_old_space_size=3072
       - name: Minify html
         run: ./scripts/post-build/minify-html/minify-html.sh
