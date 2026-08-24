@@ -1,15 +1,24 @@
 ---
+---
+
 ## 格式手册
 
 本页规定 **AI-PM** 的 Markdown 写作规范，请在编写内容时遵守。
 
 ## 文章结构
 
-每篇文章以 YAML frontmatter 开头：
+每篇文章以 YAML frontmatter 开头。无元信息时，空 frontmatter 写两行 `---`：
 
 ```yaml
 ---
-author: your-github-id  # 可选：你的 GitHub ID
+---
+```
+
+需要元信息（如 `description:` 页面描述）时，在中间写入键值：
+
+```yaml
+---
+description: 一句话描述页面内容
 ---
 ```
 

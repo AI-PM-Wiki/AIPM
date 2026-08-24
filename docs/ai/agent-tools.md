@@ -1,4 +1,6 @@
 ---
+---
+
 ## 工具调用与 MCP
 
 Agent 的价值一半在模型，一半在**工具**：模型负责「决定做什么」，工具负责「真正做出来」。本文讲工具调用的机制与设计规范、MCP（Model Context Protocol）如何把工具生态标准化、A2A 协议如何让 Agent 之间协作，以及工具安全与产品视角。Agent 的总体框架见 [Agent 与工作流](agent.md)，架构模式见 [Agent 架构与多智能体](agent-architecture.md)。
