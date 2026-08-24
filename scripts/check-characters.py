@@ -13,15 +13,20 @@ def str_2_unicode(s):
 
 def summary(message):
     if os.environ.get("GITHUB_ACTIONS") == "true":
-        os.system(f'echo "{message}" >> $GITHUB_STEP_SUMMARY')
+        # 直接向 $GITHUB_STEP_SUMMARY 文件追加。文件名来自 PR,含引号/$
+        # 等特殊字符时经 shell 展开有命令注入风险,故绝不经过 shell。
+        summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary_path:
+            with open(summary_path, "a") as f:
+                f.write(message + "\n")
     print(message)
 
 
 def error(filename, line, col, message):
     if os.environ.get("GITHUB_ACTIONS") == "true":
-        os.system(
-            f'echo "::error file={filename},line={line},col={col}::Check Characters: {message}"'
-        )
+        # ::error 工作流命令由 runner 从 stdout 解析,直接 print 即可,
+        # 不拼 shell(文件名来自 PR,可能含引号/特殊字符)。
+        print(f"::error file={filename},line={line},col={col}::Check Characters: {message}")
     print(f"Check Characters: {filename} {line}:{col} {message}")
 
 

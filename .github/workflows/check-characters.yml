@@ -16,22 +16,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Get Changed Files
         id: changed-files
-        uses: tj-actions/changed-files@v47
+        # tj-actions/changed-files 曾有供应链投毒史(CVE-2025-30066),
+        # 改用无此历史的 dorny/paths-filter
+        uses: dorny/paths-filter@v3
         with:
-          files: |
-            docs/**/*.md
-            docs/**/*.tex
+          filters: |
+            docs:
+              - 'docs/**/*.md'
+              - 'docs/**/*.tex'
       - name: Setup Python
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.changed-files.outputs.docs == 'true'
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Check Changed Files
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.changed-files.outputs.docs == 'true'
         run: python scripts/check-characters.py
         env:
-          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.docs_files }}

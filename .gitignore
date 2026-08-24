@@ -1,6 +1,7 @@
 /authors.json
 _build/
 site/
+.books/
 .vscode/
 .debug/
 .DS_Store
