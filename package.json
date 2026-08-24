@@ -29,17 +29,16 @@
   },
   "homepage": "https://github.com/AI-PM-Wiki/aipm#readme",
   "dependencies": {
-    "@mathjax/src": "^4.1.0",
     "@swc/core": "^1.2.210",
     "chalk": "^4.1.0",
-    "colors": "^1.4.0",
-    "cross-env": "^7.0.3",
     "klaw": "^4.0.1",
-    "node-fetch": "^3.2.8",
     "node-html-parser": "^5.3.3",
+    "ts-node": "^10.8.2"
+  },
+  "devDependencies": {
+    "node-fetch": "^3.2.8",
     "octokit": "^4.0.2",
-    "patch-package": "^6.5.1",
-    "postinstall-postinstall": "^2.1.0",
+    "prettier": "^2.7.1",
     "remark": "^14.0.2",
     "remark-clang-format": "2.4.5",
     "remark-cli": "^10.0.1",
@@ -55,16 +54,9 @@
     "remark-preset-lint-markdown-style-guide": "^5.1.2",
     "remark-stringify": "^10.0.2",
     "remark-tabbed": "^0.1.0",
-    "ts-node": "^10.8.2",
+    "typescript": "^4.7.4",
     "unified": "^10.1.2",
-    "unist-util-visit": "^4.1.0",
-    "yargs": "^17.5.1"
-  },
-  "devDependencies": {
-    "@types/klaw": "^3.0.3",
-    "@types/yargs": "^17.0.10",
-    "prettier": "^2.7.1",
-    "typescript": "^4.7.4"
+    "unist-util-visit": "^4.1.0"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
