@@ -3,8 +3,8 @@
 本目录存放用于构建、检查和辅助的脚本。
 
 -   `pre-build` 运行于构建前的脚本
-    - `install-theme.sh, install-theme-vendor.sh` 安装 mkdocs 主题，以及主题所需的第三方库
-      （资源下载链接可通过环境变量配置，如 `MATHJAX_URL`）
+    - `install-theme.sh, install-theme-vendor.sh` 安装 mkdocs 主题，并清理主题的第三方 vendor 资源
+      （主题克隆来源由 `.gitmodules` 的 `url` 配置；vendored 资源下载已随 MathJax 移除，见 2026-08 清理）
     - `pre-build.sh` 在 CI 上构建生产环境站点前运行的脚本（安装主题）
 -   `post-build` 运行于构建后的脚本
     - `html-postprocess.ts` 后处理任务框架：对 `site/` 下每个 HTML 文件顺序执行指定任务，

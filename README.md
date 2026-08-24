@@ -28,8 +28,6 @@ uv sync --index-url https://pypi.tuna.tsinghua.edu.cn/simple/
 # 安装主题时将连接网络下载资源，可通过以下配置项控制下载链接
 # .gitmodules:
 # - url
-# scripts/pre-build/install-theme-vendor.sh:
-# - MATHJAX_URL
 ./scripts/pre-build/install-theme.sh
 
 # 两种方法（选其一即可）：
