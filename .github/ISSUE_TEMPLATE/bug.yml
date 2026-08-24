@@ -12,7 +12,7 @@ body:
   attributes:
     label: 请选择：
     options:
-    - label: 我已经读过了 [F.A.Q.](https://hyc.ac/aipm/intro/faq/)，进行了搜索，但没有得到答案
+    - label: 我已经读过了 [F.A.Q.](https://aipm.ac/intro/faq/)，进行了搜索，但没有得到答案
       required: true
     - label: 我正在着手修复这个问题
       required: false

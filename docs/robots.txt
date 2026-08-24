@@ -1,1 +1,1 @@
-Sitemap: https://hyc.ac/aipm/sitemap.xml
+Sitemap: https://aipm.ac/sitemap.xml

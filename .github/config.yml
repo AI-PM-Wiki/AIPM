@@ -8,7 +8,7 @@ newIssueWelcomeComment: >
 
 # Comment to be posted to on PRs from first time contributors in your repository
 newPRWelcomeComment: >
-  感谢你对 AI-PM 的关注！请先阅读[如何参与](https://hyc.ac/aipm/intro/htc/)与[格式手册](https://hyc.ac/aipm/intro/format/)，与项目风格统一的 Pull Request 会更容易被合并～
+  感谢你对 AI-PM 的关注！请先阅读[如何参与](https://aipm.ac/intro/htc/)与[格式手册](https://aipm.ac/intro/format/)，与项目风格统一的 Pull Request 会更容易被合并～
 
 # Configuration for first-pr-merge - https://github.com/behaviorbot/first-pr-merge
 

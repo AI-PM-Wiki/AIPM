@@ -113,7 +113,7 @@ AI 产品经理的精选学习资源清单。**优先官方文档与一手信息
 
 -   国内外 AI 产品经理社区、微信群、Discord
 -   参与开源项目（AI 应用、评测工具）
--   [本站 Issues](https://github.com/Hi-Yincan/aipm/issues) 讨论区
+-   [本站 Issues](https://github.com/AI-PM-Wiki/aipm/issues) 讨论区
 
 ## 信息筛选原则
 

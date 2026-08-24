@@ -2,12 +2,12 @@
 site_name: AI-PM
 site_description: AI-PM 是一个 AI 产品经理知识整合站点，提供有趣又实用的 AI 产品、模型、工具与工作流知识，帮助广大 AI 产品从业者更快更深入地学习与实践
 site_author: AI-PM Wiki Team
-site_url: https://hyc.ac/aipm/
+site_url: https://aipm.ac/
 strict: false
 
 # Repository
-repo_name: 'Hi-Yincan/aipm'
-repo_url: 'https://github.com/Hi-Yincan/aipm'
+repo_name: 'AI-PM-Wiki/aipm'
+repo_url: 'https://github.com/AI-PM-Wiki/aipm'
 edit_uri: 'edit/main/docs/'
 
 # Copyright

@@ -59,7 +59,7 @@ async function readCommitsLog(sourceFilePath: string): Promise<{ commitDate: Dat
   });
 }
 
-const GITHUB_REPO = "Hi-Yincan/aipm";
+const GITHUB_REPO = "AI-PM-Wiki/aipm";
 const AUTHORS_CACHE_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/authors-cache/authors.json`;
 // 仓库历史无 bot 提交;fetchAuthors 已跳过名字含 [bot] 的提交者,此处留空按需补充
 const AUTHORS_EXCLUDED: string[] = [];

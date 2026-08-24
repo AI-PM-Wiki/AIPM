@@ -1,4 +1,4 @@
-- [ ] 我已认真阅读[贡献指南](https://hyc.ac/aipm/intro/htc/)（如何参与）与[格式手册](https://hyc.ac/aipm/intro/format/)，并遵循了相应规范。
+- [ ] 我已认真阅读[贡献指南](https://aipm.ac/intro/htc/)（如何参与）与[格式手册](https://aipm.ac/intro/format/)，并遵循了相应规范。
 
 <!--
 这是 Pull Request 的描述页面，可拖动输入框右下角调节大小。尽管按下绿色按钮提交后，你仍可以对描述进行修改，但请先阅读以下注意事项。

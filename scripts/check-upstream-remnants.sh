@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
-# check-upstream-remnants.sh — 上游 fork 残留检测(AI-PM / Hi-Yincan/aipm)
+# check-upstream-remnants.sh — 上游 fork 残留检测(AI-PM / AI-PM-Wiki/aipm)
 #
 # 用途:
 #   AI-PM 仓库继承自 oi-wiki 深度 fork(主题子模块 fork 链:
-#   squidfunk/mkdocs-material → oi-wiki 深度定制 → Hi-Yincan/mkdocs-material)。
+#   squidfunk/mkdocs-material → oi-wiki 深度定制 → AI-PM-Wiki/mkdocs-material)。
 #   2026-08 已彻查清理 oi-wiki 残留(远程搜索端点、上游域名、CI 与脚本引用等)。
 #   本脚本防止类似残留回流:命中致命词表即 exit 1。
 #   白名单机制:命中词表但确属「已知合法引用」的文件(如 README.md 依 SATA

@@ -1,6 +1,6 @@
 # Dependabot:git 子模块版本抬升(2026-08-24 起)
 #
-# 背景:agent-server 已拆为独立子仓库(Hi-Yincan/aipm-agent-server),
+# 背景:agent-server 已拆为独立子仓库(AI-PM-Wiki/aipm-agent-server),
 # 其后端更新流程 = push 子仓库 main → 本仓库 gitlink 跟随。此配置让
 # Dependabot 在子仓库有新版时自动开 PR 更新 gitlink,人工合并(符合
 # 「main 只走 PR」约束,避免 gitlink 永远停在旧版)。

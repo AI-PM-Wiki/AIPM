@@ -46,7 +46,7 @@ jobs:
           message: |
             感谢你对 AI-PM 的关注！ 👋🏼
 
-            我们需要你遵守 [PR 信息格式规范](https://hyc.ac/aipm/intro/htc/)（Conventional Commits，如 `feat(pm/xx.md): ...`、`fix(ai/xx.md): ...`）并据此调整 PR 标题。
+            我们需要你遵守 [PR 信息格式规范](https://aipm.ac/intro/htc/)（Conventional Commits，如 `feat(pm/xx.md): ...`、`fix(ai/xx.md): ...`）并据此调整 PR 标题。
 
             这样，你的 PR 才有可能被 Merge。
 
