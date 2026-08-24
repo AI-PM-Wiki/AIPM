@@ -45,7 +45,7 @@ description: 一句话描述页面内容
         这是提示内容。
     ```
 
--   常见类型：`note`、`warning`、`tip`、`info`、`todo`、`example`；不带标题的匿名块（`???` 折叠 / `!!!` 展开）同样支持
+-   常见类型：`note`、`warning`、`tip`、`info`、`todo`、`example`；不带标题的匿名块（`???` 折叠 / `!!!` 展开）
 -   引用外部资料时附上链接
 
 ## 链接
