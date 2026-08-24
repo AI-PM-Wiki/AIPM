@@ -17,6 +17,7 @@ jobs:
   build:
     name: AI-PM Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -79,6 +80,7 @@ jobs:
     needs: build
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # 仅部署 job 需要写权限;构建 job 一律 contents: read
     permissions:
       contents: write
