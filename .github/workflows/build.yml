@@ -29,11 +29,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.1.0
         with:
-          version: "latest"
+          version: "0.12.5"
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '20.x'
-          check-latest: true
+          node-version: '20.20.2'
       - name: Install Python dependencies
         run: uv sync --frozen
       - name: Check nav vs docs consistency
