@@ -1,6 +1,7 @@
 /authors.json
 _build/
 site/
+.books/
 .vscode/
 .debug/
 .DS_Store
@@ -15,3 +16,4 @@ node_modules/
 /.clang-format
 /.gitpod.yml
 scripts/banner/output/
+.playwright-mcp/

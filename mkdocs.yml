@@ -16,7 +16,7 @@ copyright: 'Copyright &copy; 2026 AI-PM Wiki Team'
 # Contents
 nav:
   - 简介:
-    - Getting Started: index.md
+    - 快速开始: index.md
     - 关于本项目: intro/about.md
     - 如何参与: intro/htc.md
     - 格式手册: intro/format.md
@@ -38,7 +38,7 @@ nav:
       - 设计评审与可用性度量: pm/design-evaluation.md
       - 设计师黑话速查: pm/design-jargon.md
     - 项目管理与迭代: pm/project-management.md
-    - AI 产品开发生命周期(CC/CD): pm/ai-lifecycle.md
+    - AI 产品开发生命周期（CC/CD）: pm/ai-lifecycle.md
     - AI 产品 PRD: pm/prd.md
     - 商业化与增长: pm/monetization.md
   - AI 基础:
@@ -51,7 +51,7 @@ nav:
       - 大模型基础: ai/llm-basics.md
       - 模型训练与对齐: ai/llm-training.md
       - 模型推理与部署: ai/llm-inference.md
-      - 模型能力与边界: ai/capabilities.md
+      - 模型能力与选型: ai/capabilities.md
     - 多模态:
       - 多模态理解: ai/multimodal.md
       - 图像生成: ai/image-generation.md
@@ -98,6 +98,8 @@ nav:
     - 提示词与评测工具: tools/prompt-tools.md
     - 数据与标注: tools/data.md
     - 效率工具: tools/misc.md
+    - 原型与设计工具: tools/design-tools.md
+    - 产品经理工作台工具: tools/pm-workbench.md
   - 案例与资源:
     - 案例简介: case/index.md
     - 产品拆解: case/teardown.md
@@ -135,7 +137,7 @@ nav:
       - 硬件相关岗位: job/positions/hardware-pm.md
       - AI 训练相关岗位: job/positions/ai-trainer.md
       - AI Infra 相关岗位: job/positions/ai-infra.md
-      - FDE(前沿部署工程师): job/positions/fde.md
+      - FDE（前沿部署工程师）: job/positions/fde.md
       - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
     - 面经:
       - 面经简介: job/interviews/index.md
@@ -223,7 +225,6 @@ extra_javascript:
   - '_static/js/header-line.js?v=1'
 extra_css:
   - '_static/css/extra.css?v=29'
-  # - '_static/css/offset-inject-debug.css'
 
 # Extensions
 markdown_extensions:

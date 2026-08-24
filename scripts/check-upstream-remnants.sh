@@ -16,10 +16,10 @@
 #     扫描 docs/、根层 *.md、mkdocs.yml、.github/、scripts/、yarn.lock;
 #     排除 mkdocs-material/(子模块,由 --full 覆盖)、site/、.git/、.venv/、
 #     .books/、meta/、node_modules/、__pycache__/。
-#   --full(CI 用):
+#   --full(仅本地门禁;对应 CI 工作流已移除):
 #     在默认基础上追加扫描 mkdocs-material/src/ 与
 #     mkdocs-material/material/templates/(两处均排除 vendor/ 目录即 assets/vendor/),
-#     并校验构建产物(仅当 site/ 存在时执行,不存在则跳过并注明,避免 CI 双重构建)。
+#     并校验构建产物(仅当 site/ 存在时执行,不存在则跳过并注明,避免本地重复构建)。
 #   --quiet:
 #     不输出命中明细(错误信息仍输出到 stderr),仅返回 exit code
 #     (0 = 无 FAIL 命中,1 = 有 FAIL 命中或校验失败;WARN 不计 FAIL),
@@ -49,6 +49,7 @@ FATAL_PATTERNS=(
   'join-us\.oi-wiki\.org'         # 上游招募彩蛋链接
   'oiwiki-feedback-sys-frontend'  # 上游反馈系统前端 npm 包
   'oi-wiki\.com'                  # 上游彩蛋域名(含域名判断逻辑)
+  'lib\.baomitu\.com'             # 主题 baomitu 字体块(上游 CDN 引用;主题子模块侧删除另行处理,本词表防回流)
 )
 
 # ---- 已知合法引用白名单(basename 匹配) ------------------------------------------
@@ -83,6 +84,7 @@ for ext in "${TEXT_EXTS[@]}"; do
 done
 
 # 默认排除目录(所有模式)+ 排除脚本自身(词表/注释含致命词原文)
+# .books/:本地未跟踪的版权电子书资料(见 .gitignore),不进入扫描范围
 SELF_NAME="$(basename "${BASH_SOURCE[0]}")"
 EXCLUDE_OPTS=(--exclude="$SELF_NAME")
 EXCLUDE_DIRS=(.git .venv node_modules site mkdocs-material meta .books __pycache__)

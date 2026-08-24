@@ -7,9 +7,6 @@
    - 无背景光斑(body::before 已删)、无 hero 光晕、无装饰动画
    ============================================================================ */
 
-/* 0. 字体引入(必须位于文件最前,@import 先于一切规则) */
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap");
-
 /* ----------------------------------------------------------------------------
    1. hpc101 设计 token(亮色)
    ---------------------------------------------------------------------------- */
@@ -326,6 +323,13 @@
 }
 
 /* 5.4 搜索:顶栏浅灰胶囊,下拉纯色卡片 */
+/* 搜索展开时,顶栏(含搜索框与候选框)整体置于发丝线之上:
+   .md-header__line 与页头同级但 DOM 靠后,默认盖住页头内容;
+   搜索打开时页头提级到 5,盖住发丝线,避免线横穿搜索框/候选框 */
+[data-md-toggle="search"]:checked ~ .md-header {
+  z-index: 5;
+}
+
 .md-header .md-search__form {
   background-color: rgba(0, 0, 0, .05);
   border-radius: 999px;

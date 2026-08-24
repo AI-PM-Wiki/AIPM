@@ -1,4 +1,6 @@
 ---
+---
+
 ## Transformer 架构
 
 2017 年,Google 一篇《Attention Is All You Need》提出 Transformer,最初只是机器翻译的一个新架构;七年后,它成为整个 AI 产业的「水电煤」——GPT、Claude、Gemini 的语言能力,ViT 的视觉能力,乃至图像/视频/音频生成模型,主干全是 Transformer。这篇文章把 Transformer 拆开讲透:**它为什么诞生、自注意力怎么算、完整结构长什么样、三种主流形态怎么分工**,最后落到产品视角。前置知识:神经网络与 RNN 见[深度学习基础](dl-basics.md),大模型侧的整体图景见[大模型基础](llm-basics.md)。
