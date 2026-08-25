@@ -13,8 +13,8 @@
 
   工程契约(全部保持):
   - 双层 canvas:--gl(WebGL 场)+ --ink(2D 标签层);无 WebGL → 2D 静态降级帧(深海色)
-  - 颜色全部读 extra.css 第 12 节 --pm-banner-* token(深海恒色,亮暗两套同值),
-    主题切换重绘
+  - 颜色全部读 extra.css 第 12 节 --pm-banner-* token(深/浅两套调性:
+    深=深海、浅=白昼海面;从 <body> 读计算样式,主题切换重绘)
   - prefers-reduced-motion → 固定相位的静态单帧(含粒子静态帧);
     IntersectionObserver 离屏停转;~30fps 节流;DPR 上限 1.5(shader 成本);
     webglcontextlost 降级、restored 自愈
@@ -75,11 +75,15 @@
       });
     }
 
-    /* —— token(extra.css 第 12 节,亮/暗两套;只解析 hex/rgb()/rgba()) —— */
+    /* —— token(extra.css 第 12 节,亮/暗两套;只解析 hex/rgb()/rgba()) ——
+       主题 attribute 挂在 <body>(Material 9.x:data-md-color-scheme),
+       token 集在 :root(浅)与 [data-md-color-scheme="slate"](深)上,
+       须从 body 读计算样式才能随主题取到对应集;
+       深/浅同值时读 html 也碰巧正确,两套调性分家后必须读 body */
     const T = {};
     const TOKENS = ["line", "major", "grid", "ink", "faint", "accent", "glyph"];
     const readTokens = () => {
-      const s = getComputedStyle(document.documentElement);
+      const s = getComputedStyle(document.body);
       for (const k of TOKENS) T[k] = parseColor(s.getPropertyValue(`--pm-banner-${k}`).trim());
     };
     /* "#rrggbb" | "rgb()" | "rgba()" → {r,g,b,a} (0-1) */
@@ -481,9 +485,9 @@ void main(){
     });
     io.observe(banner);
     RM.addEventListener("change", onRMChange);
-    // Material 切换亮/暗主题:<html> 的 data-md-color-scheme 变化
+    // Material 切换亮/暗主题:<body> 的 data-md-color-scheme 变化
     moTheme = new MutationObserver(() => { readTokens(); render(); });
-    moTheme.observe(document.documentElement, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
+    moTheme.observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
     glCanvas.addEventListener("webglcontextlost", onContextLost);
     glCanvas.addEventListener("webglcontextrestored", onContextRestored);
 
