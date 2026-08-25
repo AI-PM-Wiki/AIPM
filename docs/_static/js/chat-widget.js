@@ -861,6 +861,7 @@
   els.close.addEventListener("click", close);
 
   els.clear.addEventListener("click", () => {
+    if (streaming) streaming.ac.abort();          // 中止在飞请求:其 finish() 随即复位流式状态,清空后立即可用
     turnSeq++;                            // 在飞 turn 失效:其 finish()/写回成为 no-op
     history.length = 0;
     persist();
