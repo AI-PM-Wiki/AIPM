@@ -45,7 +45,7 @@
     const LABELS = [
       { t: "MODEL",  fx: 0.07, fy: 0.20 },
       { t: "RAG",    fx: 0.09, fy: 0.82 },
-      { t: "METHOD", fx: 0.32, fy: 0.10 },
+      { t: "METHOD", fx: 0.32, fy: 0.20 },
       { t: "GROWTH", fx: 0.34, fy: 0.90 },
       { t: "METRIC", fx: 0.87, fy: 0.16 },
       { t: "TEAM",   fx: 0.91, fy: 0.80 },
