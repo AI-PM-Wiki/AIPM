@@ -1313,18 +1313,22 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
        等势线 = 水深线 = sonar 青,计曲线 = phosphor,字形 AIPM 是「知识海沟」;
        视口四角 ASCII 折线 + 顶条 VESSEL.SYS + 生物荧光粒子流(JS ink 层);
        domain-warped fbm 标量场 / 电荷 / 字形雕刻等契约全部不变。
-       token 七色:细线/计曲线/网格/字形洗色/正文/浅淡(标签)/强调,
-       banner 卡内深海画不随主题(视口内自成一格)→ 亮暗两套同色;JS 只解析
-       hex/rgb()/rgba(),token 请勿用 hsl()/hsla()。
+       2026-08-25 打磨(用户定案):卡内随主题、深/浅两个风格(同构两调性)——
+       深色 = 深海(现状不动:黑蓝底 + sonar 青 + 荧光粒子);
+       浅色 = 白昼海面:浅海面底 + 青蓝等势线 + 深墨 mono 仪器 chrome,
+       白天测深图观感,禁止灰蒙。
+       token 七色(细线/计曲线/网格/字形洗色/正文/标签/强调)由 banner.js
+       解析(只支持 hex/rgb()/rgba(),请勿用 hsl()/hsla()),主题切换自动重绘;
+       :root 为浅色集,slate 块为深色集,两套各自成调,深色集一个值不许动。
    ---------------------------------------------------------------------------- */
 :root {
-  --pm-banner-line: rgba(34, 211, 238, .22);     /* 细等势线:sonar 青 */
-  --pm-banner-major: rgba(165, 243, 252, .6);    /* 计曲线:phosphor */
-  --pm-banner-grid: rgba(148, 196, 255, .05);    /* 底纹发丝网格 */
-  --pm-banner-glyph: rgba(34, 211, 238, .07);    /* 字形洗色:sonar 极淡 */
-  --pm-banner-ink: rgba(230, 240, 250, .88);     /* ink-text */
-  --pm-banner-faint: rgba(126, 156, 192, .6);    /* muted */
-  --pm-banner-accent: rgba(165, 243, 252, .95);  /* phosphor 强调 */
+  --pm-banner-line: rgba(37, 99, 235, .30);      /* 细等势线:白天测深图蓝(可见但克制) */
+  --pm-banner-major: rgba(8, 145, 178, .55);     /* 计曲线/字缘轮廓:青 */
+  --pm-banner-grid: rgba(30, 64, 175, .06);      /* 底纹发丝网格 */
+  --pm-banner-glyph: rgba(59, 130, 246, .08);    /* 字形洗色:蓝极淡 */
+  --pm-banner-ink: rgba(15, 27, 45, .88);        /* ink-text:深墨蓝 */
+  --pm-banner-faint: rgba(15, 27, 45, .88);      /* 标签:深墨蓝(浅底 mono 深字) */
+  --pm-banner-accent: rgba(14, 116, 144, .45);   /* 强调/粒子:深青 */
 }
 
 [data-md-color-scheme="slate"] {
@@ -1351,6 +1355,18 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   overflow: hidden;
   background: rgba(10, 20, 40, .5);
   isolation: isolate;
+}
+
+/* 浅色 = 白昼海面视口:白玻璃 + 青描边 + blur(与站点浅色玻璃卡片同语言),
+   底为海面雾蓝微渐变,嵌在站点亮底上如一帧白天测深图 */
+[data-md-color-scheme="default"] .pm-banner {
+  background: linear-gradient(180deg, rgba(237, 244, 251, .82),
+                                     rgba(226, 238, 248, .88));
+  border-color: rgba(34, 211, 238, .3);
+  box-shadow: 0 1px 3px rgba(15, 27, 45, .05),
+              inset 0 1px 0 rgba(255, 255, 255, .9);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .pm-hero .pm-banner {
@@ -1399,6 +1415,15 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   pointer-events: none;
 }
 
+/* 浅色顶条:深墨 mono 字 + 青折角/双 led(暗色 phosphor 的白天反转) */
+[data-md-color-scheme="default"] .pm-banner::before {
+  color: rgba(15, 27, 45, .88);
+  border-color: rgba(8, 145, 178, .45);
+  background-image:
+    radial-gradient(circle 2px at calc(100% - 1.3rem) 50%, rgba(8, 145, 178, .8) 99%, transparent),
+    radial-gradient(circle 2px at calc(100% - 2rem) 50%, rgba(8, 145, 178, .4) 99%, transparent);
+}
+
 /* 12.4 视口右下折角(BR 对角,与顶条左上呼应) */
 .pm-banner::after {
   content: "";
@@ -1411,6 +1436,10 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   border-right: 2px solid rgba(165, 243, 252, .35);
   border-bottom: 2px solid rgba(165, 243, 252, .35);
   pointer-events: none;
+}
+
+[data-md-color-scheme="default"] .pm-banner::after {
+  border-color: rgba(8, 145, 178, .4);
 }
 
 @media (max-width: 640px) {
