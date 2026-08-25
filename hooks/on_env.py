@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 
@@ -43,10 +44,37 @@ def _chunk_sentences(text):
             chunks.append(s)
     return chunks
 
+_jieba = None
+_jieba_missing_warned = False
+
+def _segment_text(text):
+    """jieba 预分词:词间插空格,使索引侧按 /[\\s\\-]/ 切词后 key=真实词
+    (否则中文整段 text 是单个 key,查询侧 segment() 贪心退化到单字,如"会计"错配"会")。
+
+    jieba 惰性 import + 缺依赖优雅降级:返回 None 时调用方跳过该 doc 分词,构建不炸。
+    """
+    global _jieba, _jieba_missing_warned
+    if _jieba is None:
+        try:
+            import jieba
+            _jieba = jieba
+        except ImportError:
+            if not _jieba_missing_warned:
+                logging.getLogger("mkdocs").warning(
+                    "search-jieba: jieba 未安装,中文搜索索引不做预分词(多字查询可能退化为单字)"
+                )
+                _jieba_missing_warned = True
+            return None
+    return " ".join(_jieba.cut(text))
+
 def on_post_build(config, **kwargs):
     # 内置 search 插件把整页文本抹成一行(无 HTML 标签),Material 搜索 worker
     # 的摘要机制按块级标签切块,于是整页=一块,命中词所在"块"=全文。
     # 这里把 text 按句子切成 <p> 块,恢复「命中句摘要」(最多两句)。
+    #
+    # 另外:worker 索引侧按 /[\s\-]/ 切词,中文整段 text 是单个索引 key,查询侧
+    # segment() 对精确 key 贪心最长匹配,"会计"无精确 key 会退化到单字"会"导致
+    # 前缀通配全错配。修复:先用 jieba 预分词、词间插空格,再走句子切块。
     path = os.path.join(config["site_dir"], "search", "search_index.json")
     if not os.path.exists(path):
         return
@@ -58,8 +86,16 @@ def on_post_build(config, **kwargs):
         # 而不是 "in",避免正文含代码示例("<p>")的文档被误判为已处理
         if not text or text.startswith("<p>"):
             continue
-        chunks = _chunk_sentences(text)
+        # 1) jieba 预分词(词间插空格),让索引 key = 真实词
+        segmented = _segment_text(text)
+        if segmented is None:
+            continue
+        # 2) 再按句子包 <p> 块,恢复命中句摘要
+        chunks = _chunk_sentences(segmented)
         if len(chunks) > 1:
             doc["text"] = "<p>" + "</p><p>".join(chunks) + "</p>"
+        else:
+            # 无句子边界的单块也须写入分词结果,否则该 doc 仍是整段单 key
+            doc["text"] = segmented
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False)

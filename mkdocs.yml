@@ -215,7 +215,7 @@ extra:
   # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
   chat_agent:
     enabled: true
-    version: 8
+    version: 9
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   provider: google
   #   property: YOUR-GA-ID
