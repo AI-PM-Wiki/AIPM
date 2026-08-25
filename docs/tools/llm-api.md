@@ -3,7 +3,7 @@
 
 ## LLM API 与供应商
 
-模型 API 是 AI 产品的"发动机"。本页整理选择和使用模型服务的关键视角：**模型服务怎么选、怎么用**，覆盖供应商全景、定价结构、能力维度、实测方法与风险控制，是 tools 区块的选型目录页。知识机制类内容（Transformer、Token、KV Cache、推理优化）见 [大模型基础](../ai/llm-basics.md) 与 [模型推理与部署](../ai/llm-inference.md)，本页不重复讲原理；具体算账方法见 [LLM 成本测算](llm-cost.md)；主流模型的能力与价格快照见 [模型能力与选型](../ai/capabilities.md)。
+模型 API 是 AI 产品的"发动机"。本页整理选择和使用模型服务的关键视角：**模型服务怎么选、怎么用**，覆盖供应商全景、定价结构、能力维度、实测方法与风险控制，是 tools 区块的选型目录页。知识机制类内容（Transformer、Token、KV Cache、推理优化）见 [大模型基础](../ai/llm-basics.md) 与 [模型推理与部署](../ai/llm-inference.md)，本页不重复讲原理；具体算账方法见 [LLM 成本测算](llm-cost.md)；主流模型的能力与价格快照见 [模型能力与选型](../ai/capabilities.md)；调用与免费试用的平台网址清单见 [AI 平台汇总](ai-platforms.md)。
 
 ## 供应商维度
 
@@ -298,10 +298,11 @@
 7. [DeepSeek Pricing](https://api-docs.deepseek.com/quick_start/pricing)：V4 定价、错峰折扣与上下文
 8. [Qwen3](https://github.com/QwenLM/Qwen3) 与 [Meta llama-models](https://github.com/meta-llama/llama-models)：开源权重、许可证与部署生态
 9. [智谱开放平台](https://open.bigmodel.cn/pricing)、[MiniMax 开放平台](https://platform.minimaxi.com)、[火山引擎豆包大模型](https://www.volcengine.com/docs/82379/1099320)、[阿里云百炼](https://help.aliyun.com/zh/model-studio/models)：国内厂商定价与模型页
-10. 站内关联：[模型能力与选型](../ai/capabilities.md)（2026-08-23 定价表）、[评估与评测](../ai/evaluation.md)、[LLM 成本测算](llm-cost.md)、[出海与合规](../practice/compliance.md)、[多模态](../ai/multimodal.md)
+10. 站内关联：[模型能力与选型](../ai/capabilities.md)（2026-08-23 定价表）、[评估与评测](../ai/evaluation.md)、[LLM 成本测算](llm-cost.md)、[出海与合规](../practice/compliance.md)、[多模态](../ai/multimodal.md)、[AI 平台汇总](ai-platforms.md)（平台网址清单）
 
 ## 更新记录
 
 | 日期 | 变更 | 说明 |
 | --- | --- | --- |
+| 2026-08-25 | 补充 | 导语与站内关联指向新增的 [AI 平台汇总](ai-platforms.md)（平台网址清单） |
 | 2026-08-24 | 扩写 | 由清单式占位扩写为供应商全景 + 定价结构对比 + 能力维度深度 + 实测方法论 + 多模型路由分层 + 风险与锁定；兑现「待补充」中可落实项（定价结构、实测方法），具体数字留待实测回填 |
