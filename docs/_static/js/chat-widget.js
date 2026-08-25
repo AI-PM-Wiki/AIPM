@@ -243,6 +243,7 @@
      ================================================================ */
   const history = [];       // [{role, content}] 内存态,与 localStorage 同步
   let streaming = null;     // { ac: AbortController }
+  let turnSeq = 0;          // turn 级令牌:runTurn 捕获自增值;清空/新 turn 使在飞 turn 失效
   let attachments = [];     // [{name, size, type}] 纯 UI 附件
 
   const persist = () => {
@@ -507,8 +508,10 @@
   /* 一轮问答:用户消息已入 history(由 postUser / regenerate 负责),
      这里只负责 AI 气泡与流式接收 */
   const runTurn = async (message) => {
+    const myTurn = ++turnSeq;             // 捕获本 turn 令牌:清空/新 turn 后本 turn 失效
     const ctx = { acc: "", sourceList: [], sourceSeen: new Set(), requestId: null };
     const t = addAiBubble();
+    let finished = false;                 // 收尾只执行一次(done/error/流自然结束)
     setThinking(t.md);
     setStreamingUI(true);
     clearEmpty();
@@ -520,15 +523,21 @@
       history: history.slice(0, -1).slice(-HISTORY_SEND), // 最近轮次(不含本条)
     };
 
+    /* 收尾统一出口:失效 turn(清空/新 turn 后)不再写 history/DOM,
+       避免"只有回答、没有对应问题"的孤儿历史;但流式状态必须复位,
+       否则清空后发送按钮仍卡在"停止生成" */
     const finish = (assistantText) => {
-      if (assistantText) {
+      if (finished) return;
+      finished = true;
+      const stale = myTurn !== turnSeq;
+      if (!stale && assistantText) {
         history.push({ role: "assistant", content: assistantText });
         t.wrap.setAttribute("data-hidx", history.length - 1);
         persist();
       }
       setStreamingUI(false);
       updateSendState();
-      showActions(t, assistantText || ctx.acc || "");
+      if (!stale) showActions(t, assistantText || ctx.acc || "");
     };
 
     try {
@@ -597,6 +606,13 @@
         feed(decoder.decode(value, { stream: true }));
       }
       feed(decoder.decode());
+      /* 流自然结束但未收到 done/error 帧:补收尾,否则 streaming 永不复位,
+         发送按钮永远停在"停止生成";finished 标志保证 done 后的正常收尾
+         不重复执行 */
+      if (!finished) {
+        t.md.innerHTML = ctx.acc ? mdLite(ctx.acc) : "";
+        finish(ctx.acc);
+      }
     } catch (err) {
       if (err && err.name === "AbortError") {
         t.bubble.classList.add("is-error");
@@ -845,6 +861,7 @@
   els.close.addEventListener("click", close);
 
   els.clear.addEventListener("click", () => {
+    turnSeq++;                            // 在飞 turn 失效:其 finish()/写回成为 no-op
     history.length = 0;
     persist();
     els.msgs.textContent = "";
