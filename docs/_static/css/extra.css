@@ -1177,6 +1177,12 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     padding: 2rem 1rem 1.75rem;
   }
 
+  /* 眉题:窄屏收敛字距/字号,防整句右溢裁切(完整显示,光标块对齐) */
+  .pm-hero__eyebrow {
+    font-size: .6rem;
+    letter-spacing: .18em;
+  }
+
   .pm-hero .site-name {
     font-size: 1.6rem;
   }
