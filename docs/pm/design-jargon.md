@@ -3,12 +3,14 @@
 
 ## 设计师黑话速查
 
-本页是设计师日常沟通、评审会议与求职 JD 中常见黑话、术语与潜台词的速查表，按 9 个主题分类整理，共收录 160+ 条。请注意：**黑话 ≠ 能力**，「老板与同事潜台词」一节多为调侃与夸张，请谨慎对号入座。自学阶段遇到听不懂的术语，随时回来查这一页即可。
+本页是设计师日常沟通、评审会议与求职 JD 中常见黑话、术语与潜台词的速查表，按 9 个主题分类整理，共收录 160+ 条。**黑话 ≠ 能力**；「老板与同事潜台词」一节多为调侃与夸张，请谨慎对号入座。
 
-与[产品经理黑话速查](../intro/glossary.md)互相补充：PM 黑话偏业务与运营，本页偏设计与体验；两边都出现的词（如 UCD、UX、线框图）含义一致。设计方法论的完整展开见[产品设计与原型总览](design.md)。
+PM 侧的黑话见[产品经理黑话速查](../intro/glossary.md)；设计方法论的完整展开见[产品设计与原型总览](design.md)。
 
 ???+ note "提示"
-    组件类术语的规范定义以 **Material Design 3**（m3.material.io）与 **Apple HIG**（Human Interface Guidelines）官方文档为准，本页为速查摘要，细节与最新版本以官方页面为准（整理日期 2026-08-24）。
+    组件类术语的规范定义以 **Material Design 3**（m3.material.io）与 **Apple HIG**（Human Interface Guidelines）官方文档为准。
+
+    本页为速查摘要，细节与最新版本以官方页面为准（整理日期 2026-08-24）。
 
 ### 角色与组织
 
@@ -16,7 +18,7 @@
 
 | 黑话 | 含义 |
 | --- | --- |
-| UX | User Experience，用户体验；也指用户体验设计师（UX Designer）。注意 UX 是领域总称，不是「画图的」 |
+| UX | User Experience，用户体验；也指用户体验设计师（UX Designer）。UX 是领域总称，不是「画图的」 |
 | UI | User Interface，用户界面；也指界面设计师。UI 管「长什么样」，交互管「怎么用」 |
 | UE | User Experience，用户体验的早期叫法，与 UX 同义，老 JD 里常见 |
 | UED | User Experience Design，用户体验设计，通常指设计团队/部门 |
@@ -40,7 +42,7 @@
 | 黑话 | 含义 |
 | --- | --- |
 | Design Thinking | 设计思维：以用户为中心的创新方法论，经典五步——同理心 → 定义 → 构思 → 原型 → 测试 |
-| Double Diamond | 双钻模型：两轮「发散-收敛」——先发散找对问题、再收敛定方案，重复一轮 |
+| Double Diamond | 双钻模型：两轮「发散-收敛」：先发散找对问题、再收敛定方案，重复一轮 |
 | UCD 流程 | 以用户为中心的设计流程：用户研究 → 方案设计 → 原型评估 → 迭代，循环推进 |
 | Persona | 用户画像（人物角色）：基于研究数据提炼的目标用户典型形象，含目标、痛点、行为习惯 |
 | User Journey Map | 用户旅程图：用户从发现、使用到离开的全流程体验地图，标注每个环节的感受与机会点 |
@@ -52,7 +54,7 @@
 | Wireframe | 线框图：用线条与灰块框出页面结构与布局，不讲究视觉，用于快速对齐框架 |
 | Mockup | 视觉稿：带完整视觉表现的高保真静态稿，通常不包含交互 |
 | Prototype | 原型：可交互的页面示意稿，用于验证流程与体验；工具与保真度取舍见[原型与设计交付](design-prototyping.md) |
-| Low-fi / Hi-fi | 低保真 / 高保真：原型的精细度两档——低保真验证结构与流程，高保真验证视觉与细节 |
+| Low-fi / Hi-fi | 低保真 / 高保真：原型的精细度两档：低保真验证结构与流程，高保真验证视觉与细节 |
 | Clickable Prototype | 可点击原型：带跳转与反馈的可交互原型，可用性测试常用 |
 | IA | Information Architecture，信息架构：信息的组织、导航与命名方式，决定用户找不找得到东西 |
 | Card Sorting | 卡片分类：让用户把写有内容的卡片分组，得出用户心里的信息组织方式（分开放/封闭两种） |
@@ -97,7 +99,7 @@
 | Accordion | 手风琴：可折叠面板组，展开一项时收起其他项，适合层级信息（通用） |
 | Drawer / Nav Drawer | 抽屉 / 导航抽屉：从屏幕侧边滑出的面板，常承载导航（汉堡菜单）；HIG 无原生对应，MD 的 Modal/Standard Drawer 常用（MD） |
 | App Bar / Top App Bar | 应用栏 / 顶部应用栏：MD 的页面顶部栏，承载标题、操作与导航；HIG 对应 Navigation Bar / Toolbar（MD / HIG） |
-| Status Bar / Navigation Bar | 状态栏：手机顶部系统信息区（时间、电量）；Navigation Bar 有歧义——HIG 指底部导航栏（对应 Material 的 Bottom Navigation），Android 系统语境则指底部手势/按键条（通用） |
+| Status Bar / Navigation Bar | 状态栏：手机顶部系统信息区（时间、电量）；Navigation Bar 有歧义：HIG 指底部导航栏（对应 Material 的 Bottom Navigation），Android 系统语境则指底部手势/按键条（通用） |
 | Avatar | 头像：用户或实体的圆形/方形头像（MD / 通用） |
 | Badge | 角标：附着在图标上的小标记，显示未读数、新消息等（MD / HIG） |
 | Switch | 开关：二态切换控件，即时生效（MD / HIG） |
@@ -168,7 +170,7 @@
 | Haptics | 触感反馈：震动马达的物理反馈（如 iPhone 的 Taptic Engine），增强操作确认感 |
 | Gesture | 手势：点击、长按、滑动、捏合、多指等非鼠标操作方式，移动端交互基础 |
 | Touch Target | 触控目标：可点击区域的最小尺寸，HIG 建议 44×44pt，MD 建议 48×48dp；太小伤可用性 |
-| Hover / Focus / Active | 悬停 / 聚焦 / 激活：控件的三种状态反馈——鼠标悬停、键盘聚焦、按下激活，缺一不可 |
+| Hover / Focus / Active | 悬停 / 聚焦 / 激活：控件的三种状态反馈：鼠标悬停、键盘聚焦、按下激活，缺一不可 |
 | Optimistic UI | 乐观 UI：先立刻显示预期结果（如「已发送」），后台再确认；体验流畅但要在失败时回滚 |
 | Debounce / Throttle | 防抖 / 节流：防抖 = 停止触发后执行一次；节流 = 固定频率执行；搜索联想、滚动加载的标配 |
 
