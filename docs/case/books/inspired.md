@@ -6,7 +6,7 @@
 > Marty Cagan 著，Wiley 2018 年第二版（英文原版；中文版《启示录：打造用户喜爱的产品》，七印部落译）。
 > 本文是基于**原书全文**的原创精读笔记（本站读书笔记系列之一，见 [索引](index.md)）。
 
-一句话定位：硅谷产品经理的"圣经"——核心不是流程技巧，而是**赋权的产品团队**（missionaries，而非 mercenaries）+ **产品发现（discovery）与交付（delivery）的连续循环**。作者是 Silicon Valley Product Group 创始人，曾任 HP 工程师、Netscape 副总裁、eBay 产品与设计高级副总裁。
+硅谷产品经理的"圣经"——核心不是流程技巧，而是**赋权的产品团队**（missionaries，而非 mercenaries）+ **产品发现（discovery）与交付（delivery）的连续循环**。作者是 Silicon Valley Product Group 创始人，曾任 HP 工程师、Netscape 副总裁、eBay 产品与设计高级副总裁。
 
 ## 核心框架
 
