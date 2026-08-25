@@ -708,104 +708,44 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
 }
 
 /* ----------------------------------------------------------------------------
-   11. 首页 hero / 卡片 / 按钮(深海玻璃:abyss 底 + sonar 青 + mono 仪器风,
-       2026-08-25 用户指令改版「黑蓝深海 / 玻璃 UI / ASCII 原子像素」)
+   11. 首页 hero / 卡片 / 按钮(玻璃 UI + sonar 青 + mono 仪器风;
+       2026-08-25 用户指令改版「黑蓝深海 / 玻璃 UI / ASCII 原子像素」,
+       同日打磨:hero 去除大面积深色带与流动光效,背景与站点其余页面一致
+       (亮=站点亮底 / 暗=站点暗底),深海视觉收敛到 banner 视口卡内)
    ---------------------------------------------------------------------------- */
 
-/* 11.0 深海设计 token(hero 恒用,不随主题——「海面下永远黑暗」);
-      页身随主题,见 11.1 / 11.5 的 data-md-color-scheme 前缀规则 */
+/* 11.0 深海设计 token:供玻璃卡片(slate 侧)/按钮/banner 使用;
+      hero 文字不再硬编码深海浅色,随 --md-default-fg-color 主题化 */
 :root {
-  --pm-dive-abyss: #04070D;                         /* hero 底(近似黑的海蓝) */
-  --pm-dive-trench: #0A1428;                        /* 玻璃面板基色 */
+  --pm-dive-abyss: #04070D;                         /* primary 按钮文字(青底深字) */
   --pm-dive-sonar: #22D3EE;                         /* 生物荧光青 accent */
-  --pm-dive-sea: #3B82F6;                           /* 深蓝辅助 */
-  --pm-dive-phosphor: #A5F3FC;                      /* 高亮文字/微光 */
-  --pm-dive-ink: #E6F0FA;                           /* hero 主文字 */
-  --pm-dive-muted: #7E9CC0;                         /* 次级文字/发丝线 */
+  --pm-dive-phosphor: #A5F3FC;                      /* 暗底高亮文字/微光 */
+  --pm-dive-ink: #E6F0FA;                           /* slate 侧卡片主文字 */
   --pm-dive-line: rgba(148, 196, 255, .18);         /* 玻璃描边/分隔 */
 }
 
 /* 11.1 首页容器:与 .md-grid 同宽,正文等宽居中;
-   页身「潜航器甲板」玻璃面板,随主题(亮=海面 / 暗=深海玻璃);
-   面板背景挂在 ::before 且横向外扩——内容(卡片/原则/note)与 hero banner
-   保持同一 61rem 对齐,边框与内容之间留出均匀的「甲板沿」 */
+   2026-08-25 打磨:去除「潜航器甲板」玻璃面板(原 ::before 渐变底+描边+inset 高光),
+   与站点正文背景融为一体——卡片直接坐落在站点背景上(同旧版首页观感) */
 .pm-home-body {
-  position: relative;
-  isolation: isolate;
   max-width: 61rem;
-  margin: .85rem auto 0;   /* 与 hero 分隔发丝线之间留出浅色呼吸带 */
-  padding: 1.1rem 0 1.4rem;
+  margin: 0 auto;
 }
 
-.pm-home-body::before {
-  content: "";
-  position: absolute;
-  inset: 0 -.9rem;
-  z-index: -1;
-  border: 1px solid var(--pm-dive-line);
-  border-radius: 16px;
-  pointer-events: none;
-}
-
-[data-md-color-scheme="default"] .pm-home-body::before {
-  background: linear-gradient(180deg, #F5F9FD 0%, #EAF2FA 100%);
-  border-color: rgba(34, 211, 238, .28);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
-}
-
-[data-md-color-scheme="slate"] .pm-home-body::before {
-  background: linear-gradient(180deg, rgba(10, 20, 40, .5), rgba(6, 13, 26, .68));
-  border-color: rgba(148, 196, 255, .14);
-}
-
-/* 11.2 hero:「知识潜航器」视口,永恒深海
-   (abyss 底 + 极缓洋流光斑;深色带横向延展到内容列边缘,顶贴 tabs 发丝线) */
+/* 11.2 hero:「知识潜航器」页首——站点背景,不设底色/不外扩/无流动光效;
+   (2026-08-25 打磨:hero 与站点其余页面同底,亮=站点亮底 / 暗=站点暗底,
+   视觉重心收敛在 banner 视口卡内;深海画只存在于卡内) */
 .pm-hero {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: .9rem;
-  margin-block-start: -1.25rem;   /* 抵消 content__inner 顶部留白,深色带贴 tabs */
-  margin-inline: -1rem;
-  padding: 2.6rem 0 2.1rem;       /* 横向不设 padding:banner 与卡片列同宽对齐 */
+  padding: 1.1rem 0 .9rem;   /* 顶部承 content__inner 的 .6rem,底部接卡片网格 */
   text-align: center;
-  color: var(--pm-dive-ink);
-  background-color: var(--pm-dive-abyss);
-  border-bottom: 1px solid rgba(148, 196, 255, .14); /* hero 与甲板的分隔发丝线 */
 }
 
-@media screen and (min-width: 960px) {
-  .pm-hero { margin-inline: -1.5rem -1rem; } /* 导航树现身后,左右留白不对称 */
-}
-
-@media screen and (min-width: 1220px) {
-  .pm-hero { margin-inline: -1.5rem; }       /* 双侧内容列边距均为 1.5rem */
-}
-
-/* 洋流光斑:两团大尺度 radial 光斑极缓漂移(RM 下静态,见 11.7) */
-.pm-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(42% 60% at 18% 22%, rgba(59, 130, 246, .16), transparent 72%),
-    radial-gradient(34% 52% at 82% 74%, rgba(34, 211, 238, .09), transparent 70%),
-    radial-gradient(26% 40% at 55% 8%, rgba(165, 243, 252, .05), transparent 70%);
-  animation: pm-drift 34s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-@keyframes pm-drift {
-  from { transform: translate3d(-1.5%, -1%, 0); }
-  to   { transform: translate3d(1.5%, 1.2%, 0) scale(1.04); }
-}
-
-/* 眉题:仪器风格的 mono 小字 + 「//」前缀 + CSS 方块闪烁光标(不用字形) */
+/* 眉题:仪器风格的 mono 小字 + 「//」前缀 + 静态方块光标(不闪烁,去晕眩) */
 .pm-hero__eyebrow {
   margin: 0;
   font-family: var(--md-code-font);
@@ -813,7 +753,7 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   font-weight: 500;
   letter-spacing: .3em;
   text-transform: uppercase;
-  color: var(--pm-dive-muted);
+  color: var(--md-default-fg-color--light);
 }
 
 .pm-hero__eyebrow::before {
@@ -829,24 +769,17 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   margin-left: .62em;
   vertical-align: -.14em;
   background-color: var(--pm-dive-sonar);
-  opacity: .9;
-  animation: pm-blink 1.1s steps(1, end) infinite;
+  opacity: .55;
 }
 
-@keyframes pm-blink {
-  50% { opacity: 0; }
-}
-
-/* 品牌:phosphor 微光(字重/字距微调,字体不变) */
+/* 品牌:主题前景色(亮=深字 / 暗=浅字),无发光晕 */
 .pm-hero .site-name {
   margin: 0;
   font-size: 2.4rem;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: .02em;
-  color: var(--pm-dive-ink);
-  text-shadow: 0 0 26px rgba(165, 243, 252, .25),
-               0 0 8px rgba(34, 211, 238, .16);
+  color: var(--md-default-fg-color);
 }
 
 .pm-hero .tagline {
@@ -854,12 +787,13 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   margin: .2rem auto 0;
   font-size: 1rem;
   line-height: 1.7;
-  color: var(--pm-dive-muted);
+  color: var(--md-default-fg-color--light);
   text-wrap: balance; /* 避免末行孤字 */
 }
 
-/* 视口 HUD 状态行:紧贴 banner 下缘的 mono 状态行(静态值 + CSS 光标闪烁);
-   行体挂 brand::before,光标挂 brand::after(absolute,贴行右端) */
+/* 视口 HUD 状态行:紧贴 banner 下缘的 mono 状态行(静态值 + 静态光标,不闪烁);
+   行体挂 brand::before,光标挂 brand::after(absolute,贴行右端);
+   行色/发丝刻度随主题前景色 */
 .pm-hero__brand {
   position: relative;
 }
@@ -875,10 +809,10 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   line-height: 1.1;
   letter-spacing: .22em;
   text-align: center;
-  color: rgba(126, 156, 192, .85);
+  color: var(--md-default-fg-color--light);
   background-image:
-    linear-gradient(90deg, rgba(148, 196, 255, .32), rgba(148, 196, 255, .32)) left center / 10% 1px no-repeat,
-    linear-gradient(90deg, rgba(148, 196, 255, .32), rgba(148, 196, 255, .32)) right center / 10% 1px no-repeat;
+    linear-gradient(90deg, var(--md-default-fg-color--lightest), var(--md-default-fg-color--lightest)) left center / 10% 1px no-repeat,
+    linear-gradient(90deg, var(--md-default-fg-color--lightest), var(--md-default-fg-color--lightest)) right center / 10% 1px no-repeat;
 }
 
 .pm-hero__brand::after {
@@ -889,9 +823,8 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   width: .48em;
   height: 1em;
   font-size: .58rem;      /* 与 HUD 行同字号,em 对齐 */
-  background-color: var(--pm-dive-phosphor);
-  opacity: .85;
-  animation: pm-blink 1.1s steps(1, end) infinite;
+  background-color: var(--pm-dive-sonar);
+  opacity: .55;
 }
 
 .pm-hero__cta {
@@ -908,7 +841,8 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
    优先级高于 `.pm-btn`(0,1,0),会覆盖按钮文字色;故所有作用于 <a> 按钮的规则
    都配 `.md-typeset a.pm-btn…` 前置选择器提权(0,2,1/0,3,1)。
    `.pm-btn--search` 是 <button>,不适用,保留原选择器。
-   hero 恒深海,按钮样式不随主题,无 slate 分支(海面下永远黑暗)。 */
+   hero 随主题后,ghost/search 玻璃底与文字色也按主题分支(亮=白玻璃 /
+   暗=trench 玻璃);primary 仍是 sonar 青实底(两种主题下都成立)。 */
 .md-typeset a.pm-btn,
 .pm-btn {
   display: inline-flex;
@@ -967,10 +901,20 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
               0 0 22px rgba(165, 243, 252, .28);
 }
 
-/* 幽灵按钮:trench 玻璃 + 发丝描边 + hover sonar 青辉 */
+/* 幽灵按钮:主题玻璃 + 发丝描边 + hover sonar 青辉 */
 .md-typeset a.pm-btn--ghost,
 .pm-btn--ghost {
-  color: var(--pm-dive-ink);
+  color: var(--md-default-fg-color);
+}
+
+[data-md-color-scheme="default"] .md-typeset a.pm-btn--ghost,
+[data-md-color-scheme="default"] .pm-btn--ghost {
+  background-color: rgba(255, 255, 255, .65);
+  border-color: rgba(34, 211, 238, .3);
+}
+
+[data-md-color-scheme="slate"] .md-typeset a.pm-btn--ghost,
+[data-md-color-scheme="slate"] .pm-btn--ghost {
   background-color: rgba(10, 20, 40, .45);
   border-color: var(--pm-dive-line);
 }
@@ -981,13 +925,34 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
 .pm-btn--ghost:focus-visible {
   background-color: rgba(34, 211, 238, .12);
   border-color: var(--pm-dive-sonar);
+}
+
+[data-md-color-scheme="default"] .md-typeset a.pm-btn--ghost:hover,
+[data-md-color-scheme="default"] .md-typeset a.pm-btn--ghost:focus-visible,
+[data-md-color-scheme="default"] .pm-btn--ghost:hover,
+[data-md-color-scheme="default"] .pm-btn--ghost:focus-visible {
+  color: #0E7490; /* 亮底上 sonar 对比不足,提为同系深青 */
+}
+
+[data-md-color-scheme="slate"] .md-typeset a.pm-btn--ghost:hover,
+[data-md-color-scheme="slate"] .md-typeset a.pm-btn--ghost:focus-visible,
+[data-md-color-scheme="slate"] .pm-btn--ghost:hover,
+[data-md-color-scheme="slate"] .pm-btn--ghost:focus-visible {
   color: var(--pm-dive-phosphor);
 }
 
 /* 搜索按钮:ghost 胶囊 + 放大镜图标(纯样式,点击聚焦行为在模板) */
 .pm-btn--search {
   border-radius: 999px;
-  color: var(--pm-dive-muted);
+  color: var(--md-default-fg-color--light);
+}
+
+[data-md-color-scheme="default"] .pm-btn--search {
+  background-color: rgba(255, 255, 255, .65);
+  border-color: rgba(34, 211, 238, .3);
+}
+
+[data-md-color-scheme="slate"] .pm-btn--search {
   background-color: rgba(10, 20, 40, .45);
   border-color: var(--pm-dive-line);
 }
@@ -1004,9 +969,18 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
 
 .pm-btn--search:hover,
 .pm-btn--search:focus-visible {
-  color: var(--pm-dive-phosphor);
   background-color: rgba(34, 211, 238, .12);
   border-color: var(--pm-dive-sonar);
+}
+
+[data-md-color-scheme="default"] .pm-btn--search:hover,
+[data-md-color-scheme="default"] .pm-btn--search:focus-visible {
+  color: #0E7490;
+}
+
+[data-md-color-scheme="slate"] .pm-btn--search:hover,
+[data-md-color-scheme="slate"] .pm-btn--search:focus-visible {
+  color: var(--pm-dive-phosphor);
 }
 
 /* 11.4 卡片网格:桌面 3 列 → 平板 2 列 → 移动 1 列 */
@@ -1165,16 +1139,8 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
 
 /* 11.6 响应式 hero 与按钮(窄屏:HUD 缩短,视口角框淡出) */
 @media screen and (max-width: 600px) {
-  .pm-home-body {
-    padding: .9rem 0 1.1rem;
-  }
-
-  .pm-home-body::before {
-    inset: 0 -.6rem; /* 窄屏外扩收敛(内容 margin 16px,按钮不贴边) */
-  }
-
   .pm-hero {
-    padding: 2rem 1rem 1.75rem;
+    padding: 1.4rem 0 1.2rem; /* 无深色带/外扩,仅垂直留白 */
   }
 
   /* 眉题:窄屏收敛字距/字号,防整句右溢裁切(完整显示,光标块对齐) */
@@ -1210,7 +1176,7 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   }
 }
 
-/* 11.7 减少动态:关闭位移过渡与深海动画(洋流/光标闪烁)的静态回退 */
+/* 11.7 减少动态:关闭位移过渡的静态回退(hero 洋流/光标闪烁已移除,无动画可关) */
 @media (prefers-reduced-motion: reduce) {
   .md-typeset a.pm-btn,
   .pm-btn,
@@ -1225,12 +1191,6 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   .pm-card:hover,
   .pm-card:focus-visible {
     transform: none;
-  }
-
-  .pm-hero::before,
-  .pm-hero__eyebrow::after,
-  .pm-hero__brand::after {
-    animation: none;
   }
 }
 
@@ -1354,7 +1314,7 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
        视口四角 ASCII 折线 + 顶条 VESSEL.SYS + 生物荧光粒子流(JS ink 层);
        domain-warped fbm 标量场 / 电荷 / 字形雕刻等契约全部不变。
        token 七色:细线/计曲线/网格/字形洗色/正文/浅淡(标签)/强调,
-       hero 恒深海 → 亮暗两套同色(「海面下永远黑暗」);JS 只解析
+       banner 卡内深海画不随主题(视口内自成一格)→ 亮暗两套同色;JS 只解析
        hex/rgb()/rgba(),token 请勿用 hsl()/hsla()。
    ---------------------------------------------------------------------------- */
 :root {
