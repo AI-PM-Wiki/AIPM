@@ -1,22 +1,23 @@
 /*
-  AI-PM 首页 banner:「等势线地形 · Carved AIPM」(2026-08-23 第三版,
-  取代"粒子聚字"版——粒子散开可读性差、与等势线同层打架)
+  AI-PM 首页 banner:「深海测深场 · Carved AIPM」(2026-08-25 深海改版;
+  引擎沿用 2026-08-23 第三版等势线地形,工程契约全部不变)
 
-  视觉:一张会呼吸的科学制图等势线图——WebGL fragment shader 实时渲染
-  domain-warped fbm 标量场,3 颗环境电荷缓慢游走;中央大号 AIPM 不是画出来的
-  图层,而是"雕进"场里的盆地:字形区域在 shader 中被压平(等势线在字内消失、
-  在字形边缘密集堆叠成轮廓环),另取字形遮罩 0.5 等值线常绘一条边缘轮廓线
-  (缓慢呼吸,指针入场增亮——保证大多数时段字缘轮廓清晰),再罩一层极淡的
-  accent 洗色——字母由地形负形 + 轮廓线显现。指针移入即注入第四颗电荷,
-  等势线随手弯曲、在字缘缠绕。细等势线为墨色、每第 5 条计曲线(index contour)
-  为 accent 色,底衬极细发丝网格;2D 覆盖层只布 6 枚主题 micro 标签
-  (MODEL / RAG / METHOD / GROWTH / METRIC / TEAM)。
+  视觉(深海叙事·知识海沟):WebGL fragment shader 实时渲染 domain-warped fbm
+  标量场——读作「测深地形图」,等势线 = 水深线(sonar 青),每第 5 条计曲线
+  (index contour)= phosphor 亮线;AIPM 四字是「知识海沟」:字形区域在 shader
+  中被压平(等势线字内消失、字缘堆叠成轮廓环),再取字形遮罩 0.5 等值线常绘
+  一条边缘轮廓(缓慢呼吸 + 指针入场增亮),罩一层极淡 sonar 洗色;3 颗环境
+  电荷游走,指针移入即注入第四颗(声呐扰动)。ink 层 = 6 枚 ASCII micro
+  标签([ MODEL ] 等)+ 生物荧光像素流(极淡 phosphor 方块,缓慢右漂、微闪烁)。
+  视口顶条 VESSEL.SYS 与右下角框由 extra.css §12 伪元素绘制。
 
-  工程契约:
-  - 双层 canvas:--gl(WebGL 场)+ --ink(2D 标签层);无 WebGL → 2D 静态降级帧
-  - 颜色全部读 extra.css 第 12 节 --pm-banner-* token(亮/暗两套),主题切换重绘
-  - prefers-reduced-motion → 固定相位的静态单帧;IntersectionObserver 离屏停转;
-    ~30fps 节流;DPR 上限 1.5(shader 成本);webglcontextlost 降级、restored 自愈
+  工程契约(全部保持):
+  - 双层 canvas:--gl(WebGL 场)+ --ink(2D 标签层);无 WebGL → 2D 静态降级帧(深海色)
+  - 颜色全部读 extra.css 第 12 节 --pm-banner-* token(深/浅两套调性:
+    深=深海、浅=白昼海面;从 <body> 读计算样式,主题切换重绘)
+  - prefers-reduced-motion → 固定相位的静态单帧(含粒子静态帧);
+    IntersectionObserver 离屏停转;~30fps 节流;DPR 上限 1.5(shader 成本);
+    webglcontextlost 降级、restored 自愈
   - instant 导航(mkdocs.yml navigation.instant)换 DOM 时 head 脚本不重跑:
     实例工厂 create() + 顶层 MutationObserver 盯 body 子树,新 .pm-banner
     出现即重挂、消失即卸载(停 rAF/断观察器/释放 GL),避免切回首页后空白
@@ -44,7 +45,7 @@
     const LABELS = [
       { t: "MODEL",  fx: 0.07, fy: 0.20 },
       { t: "RAG",    fx: 0.09, fy: 0.82 },
-      { t: "METHOD", fx: 0.32, fy: 0.10 },
+      { t: "METHOD", fx: 0.32, fy: 0.20 },
       { t: "GROWTH", fx: 0.34, fy: 0.90 },
       { t: "METRIC", fx: 0.87, fy: 0.16 },
       { t: "TEAM",   fx: 0.91, fy: 0.80 },
@@ -58,11 +59,31 @@
       { cx: 0.82, cy: 0.42, rx: 0.065, ry: 0.15, w1: 0.26, w2: 0.21, p1: 4.2, p2: 2.9, s: 0.32 },
     ];
 
-    /* —— token(extra.css 第 12 节,亮/暗两套;只解析 hex/rgb()/rgba()) —— */
+    /* 生物荧光像素流:确定性伪随机方块(归一化锚点 + 尺寸/漂速/振幅/相位),
+       极淡 phosphor;相位由 t 驱动 → RM/离屏自动落为静态单帧 */
+    const PS = [];
+    const PS_COUNT = 36;
+    for (let i = 0; i < PS_COUNT; i++) {
+      const fr = (n) => (i * n) % 1;
+      PS.push({
+        fx: fr(0.618034),
+        fy: 0.06 + fr(0.754878) * 0.88,
+        s: 1.2 + fr(0.414214) * 1.2,
+        sp: 0.004 + fr(0.271828) * 0.008,
+        amp: 0.008 + fr(0.172345) * 0.02,
+        ph: i * 2.3999,
+      });
+    }
+
+    /* —— token(extra.css 第 12 节,亮/暗两套;只解析 hex/rgb()/rgba()) ——
+       主题 attribute 挂在 <body>(Material 9.x:data-md-color-scheme),
+       token 集在 :root(浅)与 [data-md-color-scheme="slate"](深)上,
+       须从 body 读计算样式才能随主题取到对应集;
+       深/浅同值时读 html 也碰巧正确,两套调性分家后必须读 body */
     const T = {};
     const TOKENS = ["line", "major", "grid", "ink", "faint", "accent", "glyph"];
     const readTokens = () => {
-      const s = getComputedStyle(document.documentElement);
+      const s = getComputedStyle(document.body);
       for (const k of TOKENS) T[k] = parseColor(s.getPropertyValue(`--pm-banner-${k}`).trim());
     };
     /* "#rrggbb" | "rgb()" | "rgba()" → {r,g,b,a} (0-1) */
@@ -326,13 +347,28 @@ void main(){
         ink.moveTo(x, y - 4); ink.lineTo(x, y + 4);
         ink.stroke();
         ink.fillStyle = css(T.faint);
-        ink.fillText(l.t, x + 8, y + 0.5);
+        ink.fillText(`[ ${l.t} ]`, x + 8, y + 0.5); // ASCII 方括号,终端风
+      }
+    };
+
+    /* 生物荧光像素流:整数网格方块(原子像素),缓慢右漂 + 微闪烁;
+       窄屏减量;RM/离屏时只有静态单帧(相位固定) */
+    const drawParticles = (t) => {
+      const n = Math.max(6, Math.round((W * H) / 14000) * (W < 560 ? 0.5 : 1));
+      for (let i = 0; i < Math.min(n, PS_COUNT); i++) {
+        const P = PS[i];
+        const x = Math.round(((P.fx + t * P.sp) % 1) * W);
+        const y = Math.round((P.fy + Math.sin(t * 0.35 + P.ph) * P.amp) * H);
+        const flick = 0.55 + 0.45 * Math.sin(t * 1.4 + P.ph * 3.1);
+        ink.fillStyle = css(T.accent, (0.05 + 0.14 * ((i % 5) / 5)) * flick);
+        ink.fillRect(x, y, P.s, P.s);
       }
     };
 
     const drawInk = (t) => {
       ink.clearRect(0, 0, W, H);
       drawLabels(t);
+      drawParticles(t);
     };
 
     /* 无 WebGL 降级:静态网格 + 光斑 + 描边大字 + 标签单帧 */
@@ -368,6 +404,7 @@ void main(){
       ink.lineWidth = 1.2;
       ink.strokeText("AIPM", W / 2, H / 2);
       drawLabels(18);
+      drawParticles(18);
     };
 
     /* —— 指针状态(平滑追踪 + 强度缓入出) —— */
@@ -448,9 +485,9 @@ void main(){
     });
     io.observe(banner);
     RM.addEventListener("change", onRMChange);
-    // Material 切换亮/暗主题:<html> 的 data-md-color-scheme 变化
+    // Material 切换亮/暗主题:<body> 的 data-md-color-scheme 变化
     moTheme = new MutationObserver(() => { readTokens(); render(); });
-    moTheme.observe(document.documentElement, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
+    moTheme.observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
     glCanvas.addEventListener("webglcontextlost", onContextLost);
     glCanvas.addEventListener("webglcontextrestored", onContextRestored);
 
