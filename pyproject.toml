@@ -12,6 +12,7 @@ dependencies = [
     "markdown==3.9",
     "python-markdown-document-offsets-injection-extension==0.5.16",
     "mkdocs-toggle-sidebar-plugin==0.0.8",
+    "jieba==0.42.1",
 ]
 
 [dependency-groups]
