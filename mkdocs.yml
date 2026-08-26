@@ -303,6 +303,7 @@ nav:
       - 工具调用与 MCP: ai/agent-tools.md
       - Agent 架构与多智能体: ai/agent-architecture.md
     - 评估与评测: ai/evaluation.md
+    - AI 安全与对齐: ai/ai-safety.md
     - AI 系统架构: ai/architecture.md
   - AI 产品实战:
     - 实战简介: practice/index.md
