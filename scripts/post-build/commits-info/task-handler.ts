@@ -22,41 +22,43 @@ function escapeHtml(s: string): string {
 }
 
 async function readCommitsLog(sourceFilePath: string): Promise<{ commitDate: Date; authorEmails: string[] }[]> {
-  const { stdout: log } = await execFileAsync(
-    "bash",
-    [
-      "-c",
-      /**
-       * Format:
-       *
-       * >Date
-       * <AuthorEmail
-       * <CoAuthorEmail
-       * <...
-       * >Date
-       * <AuthorEmail
-       * <...
-       */
-      /**
-       * Regex explanation:
-       * - ^((>.+)|(<.+)|  Co-Authored-By: .+?(<.+)>): Matches lines in the `git log` output.
-       *   - (>.+): Matches lines starting with '>' (e.g., commit date lines).
-       *   - (<.+): Matches lines starting with '<' (e.g., author or co-author email lines).
-       *   - (  Co-Authored-By: .+?(<.+)>): Matches 'Co-Authored-By' lines and captures the email in '<>'.
-       * - \\2\\3\\4: Replaces the matched line with the content of the second, third, or fourth capture group.
-       * - The `pi` flags:
-       *   - `p`: Prints the substituted line.
-       *   - `i`: Makes the regex case-insensitive.
-       */
-      `git log --follow '--pretty=format:>%cD%n<%aE%n%w(0,2,2)%b' $FILENAME | sed -nE 's/^((>.+)|(<.+)|  Co-Authored-By: .+?(<.+)>)/\\2\\3\\4/pi'`
-    ],
-    {
-      env: {
-        ...process.env,
-        FILENAME: `docs${sourceFilePath}`
-      }
-    }
-  );
+  /**
+   * Format:
+   *
+   * >Date
+   * <AuthorEmail
+   * <CoAuthorEmail
+   * <...
+   * >Date
+   * <AuthorEmail
+   * <...
+   */
+  //
+  // Direct argv invocation with no intermediate shell: the path used to be
+  // interpolated unquoted as $FILENAME into a `bash -c` string (word splitting /
+  // command substitution risk). `--` guards against paths starting with `-`.
+  const { stdout: rawLog } = await execFileAsync("git", [
+    "log",
+    "--follow",
+    "--pretty=format:>%cD%n<%aE%n%w(0,2,2)%b",
+    "--",
+    `docs${sourceFilePath}`
+  ]);
+
+  /**
+   * Equivalent of the former
+   * `sed -nE 's/^((>.+)|(<.+)|  Co-Authored-By: .+?(<.+)>)/\2\3\4/pi'` stage:
+   * keep `>Date` / `<AuthorEmail` lines verbatim, reduce
+   * `  Co-Authored-By: ... <email>` trailer lines to `<email>`
+   * (case-insensitive), drop every other line.
+   */
+  const log = rawLog
+    .split("\n")
+    .flatMap(line => {
+      const match = /^(?:(>.+)|(<.+)| {2}Co-Authored-By: .+?(<.+)>)/i.exec(line);
+      return match ? [match[1] ?? match[2] ?? match[3]] : [];
+    })
+    .join("\n");
 
   const commits = log.trim().slice(1).split("\n>");
   return commits.map(commit => {
