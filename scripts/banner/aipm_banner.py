@@ -11,6 +11,7 @@
 
 import os
 import random
+import sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 # ---------------------------------------------------------------- constants
@@ -25,15 +26,18 @@ GRAY = (126, 136, 150)      # 灰调(次要词条 / 图注)
 GRID_A = 10                 # 发丝网格 alpha
 TICK_A = 210                # 裁切标记 alpha
 
-FONTS_DIR = os.path.expanduser(
+# canvas-fonts 目录:默认取 agent-skills 缓存路径,可用环境变量 AIPM_FONTS_DIR 覆盖
+DEFAULT_FONTS_DIR = os.path.expanduser(
     "~/.claude/plugins/cache/anthropic-agent-skills/"
     "example-skills/3b3fad96af16/skills/canvas-design/canvas-fonts"
 )
+FONTS_DIR = os.environ.get("AIPM_FONTS_DIR") or DEFAULT_FONTS_DIR
 SYSTEM_DIR = "/System/Library/Fonts"
 
 F_LETTERS = os.path.join(FONTS_DIR, "BigShoulders-Bold.ttf")
 F_MONO = os.path.join(FONTS_DIR, "IBMPlexMono-Regular.ttf")
 F_MONO_HERO = os.path.join(FONTS_DIR, "IBMPlexMono-Bold.ttf")
+REQUIRED_FONTS = (F_LETTERS, F_MONO, F_MONO_HERO)   # 缺失即报错退出,见 ensure_fonts()
 F_CJK = os.path.join(SYSTEM_DIR, "Hiragino Sans GB.ttc")   # index 0=W3 1=W6
 F_CJK_BOLD = os.path.join(SYSTEM_DIR, "Hiragino Sans GB.ttc")
 
@@ -88,6 +92,33 @@ SEEDS = {"A": 7, "I": 19, "P": 23, "M": 37}   # 固定随机种子,可复现
 
 
 # ------------------------------------------------------------------ helpers
+def ensure_fonts():
+    """校验字体目录与所需字体文件存在;缺失则清晰报错退出,不隐式失败。
+
+    默认目录不可用时,把含上述 ttf 的目录用环境变量指给脚本:
+      AIPM_FONTS_DIR=/path/to/canvas-fonts python3 scripts/banner/aipm_banner.py
+    """
+    problems = []
+    if not os.path.isdir(FONTS_DIR):
+        problems.append(f"字体目录不存在: {FONTS_DIR}")
+    else:
+        for path in REQUIRED_FONTS:
+            if not os.path.isfile(path):
+                problems.append(f"字体文件缺失: {path}")
+    if problems:
+        print("[aipm_banner] 字体不可用,无法生成横幅:", file=sys.stderr)
+        for p in problems:
+            print(f"  - {p}", file=sys.stderr)
+        print(
+            f"尝试过的字体目录: {FONTS_DIR}\n"
+            f"(默认: {DEFAULT_FONTS_DIR})\n"
+            "如字体在其他位置,请以环境变量指定后重试:\n"
+            "  AIPM_FONTS_DIR=/path/to/canvas-fonts python3 scripts/banner/aipm_banner.py",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
 def font(path, size, index=0):
     return ImageFont.truetype(path, size, index=index)
 
@@ -264,6 +295,7 @@ def paint_labels(bg):
 
 # ---------------------------------------------------------------------- main
 def main():
+    ensure_fonts()
     os.makedirs(OUT_DIR, exist_ok=True)
     bg = Image.new("RGBA", (CW, CH), (*INK, 255))
     paint_background(bg)
