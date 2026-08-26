@@ -5,7 +5,7 @@
 
 **Q：我是新手，应该从哪里开始？**
 
-A：参考[学习路线](../case/roadmap.md)，推荐按这个顺序阅读：[产品方法论](../pm/index.md) → [AI 基础](../ai/index.md) → [AI 产品实战](../practice/index.md)。
+A：参考[学习路线](../case/roadmap.md)，推荐按这个顺序阅读：[产品方法论](../pm/index.md) → [商业与财会](../business/index.md) → [AI 基础](../ai/index.md) → [AI 产品实战](../practice/index.md)。金融、投研或商业化方向可先读商业与财会。
 
 **Q：站点内容会收费吗？**
 

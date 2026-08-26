@@ -12,7 +12,7 @@ template: home.html
   <a class="pm-card" href="business/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21v-6M11 21V8M16 21v-11"/></svg>
     <span class="pm-card__title">商业与财会</span>
-    <span class="pm-card__desc">金融学、会计学、公司金融、计量经济学等 19 门课程笔记</span>
+    <span class="pm-card__desc">金融学、会计学、公司金融、计量经济学等 19 门课</span>
   </a>
   <a class="pm-card" href="ai/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3"/></svg>
