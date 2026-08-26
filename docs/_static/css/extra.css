@@ -698,9 +698,17 @@ details > summary + .highlight > .highlighttable { margin: 0 !important; }
   color: var(--md-code-bg-color);
 }
 
-mjx-container > img {
+/* CHTML 用字符排版,子级 img 只作度量占位;隐藏以免撑开行高。
+   不用「所有 mjx-container > img」,以免 SVG 回退时把公式本身藏掉。 */
+mjx-container[jax="CHTML"] > img {
   width: 0;
   height: 0;
+}
+
+.md-typeset mjx-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
 }
 
 div.md-typeset__scrollwrap:has(table[data-review-enabled]) {

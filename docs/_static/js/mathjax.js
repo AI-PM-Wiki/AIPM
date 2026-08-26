@@ -1,5 +1,5 @@
-// MathJax v3 配置:仅处理 pymdownx.arithmatex 包裹的 .arithmatex 内容。
-// 需在本文件之后加载 MathJax 本体(见 mkdocs.yml extra_javascript)。
+// MathJax v3 + pymdownx.arithmatex。配置必须在 tex-chtml.js 之前执行。
+// instant 导航重排按 mkdocs-material 官方配方：先清缓存再 typeset。
 window.MathJax = {
   tex: {
     inlineMath: [["\\(", "\\)"]],
@@ -13,12 +13,12 @@ window.MathJax = {
   }
 };
 
-// 主题(fork of mkdocs-material)instant 导航暴露 window.document$ 事件流,
-// 订阅它在页面加载与 instant 跳转后重新排版公式。
-if (typeof document$ !== "undefined") {
-  document$.subscribe(function () {
-    if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
-      MathJax.typesetPromise();
-    }
-  });
-}
+document$.subscribe(function () {
+  if (!window.MathJax || !MathJax.startup || !MathJax.typesetPromise) {
+    return;
+  }
+  MathJax.startup.output.clearCache();
+  MathJax.typesetClear();
+  MathJax.texReset();
+  MathJax.typesetPromise();
+});
