@@ -28,6 +28,7 @@ nav:
     - 产品方法论简介: pm/index.md
     - 需求分析: pm/requirements.md
     - 用户研究: pm/user-research.md
+    - 数据分析入门: pm/data-analysis.md
     - 产品设计与原型:
       - 产品设计与原型总览: pm/design.md
       - 设计哲学与设计思维: pm/design-philosophy.md
