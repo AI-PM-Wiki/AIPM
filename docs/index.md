@@ -9,6 +9,11 @@ template: home.html
     <span class="pm-card__title">产品方法论</span>
     <span class="pm-card__desc">需求分析、用户研究、产品设计与原型、项目管理与迭代、商业化与增长</span>
   </a>
+  <a class="pm-card" href="business/">
+    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21v-6M11 21V8M16 21v-11"/></svg>
+    <span class="pm-card__title">商业与财会</span>
+    <span class="pm-card__desc">金融学、会计学、公司金融、计量经济学等 19 门课</span>
+  </a>
   <a class="pm-card" href="ai/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3"/></svg>
     <span class="pm-card__title">AI 基础</span>
@@ -48,7 +53,7 @@ template: home.html
 -   **知识自由**：本站源于社区，提倡知识自由，不商业化
 
 ???+ note "持续更新中"
-    下一步计划：新增`商业会计/财务`专题；新增产品经理、项目经理、业务架构师、技术架构师
+    下一步计划：新增产品经理、项目经理、业务架构师、技术架构师等岗位专题
 
     产品经理的定义：
     1. 产品经理的核心是产品全生命周期管理，包括市场调研、需求分析、产品设计、项目管理等。他们需要从市场和用户出发，制定产品规划，协调研发、市场、销售等团队，确保产品从概念到落地的顺利推进。
