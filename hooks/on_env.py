@@ -1,3 +1,4 @@
+import html
 import json
 import logging
 import os
@@ -92,10 +93,14 @@ def on_post_build(config, **kwargs):
             continue
         # 2) 再按句子包 <p> 块,恢复命中句摘要
         chunks = _chunk_sentences(segmented)
+        # 3) 分块里是文档原文片段,可能带 HTML 标签字样(代码示例中的 <script> 等),
+        #    写入索引前做实体转义,防 Material 搜索 worker 摘要经 innerHTML 渲染成存储型 XSS。
+        #    必须在分词/切块之后转义:实体的 ";" 否则会变成切块停顿符。
+        chunks = [html.escape(c) for c in chunks]
         if len(chunks) > 1:
             doc["text"] = "<p>" + "</p><p>".join(chunks) + "</p>"
         else:
             # 无句子边界的单块也须写入分词结果,否则该 doc 仍是整段单 key
-            doc["text"] = segmented
+            doc["text"] = html.escape(segmented)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False)
