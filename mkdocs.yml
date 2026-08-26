@@ -285,6 +285,7 @@ nav:
       - 模型训练与对齐: ai/llm-training.md
       - 模型推理与部署: ai/llm-inference.md
       - 模型能力与选型: ai/capabilities.md
+      - 开源与闭源模型生态: ai/model-ecosystem.md
     - 多模态:
       - 多模态理解: ai/multimodal.md
       - 图像生成: ai/image-generation.md
