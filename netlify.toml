@@ -4,3 +4,102 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# ---------------------------------------------------------------------------
+# 静态资源长效缓存(弱网回访少打往返)
+#
+# 默认 /* 强制重新验证,保证 HTML / 搜索索引 / service-worker.js 随发布更新。
+# 随后更具体的路径覆盖为长缓存:
+#   - 主题 assets 文件名含内容哈希 → 1 年 + immutable
+#   - _static CSS/JS 由 HTML 里 ?v= 击穿 → 1 年(查询串参与缓存键)
+#   - 未哈希的 toggle-sidebar.js → 1 天,不用 immutable
+#
+# 生产站 aipm.ac 走 GitHub Pages,源站 Cache-Control 被钉死 max-age=600,
+# 本段只对 Netlify 预览生效;生产回访靠 docs/service-worker.js 的 cache-first。
+# 规则按「先宽后窄」排列,同一响应头以后面匹配的为准。
+# ---------------------------------------------------------------------------
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/assets/stylesheets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/javascripts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/javascripts/workers/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/javascripts/lunr/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/javascripts/lunr/min/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/javascripts/toggle-sidebar.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/_static/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/_static/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/favicon.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/favicon.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/favicon_192x192.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/favicon_512x512.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/search/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
