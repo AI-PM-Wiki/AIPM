@@ -309,6 +309,7 @@ nav:
     - 对话助手类产品:
       - 对话助手: practice/chatbot.md
       - 客服自动化: practice/support-bot.md
+      - AI 搜索: practice/ai-search.md
     - 知识库问答类产品:
       - 知识库问答: practice/kb-qa.md
       - RAG 产品化实战: practice/rag-practice.md
