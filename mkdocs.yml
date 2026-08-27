@@ -44,11 +44,11 @@ nav:
     - AI 产品 PRD: pm/prd.md
     - 商业化与增长: pm/monetization.md
     - 产品战略与竞争: pm/strategy.md
-  - 技术与架构:
-    - 技术与架构简介: tech/index.md
+  - 工程与架构:
+    - 工程与架构简介: tech/index.md
     - 开发流程与节奏: tech/dev-flow.md
-    - 系统架构基础: tech/architecture.md
     - AI-Native 研发流程: tech/ai-native-sdlc.md
+    - 系统架构基础: tech/architecture.md
   - 商业与财会:
     - 商业与财会简介: business/index.md
     - 金融学:
