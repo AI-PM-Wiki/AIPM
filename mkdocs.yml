@@ -364,6 +364,8 @@ nav:
       - 百度与美团: job/companies/baidu-meituan.md
       - 华为: job/companies/huawei.md
       - 大模型创业公司: job/companies/ai-startups.md
+    - 求职实操:
+      - 裁员与劳动权益: job/layoff-and-labor.md
     - 常见岗位与JD:
       - 岗位与JD简介: job/positions/index.md
       - AI 产品经理: job/positions/ai-pm.md
