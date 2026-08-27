@@ -150,6 +150,7 @@ nav:
       - 模型设定偏误: business/08-计量经济学/06-模型设定偏误.md
       - 时间序列平稳性: business/08-计量经济学/07-时间序列平稳性.md
       - Stata 与 EViews 操作入门: business/08-计量经济学/08-Stata 与 EViews 操作入门.md
+      - 因果推断与实验: business/08-计量经济学/09-因果推断与实验.md
     - 国际金融学:
       - 国际金融学: business/09-国际金融学/index.md
       - 国际金融学课程导论: business/09-国际金融学/00-国际金融学课程导论.md
