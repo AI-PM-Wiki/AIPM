@@ -60,5 +60,5 @@ AI 产品从想法到落地，大致需要以下角色（按产品协作链路�
 ## 相关阅读
 
 -   [面试题型框架](../interviews/interview-guide.md)：知道岗位要什么之后，看面试怎么考
--   [求职路线图](../../case/roadmap.md)：从准备到拿 offer 的整体规划
+-   [自学路线](../../intro/self-study-roadmap.md)：从通用产品技能到 AI 深耕的完整路径
 -   [AI 产品开发生命周期（CC/CD）](../../pm/ai-lifecycle.md)：理解岗位们在同一件事里的分工

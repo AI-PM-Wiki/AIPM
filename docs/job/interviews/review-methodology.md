@@ -60,4 +60,4 @@ description: 面试复盘方法论：面经记录模板、复盘改进闭环与�
 -   [大厂面试流程全览](interview-process.md)：知道每轮考什么，复盘才能对症
 -   [校招面经](campus-interviews.md) / [社招面经](social-interviews.md)：不同阶段的常见场景
 -   [产品经理黑话速查](../../intro/glossary.md)：复盘时校准用词
--   [学习路线](../../case/roadmap.md)：系统查漏补缺的路径
+-   [自学路线](../../intro/self-study-roadmap.md)：系统查漏补缺的路径

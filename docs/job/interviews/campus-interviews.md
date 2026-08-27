@@ -71,5 +71,5 @@ description: 校招面经：应届生求职时间线、暑期实习转正、笔�
 -   [大厂面试流程全览](interview-process.md)：从投递到 Offer 的完整流程
 -   [面试复盘方法论](review-methodology.md)：每场面试后的复盘方法
 -   [AI 产品经理面试指南](interview-guide.md)：答题框架
--   [学习路线](../../case/roadmap.md)：面试前的系统准备路径
+-   [自学路线](../../intro/self-study-roadmap.md)：面试前的系统准备路径
 -   [谈薪与 Offer 选择](offer-negotiation.md)：拿到 Offer 后怎么选

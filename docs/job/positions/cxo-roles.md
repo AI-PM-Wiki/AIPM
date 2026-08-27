@@ -239,7 +239,7 @@ PM 是「向上沟通」需求最重的岗位之一：**每个需求背后都有
 -   [AI 产品经理](ai-pm.md)：PM 岗位本身的职责与发展路径
 -   [LLM 成本测算](../../tools/llm-cost.md)：与高管对话的成本语言
 -   [面试题型框架](../interviews/interview-guide.md)：面试里的组织与向上管理问题怎么答
--   [求职路线图](../../case/roadmap.md)：从求职到入职后的整体规划
+-   [自学路线](../../intro/self-study-roadmap.md)：从通用产品技能到 AI 深耕的完整路径
 -   [需求分析](../../pm/requirements.md)：需求黑话背后的方法论
 -   [AI 产品 PRD](../../pm/prd.md)：PRD 写作与验收标准
 -   [产品设计与原型](../../pm/design.md)：设计黑话背后的方法论
