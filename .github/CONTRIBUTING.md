@@ -1,6 +1,6 @@
 :+1::tada: 首先，感谢你抽出宝贵时间为 **AI-PM**（中文 AI 产品管理知识 wiki）做出贡献！ :tada::+1:
 
-AI-PM 是协作维护的原创中文资料，覆盖 AI 产品方法论、LLM 能力与工具、提示词工程、Agent 工作流、评测与求职专题等，站点地址 <https://aipm.ac/>，仓库地址 <https://github.com/AI-PM-Wiki/aipm>。
+AI-PM 是协作维护的原创中文资料，覆盖 AI 产品方法论、LLM 能力与工具、提示词工程、Agent 工作流、评测与求职专题等，站点地址 <https://aipm.ac/>，仓库地址 <https://github.com/AI-PM-Wiki/AIPM>。
 
 请在提交拉取请求（Pull Request）前阅读[如何参与](https://aipm.ac/intro/htc/)，并确认[格式手册](https://aipm.ac/intro/format/)中的文档格式要求（中文全角标点、中英文之间留空格、标题从 `##` 起等）。
 
@@ -22,4 +22,4 @@ AI-PM 是协作维护的原创中文资料，覆盖 AI 产品方法论、LLM 能
 + **Commit 与 PR 标题**：遵循 Conventional Commits，例如 `docs(pm/xx.md): ...`、`fix(ai/xx.md): ...`。
 + **本地门禁**：提交前请确保以下命令通过：`git diff --check`、`uv run mkdocs build -q`、`python3 scripts/check-characters.py`。
 
-如有疑问，欢迎查阅 [F.A.Q.](https://aipm.ac/intro/faq/)，或在 [Issues](https://github.com/AI-PM-Wiki/aipm/issues) 中提出。感谢你为 AI-PM 及其社区发展提供的支持和力量！:joy:
+如有疑问，欢迎查阅 [F.A.Q.](https://aipm.ac/intro/faq/)，或在 [Issues](https://github.com/AI-PM-Wiki/AIPM/issues) 中提出。感谢你为 AI-PM 及其社区发展提供的支持和力量！:joy:

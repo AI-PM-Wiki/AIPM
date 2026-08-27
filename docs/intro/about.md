@@ -22,11 +22,11 @@ AI 产品发展迅速，但相关知识大多散落在公众号文章、播客�
 ## 项目技术
 
 -   基于 [MkDocs](https://www.mkdocs.org/) 构建，使用 [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) 主题
--   站点源码托管在 GitHub，欢迎通过 [Issues](https://github.com/AI-PM-Wiki/aipm/issues) 交流讨论
+-   站点源码托管在 GitHub，欢迎通过 [Issues](https://github.com/AI-PM-Wiki/AIPM/issues) 交流讨论
 
 ## 交流方式
 
-教程内容使用评论区进行交流沟通，站点 BUG 可以发在 [Issues](https://github.com/AI-PM-Wiki/aipm/issues) 
+教程内容使用评论区进行交流沟通，站点 BUG 可以发在 [Issues](https://github.com/AI-PM-Wiki/AIPM/issues)
 
 ???+ note "Note"
-    评论区由 [giscus](https://giscus.app/zh-CN) 驱动，利用 [Discussions](https://github.com/AI-PM-Wiki/aipm/discussions) 实现。
+    评论区由 [giscus](https://giscus.app/zh-CN) 驱动，利用 [Discussions](https://github.com/AI-PM-Wiki/AIPM/discussions) 实现。

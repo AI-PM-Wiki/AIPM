@@ -18,4 +18,4 @@ A：参考[如何参与](htc.md)。
 
 **Q：内容有错误怎么办？**
 
-A：请在 [Issues](https://github.com/AI-PM-Wiki/aipm/issues) 中提出，我们会尽快修正；也欢迎直接提交 Pull Request。
+A：请在 [Issues](https://github.com/AI-PM-Wiki/AIPM/issues) 中提出，我们会尽快修正；也欢迎直接提交 Pull Request。

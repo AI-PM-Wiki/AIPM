@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# check-upstream-remnants.sh — 上游 fork 残留检测(AI-PM / AI-PM-Wiki/aipm)
+# check-upstream-remnants.sh — 上游 fork 残留检测(AI-PM / AI-PM-Wiki/AIPM)
 #
 # 用途:
 #   AI-PM 仓库继承自 oi-wiki 深度 fork(主题子模块 fork 链:

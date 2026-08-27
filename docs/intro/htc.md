@@ -9,7 +9,7 @@ description: 如何参与贡献：编写修改文章、反馈问题、贡献流�
 ## 贡献方式
 
 -   **编写/修改文章**：在 `docs/` 下对应的目录新建或修改 Markdown 文件
--   **反馈问题**：在 [Issues](https://github.com/AI-PM-Wiki/aipm/issues) 中提出内容错误、补充建议
+-   **反馈问题**：在 [Issues](https://github.com/AI-PM-Wiki/AIPM/issues) 中提出内容错误、补充建议
 -   **讨论方向**：参与 Issue 中关于内容规划的讨论，或在文章评论区参与关于文章内容讨论
 
 ## 贡献流程

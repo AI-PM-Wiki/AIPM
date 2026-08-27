@@ -1,7 +1,7 @@
 import { Octokit } from "octokit";
 
 export const AUTHORS_FILE = "authors.json";
-const GITHUB_REPO = "AI-PM-Wiki/aipm";
+const GITHUB_REPO = "AI-PM-Wiki/AIPM";
 
 export type AuthorUserMap = Record<string, { name: string; githubUsername: string }>;
 
