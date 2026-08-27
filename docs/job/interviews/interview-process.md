@@ -119,4 +119,4 @@ HR 面被挂最常见原因：薪资期望与公司范围差距过大、入职�
 -   [校招面经](campus-interviews.md)：应届生求职时间线
 -   [社招面经](social-interviews.md)：社招节奏与讲项目方法
 -   [面试复盘方法论](review-methodology.md)：把面试当评测，迭代自己
--   [学习路线](../../case/roadmap.md)：面试前查漏补缺的路径
+-   [自学路线](../../intro/self-study-roadmap.md)：面试前查漏补缺的路径

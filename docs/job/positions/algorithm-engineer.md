@@ -100,4 +100,4 @@ description: 算法工程师（LLM/NLP/多模态）岗位解读：方向细分�
 -   [数据、评测与训练类岗位](data-ai-trainer.md)：评测与数据质量是算法效果的命脉
 -   [大模型基础](../../ai/llm-basics.md)：LLM 是怎么工作的
 -   [评估与评测](../../ai/evaluation.md)：效果怎么度量、怎么回归
--   [自学产品经理](../../case/self-study.md)：三阶段自学框架与达标标志，可作为转岗能力准备的参考
+-   [自学路线](../../intro/self-study-roadmap.md)：产品经理工作流程与能力清单，可作为转岗能力准备的参考

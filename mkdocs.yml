@@ -24,6 +24,7 @@ nav:
     - F.A.Q.: intro/faq.md
     - 产品经理黑话速查: intro/glossary.md
     - AI 产品经理能力模型: intro/capability.md
+    - 自学路线: intro/self-study-roadmap.md
   - 产品方法论:
     - 产品方法论简介: pm/index.md
     - 需求分析: pm/requirements.md
@@ -345,8 +346,6 @@ nav:
     - 案例简介: case/index.md
     - 产品拆解: case/teardown.md
     - ChatGPT 产品拆解: case/teardown-chatgpt.md
-    - 自学产品经理: case/self-study.md
-    - 学习路线: case/roadmap.md
     - 学习资源: case/resources.md
     - 读书笔记:
       - 读书笔记索引: case/books/index.md
