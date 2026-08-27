@@ -7,17 +7,18 @@
 用法: python3 scripts/banner/aipm_banner.py
 输出: scripts/banner/output/aipm-banner-1600.png (2:1 母版)
       scripts/banner/output/aipm-banner-1280.png (GitHub social preview)
+      docs/social-card.png (1200x630 社交分享图,og:image / social card)
 """
 
 import os
 import random
 import sys
+from dataclasses import dataclass
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 # ---------------------------------------------------------------- constants
-W, H = 1600, 800            # 母版尺寸
-SCALE = 2                   # 超采样倍数(渲染 3200x1600 后降采样,文字更锐)
-CW, CH = W * SCALE, H * SCALE
+BASE_W, BASE_H = 1600, 800        # 母版基准尺寸
+SCALE = 2                   # 超采样倍数(渲染 2 倍画布后降采样,文字更锐)
 
 INK = (11, 14, 19)          # 墨蓝黑底
 PAPER = (232, 228, 218)     # 纸白词条
@@ -42,6 +43,60 @@ F_CJK = os.path.join(SYSTEM_DIR, "Hiragino Sans GB.ttc")   # index 0=W3 1=W6
 F_CJK_BOLD = os.path.join(SYSTEM_DIR, "Hiragino Sans GB.ttc")
 
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(OUT_DIR)))
+SOCIAL_PATH = os.path.join(REPO_ROOT, "docs", "social-card.png")
+
+
+# ------------------------------------------------------- layout (per target)
+@dataclass(frozen=True)
+class Layout:
+    """目标尺寸下、经比例换算的画布与排版参数(均为 2x 画布坐标)。"""
+    w: int
+    h: int
+    cw: int                # 画布宽(2x)
+    ch: int                # 画布高(2x)
+    gap: int               # 字母间距
+    margin: int            # 左右边距
+    row_h: int             # 词条行高
+    term_size: int         # 常规词条字号
+    hero_size: int         # 强调词条字号
+    label_size: int        # 图注字号
+    grid_step: int         # 发丝网格步长
+    line_off: int          # 上下通栏细线距边
+    corner_off: int        # 裁切标记距边
+    label_top: int         # 顶部图注 Y
+    label_bottom_off: int  # 底部图注距底(CH - 该值)
+    letter_vshift: int     # 字母组垂直微调
+
+
+# 母版(1600x800)排版基准,其余目标尺寸按宽度比例换算(见 make_layout)
+_BASE_LAYOUT = dict(
+    gap=64, margin=260, row_h=34, term_size=26, hero_size=48,
+    label_size=22, grid_step=160, line_off=96, corner_off=88,
+    label_top=112, label_bottom_off=168, letter_vshift=-16,
+)
+
+
+def make_layout(target_w, target_h):
+    """按宽度比例从母版基准换算排版参数;母版本身 s=1 时逐项与原值一致。"""
+    s = target_w / BASE_W
+    cw, ch = target_w * SCALE, target_h * SCALE
+    return Layout(
+        w=target_w, h=target_h, cw=cw, ch=ch,
+        gap=round(_BASE_LAYOUT["gap"] * s),
+        margin=round(_BASE_LAYOUT["margin"] * s),
+        row_h=round(_BASE_LAYOUT["row_h"] * s),
+        term_size=round(_BASE_LAYOUT["term_size"] * s),
+        hero_size=round(_BASE_LAYOUT["hero_size"] * s),
+        label_size=round(_BASE_LAYOUT["label_size"] * s),
+        grid_step=round(_BASE_LAYOUT["grid_step"] * s),
+        line_off=round(_BASE_LAYOUT["line_off"] * s),
+        corner_off=round(_BASE_LAYOUT["corner_off"] * s),
+        label_top=round(_BASE_LAYOUT["label_top"] * s),
+        label_bottom_off=round(_BASE_LAYOUT["label_bottom_off"] * s),
+        letter_vshift=round(_BASE_LAYOUT["letter_vshift"] * s),
+    )
+
 
 # ---------------------------------------------------------------- term banks
 # 词条全部取自 docs/intro/glossary.md 与站点主题,按字母分主题
@@ -80,13 +135,6 @@ TERMS = {
         hero=["LTV", "ROI", "裂变"],
     ),
 }
-
-GAP = 64                    # 字母间距(2x)
-MARGIN = 260                # 左右边距(2x)
-ROW_H = 34                  # 词条行高(2x)
-TERM_SIZE = 26              # 常规词条字号(2x)
-HERO_SIZE = 48              # 强调词条字号(2x)
-LABEL_SIZE = 22             # 图注字号(2x)
 
 SEEDS = {"A": 7, "I": 19, "P": 23, "M": 37}   # 固定随机种子,可复现
 
@@ -138,11 +186,11 @@ def term_style(rng):
 
 
 # -------------------------------------------------------------------- masks
-def build_letter_masks():
+def build_letter_masks(layout):
     """把四个字母逐个渲染成掩膜,得到 bbox 与字形轮廓。"""
     masks, boxes = {}, {}
     for ch in "AIPM":
-        mask = Image.new("L", (CW, CH), 0)
+        mask = Image.new("L", (layout.cw, layout.ch), 0)
         d = ImageDraw.Draw(mask)
         d.text((0, 0), ch, font=F_LETTERS_FONT, fill=255)
         boxes[ch] = mask.getbbox()
@@ -165,29 +213,29 @@ def fit_letter_font(target_span, gap):
     return font(F_LETTERS, lo)
 
 
-def place_letters():
+def place_letters(layout):
     """返回每字母的『已摆放』掩膜(字形位于最终画布坐标,可直接 getbbox 使用)。"""
-    f = fit_letter_font(CW - 2 * MARGIN, GAP)
+    f = fit_letter_font(layout.cw - 2 * layout.margin, layout.gap)
     global F_LETTERS_FONT
     F_LETTERS_FONT = f
-    masks, boxes = build_letter_masks()
+    masks, boxes = build_letter_masks(layout)
     widths = [boxes[c][2] - boxes[c][0] for c in "AIPM"]
-    span = sum(widths) + GAP * 3
-    x = (CW - span) // 2
+    span = sum(widths) + layout.gap * 3
+    x = (layout.cw - span) // 2
     placed = {}
     for ch, w in zip("AIPM", widths):
         box = boxes[ch]
         # 垂直方向:按掩膜视觉中心对齐
-        y = (CH - (box[3] - box[1])) // 2 - 16
-        placed_mask = Image.new("L", (CW, CH), 0)
+        y = (layout.ch - (box[3] - box[1])) // 2 + layout.letter_vshift
+        placed_mask = Image.new("L", (layout.cw, layout.ch), 0)
         placed_mask.paste(masks[ch], (x - box[0], y - box[1]))
         placed[ch] = placed_mask
-        x += w + GAP
+        x += w + layout.gap
     return placed
 
 
 # ------------------------------------------------------------------ painting
-def paint_term_field(bg, placed):
+def paint_term_field(bg, placed, layout):
     """逐字母在掩膜内画词条织物,用字母掩膜裁切后合成到背景。"""
     for ch in "AIPM":
         mask = placed[ch]
@@ -199,13 +247,13 @@ def paint_term_field(bg, placed):
         order = list(bank)
         rng.shuffle(order)
         idx = 0
-        canvas = Image.new("RGBA", (CW, CH), (0, 0, 0, 0))
+        canvas = Image.new("RGBA", (layout.cw, layout.ch), (0, 0, 0, 0))
         d = ImageDraw.Draw(canvas)
 
-        f_paper = cjk_font(TERM_SIZE)
-        f_hero = cjk_font(HERO_SIZE, bold=True)
-        fm_paper = font(F_MONO, TERM_SIZE)
-        fm_hero = font(F_MONO_HERO, HERO_SIZE)
+        f_paper = cjk_font(layout.term_size)
+        f_hero = cjk_font(layout.hero_size, bold=True)
+        fm_paper = font(F_MONO, layout.term_size)
+        fm_hero = font(F_MONO_HERO, layout.hero_size)
         x, y = left + 6, top + 6
 
         row = 0
@@ -217,9 +265,9 @@ def paint_term_field(bg, placed):
                 fnt = fm_hero if term.isascii() else f_hero
                 w = fnt.getbbox(term)[2] - fnt.getbbox(term)[0]
                 if x + w < right - 6:
-                    d.text((x, y + (ROW_H * 2 - HERO_SIZE) // 2), term,
+                    d.text((x, y + (layout.row_h * 2 - layout.hero_size) // 2), term,
                            font=fnt, fill=AMBER)
-                y += ROW_H * 2
+                y += layout.row_h * 2
                 row += 2
                 continue
             while x < right - 16:
@@ -234,38 +282,38 @@ def paint_term_field(bg, placed):
                     break
                 d.text((x, y), term, font=fnt, fill=fill)
                 x += w + 16
-            y += ROW_H
+            y += layout.row_h
             row += 1
 
         # 用字母掩膜裁切词条画布(掩膜自带抗锯齿灰度)
         canvas.putalpha(mask)
         bg.alpha_composite(canvas, (0, 0))
         # 字母轮廓:掩膜边缘提取,1px 琥珀描边
-        ring = Image.new("RGBA", (CW, CH), (0, 0, 0, 0))
+        ring = Image.new("RGBA", (layout.cw, layout.ch), (0, 0, 0, 0))
         edge_map = mask.filter(ImageFilter.FIND_EDGES)
-        ring.paste(Image.new("RGBA", (CW, CH), (*AMBER, 255)), (0, 0),
+        ring.paste(Image.new("RGBA", (layout.cw, layout.ch), (*AMBER, 255)), (0, 0),
                    Image.eval(edge_map, lambda p: 255 if p > 128 else 0))
         bg.alpha_composite(ring, (0, 0))
     return bg
 
 
-def paint_background(bg):
+def paint_background(bg, layout):
     d = ImageDraw.Draw(bg)
-    d.rectangle((0, 0, CW, CH), fill=INK)
+    d.rectangle((0, 0, layout.cw, layout.ch), fill=INK)
     # 发丝网格
-    g = Image.new("RGBA", (CW, CH), (0, 0, 0, 0))
+    g = Image.new("RGBA", (layout.cw, layout.ch), (0, 0, 0, 0))
     gd = ImageDraw.Draw(g)
-    for x in range(0, CW + 1, 160):
-        gd.line((x, 0, x, CH), fill=(255, 255, 255, GRID_A))
-    for y in range(0, CH + 1, 160):
-        gd.line((0, y, CW, y), fill=(255, 255, 255, GRID_A))
+    for x in range(0, layout.cw + 1, layout.grid_step):
+        gd.line((x, 0, x, layout.ch), fill=(255, 255, 255, GRID_A))
+    for y in range(0, layout.ch + 1, layout.grid_step):
+        gd.line((0, y, layout.cw, y), fill=(255, 255, 255, GRID_A))
     bg.alpha_composite(g)
     # 上下通栏细线
-    for y in (96, CH - 96):
-        d.line((MARGIN, y, CW - MARGIN, y), fill=(255, 255, 255, 46))
+    for y in (layout.line_off, layout.ch - layout.line_off):
+        d.line((layout.margin, y, layout.cw - layout.margin, y), fill=(255, 255, 255, 46))
     # 四角裁切标记(琥珀)
     t = 3
-    L, R, T2, B = MARGIN - 8, CW - MARGIN + 8, 88, CH - 88
+    L, R, T2, B = layout.margin - 8, layout.cw - layout.margin + 8, layout.corner_off, layout.ch - layout.corner_off
     mark = [(L, T2, L + 96, T2), (L, T2, L, T2 + 96), (R - 96, T2, R, T2),
             (R, T2, R, T2 + 96), (L, B, L + 96, B), (L, B - 96, L, B),
             (R - 96, B, R, B), (R, B - 96, R, B)]
@@ -274,41 +322,52 @@ def paint_background(bg):
     return bg
 
 
-def paint_labels(bg):
+def paint_labels(bg, layout):
     d = ImageDraw.Draw(bg)
-    fm = font(F_MONO, LABEL_SIZE)
-    fcjk = cjk_font(LABEL_SIZE)
+    fm = font(F_MONO, layout.label_size)
+    fcjk = cjk_font(layout.label_size)
     gray = (140, 148, 160, 230)
-    L, R = MARGIN - 8, CW - MARGIN + 8
-    d.text((L, 112), "AI-PM · KNOWLEDGE WIKI", font=fm, fill=gray)
+    L, R = layout.margin - 8, layout.cw - layout.margin + 8
+    d.text((L, layout.label_top), "AI-PM · KNOWLEDGE WIKI", font=fm, fill=gray)
     t = "LEXICON — 200+ TERMS"
-    d.text((R - fm.getlength(t), 112), t, font=fm, fill=gray)
+    d.text((R - fm.getlength(t), layout.label_top), t, font=fm, fill=gray)
     t = "FIG.01 · TERMINAL ALPHABET — CUTAWAY NO.4"
-    d.text((L, CH - 168), t, font=fm, fill=gray)
+    d.text((L, layout.ch - layout.label_bottom_off), t, font=fm, fill=gray)
     t = "N 30.26 / E 120.09 · HANGZHOU"
-    d.text((R - fm.getlength(t), CH - 168), t, font=fm, fill=gray)
+    d.text((R - fm.getlength(t), layout.ch - layout.label_bottom_off), t, font=fm, fill=gray)
     # 底部中央中文落款
     t = "AI 产品经理知识库 · 方法论 / 能力 / 工具 / 案例"
-    d.text(((CW - fcjk.getlength(t)) / 2, CH - 168), t, font=fcjk,
+    d.text(((layout.cw - fcjk.getlength(t)) / 2, layout.ch - layout.label_bottom_off), t, font=fcjk,
            fill=(112, 122, 136, 220))
 
 
 # ---------------------------------------------------------------------- main
+def render(target_w, target_h):
+    """按目标尺寸渲染一张成品(RGB,PIL Image)。"""
+    layout = make_layout(target_w, target_h)
+    bg = Image.new("RGBA", (layout.cw, layout.ch), (*INK, 255))
+    paint_background(bg, layout)
+    placed = place_letters(layout)
+    paint_term_field(bg, placed, layout)
+    paint_labels(bg, layout)
+    return bg.convert("RGB")
+
+
 def main():
     ensure_fonts()
     os.makedirs(OUT_DIR, exist_ok=True)
-    bg = Image.new("RGBA", (CW, CH), (*INK, 255))
-    paint_background(bg)
-    placed = place_letters()
-    paint_term_field(bg, placed)
-    paint_labels(bg)
-    img = bg.convert("RGB")
+    os.makedirs(os.path.dirname(SOCIAL_PATH), exist_ok=True)
 
+    master = render(BASE_W, BASE_H)
     p1600 = os.path.join(OUT_DIR, "aipm-banner-1600.png")
-    img.resize((W, H), Image.LANCZOS).save(p1600)
+    master.resize((BASE_W, BASE_H), Image.LANCZOS).save(p1600)
     p1280 = os.path.join(OUT_DIR, "aipm-banner-1280.png")
-    img.resize((1280, 640), Image.LANCZOS).save(p1280)
+    master.resize((1280, 640), Image.LANCZOS).save(p1280)
+
+    social = render(1200, 630).resize((1200, 630), Image.LANCZOS)
+    social.save(SOCIAL_PATH)
     print("ok:", p1600, p1280)
+    print("social:", SOCIAL_PATH, f"{social.width}x{social.height}")
 
 
 if __name__ == "__main__":
