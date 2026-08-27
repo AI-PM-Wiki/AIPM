@@ -480,6 +480,7 @@ extra_javascript:
   - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
   - '_static/js/banner.js?v=9'
   - '_static/js/header-line.js?v=1'
+  - '_static/js/umami.js?v=1'
 extra_css:
   - '_static/css/extra.css?v=32'
 
