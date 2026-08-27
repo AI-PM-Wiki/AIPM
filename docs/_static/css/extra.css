@@ -33,11 +33,14 @@
   --pm-card-hover-shadow: 0 2px 8px rgba(0, 0, 0, .06),
                           0 10px 22px rgba(0, 0, 0, .08);
 
-  /* 字体(覆盖主题 font: 配置注入的 --md-text-font / --md-code-font) */
-  --md-text-font: "Noto Sans", "Noto Sans SC", -apple-system, "Segoe UI",
-                  "PingFang SC", "Microsoft YaHei", sans-serif;
-  --md-code-font: "JetBrains Mono", "Fira Mono", ui-monospace, SFMono-Regular,
-                  Menlo, Consolas, monospace;
+  /* 字体栈(2026-08-27 用户要求:不关闭 webfont,设字体栈顺序):
+     拉丁字符用 Noto Sans webfont(继续走 fonts.googleapis prefetch);
+     中文字符落到系统字体栈——即使跨境 webfont 请求失败也不劣化渲染。 */
+  --md-text-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "PingFang SC",
+                  "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
+                  "WenQuanYi Micro Hei", sans-serif;
+  --md-code-font: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+                  Consolas, monospace;
   --md-text-font-family: var(--md-text-font);
   --md-code-font-family: var(--md-code-font);
 }
