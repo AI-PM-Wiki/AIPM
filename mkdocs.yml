@@ -354,9 +354,9 @@ nav:
     - 效率工具: tools/misc.md
     - 原型与设计工具: tools/design-tools.md
     - 产品经理工作台工具: tools/pm-workbench.md
-  - 案例与资源:
-    - 案例简介: case/index.md
-    - 学习资源: case/resources.md
+  - 学习资源:
+    - 学习资源简介: case/index.md
+    - 资源清单: case/resources.md
     - 读书笔记:
       - 读书笔记索引: case/books/index.md
       - 俞军产品方法论: case/books/yujun-product-methodology.md
