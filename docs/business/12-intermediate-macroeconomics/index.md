@@ -1,0 +1,21 @@
+---
+description: 以微观基础与一般均衡为核心方法、以动态最优化为技术主线的中级宏观经济学
+---
+
+## 中级宏观经济学
+
+> 以微观基础与一般均衡为核心方法、以动态最优化为技术主线，覆盖静态一般均衡、两期与无限期动态模型、动态规划、RBC、OLG 与宏观金融模型
+
+## 文章清单
+
+| 文章 | 内容 |
+|---|---|
+| [00-intro.md](00-intro.md) | 现代宏观经济学的分析方法：模型化、微观基础、卢卡斯批判、一般均衡与时间两条主线，本课定位 |
+| [01-representative-agent-model.md](01-representative-agent-model.md) | 异质性与完备市场、一期模型的消费者与企业最优化、竞争均衡、瓦尔拉斯定理、帕累托最优与福利经济学定理、比较静态与政府行为 |
+| [02-two-period-model-and-euler-equation.md](02-two-period-model-and-euler-equation.md) | 纯交换、引入资本、引入资本与劳动三个版本的两期模型，一般均衡与计划最优，欧拉方程，三期模型的开端 |
+| [03-dynamic-programming.md](03-dynamic-programming.md) | 状态变量、政策函数、值函数、包络定理、贝尔曼方程、逆向归纳求解与吃蛋糕问题的显式解 |
+| [04-infinite-horizon-dynamic-models.md](04-infinite-horizon-dynamic-models.md) | 无限期社会计划者解、贝尔曼方程与猜解法、欧拉方程、相位图与稳态、黄金律资本存量、竞争均衡 |
+| [05-real-business-cycle-model.md](05-real-business-cycle-model.md) | RBC 模型的去趋势与滤波、经济周期典型事实、平衡增长路径、参数校准、对数线性化与待定系数法、脉冲响应与模拟、模型评价 |
+| [06-overlapping-generations-model.md](06-overlapping-generations-model.md) | OLG 的决策环境、消费者与企业最优化、竞争均衡与稳态、动态无效率、政府债务与代际转移、养老保险两种筹资模式、人口老龄化效应 |
+| [07-diamond-dybvig-bank-model.md](07-diamond-dybvig-bank-model.md) | 最优存款契约、流动性转换、激励相容、银行挤兑与自我实现预期、存款保险政策及其副作用 |
+| [08-mathematical-methods.md](08-mathematical-methods.md) | 向量空间、度量空间、赋范向量空间、巴拿赫空间与完备性、压缩映射定理、Blackwell 充分条件及其在贝尔曼方程中的应用 |

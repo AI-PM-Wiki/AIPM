@@ -70,6 +70,14 @@ description: 一句话描述页面内容
 -   站内链接使用相对路径，如 `[提示词工程](../ai/prompting.md)`
 -   站外链接直接给出完整 URL
 
+## 文件与页面命名
+
+-   页面文件与目录名一律使用 **ASCII slug**：小写英文（kebab-case），仅含 `a-z`、`0-9`、`-`，不用中文、大写、下划线或空格
+-   示例：`docs/ai/llm-inference.md`、`docs/business/05-corporate-finance/08-stock-valuation.md`
+-   系列课程目录保留数字前缀保证顺序（如 `02-accounting`），页面保留两位数字前缀（如 `06-inventory`）；`index.md` 固定
+-   **nav 显示标题保持中文**，与文件路径解耦——只改路径，不改标题
+-   新页面从创建起即遵循本规范；存量页面（business 区块 2026-08 已迁移）不得回退
+
 ## 图片
 
 -   图片存放在文章同级的 `images/` 子目录
