@@ -1,4 +1,5 @@
 ---
+description: Transformer 架构拆解：自注意力机制、多头、位置编码与三种主流形态
 ---
 
 ## Transformer 架构
