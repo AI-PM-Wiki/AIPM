@@ -256,7 +256,7 @@ AI 产品经理的独特加分项：**你能读懂并产出模型评测报告**�
 
 -   本站[大厂面试流程全览](interviews/interview-process.md)、[社招面经](interviews/social-interviews.md)、[校招面经](interviews/campus-interviews.md)中关于内推的描述
 -   [AI 产品经理岗位解读](positions/ai-pm.md)中关于「不足年限可走内推」「作品与评测报告加分」的说明
--   [信息源索引](../case/info-sources.md)中 求职信息渠道的整理
+-   [信息源索引](../case/info-sources.md)中求职信息渠道的整理
 -   各公司招聘官网与职场社区（脉脉、LinkedIn、牛客）公开讨论中关于内推机制与 etiquette 的共识
 
 内推机制各公司差异大，具体以目标公司招聘页面、内推人说明与最新公开信息为准。
