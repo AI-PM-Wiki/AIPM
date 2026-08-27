@@ -1,4 +1,5 @@
 ---
+description: 站点 Markdown 写作规范：frontmatter、标题层级、文风、引用标注与图片链接
 ---
 
 ## 格式手册

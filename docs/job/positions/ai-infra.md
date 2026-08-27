@@ -1,4 +1,5 @@
 ---
+description: AI Infra 岗位解读：MLOps、推理优化、GPU 集群等职责、JD 关键词与 PM 协作要点
 ---
 
 ## 岗位是什么
