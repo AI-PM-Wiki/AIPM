@@ -93,6 +93,34 @@ flowchart TD
 
 产品侧视角：灰度节奏、变更通知与数据口径见 [项目管理与迭代](../pm/project-management.md#发布管理)。
 
+### AI 项目的流程差异
+
+通用流程骨架（需求 → 设计 → 开发 → 测试 → 上线 → 迭代）对传统与 AI 项目都成立；AI 项目在其上叠加三层差异：
+
+- **评测驱动**：没有评测就分不清"模型变好了"还是"运气好"，评测是上线门禁与迭代依据，见 [评估与评测](../ai/evaluation.md)
+- **持续校准**：AI 产品上线后不是"修 bug"，而是持续校准能力范围与代理权，见 [AI 产品开发生命周期](../pm/ai-lifecycle.md) 的 CC/CD 循环
+- **研发本身被 AI 重构**：agent 写代码、产物进版本控制、人在关卡评审，研发流程自身也在变，见 [AI-Native 研发流程](./ai-native-sdlc.md)
+
+```mermaid
+flowchart LR
+    subgraph base["通用骨架"]
+        req[需求] --> des[设计]
+        des --> dev[开发]
+        dev --> tst[测试]
+        tst --> rel[上线]
+        rel --> iter[迭代]
+        iter -->|数据反馈| req
+    end
+    subgraph overlay["AI 叠加层"]
+        ev[评测集建设]
+        cc[持续校准]
+        sd[AI-Native 产物链]
+    end
+    tst -.-> ev
+    rel -.-> cc
+    dev -.-> sd
+```
+
 ### 来源说明
 
 - [敏捷软件开发宣言](https://agilemanifesto.org/)：敏捷价值观与原则，访问日期 2026-08-27
