@@ -339,6 +339,10 @@ nav:
     - 案例分析:
       - 案例分析简介: practice/case-analysis/index.md
       - ChatGPT 拆解: practice/case-analysis/chatgpt.md
+      - Claude 拆解: practice/case-analysis/claude.md
+      - 豆包拆解: practice/case-analysis/doubao.md
+      - Notion AI 拆解: practice/case-analysis/notion-ai.md
+      - Cursor 拆解: practice/case-analysis/cursor.md
   - 工具与平台:
     - 工具简介: tools/index.md
     - AI 平台汇总: tools/ai-platforms.md
