@@ -44,6 +44,11 @@ nav:
     - AI 产品 PRD: pm/prd.md
     - 商业化与增长: pm/monetization.md
     - 产品战略与竞争: pm/strategy.md
+  - 工程与架构:
+    - 工程与架构简介: tech/index.md
+    - 开发流程与节奏: tech/dev-flow.md
+    - AI-Native 研发流程: tech/ai-native-sdlc.md
+    - 系统架构基础: tech/architecture.md
   - 商业与财会:
     - 商业与财会简介: business/index.md
     - 金融学:
@@ -331,22 +336,28 @@ nav:
       - 出海与合规: practice/compliance.md
       - 内容安全与护栏: practice/content-safety.md
       - 数据隐私与用户控制: practice/data-privacy.md
+    - 案例分析:
+      - 案例分析简介: practice/case-analysis/index.md
+      - ChatGPT 拆解: practice/case-analysis/chatgpt.md
+      - Claude 拆解: practice/case-analysis/claude.md
+      - 豆包拆解: practice/case-analysis/doubao.md
+      - Notion AI 拆解: practice/case-analysis/notion-ai.md
+      - Cursor 拆解: practice/case-analysis/cursor.md
   - 工具与平台:
     - 工具简介: tools/index.md
-    - AI 平台汇总: tools/ai-platforms.md
-    - LLM API 与供应商: tools/llm-api.md
-    - LLM 成本测算: tools/llm-cost.md
-    - 开源框架: tools/frameworks.md
-    - 提示词与评测工具: tools/prompt-tools.md
-    - 数据与标注: tools/data.md
+    - AI 工具:
+      - AI 平台汇总: tools/ai-platforms.md
+      - LLM API 与供应商: tools/llm-api.md
+      - LLM 成本测算: tools/llm-cost.md
+      - 开源框架: tools/frameworks.md
+      - 提示词与评测工具: tools/prompt-tools.md
+      - 数据与标注: tools/data.md
     - 效率工具: tools/misc.md
     - 原型与设计工具: tools/design-tools.md
     - 产品经理工作台工具: tools/pm-workbench.md
-  - 案例与资源:
-    - 案例简介: case/index.md
-    - 产品拆解: case/teardown.md
-    - ChatGPT 产品拆解: case/teardown-chatgpt.md
-    - 学习资源: case/resources.md
+  - 学习资源:
+    - 学习资源简介: case/index.md
+    - 资源清单: case/resources.md
     - 读书笔记:
       - 读书笔记索引: case/books/index.md
       - 俞军产品方法论: case/books/yujun-product-methodology.md
@@ -510,7 +521,11 @@ markdown_extensions:
   - pymdownx.snippets:
       check_paths: true
   - pymdownx.smartsymbols
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde

@@ -31,8 +31,8 @@ template: home.html
   </a>
   <a class="pm-card" href="case/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/></svg>
-    <span class="pm-card__title">案例与资源</span>
-    <span class="pm-card__desc">产品拆解、学习路线、学习资源</span>
+    <span class="pm-card__title">学习资源</span>
+    <span class="pm-card__desc">学习资源、读书笔记、信息源索引</span>
   </a>
   <a class="pm-card" href="job/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
