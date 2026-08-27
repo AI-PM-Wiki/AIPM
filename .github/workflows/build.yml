@@ -84,6 +84,10 @@ jobs:
     # 仅部署 job 需要写权限;构建 job 一律 contents: read
     permissions:
       contents: write
+    # secrets context 不允许用在 if: 条件里(会 invalidate 整个 workflow),
+    # 故先映射到 job 级 env,再用 env.INDEXNOW_KEY 判空。
+    env:
+      INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Download site artifact
@@ -92,8 +96,8 @@ jobs:
           name: site
           path: ./site
       - name: Write IndexNow key file
-        if: secrets.INDEXNOW_KEY != ''
-        run: echo "${{ secrets.INDEXNOW_KEY }}" > site/${{ secrets.INDEXNOW_KEY }}.txt
+        if: ${{ env.INDEXNOW_KEY != '' }}
+        run: echo "${{ env.INDEXNOW_KEY }}" > site/${{ env.INDEXNOW_KEY }}.txt
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
         with:
@@ -101,5 +105,5 @@ jobs:
           publish_dir: ./site
           force_orphan: true
       - name: Submit IndexNow
-        if: secrets.INDEXNOW_KEY != ''
-        run: python3 scripts/post-deploy/indexnow.py --key "${{ secrets.INDEXNOW_KEY }}"
+        if: ${{ env.INDEXNOW_KEY != '' }}
+        run: python3 scripts/post-deploy/indexnow.py --key "${{ env.INDEXNOW_KEY }}"
