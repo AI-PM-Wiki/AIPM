@@ -15,6 +15,9 @@
   - 双层 canvas:--gl(WebGL 场)+ --ink(2D 标签层);无 WebGL → 2D 静态降级帧(深海色)
   - 颜色全部读 extra.css 第 12 节 --pm-banner-* token(深/浅两套调性:
     深=深海、浅=白昼海面;从 <body> 读计算样式,主题切换重绘)
+  - WebGL 预乘 alpha(premultipliedAlpha:true + shader 输出 rgb*a):
+    iOS/iPadOS Safari 把 straight-alpha 画布按预乘合成,glyph 洗色(α≈.08)
+    与细等势线会被丢光,只剩空心字缘——桌面 Edge/Chrome 无此问题
   - prefers-reduced-motion → 固定相位的静态单帧(含粒子静态帧);
     IntersectionObserver 离屏停转;~30fps 节流;DPR 上限 1.5(shader 成本);
     webglcontextlost 降级、restored 自愈
@@ -219,7 +222,10 @@ void main(){
   alpha = max(alpha, oline * u_major.a * 1.3);
 
   alpha += (hash(gl_FragCoord.xy + fract(t)*7.0) - 0.5) * 0.02; /* 抖动去色带 */
-  gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
+  /* 预乘输出:与 getContext({premultipliedAlpha:true}) 配对。
+     iOS Safari 对 straight alpha 会丢掉低 α 的洗色/细线。 */
+  float a = clamp(alpha, 0.0, 1.0);
+  gl_FragColor = vec4(col * a, a);
 }`;
 
     let gl = null, prog = null, U = {}, glyphTex = null;
@@ -257,10 +263,12 @@ void main(){
     };
 
     const initGL = () => {
-      gl = glCanvas.getContext("webgl", {
-        alpha: true, premultipliedAlpha: false, antialias: true,
+      const glOpts = {
+        alpha: true, premultipliedAlpha: true, antialias: true,
         depth: false, stencil: false, powerPreference: "low-power",
-      }) || glCanvas.getContext("experimental-webgl");
+      };
+      gl = glCanvas.getContext("webgl", glOpts)
+        || glCanvas.getContext("experimental-webgl", glOpts);
       if (!gl) return false;
       gl.getExtension("OES_standard_derivatives");
       const compile = (type, src) => {
