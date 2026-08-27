@@ -1376,8 +1376,9 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
   border-color: rgba(34, 211, 238, .3);
   box-shadow: 0 1px 3px rgba(15, 27, 45, .05),
               inset 0 1px 0 rgba(255, 255, 255, .9);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  /* 不加 backdrop-filter:iOS Safari 会把含子 canvas 的元素打成合成组,
+     WebGL 直通 alpha 被丢掉,视口只剩空心 AIPM 字缘(桌面 Chromium 无此问题)。
+     底已是不透明渐变,blur 也看不到背后内容。 */
 }
 
 .pm-hero .pm-banner {
