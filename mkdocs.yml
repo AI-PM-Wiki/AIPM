@@ -345,12 +345,13 @@ nav:
       - Cursor 拆解: practice/case-analysis/cursor.md
   - 工具与平台:
     - 工具简介: tools/index.md
-    - AI 平台汇总: tools/ai-platforms.md
-    - LLM API 与供应商: tools/llm-api.md
-    - LLM 成本测算: tools/llm-cost.md
-    - 开源框架: tools/frameworks.md
-    - 提示词与评测工具: tools/prompt-tools.md
-    - 数据与标注: tools/data.md
+    - AI 工具:
+      - AI 平台汇总: tools/ai-platforms.md
+      - LLM API 与供应商: tools/llm-api.md
+      - LLM 成本测算: tools/llm-cost.md
+      - 开源框架: tools/frameworks.md
+      - 提示词与评测工具: tools/prompt-tools.md
+      - 数据与标注: tools/data.md
     - 效率工具: tools/misc.md
     - 原型与设计工具: tools/design-tools.md
     - 产品经理工作台工具: tools/pm-workbench.md
