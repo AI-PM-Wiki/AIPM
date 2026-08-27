@@ -10,7 +10,6 @@ description: 高质量信息渠道索引：CC98、中文社区、博客、Newsle
 
 | 场景 | 首选渠道 | 访问方式 | Agent 提示 |
 | --- | --- | --- | --- |
-| 校内一手信息 | CC98 论坛 | 校内网络或 WebVPN；本机已配 CC98 MCP | 直接用 MCP 工具搜索与读帖 |
 | 微信文章 | 搜狗微信搜索 | 模板 URL（见下） | 关键词 percent-encode 后填入模板 |
 | 中文 AI 开发者社区 | linux.do | 浏览器访问，部分板块需登录 | Playwright |
 | 中文问答 | 知乎 | 需登录，公开页可读 | WebFetch 公开页 |
