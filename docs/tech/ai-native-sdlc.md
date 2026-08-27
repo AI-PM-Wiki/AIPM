@@ -34,7 +34,7 @@ flowchart LR
     plan --> code[代码与测试]
     code --> pr[合并请求与审查记录]
     pr --> rel[发布]
-    rel -. 线上事故生成新 intent.md .-> intent
+    rel -.->|线上事故生成新 intent.md| intent
 ```
 
 ### 六大阶段
@@ -85,7 +85,7 @@ flowchart LR
     mon[确定性监控] -->|越线| tier[分级响应<br>1σ 记录 / 2σ 诊断 / 3σ 行动]
     tier --> doc[事故记录]
     doc --> intent2[新 intent.md]
-    intent2 -. 回流管线 .-> mon
+    intent2 -.->|回流管线| mon
 ```
 
 ### 传统 vs AI-Native 对照表
