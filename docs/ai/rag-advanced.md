@@ -1,4 +1,5 @@
 ---
+description: 高级 RAG 方案：查询处理、多路召回、GraphRAG、Agentic RAG 与评测体系
 ---
 
 ## 高级 RAG

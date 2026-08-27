@@ -1,4 +1,5 @@
 ---
+description: AI 产品商业化与定价：商业模式、定价模型、unit economics、增长与变现指标
 ---
 
 ## AI 产品商业化与定价
