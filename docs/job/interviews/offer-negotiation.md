@@ -1,4 +1,5 @@
 ---
+description: 谈薪与 Offer 选择：总包拆解、谈薪话术、Offer 比较维度与背调注意事项
 ---
 
 ## 谈薪与 Offer 选择
