@@ -1,4 +1,5 @@
 ---
+description: 工具调用（Function Calling）机制、MCP 协议、A2A 协作与工具安全的产品视角
 ---
 
 ## 工具调用与 MCP

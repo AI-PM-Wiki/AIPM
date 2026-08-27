@@ -1,4 +1,5 @@
 ---
+description: 《精益创业》精读笔记：构建-测量-学习循环与三大增长引擎。
 ---
 
 ## 精益创业（The Lean Startup）

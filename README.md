@@ -2,6 +2,12 @@
 
 **AI-PM**（AI Product Manager，AI 产品经理）是一个 AI 产品管理知识整合站点，提供 AI 产品方法论、模型与工具、提示词工程、Agent 与工作流、评估与迭代等方面的知识与实践，帮助大家更快更深入地学习 AI 产品设计。
 
+站点地址：[https://aipm.ac](https://aipm.ac)
+
+![pages](https://img.shields.io/badge/pages-339-blue)
+![license](https://img.shields.io/badge/license-CC%20BY--SA%204.0-lightgrey)
+![built with MkDocs](https://img.shields.io/badge/built%20with-MkDocs-brightgreen)
+
 * * *
 
 ## 内容

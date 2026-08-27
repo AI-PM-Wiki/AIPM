@@ -1,5 +1,7 @@
 ---
 ---
+description: Agent 工具层产品设计：ACI 工具界面、工具集最小化与权限、失败兜底、MCP 生态与安全。
+---
 
 ## Agent 工具与 MCP 产品化
 

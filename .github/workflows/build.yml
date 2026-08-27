@@ -85,14 +85,21 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Download site artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: site
           path: ./site
+      - name: Write IndexNow key file
+        if: secrets.INDEXNOW_KEY != ''
+        run: echo "${{ secrets.INDEXNOW_KEY }}" > site/${{ secrets.INDEXNOW_KEY }}.txt
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
           force_orphan: true
+      - name: Submit IndexNow
+        if: secrets.INDEXNOW_KEY != ''
+        run: python3 scripts/post-deploy/indexnow.py --key "${{ secrets.INDEXNOW_KEY }}"

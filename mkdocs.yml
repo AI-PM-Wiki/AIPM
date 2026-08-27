@@ -28,6 +28,7 @@ nav:
     - 产品方法论简介: pm/index.md
     - 需求分析: pm/requirements.md
     - 用户研究: pm/user-research.md
+    - 数据分析入门: pm/data-analysis.md
     - 产品设计与原型:
       - 产品设计与原型总览: pm/design.md
       - 设计哲学与设计思维: pm/design-philosophy.md
@@ -41,6 +42,7 @@ nav:
     - AI 产品开发生命周期（CC/CD）: pm/ai-lifecycle.md
     - AI 产品 PRD: pm/prd.md
     - 商业化与增长: pm/monetization.md
+    - 产品战略与竞争: pm/strategy.md
   - 商业与财会:
     - 商业与财会简介: business/index.md
     - 金融学:
@@ -148,6 +150,7 @@ nav:
       - 模型设定偏误: business/08-计量经济学/06-模型设定偏误.md
       - 时间序列平稳性: business/08-计量经济学/07-时间序列平稳性.md
       - Stata 与 EViews 操作入门: business/08-计量经济学/08-Stata 与 EViews 操作入门.md
+      - 因果推断与实验: business/08-计量经济学/09-因果推断与实验.md
     - 国际金融学:
       - 国际金融学: business/09-国际金融学/index.md
       - 国际金融学课程导论: business/09-国际金融学/00-国际金融学课程导论.md
@@ -285,6 +288,7 @@ nav:
       - 模型训练与对齐: ai/llm-training.md
       - 模型推理与部署: ai/llm-inference.md
       - 模型能力与选型: ai/capabilities.md
+      - 开源与闭源模型生态: ai/model-ecosystem.md
     - 多模态:
       - 多模态理解: ai/multimodal.md
       - 图像生成: ai/image-generation.md
@@ -303,12 +307,14 @@ nav:
       - 工具调用与 MCP: ai/agent-tools.md
       - Agent 架构与多智能体: ai/agent-architecture.md
     - 评估与评测: ai/evaluation.md
+    - AI 安全与对齐: ai/ai-safety.md
     - AI 系统架构: ai/architecture.md
   - AI 产品实战:
     - 实战简介: practice/index.md
     - 对话助手类产品:
       - 对话助手: practice/chatbot.md
       - 客服自动化: practice/support-bot.md
+      - AI 搜索: practice/ai-search.md
     - 知识库问答类产品:
       - 知识库问答: practice/kb-qa.md
       - RAG 产品化实战: practice/rag-practice.md
@@ -319,6 +325,7 @@ nav:
     - 嵌入与自动化类产品:
       - Copilot 产品: practice/copilot.md
       - 工作流自动化: practice/workflow.md
+      - AI 编程工具: practice/ai-coding-tools.md
     - 安全与合规类:
       - 出海与合规: practice/compliance.md
       - 内容安全与护栏: practice/content-safety.md
@@ -358,6 +365,10 @@ nav:
       - 百度与美团: job/companies/baidu-meituan.md
       - 华为: job/companies/huawei.md
       - 大模型创业公司: job/companies/ai-startups.md
+    - 求职实操:
+      - 内推机制: job/referral.md
+      - 简历与作品集: job/resume-portfolio.md
+      - 裁员与劳动权益: job/layoff-and-labor.md
     - 常见岗位与JD:
       - 岗位与JD简介: job/positions/index.md
       - AI 产品经理: job/positions/ai-pm.md
@@ -377,6 +388,7 @@ nav:
       - 面经简介: job/interviews/index.md
       - AI 产品经理面试指南: job/interviews/interview-guide.md
       - 面试流程全览: job/interviews/interview-process.md
+      - 群面与无领导小组: job/interviews/group-interview.md
       - 校招面经: job/interviews/campus-interviews.md
       - 社招面经: job/interviews/social-interviews.md
       - 面试复盘方法论: job/interviews/review-methodology.md
@@ -451,14 +463,24 @@ extra:
     enabled: true
     version: 10
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
-  #   provider: google
-  #   property: YOUR-GA-ID
+  #   # 大陆站点勿用 Google Analytics(GA 在大陆不可直连),建议自建 umami。
+  #   provider: umami
+  #   property: <data-domain>          # umami 站点 data-domain(如 aipm.ac)
+  #   website_id: <umami website_id>   # 自建 umami 实例的 website id(自托管时填写)
+  # SEO 优化(2026-08-27):以下占位由用户/ws-build 填写
+  seo_home_title: 'AI-PM · AI 产品经理知识库'   # 首页 <title>(base.html 消费)
+  og_image: 'social-card.png'                  # 站点级 og:image(base.html 消费;ws-social 产出)
+  seo_verification:                            # 站长平台验证码,空串不输出 meta
+    google: ''      # 填入 Google Search Console 验证码
+    bing: ''        # 填入 Bing Webmaster 验证码(msvalidate.01)
+    baidu: ''       # 填入百度搜索资源平台验证码
 
 extra_javascript:
   - '_static/js/mathjax.js?v=2'
   - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
   - '_static/js/banner.js?v=9'
   - '_static/js/header-line.js?v=1'
+  - '_static/js/umami.js?v=1'
 extra_css:
   - '_static/css/extra.css?v=32'
 

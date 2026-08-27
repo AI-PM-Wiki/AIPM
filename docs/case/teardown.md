@@ -1,4 +1,5 @@
 ---
+description: 产品拆解框架与练习清单，附 ChatGPT 完整拆解案例示范。
 ---
 
 ## 产品拆解
@@ -41,11 +42,11 @@
 
 ## 拆解练习清单
 
--   [ ] 通用对话助手（ChatGPT / Claude / 豆包）
--   [ ] 知识库问答（Notion AI / 企业知识库产品）
--   [ ] Copilot（Copilot / Cursor / 文档 AI）
--   [ ] 出海 AI 工具（随便挑一个热门的）
--   [ ] 你所在行业的一个 AI 产品
+-   [x] 通用对话助手（ChatGPT / Claude / 豆包）—— 已完成 ChatGPT 拆解，见 [ChatGPT 产品拆解](teardown-chatgpt.md)
+-   [ ] 知识库问答（Notion AI / 企业知识库产品）—— 站内暂缺拆解，可自行练习或参考 [如何参与](../intro/htc.md) 投稿
+-   [ ] Copilot（Copilot / Cursor / 文档 AI）—— 站内暂缺拆解，可自行练习或参考 [如何参与](../intro/htc.md) 投稿
+-   [ ] 出海 AI 工具（随便挑一个热门的）—— 站内暂缺拆解，可自行练习或参考 [如何参与](../intro/htc.md) 投稿
+-   [ ] 你所在行业的一个 AI 产品—— 站内暂缺拆解，可自行练习或参考 [如何参与](../intro/htc.md) 投稿
 
 ## 写作规范
 

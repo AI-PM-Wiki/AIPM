@@ -1,4 +1,5 @@
 ---
+description: RAG 检索技术原理：BM25 关键词与向量检索、embedding、混合检索、重排与切块
 ---
 
 ## 检索技术
