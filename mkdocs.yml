@@ -463,8 +463,17 @@ extra:
     enabled: true
     version: 10
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
-  #   provider: google
-  #   property: YOUR-GA-ID
+  #   # 大陆站点勿用 Google Analytics(GA 在大陆不可直连),建议自建 umami。
+  #   provider: umami
+  #   property: <data-domain>          # umami 站点 data-domain(如 aipm.ac)
+  #   website_id: <umami website_id>   # 自建 umami 实例的 website id(自托管时填写)
+  # SEO 优化(2026-08-27):以下占位由用户/ws-build 填写
+  seo_home_title: 'AI-PM · AI 产品经理知识库'   # 首页 <title>(base.html 消费)
+  og_image: 'social-card.png'                  # 站点级 og:image(base.html 消费;ws-social 产出)
+  seo_verification:                            # 站长平台验证码,空串不输出 meta
+    google: ''      # 填入 Google Search Console 验证码
+    bing: ''        # 填入 Bing Webmaster 验证码(msvalidate.01)
+    baidu: ''       # 填入百度搜索资源平台验证码
 
 extra_javascript:
   - '_static/js/mathjax.js?v=2'
