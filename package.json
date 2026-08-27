@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AI-PM-Wiki/aipm.git"
+    "url": "git+https://github.com/AI-PM-Wiki/AIPM.git"
   },
   "keywords": [
     "AI",
@@ -25,9 +25,9 @@
   "author": "AI-PM Wiki Team",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/AI-PM-Wiki/aipm/issues"
+    "url": "https://github.com/AI-PM-Wiki/AIPM/issues"
   },
-  "homepage": "https://github.com/AI-PM-Wiki/aipm#readme",
+  "homepage": "https://github.com/AI-PM-Wiki/AIPM#readme",
   "dependencies": {
     "@swc/core": "^1.2.210",
     "chalk": "^4.1.0",

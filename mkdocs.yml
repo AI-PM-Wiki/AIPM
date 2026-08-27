@@ -6,8 +6,8 @@ site_url: https://aipm.ac/
 strict: true
 
 # Repository
-repo_name: 'AI-PM-Wiki/aipm'
-repo_url: 'https://github.com/AI-PM-Wiki/aipm'
+repo_name: 'AI-PM-Wiki/AIPM'
+repo_url: 'https://github.com/AI-PM-Wiki/AIPM'
 edit_uri: 'edit/main/docs/'
 
 # Copyright
