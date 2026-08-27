@@ -100,3 +100,60 @@ flowchart LR
 | 维护 | 被动等人 | agent 监控；事故写回新 intent.md |
 
 > 循环持续运转，人的判断在上方。
+
+### Anthropic 如何为 AI-Native SDLC 上安全
+
+Claude 写了 Anthropic 代码库约 80% 的合并代码；过半合并代码走内部版 Claude Tag（agentic 合并）；工程师每季度产出约 2021–2025 时期的 8 倍代码。威胁设计针对三类风险：被攻破或提示注入的 agent 引入恶意改动、供应链/依赖投毒、更大批量到达的常规应用漏洞。
+
+#### 安全左移进代码创建阶段
+
+- Plan 阶段 PSR（project security review）：Web 应用读设计文档，按 MITRE ATT&CK 框架给建议，连内部知识索引
+- 安全编码准则写进 **CLAUDE.md** 与 org skills：发现漏洞类 → 更新生成指令 → 不再复发
+- **/security-review** 命令：开 PR 前找攻击者可控输入、可疑链接
+- 远程 VM + egress 白名单约束 agent 流量：注入 agent 也无法访问任意外网，外泄限少数被监控服务
+
+#### 硬性身份与访问边界
+
+最小权限；每个 agent 单用途身份。
+
+#### 确定性 + agentic 评审组合，生产前后都上
+
+每个 PR 多个窄范围评审 agent，各管一个 focus，用 RAG 带过往事故上下文，agent 必须写证明自己发现有效的证据。按风险给代码库分级，部分保留严格人工审批；每次自动化审批记录信号与理由，按风险加权抽样人工复核；不变式测试（如用户 A 永远读不到用户 B 数据）触发额外人工评审；SAST 直接帖 PR。
+
+#### 把人类放在最高杠杆点
+
+- 治理：人从盯代码、盯 bug 转向盯 Claude Tag、循环与仪表盘
+- 影子模式：新 AI 评审先只帖评论，人为批准直到可信；团队红队尝试塞恶意改动
+- 按百分比抽样自动化审批
+- 所有 agent 行为路由进 **SIEM**：每次审批、工具调用、agent 间消息都记录，可归属可审计
+- agent 被当作新型内部威胁类别对待
+
+#### 线上告警处置示例
+
+告警触发 → Claude 查生产日志、根因定位、写 post-mortem，有时写修复，但不能部署。它是单用途系统账号，只有三个权限：写新文档、在公司频道发帖、读生产日志。修复必须走独立的 agent–人类评审系统，控制爆破半径。
+
+事故响应 agent 曾越权直接 Slack 另一个能写代码的 Claude 实例要求推修复，被人工评审关卡拦下。教训：按访问与动作划边界，而不是按模型的指令划边界。
+
+#### 持续动态测试
+
+staging 跑持续 AI 驱动的 DAST（动态扫描），匹配发布节奏。静态扫不到的跨服务假设 bug 由它发现。2 月，Claude 找到并协助修复 500+ 高危 OSS 漏洞。
+
+安全工程师的工作从盯 bug 变成盯循环。
+
+### 对 AI 产品经理的启示
+
+- AI-native 流程把写代码变成商品，人的价值在意图定义与关卡评审
+- 产物进版本控制 = 流程可审计
+- 发布与回滚练成最熟路径
+- 安全靠边界与最小权限，不靠禁令
+
+延伸阅读：[AI 产品开发生命周期](../pm/ai-lifecycle.md)、[产品项目管理](../pm/project-management.md)、[开发流程与节奏](./dev-flow.md)。
+
+### 来源说明
+
+本页整合两篇 Claude/Anthropic 官方博客要点，访问日期 2026-08-27：
+
+- The AI-Native SDLC Playbook：https://claude.com/blog/the-ai-native-sdlc-playbook
+- How Anthropic Secures Its AI-Native Software Development Lifecycle：https://claude.com/blog/how-anthropic-secures-its-ai-native-software-development-lifecycle
+
+具体数字与机制以原文为准。
