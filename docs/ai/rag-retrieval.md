@@ -4,7 +4,11 @@ description: RAG 检索技术原理：BM25 关键词与向量检索、embedding�
 
 ## 检索技术
 
-检索是 RAG 的第一公里：**检索到什么，决定生成能有多好**。检索技术的原理包括关键词与向量两条路线、embedding 与向量索引、BM25、混合检索与重排、切块策略，以及检索质量怎么评估。RAG 整体流程与产品视角见 [RAG 基础](rag.md)，查询改写、GraphRAG、Agentic RAG 等进阶方案见 [高级 RAG](rag-advanced.md)。
+检索是 RAG 的第一公里：**检索到什么，决定生成能有多好**。
+
+检索技术的原理包括关键词与向量两条路线、embedding 与向量索引、BM25、混合检索与重排、切块策略，以及检索质量怎么评估。
+
+RAG 整体流程与产品视角见 [RAG 基础](rag.md)，查询改写、GraphRAG、Agentic RAG 等进阶方案见 [高级 RAG](rag-advanced.md)。
 
 ## 检索在 RAG 中的位置
 
