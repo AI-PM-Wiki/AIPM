@@ -24,6 +24,16 @@ description: 失业的原因与四派理论解释，失业的影响与奥肯定�
 
 **奥肯定律（Okun's law）**刻画产出缺口与失业率缺口的关系：
 
+```mermaid
+flowchart LR
+    outputgap[产出低于潜在水平] --> employment[企业用工需求减少]
+    employment --> unemployment[失业率高于自然失业率]
+    unemployment -.-> outputgap
+```
+
+奥肯定律把劳动力市场的失业缺口与产品市场的产出缺口连接起来，说明二者通常反向变动。
+
+
 $$\frac{Y-Y_F}{Y_F} = -\alpha\,(u-u^*)$$
 
 其中 Y 为实际产出、$Y_F$ 为潜在产出、u 为实际失业率、$u^*$ 为自然失业率，$\alpha>0$。实际失业率高于自然失业率时产出低于潜在产出，产出与失业负相关。

@@ -8,6 +8,19 @@ description: 总需求曲线与总供给曲线的推导与移动，AD-AS 模型�
 
 前两个模型都假设价格给定。AD-AS 模型把价格从外生变量变为内生变量，在 IS-LM 基础上引入劳动力市场，构成产品市场、货币市场、劳动力市场三市场框架。产品市场与货币市场确定总需求曲线 AD，劳动力市场确定总供给曲线 AS，两线交点同时决定均衡产出 Y 与一般价格水平 P。
 
+```mermaid
+flowchart LR
+    goods[产品市场] --> ad[总需求 AD]
+    money[货币市场] --> ad
+    labor[劳动力市场] --> as[总供给 AS]
+    ad --> equilibrium[AD 与 AS 交点]
+    as --> equilibrium
+    equilibrium --> result[均衡产出 Y 与价格 P]
+```
+
+AD 汇总需求侧市场，AS 汇总供给侧约束，交点把产出与价格共同内生化。
+
+
 ## 总需求曲线 AD
 
 **总需求函数（aggregate demand function）**：产品市场与货币市场同时均衡时，每个特定价格水平与产出水平的组合。AD = C + I + G，开放经济另含净出口。

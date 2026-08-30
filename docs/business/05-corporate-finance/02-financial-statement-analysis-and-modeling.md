@@ -14,6 +14,18 @@ description: 财务报表分析与财务模型：财务报表与现金流量、�
 
 **资产现金流**（cash flow from assets, CFFA）即自由现金流：CFFA = OCF − NCS − ΔNWC。经营现金流 OCF = EBIT + 折旧 − 税。OCF 不减利息支出，融资成本统一放在贴现率（WACC）中处理。**现金流恒等式**：CF(A) = CF(B) + CF(S)。
 
+```mermaid
+flowchart LR
+    operations[经营现金流 OCF] --> assets[资产现金流 CFFA]
+    investment[净资本支出 NCS] --> assets
+    working[营运资本变化 ΔNWC] --> assets
+    assets --> debt[债权人现金流]
+    assets --> equity[股东现金流]
+```
+
+企业自由现金流由经营活动扣除投资与营运资本占用后形成，再在债权人和股东之间分配。
+
+
 ## 共同比报表
 
 **共同比报表**（common-size statements）把绝对金额转化为相对比例：资产负债表每一项除以当年总资产，利润表每项除以当年销售额。

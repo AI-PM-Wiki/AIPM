@@ -22,6 +22,19 @@ description: 投资决策与自由现金流：增量现金流量原则、自由�
 
 **资产现金流**（cash flow from assets, CFFA）即自由现金流：FCF = OCF − NCS − ΔNWC。
 
+```mermaid
+flowchart LR
+    revenue[销售与成本] --> ocf[经营现金流 OCF]
+    depreciation[折旧] --> ocf
+    ocf --> fcf[自由现金流 FCF]
+    capex[净资本支出 NCS] --> fcf
+    nwc[营运资本投入 ΔNWC] --> fcf
+    fcf --> npv[折现并计算项目价值]
+```
+
+自由现金流把项目经营产生的现金，扣除设备投资和营运资本占用后，作为价值评估的基础。
+
+
 **经营现金流**（operating cash flow, OCF）三种等价算法（前提为无利息支出）：
 
 $$OCF = EBIT + 折旧 - 税$$

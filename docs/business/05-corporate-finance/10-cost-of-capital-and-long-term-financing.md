@@ -32,6 +32,17 @@ $$R_i = R_F + \beta_i (R_M - R_F)$$
 
 **加权平均资本成本**（weighted average cost of capital, WACC）：
 
+```mermaid
+flowchart LR
+    debt[债务成本 × 债务权重] --> wacc[WACC]
+    preferred[优先股成本 × 优先股权重] --> wacc
+    equity[普通股成本 × 普通股权重] --> wacc
+    wacc --> hurdle[项目贴现率门槛]
+```
+
+WACC 将不同资金来源的税后成本按目标资本结构加权，形成与公司整体风险匹配的项目回报门槛。
+
+
 $$WACC = \frac{E}{V} R_E + \frac{P}{V} R_P + \frac{D}{V} R_D (1 - T_C)$$
 
 V = E + P + D，各项权重取目标资本结构比重。优先股占比小，题目未给条件时按没有处理。算出的 WACC 是公司所有项目混合的平均融资成本，只适用于风险与公司整体一致、杠杆与公司一致的新项目。
