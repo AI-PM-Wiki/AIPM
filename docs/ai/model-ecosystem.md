@@ -157,6 +157,21 @@ description: 开源与闭源模型生态的格局、许可证实务、选型决�
 -   **生态与工具链**:闭源 SDK、文档、第三方集成最成熟；开源的部署生态（Ollama、vLLM、SGLang）成熟，企业级配套略薄
 -   **长期锁定**:闭源换供应商要搬接口、prompt、评测；开源权重在手，切换成本低，但要自己跟进版本
 
+```mermaid
+flowchart TB
+    requirements["任务与约束：能力 / 成本 / 隐私"] --> benchmark["自有评测集对比"]
+    benchmark --> license["查许可证与数据条款"]
+    license --> volume{ "调用量与运维能力？" }
+    volume -->|小量 / 快速验证| closed["闭源 API"]
+    volume -->|敏感 / 大量 / 可运维| open["开源私有化"]
+    volume -->|常规量 + 难题| hybrid["混合路由"]
+    closed --> exit["接口抽象 + prompt 版本化"]
+    open --> exit
+    hybrid --> exit
+```
+
+核心关系：先用自有任务评测能力，再结合许可证、数据边界和成本条件选择闭源、开源或混合路径，并始终保留迁移出口。
+
 ### 三路权衡:开、闭与混合
 
 | 维度 | 闭源 API | 开源私有化 | 混合（路由） |
