@@ -4,6 +4,18 @@ description: 均方误差损失下的最优预测与条件期望、MA(1) 与 AR(
 
 ## ARMA 模型预测
 
+```mermaid
+flowchart TD
+    A["信息集 I_t"] --> B["条件期望预测"]
+    B --> C["预测误差与方差"]
+    C --> D["置信区间"]
+    B --> E["伪样本外滚动预测"]
+    E --> F["MSPE / MAE / MAPE"]
+    F --> G["Diebold-Mariano 比较模型"]
+```
+
+> 核心关系：预测先由当前信息集产生条件期望，再用样本外损失与 DM 检验比较不同模型的预测能力。
+
 ## 最优预测：条件期望
 
 在时刻 $T$（预测原点）用信息集 $\mathcal{F}_T$ 预测 $y_{T+1}$。预测函数 $g$ 必须属于 $\mathcal{F}_T$，只能用当前可得的信息。**均方误差（mean squared error, MSE）**：$E[(y_{T+1}-g)^2|\mathcal{F}_T]$。

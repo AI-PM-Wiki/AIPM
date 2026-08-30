@@ -4,6 +4,19 @@ description: 样本 ACF/PACF 的估计与假设检验、Q 检验与残差模型�
 
 ## ARMA 模型识别、估计与检验
 
+```mermaid
+flowchart TD
+    A["样本序列"] --> B["估计 ACF 与 PACF"]
+    B --> C["提出 ARMA 候选模型"]
+    C --> D["极大似然估计"]
+    D --> E["AIC / BIC 比较"]
+    E --> F["残差白噪声与 Q 检验"]
+    F -->|"通过"| G["保留模型"]
+    F -->|"未通过"| C
+```
+
+> 核心关系：ARMA 建模以识别、估计、选择和诊断构成闭环，残差检验决定模型是否足够解释序列动态。
+
 ## 样本 ACF 与 PACF 的估计
 
 拿到平稳样本 $y_1,\ldots,y_T$，用样本矩估计总体矩。**样本自协方差** $\hat\gamma_k=\frac{1}{T}\sum_{t=k+1}^{T}(y_t-\bar y)(y_{t-k}-\bar y)$，**样本 ACF** $\hat\rho_k=\hat\gamma_k/\hat\gamma_0$。大数定律给出一致性 $\hat\rho_k\xrightarrow{p}\rho_k$，中心极限定理给出渐近正态分布，据此构造假设检验。大样本下分母用 $T$ 还是 $T-k$ 差别可忽略。
