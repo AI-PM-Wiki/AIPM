@@ -42,7 +42,21 @@ $$\dot{k} = s \cdot f(k) - (n + \delta) k$$
 
 **资本广化** $(n+\delta)k$ 是为新增人口配齐人均资本并弥补折旧所需投资；**资本深化** $\dot{k}$ 为人均资本的实际增量。稳态条件 $s f(k^*) = (n+\delta)k^*$，人均资本与人均产出停止增长。稳态唯一且稳定：$k < k^*$ 时 $\dot{k} > 0$、$k > k^*$ 时 $\dot{k} < 0$，经济自动收敛。
 
-引入劳动增强型技术进步 $Y = F(K, AL)$，AL 为有效劳动、技术进步率 g 外生。有效人均变量 $\hat{y} = f(\hat{k})$，新基本方程 $\dot{\hat{k}} = s f(\hat{k}) - (n+g+\delta)\hat{k}$。稳态下人均产出增长率等于 g，总量产出增长率等于 n+g。**核心结论：长期中人均产出增长最终依靠技术进步，资本积累只能决定稳态水平**。
+引入劳动增强型技术进步 $Y = F(K, AL)$，AL 为有效劳动、技术进步率 g 外生。有效人均变量 $\\hat{y} = f(\\hat{k})$，新基本方程 $\\dot{\\hat{k}} = s f(\\hat{k}) - (n+g+\\delta)\\hat{k}$。稳态下人均产出增长率等于 g，总量产出增长率等于 n+g。**核心结论：长期中人均产出增长最终依靠技术进步，资本积累只能决定稳态水平**。
+
+```mermaid
+flowchart LR
+    saving[储蓄率 s] --> capital[资本积累]
+    population[人口增长 n] --> dilution[资本广化]
+    depreciation[折旧 δ] --> dilution
+    technology[技术进步 g] --> productivity[劳动生产率]
+    capital --> steady[稳态人均资本与产出]
+    dilution --> steady
+    productivity --> growth[长期人均增长]
+```
+
+索洛模型中储蓄与人口增长主要改变稳态水平，持续的人均增长最终依赖技术进步。
+
 
 ## 比较静态与黄金律
 

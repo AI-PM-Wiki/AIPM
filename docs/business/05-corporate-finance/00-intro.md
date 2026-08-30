@@ -8,6 +8,20 @@ description: 公司金融课程导论：三大决策、财务管理目标、货�
 
 **公司金融**（corporate finance）从公司角度研究投资、融资与股利分配三类决策。
 
+```mermaid
+flowchart TD
+    company[公司现金流决策]
+    company --> invest[投资：做什么项目]
+    company --> finance[融资：资金从哪里来]
+    company --> payout[股利：现金是否返还股东]
+    invest --> value[股东财富最大化]
+    finance --> value
+    payout --> value
+```
+
+投资、融资和股利决策共同决定现金流如何产生、筹集与分配，最终服务于股东财富最大化。
+
+
 **投资决策**（investment decision）判断项目是否值得做，项目的好坏取决于成本与收益的比较，而收益与成本发生在不同时间点，不能直接相减。
 
 **融资决策**（financing decision）又称资本结构（capital structure）决策，决定项目资金从哪里来。资金来源分两类：债务（debt），形式包括银行贷款、发行债券与银团贷款；股东权益（equity），形式包括发行股票与出售股份。负债率（debt ratio）= 债务 ÷ 资产。
