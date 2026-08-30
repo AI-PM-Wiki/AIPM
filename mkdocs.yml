@@ -24,6 +24,7 @@ nav:
     - F.A.Q.: intro/faq.md
     - 产品经理黑话速查: intro/glossary.md
     - AI 产品经理能力模型: intro/capability.md
+    - 产品经理岗位类别: intro/product-manager-types.md
     - 自学路线: intro/self-study-roadmap.md
   - 产品方法论:
     - 产品方法论简介: pm/index.md
@@ -405,6 +406,7 @@ nav:
       - 内推机制: job/referral.md
       - 简历与作品集: job/resume-portfolio.md
       - 裁员与劳动权益: job/layoff-and-labor.md
+      - 绩效管理与考核: job/positions/performance-management.md
     - 常见岗位与JD:
       - 岗位与JD简介: job/positions/index.md
       - AI 产品经理: job/positions/ai-pm.md
@@ -420,6 +422,7 @@ nav:
       - AI Infra 相关岗位: job/positions/ai-infra.md
       - FDE（前沿部署工程师）: job/positions/fde.md
       - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
+      - 行政岗位与 JD 解读: job/positions/administrative-roles.md
     - 面经:
       - 面经简介: job/interviews/index.md
       - AI 产品经理面试指南: job/interviews/interview-guide.md
