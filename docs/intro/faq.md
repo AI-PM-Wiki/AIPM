@@ -8,6 +8,17 @@ description: 站点常见问题：新手学习路线、内容收费与转载协�
 
 A：参考[自学路线](self-study-roadmap.md)，推荐按这个顺序阅读：[产品方法论](../pm/index.md) → [商业与财会](../business/index.md) → [AI 基础](../ai/index.md) → [AI 产品实战](../practice/index.md)。金融、投研或商业化方向可先读商业与财会。
 
+```mermaid
+flowchart LR
+    start[新手] --> pm[产品方法论]
+    pm --> business[商业与财会]
+    business --> ai[AI 基础]
+    ai --> practice[AI 产品实战]
+    start -.金融/投研/商业化方向.-> business
+```
+
+通用入门路径从产品基本功开始，再连接商业、AI 基础与产品实践；特定方向可以从商业与财会切入。
+
 **Q：站点内容会收费吗？**
 
 A：不会。本站免费开放，也欢迎任何形式的转载（遵循 CC BY-SA 4.0 协议）。
