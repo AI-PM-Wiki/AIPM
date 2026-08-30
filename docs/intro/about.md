@@ -19,6 +19,20 @@ AI 产品发展迅速，但相关知识大多散落在公众号文章、播客�
 -   **工具与平台**：AI 产品构建中常用的工具与平台
 -   **学习资源**：资源清单、读书笔记与信息源索引
 
+内容方向可以按“从基础到实践、从方法到资源”理解：
+
+```mermaid
+flowchart LR
+    site[AI-PM 知识站] --> pm[产品方法论]
+    site --> business[商业与财会]
+    site --> ai[AI 技术基础]
+    site --> practice[产品实战]
+    site --> tools[工具与平台]
+    site --> resources[学习资源]
+```
+
+这六个方向共同覆盖从产品判断、技术理解到实践落地与持续学习的知识链路。
+
 ## 项目技术
 
 -   基于 [MkDocs](https://www.mkdocs.org/) 构建，使用 [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) 主题
