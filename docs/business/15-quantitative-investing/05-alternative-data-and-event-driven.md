@@ -4,6 +4,18 @@ description: 高频盘口数据与价量因子、因子有效性度量、股吧�
 
 ## 另类数据与事件驱动
 
+```mermaid
+flowchart TD
+    A["另类数据或事件"] --> B["清洗、对齐与去偏"]
+    B --> C["构造价量或文本信号"]
+    C --> D["事件窗口与基准收益"]
+    D --> E["IC、分组收益与显著性"]
+    E --> F["交易成本与容量评估"]
+    F --> G["事件驱动策略"]
+```
+
+> 核心关系：另类数据只有经过时间对齐、偏差控制和可交易性检验，才能从信息线索转成事件驱动策略。
+
 ## 高频盘口数据
 
 **三类微观数据**。日 K 线（candlestick）：即蜡烛图，包含开盘价、收盘价、最高价、最低价四个维度，表结构含 pre_close、open、high、low、close、volume、turnover、match_items。成交明细/报单明细（tick data）：字段含 seq、price、volume、bs_flag、trade_type、ask_order_seq、bid_order_seq 等；原始报单数据有助于加深对市场数据结构的理解，高频交易必须直接研究报单数据。盘口（order book）：包含所有待交易者的期望订单集合，交易所按价格归类形成盘口，以中间价为轴向买卖各五档（后面还有）延伸，快照字段含十档买卖价量、wavg_ask、wavg_bid、mid_price。
