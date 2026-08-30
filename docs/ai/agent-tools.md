@@ -22,6 +22,20 @@ Agent 的价值一半在模型，一半在**工具**：模型负责决定做什�
 
 这个分工很重要：模型负责建议调用什么、参数是什么，**执行权始终掌握在宿主系统与权限策略手里**。传统 API 调用是程序调用服务；Function Calling 是模型建议调用哪个服务以及如何调用，程序负责执行。
 
+```mermaid
+flowchart LR
+    user["用户需求"] --> host["Host 组装工具清单"]
+    host --> model["模型选择工具并生成参数"]
+    model --> validate["宿主校验参数与权限"]
+    validate -->|通过| execute["程序执行工具"]
+    validate -->|拒绝| blocked["拒绝 / 请求确认"]
+    execute --> result["工具结果"]
+    result --> model
+    model --> answer["最终回答"]
+```
+
+核心关系：模型只提出结构化调用建议，宿主程序完成权限校验与真实执行，再把结果回填给模型。
+
 ### 工具定义：名称、描述、参数 Schema
 
 每个工具都要有模型能读懂的三要素：
@@ -150,6 +164,18 @@ Agent Host（应用） ↔ MCP Client ↔ MCP Server ↔ 工具/数据源
 ```
 
 工具生态从每个应用单独集成走向工具服务器可复用：常被类比为 Agent 工具生态的 USB-C。注意 MCP 标准化的是工具与上下文如何接入，不负责业务权限、工作流编排与多 Agent 协作，那些仍需产品自己的治理体系。
+
+```mermaid
+flowchart LR
+    host["Agent Host"] --> client["MCP Client"]
+    client --> server["MCP Server"]
+    server --> tools["Tools / Resources / Prompts"]
+    tools --> source["业务 API / 数据源 / 文件系统"]
+    server -->|结果| client
+    client -->|上下文与结果| host
+```
+
+核心关系：MCP 将外部能力封装为可复用的 Server，Host 通过 Client 发现并调用它，但权限与业务治理仍由应用负责。
 
 ### 架构三件套：Host / Client / Server
 
