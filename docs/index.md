@@ -9,6 +9,11 @@ template: home.html
     <span class="pm-card__title">产品方法论</span>
     <span class="pm-card__desc">需求分析、用户研究、产品设计与原型、项目管理与迭代、商业化与增长</span>
   </a>
+  <a class="pm-card" href="management/">
+    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 21c.5-4 2.5-6 6-6s5.5 2 6 6M15 15c3 0 5 2 6 6"/></svg>
+    <span class="pm-card__title">工商管理</span>
+    <span class="pm-card__desc">组织与决策、市场与消费者、战略创新、项目与财务</span>
+  </a>
   <a class="pm-card" href="business/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21v-6M11 21V8M16 21v-11"/></svg>
     <span class="pm-card__title">商业与财会</span>
