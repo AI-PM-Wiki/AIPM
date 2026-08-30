@@ -12,6 +12,22 @@ description: 面向 PM 的数据分析入门：指标分层与拆解、漏斗、
 
 先建数据思维（指标分层、拆解、对比），再依次上手四种最常用的分析动作：漏斗找流失、留存看粘性、同期群排除时间干扰、看板持续监控，最后落到 AI 产品经理的实操与一个完整走查。
 
+```mermaid
+flowchart LR
+    goal[业务问题] --> metric[定义指标与口径]
+    metric --> breakdown[拆解与分群]
+    breakdown --> route{要定位什么?}
+    route --> funnel[漏斗：定位流失]
+    route --> cohort[留存/同期群：看粘性与趋势]
+    route --> dashboard[看板：持续监控]
+    funnel --> action[验证假设并行动]
+    cohort --> action
+    dashboard --> action
+    action -. 新数据回流 .-> metric
+```
+
+图示说明：数据分析把业务问题转成可拆解的指标，再通过路径分析与持续监控推动行动和下一轮校准。
+
 ## 数据分析思维
 
 ### 指标分层：北极星、结果、过程

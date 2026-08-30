@@ -12,6 +12,18 @@ description: 用户研究方法：访谈、问卷、可用性测试、三种时�
 
 研究分布在决策前后：
 
+```mermaid
+flowchart LR
+    decision[要改变的决策] --> question[研究问题]
+    question --> method[选择方法与样本]
+    method --> facts[事实证据]
+    facts --> inference[推断与解释]
+    inference --> decision2[更新决策]
+    decision2 -. 上线后监控 .-> facts
+```
+
+图示说明：研究从要改变的决策出发，把方法产出的事实转成可追溯的推断，再回到决策并持续用线上数据校准。
+
 | 时机 | 类型 | 回答的问题 | 典型方法 |
 | --- | --- | --- | --- |
 | 决策前 | 发现型 | 用户有什么问题？机会在哪？ | 访谈、现场、日记、工单分析 |
