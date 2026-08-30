@@ -38,6 +38,24 @@ description: 内容安全机制产品落地：输入输出风险面、多层防�
 
 ## 多层防线
 
+```mermaid
+flowchart TD
+    input[用户输入 / 上传文件] --> inputguard[输入护栏：注入、越狱、PII]
+    inputguard -->|高危| blockin[拦截并记录]
+    inputguard -->|通过| model[模型层：提示词与安全对齐]
+    model --> detect[检测层：词表、分类器、向量匹配]
+    detect --> strategy{风险等级}
+    strategy -->|高危| blockout[拦截 / 上报]
+    strategy -->|中危| review[转人工或保守重生成]
+    strategy -->|低危| output[放行并记录]
+    model -.被绕过.-> detect
+    review --> output
+    output --> report[举报、红队与样本回填]
+    report -.校准阈值与规则.-> detect
+```
+
+这张防线图体现 fail-safe 关系：模型层提供软约束，检测层和策略层负责可测处置，人工与样本回填让系统持续校准。
+
 ### 1. 模型层（系统提示词 + 安全对齐）
 
 -   系统提示词写清「不做什么」（拒绝范围、边界声明）；安全对齐（RLHF 等）让模型「天生不愿」输出有害内容。
