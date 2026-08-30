@@ -14,12 +14,27 @@ RAG 整体流程与产品视角见 [RAG 基础](rag.md)，查询改写、GraphRA
 
 RAG 的检索侧是一条小管线，先建立全局视角再逐节展开：
 
-```text
-用户问题 → 查询处理 → 编码为查询向量 → 检索器（向量路 + 关键词路）
-                                             → 融合排序 → 重排精排 → 进入生成
-                                      ↑
-资料库 → 切块 → 编码为块向量 → 索引（向量索引 + 倒排索引 + 元数据）
+```mermaid
+flowchart TB
+    subgraph index["资料库索引：离线"]
+        docs["资料库"] --> chunks["切块"]
+        chunks --> docembed["文档 embedding"]
+        chunks --> terms["倒排索引"]
+        docembed --> vectorindex["向量索引"]
+    end
+    question["用户问题"] --> queryprocess["查询处理"]
+    queryprocess --> queryembed["查询 embedding"]
+    queryprocess --> keyword["关键词查询"]
+    queryembed --> vector["向量检索"]
+    vectorindex --> vector
+    terms --> keyword
+    vector --> fusion["融合排序"]
+    keyword --> fusion
+    fusion --> rerank["重排精排"]
+    rerank --> context["进入生成上下文"]
 ```
+
+核心关系：离线索引准备向量与倒排两条检索通道，在线查询并行召回后融合、重排，才把候选资料交给生成。
 
 这条管线里的每个环节（查询处理、切块、embedding、索引、融合、重排）都影响正确的块能不能进生成上下文：除查询处理（见 [高级 RAG](rag-advanced.md)）之外，本页讲其余各个环节。
 
@@ -215,6 +230,19 @@ RRF 为什么安全：它只看排名，向量分数是 0-1 的余弦、BM25 分
 ### 重排（rerank）：两阶段检索
 
 粗召回阶段（向量 + 关键词）追求快而全，精排阶段用**更强的模型**对候选逐条打分，只留最相关的几个进生成：
+
+```mermaid
+flowchart LR
+    query["查询"] --> dense["向量召回 top-k"]
+    query --> sparse["关键词召回 top-k"]
+    dense --> fusion["融合候选"]
+    sparse --> fusion
+    fusion --> reranker["Cross-encoder 重排"]
+    reranker --> top["取 top-3-5"]
+    top --> context["生成上下文"]
+```
+
+核心关系：粗召回负责覆盖率，重排负责精度，少量高相关候选最终进入生成上下文。
 
 -   **cross-encoder reranker**：把问题 + 候选文档拼成一个输入，用完整 Transformer 编码，直接输出相关性分数：它看到的是问题与文档的**完整交互**（双向注意力能对齐「问题里的『它』指文档里的哪句」），比双塔的向量近似准得多，代价是每个候选都要一次模型推理，只能对少量候选用（[LangChain reranker 文档](https://docs.langchain.com/oss/python/integrations/document_transformers/cross_encoder_reranker)）。
 -   **后期交互（ColBERT）**：把文档 token 级向量存下来，查询时对 token 级向量做最大相似度匹配（MaxSim），在比双塔准、比 cross-encoder 快之间取折中（[ColBERT 论文](https://arxiv.org/abs/2004.12832)）。
