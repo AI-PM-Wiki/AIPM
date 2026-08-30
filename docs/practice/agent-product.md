@@ -50,6 +50,19 @@ OpenAI 官方定义：Agent 是「能够规划、调用工具、跨专家协作�
 官方建议「先找最简单的方案，只在确有收益时增加复杂度」。很多应用优化单次 LLM 调用（检索 + 上下文示例）就够了。
 判断任务是否值得 Agent 化，依次问三个问题：步骤能否预先枚举？结果能否自动验证？出错能否恢复？三者都答「否」才值得上 Agent。官方点名的两个已验证领域是客服（对话 + 工具，可测解决率）与编码 Agent（可用自动化测试验证）([Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents))。
 
+```mermaid
+flowchart TD
+    task[待完成任务] --> steps{步骤能否预先枚举？}
+    steps -->|能| workflow[工作流：固定路径]
+    steps -->|不能| verify{结果能否自动验证？}
+    verify -->|不能| guard[先补评测、测试与检查]
+    verify -->|能| recover{出错能否恢复？}
+    recover -->|不能| handoff[先设计兜底与人工接管]
+    recover -->|能| agent[进入 Agent 评估]
+```
+
+这棵决策树把 Agent 的适用边界落到三个可检查条件：不确定性需要动态处理，同时结果可验证、失败可恢复。
+
 三问展开为决策树，评审时照着走：
 
 ```text

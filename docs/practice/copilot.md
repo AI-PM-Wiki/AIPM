@@ -50,6 +50,25 @@ Copilot 不是一个产品，而是一族产品形态。区分它们的是两个
 -   **邮件**：核心是「线程即上下文」：起草基于当前线程语气，发送前必须人工确认（不可逆动作）
 -   **客服工作台**：核心是「知识库即上下文」：回复草稿要带引用，供客服核对后发出
 
+**Copilot 的建议闭环是「感知—判断—呈现—采纳」，而不是独立聊天：**
+
+```mermaid
+flowchart LR
+    action[用户当前动作] --> context[捕获上下文]
+    context --> permission[权限检查与上下文裁剪]
+    permission --> quality{建议质量达标？}
+    quality -->|否| suppress[抑制建议并记录]
+    quality -->|是| present[就地呈现：可忽略、可预览]
+    present --> decision{用户采纳？}
+    decision -->|是| apply[应用 / 写入]
+    decision -->|否| discard[忽略并继续工作]
+    apply --> feedback[采纳、修改与撤销反馈]
+    discard --> feedback
+    feedback -.优化触发规则与门槛.-> quality
+```
+
+这条闭环强调 Copilot 的灵魂是贴着工作流提供低打断建议，用户反馈同时校准时机、上下文和建议质量。
+
 ## 与对话产品的本质区别
 
 | 维度 | 对话产品 | Copilot |
