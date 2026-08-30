@@ -207,6 +207,19 @@ if validate_schema(candidate) is invalid:
 3. **Function calling 兜底**：把输出定义成工具调用的参数 schema，让模型调用工具而不是自由生成，输出即参数、天然结构化；工具调用与 MCP 的完整机制见 [工具调用与 MCP](agent-tools.md)；
 4. **Schema 校验与重试**：应用层用 JSON Schema 校验，失败时携带错误信息重试一次或多次，仍失败则走降级。
 
+```mermaid
+flowchart LR
+    request["任务输入"] --> prompt["提示词约束 schema"]
+    prompt --> generate["模型生成"]
+    generate --> api["API 结构化输出"]
+    api --> validate["应用层 Schema 校验"]
+    validate -->|通过| result["进入业务"]
+    validate -->|失败| retry["携带错误信息重试"]
+    retry -->|仍失败| fallback["降级到规则 / 人工"]
+```
+
+核心关系：结构化输出要由提示词、API 约束、应用校验和失败降级共同保证，单靠模型声明不够可靠。
+
 ```json
 {
   "intent": "refund|consult|complaint|other",
@@ -233,6 +246,19 @@ if validate_schema(candidate) is invalid:
 - 每步的输入输出都可评测、可回归。
 
 例：把读简历 → 生成面试问题拆成抽取结构化信息 → 构建能力画像 → 识别风险点 → 生成问题 → 生成评分标准五步链。每一步的输出是下一步的输入，任何一步出错都能定位到具体环节。链式调用的中间产物本身是资产：可以缓存、可以人工抽查、可以喂给评测集。
+
+```mermaid
+flowchart LR
+    resume["简历文本"] --> extract["抽取结构化信息"]
+    extract --> profile["构建能力画像"]
+    profile --> risks["识别风险点"]
+    risks --> questions["生成面试问题"]
+    questions --> rubric["生成评分标准"]
+    extract -.可独立校验.-> check1["Schema 校验"]
+    questions -.可人工抽检.-> check2["质量评估"]
+```
+
+核心关系：链式调用把复杂任务拆成可观察、可校验的子步骤，中间产物既是下游输入也是评测与缓存资产。
 
 ```text
 链式调用示例（简历面试问题生成）：

@@ -26,6 +26,19 @@ description: 主流模型能力与定价速览（2026-08-23 快照）：推理�
 
 四家结论一致：推理预算本质是「质量-延迟-成本」的三角旋钮。档位应设计成可配置策略（按任务类型/用户层级分配），不写死在代码里。档位与思考开关的调整还会影响提示词缓存命中，变更时注意缓存前缀失效（[Anthropic Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)）。
 
+```mermaid
+flowchart LR
+    task["任务请求"] --> classify["任务复杂度 / 风险分类"]
+    classify -->|简单、低延迟| fast["快模型 / 低 effort"]
+    classify -->|复杂、可验证| reason["推理模型 / 高 effort"]
+    fast --> check["质量与置信度检查"]
+    reason --> check
+    check -->|达标| response["返回结果"]
+    check -->|不达标| escalate["升级模型或转人工"]
+```
+
+核心关系：模型选型先按任务复杂度分配推理预算，再用质量检查触发升级，从而在能力、延迟与成本之间取得可观测的平衡。
+
 #### 能力差异:强在哪、弱在哪
 
 -   **强项：数学、代码、复杂规划与长链 Agent 任务**。DeepSeek-R1 模型卡显示，纯强化学习训练出的推理模型在 AIME 2024（79.8 vs o1 的 79.2）、MATH-500（97.3）、LiveCodeBench（65.9 vs 63.4）等基准上对齐甚至超过同代闭源推理模型（[DeepSeek-R1 README](https://github.com/deepseek-ai/DeepSeek-R1)）；Anthropic 文档点名思考改善数学、编码、分析与长时 Agent 任务（[Anthropic Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)）。

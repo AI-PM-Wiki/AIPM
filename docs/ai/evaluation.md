@@ -58,6 +58,18 @@ description: AI 产品评估与评测：三层评估体系、评测集与线上�
 
 每个维度单独打分（1-5 分），不要混成一个总分：混分之后不知道该修哪一维。
 
+```mermaid
+flowchart TB
+    model["模型能力评估"] --> task["任务质量评估"]
+    task --> product["产品业务指标"]
+    product --> feedback["用户反馈与 badcase"]
+    feedback --> dataset["更新评测集"]
+    dataset --> model
+    product --> release["灰度 / 回滚决策"]
+```
+
+核心关系：离线能力、任务质量和线上业务指标逐层承接，用户反馈持续更新评测集，形成可回归的评测闭环。
+
 ## 常见评测基准与榜单
 
 -   **知识**：MMLU（多任务理解，常识与学科知识）
@@ -98,6 +110,21 @@ description: AI 产品评估与评测：三层评估体系、评测集与线上�
 -   **A/B 测试**：同一批用户随机分两组，比较任务完成率、采纳率等；大模型输出方差大，样本量要足够，并用统计检验而非拍脑袋。
 -   **回滚预案**：新版本指标明显变差时，5 分钟退回旧版本。回滚是发布流程的一部分，不是事后补救。
 -   **badcase 回流闭环**：线上失败案例 → 人工复盘 → 归纳错误模式 → 回填评测集 → 修复（改提示词/换模型/加护栏）→ 回归 → 再灰度。这是 AI 产品迭代的日常节奏，详见 [AI 产品开发生命周期（CC/CD）](../pm/ai-lifecycle.md)。
+
+```mermaid
+flowchart LR
+    change["模型 / Prompt / 功能变更"] --> offline["离线评测与红队"]
+    offline -->|通过| shadow["灰度对照"]
+    offline -->|失败| fix["修复并记录 badcase"]
+    fix --> offline
+    shadow --> metrics["线上指标与人工抽检"]
+    metrics -->|改善| release["逐步放量"]
+    metrics -->|恶化| rollback["回滚旧版本"]
+    metrics --> dataset["失败案例回流评测集"]
+    dataset --> offline
+```
+
+核心关系：变更必须先离线验证再灰度放量，线上指标决定放量或回滚，失败案例回流推动下一轮改进。
 
 ## 实操建议
 

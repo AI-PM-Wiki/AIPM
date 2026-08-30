@@ -76,6 +76,19 @@ description: 视频生成技术全景：为什么难、架构路线、主流模�
 
 DiT 的价值是**让 Scaling Law 在视频上成立**：模型越大、数据越多、效果越好：Transformer 架构在视频生成领域延续了 LLM 的扩展性（[Sora 技术报告](https://openai.com/index/video-generation-models-as-world-simulators/)）。
 
+```mermaid
+flowchart LR
+    video["视频 / 图像输入"] --> vae["3D VAE：时空压缩"]
+    vae --> patches["时空 patch / token"]
+    text["文本或参考条件"] --> dit["DiT：时空去噪 Transformer"]
+    patches --> dit
+    dit --> sample["迭代采样 / Flow Matching"]
+    sample --> decode["VAE 解码"]
+    decode --> output["连续视频"]
+```
+
+核心关系：视频先被压缩成时空 token，DiT 在文本或参考条件引导下联合建模空间与时间，再解码为连续帧。
+
 ### 自回归视频生成
 
 把视频帧 token 化（VQ-VAE），像语言模型一样逐 token 预测下一帧/下一段。架构简单、可复用 LLM 基建，适合与文本统一建模；但生成质量与长程一致性弱于扩散路线，目前不是主流，主要出现在统一多模态模型的探索中。它的意义不在当下效果，而在视频生成与语言模型共用一套架构的可能性：这与多模态理解的原生化是同一个趋势的两面。
@@ -197,7 +210,23 @@ DiT 的价值是**让 Scaling Law 在视频上成立**：模型越大、数据�
 -   **关键帧 + 补帧**：只对关键帧做重绘/生成，中间帧用光流或插值补全：成本可控，是编辑类产品的主流工程取舍。
 -   **逐帧一致性检查**：编辑后的视频要做跨帧一致性自动检测（闪烁、突变、身份漂移），这是编辑产品比生成产品更依赖的质检环节。
 
-## 典型工作流拆解
+### 典型工作流拆解
+
+```mermaid
+flowchart LR
+    asset["首帧 / 产品素材"] --> motion["运动与镜头描述"]
+    motion --> generate["图生视频 / 文生视频"]
+    asset --> generate
+    generate --> candidates["多条候选"]
+    candidates --> inspect["完整运动检查"]
+    inspect -->|合格| edit["剪辑 / 配音 / 字幕"]
+    inspect -->|不合格| retry["降时长 / 降分辨率 / 重生成"]
+    retry --> generate
+    edit --> audit["授权 / 内容审核 / 标识"]
+    audit --> publish["发布"]
+```
+
+核心关系：视频产品先固定素材与首帧，再生成运动，经过完整时序质检、编辑和合规审核后发布。
 
 ### 口播数字人视频
 

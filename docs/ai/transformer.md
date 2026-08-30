@@ -68,6 +68,22 @@ Transformer 对这三个痛点做了「掀桌子式」的回应：
 
 即：**Attention(Q, K, V) = Softmax(QKᵀ / √dₖ) · V**。整条公式都是矩阵运算，GPU 一次算完：这也是它快的原因。
 
+```mermaid
+flowchart LR
+    tokens["输入 token 表示"] --> projections["线性投影"]
+    projections --> q["Q：查询"]
+    projections --> k["K：键"]
+    projections --> v["V：值"]
+    q --> scores["QKᵀ / √dₖ"]
+    k --> scores
+    scores --> weights["Softmax：注意力权重"]
+    weights --> weighted["按权重汇总 V"]
+    v --> weighted
+    weighted --> output["注意力输出"]
+```
+
+核心关系：Query 用来提问、Key 用来匹配、Value 提供内容，Softmax 把匹配结果变成信息汇总权重。
+
 ### 一个具体例子:三句话的句子
 
 拿「猫 追 狗」三个 token 走一遍（忽略位置编码）：
@@ -231,6 +247,18 @@ Transformer 对这三个痛点做了「掀桌子式」的回应：
 | 擅长 | 理解：分类、抽取、匹配 | 生成：写作、对话、代码、推理 | 转换：翻译、摘要、改写 |
 | 能不能生成 | 不能（需要外挂） | 能，且是核心 | 能 |
 | 代表产品时代 | 2018-2021 搜索/分类 | 2022 至今大模型主流 | 翻译与专用转换场景 |
+
+```mermaid
+flowchart TB
+    input["输入文本"] --> encoder["Encoder-only：双向理解"]
+    input --> decoder["Decoder-only：因果生成"]
+    input --> encdec["Encoder-Decoder：读入再转换"]
+    encoder --> understanding["分类 / 抽取 / 匹配"]
+    decoder --> generation["写作 / 对话 / 代码 / 推理"]
+    encdec --> transform["翻译 / 摘要 / 改写"]
+```
+
+核心关系：Encoder-only 擅长理解，Decoder-only 擅长自回归生成，Encoder-Decoder 将双向理解与条件生成组合成转换链路。
 
 ### 为什么 LLM 最终选了 Decoder-only
 

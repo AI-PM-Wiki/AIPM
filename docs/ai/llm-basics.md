@@ -31,9 +31,16 @@ description: 大模型基础概念：token、上下文窗口、温度、幻觉�
 
 模型不认识文字，只认识数字。文本进入模型前，先由**分词器（Tokenizer）**把字符串切成一段段**Token**，再映射成词表里的整数 ID（Token ID），最后查表变成向量参与计算。Token 不一定等于一个词：一个汉字、一个英文子词、一个标点、一段空格都可能是一个 Token。整条链路是：
 
-```text
-文本 → Tokenizer 切分 → Token 序列 → 词表映射 → Token ID → 向量 → 模型计算
+```mermaid
+flowchart LR
+    text["文本"] --> tokenizer["Tokenizer 切分"]
+    tokenizer --> tokens["Token 序列"]
+    tokens --> ids["词表映射 / Token ID"]
+    ids --> vectors["嵌入向量"]
+    vectors --> model["模型计算"]
 ```
+
+核心关系：Tokenizer 把文本变成离散 ID，嵌入层再把 ID 转成模型可计算的向量表示。
 
 四个相关概念要分清：
 
@@ -153,6 +160,17 @@ p(下一个 token | 上文)
 | --- | --- | --- | --- |
 | 预训练 | 会不会：语言、知识、基础推理 | 海量无标注文本 | 基座模型（会续写） |
 | 后训练 | 乖不乖：指令遵循、对话、安全 | 指令数据、人类偏好数据 | 对话/指令模型（会干活） |
+
+```mermaid
+flowchart LR
+    corpus["海量无标注文本"] --> pretrain["预训练：预测下一个 token"]
+    pretrain --> base["基座模型：会续写"]
+    instructions["指令与偏好数据"] --> posttrain["后训练：SFT / RLHF / DPO"]
+    base --> posttrain
+    posttrain --> aligned["对话 / 指令模型：会遵循任务"]
+```
+
+核心关系：预训练提供语言与知识底座，后训练把续写能力塑造成可遵循指令、可对话且更安全的产品行为。
 
 ### 基座 / 对话 / 推理模型的区分
 
