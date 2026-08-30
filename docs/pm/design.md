@@ -28,6 +28,22 @@ description: AI 产品设计与原型总览：从问题定义到体验质量验�
 
 一个 AI 功能从想法到可验证设计，通常要走过九步。每一步都有明确的输入与产出，且必须能回答「上一步凭什么要我这么做、这一步凭什么支撑下一步」：
 
+```mermaid
+flowchart LR
+    problem[问题框架] --> mental[用户心智模型]
+    mental --> current[当前任务流]
+    current --> opportunity[机会点]
+    opportunity --> concept[概念方案]
+    concept --> ia[信息架构]
+    ia --> state[流程与状态机]
+    state --> visual[视觉与文案]
+    visual --> constraint[实现约束]
+    constraint -. 风险最高处回跳 .-> mental
+    constraint -. 评审后修订 .-> problem
+```
+
+图示说明：九步链路从问题定义逐层落到约束，风险验证会把设计带回心智模型或问题框架，而不是机械走完瀑布。
+
 | 步骤 | 要回答的问题 | 产出工件 | AI 产品的特别之处 |
 | --- | --- | --- | --- |
 | 1 问题框架 | 用户在什么场景下、有什么任务没做好？ | 问题陈述（POV） | 先写价值假设，警惕"为 AI 而 AI" |
@@ -50,6 +66,17 @@ description: AI 产品设计与原型总览：从问题定义到体验质量验�
 ## 互联网产品设计的五个层次
 
 设计行业公认的经典框架来自 Jesse James Garrett 的《用户体验要素》（The Elements of User Experience）：任何产品的用户体验都可以从抽象到具体拆成五层：**战略、范围、结构、框架、表现**。上层回答「要什么」，下层回答「怎么呈现」；自上而下决策、自下而上支撑。**越靠上层越难改**：战略层改错了等于产品重做：
+
+```mermaid
+flowchart TD
+    strategy[战略] --> scope[范围]
+    scope --> structure[结构]
+    structure --> framework[框架]
+    framework --> surface[表现]
+    surface -. 体验问题向上追溯 .-> strategy
+```
+
+图示说明：五层从产品目标逐级落到界面表现，体验问题则应沿反向链路追溯到更上游的决策。
 
 | 层次 | 回答的问题 | 典型产出物 | AI 产品示例 |
 | --- | --- | --- | --- |
@@ -101,6 +128,34 @@ description: AI 产品设计与原型总览：从问题定义到体验质量验�
 ### 状态迁移：每个状态都要有失败分支
 
 客服工单助手的状态机片段（与 [CC/CD 生命周期](ai-lifecycle.md) 的代理权阶梯对齐：v1 路由 → v2 建议 → v3 自动解决）：
+
+```mermaid
+stateDiagram-v2
+    state "新建" as New
+    state "分类中" as Classifying
+    state "建议中" as Suggesting
+    state "待确认" as Confirm
+    state "处理中" as Processing
+    state "已解决" as Resolved
+    state "已转人工" as Human
+
+    [*] --> New
+    New --> Classifying: 提交问题
+    Classifying --> Suggesting: 分类完成
+    Classifying --> Human: 低置信度/需澄清
+    Suggesting --> Confirm: 建议生成
+    Suggesting --> Human: 检索无命中
+    Confirm --> Processing: 用户采纳
+    Confirm --> Suggesting: 编辑/重新生成
+    Confirm --> Human: 连续拒绝/高风险
+    Processing --> Resolved: 动作成功
+    Processing --> Processing: 一键重试
+    Processing --> Human: 动作失败
+    Resolved --> New: 重新打开
+    Human --> [*]
+```
+
+图示说明：工单从输入到完成必须显式覆盖澄清、纠正、重试和转人工等失败分支，任何自动动作都保留回退出口。
 
 | 状态 | 进入条件 | 状态内动作 | 失败 / 异常路径 |
 | --- | --- | --- | --- |

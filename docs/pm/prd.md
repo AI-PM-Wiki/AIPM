@@ -46,6 +46,16 @@ PRD 是文档族的枢纽。每个 AI 功能从立项到上线，至少涉及这
 
 **Traceability（可追溯）是硬要求**：PRD 里的每条需求要有唯一 ID（如 `REQ-001`），技术方案按 ID 实现、测试用例按 ID 验收、评测脚本按 ID 断言。评审时一句话能问到底：这条需求，方案在哪、用例在哪、评测在哪。
 
+```mermaid
+flowchart LR
+    req[REQ-001 需求] --> tech[技术方案]
+    tech --> test[测试用例]
+    test --> eval[评测脚本]
+    eval --> release[发布与验收记录]
+```
+
+图示说明：唯一需求 ID 把意图、实现、测试、评测和发布记录串成一条可追溯的验收链。
+
 ### PRD 类型
 
 AI 变更按类型裁剪 PRD，评审标准也随之不同：
@@ -63,6 +73,22 @@ spike 的评审尤其容易踩坑：评审会要求"顺手把功能也做了"。
 ## 二、PRD 结构模板
 
 下面 10 节，每节写明"写什么"与"为什么"。背景、能力边界、评测标准、失败路径是 AI 产品 PRD 的命门，其余是常规项但缺一不可。
+
+```mermaid
+flowchart TD
+    context[1 背景与目标] --> users[2 用户与场景]
+    users --> boundary[3 能力边界]
+    boundary --> functions[4 功能需求]
+    functions --> evals[5 评测标准]
+    evals --> fallback[6 失败路径与兜底]
+    fallback --> cost[7 成本预算]
+    cost --> data[8 数据与反馈]
+    data --> rollout[9 灰度与上线]
+    rollout --> risk[10 合规与风控]
+    risk -. 校准后更新活文档 .-> boundary
+```
+
+图示说明：PRD 从业务目标收敛到能力契约，再用评测、兜底、成本和合规把发布变成可持续校准的起点。
 
 ???+ note "写作顺序建议"
     先写第 3、5、6 节（能力边界、评测标准、失败路径），再补其余各节。
