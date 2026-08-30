@@ -18,6 +18,20 @@ description: 产品方法论栏目总览：从机会到商业的决策链、内�
 
 一个 AI 产品从机会到增长的完整闭环，大致走七个环节：
 
+```mermaid
+flowchart LR
+    opp[机会判断] --> research[用户研究]
+    research --> define[需求定义]
+    define --> design[产品设计]
+    design --> deliver[交付迭代]
+    deliver --> calibrate[AI 校准]
+    calibrate --> grow[商业化增长]
+    calibrate -. 需求不成立 .-> opp
+    grow -. 毛利不达标：降本改设计 .-> design
+```
+
+图示说明：七个环节以交付为主线，但 AI 校准可以把问题送回机会判断，商业约束也会反向推动设计降本。
+
 | 环节 | 核心问题 | 关键产出 | 主要方法 |
 | --- | --- | --- | --- |
 | 机会判断 | 解决谁的什么问题？值不值得做？ | P0-P3 需求清单与价值判断 | 需求分析四步（收集→判断→分级→拆解）、频率 × 强度 × 付费潜力打分（[需求分析](requirements.md)） |

@@ -12,6 +12,17 @@ $$IS: \ C(Y) + I(i) + G = Y \qquad LM: \ L(Y, i) = M/P$$
 
 其中 i 为利率，M 为名义货币供给，P 为价格水平。对两式取全微分，用克莱姆法则解得 $dY/dG > 0$、$dY/dM > 0$，财政支出与货币供给增加都提高均衡产出。
 
+```mermaid
+flowchart LR
+    goods[产品市场：IS] --> equilibrium[IS 与 LM 交点]
+    money[货币市场：LM] --> equilibrium
+    equilibrium --> output[均衡产出 Y]
+    equilibrium --> rate[均衡利率 r]
+```
+
+IS 表示产品市场均衡，LM 表示货币市场均衡，二者交点同时确定产出与利率。
+
+
 ## IS 曲线
 
 **IS 曲线**：产品市场均衡（投资等于储蓄）时利率与产出组合的集合，向右下方倾斜。利率上升使投资需求下降、产出下降。

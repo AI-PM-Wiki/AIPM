@@ -6,6 +6,21 @@ description: 会计循环中的会计凭证、会计分录、账簿登记、试�
 
 **会计循环（Accounting Cycle）**：从凭证、分录、账簿到试算、调整、结账、报表的周而复始的记账流程。经济业务先由原始凭证证明，再由会计人员据以编制记账凭证（会计分录），分录按记账凭证登记账簿，账簿经试算平衡检查后，走上账项调整、结账与编制财务报表之路。
 
+```mermaid
+flowchart LR
+    source[原始凭证] --> voucher[记账凭证]
+    voucher --> entry[会计分录]
+    entry --> ledger[账簿]
+    ledger --> trial[试算平衡]
+    trial --> adjust[账项调整]
+    adjust --> close[结账]
+    close --> statement[财务报表]
+    statement -.-> source
+```
+
+会计循环把业务证据逐层加工为报表信息，并通过下一期重新开始形成闭环。
+
+
 ## 会计凭证
 
 **会计凭证**是记录经济业务、明确经济责任的书面证明，是会计信息可靠性的起点。

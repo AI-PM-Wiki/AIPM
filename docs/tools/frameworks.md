@@ -11,6 +11,17 @@ description: LLM 框架与平台选型速查：低代码平台、开发框架、
 
 本页结构：对比速查表（一眼定位）→ 条目要点（逐项对比）→ 按场景选型（决策路径）→ 分层与 MCP 生态（理解框架关系）→ 权威实践与综述（选型依据）。
 
+```mermaid
+flowchart TD
+    primitives[原语库：模型、工具、检索] --> orchestration[编排框架：状态、恢复、观测]
+    orchestration --> platform[低代码平台：可视化与托管]
+    orchestration --> app[应用层：流式 UI 与助手]
+    platform -.验证后迁移.-> orchestration
+    app -.接入.-> orchestration
+```
+
+框架选型先定位抽象层：原语提供能力，编排提供工程控制，平台提供速度，应用层负责把 Agent 接入产品体验。
+
 ### 主流框架/平台一览(对比速查表)
 
 | 名称 | 类别 | 定位（官方表述） | 官方文档/仓库 | 适合场景 |
@@ -182,6 +193,19 @@ description: LLM 框架与平台选型速查：低代码平台、开发框架、
 
 #### 决策清单
 
+```mermaid
+flowchart TD
+    scenario[明确交付场景] --> layer[按团队与交付形态定层]
+    layer --> candidates[同层保留 2-3 个候选]
+    candidates --> experiment[最小实验：模型 + 工具 + 用例]
+    experiment --> evaluate[比较效果、成本、维护与合规]
+    evaluate -->|未达标| candidates
+    evaluate -->|达标| baseline[记录基线与迁移接口]
+    baseline --> production[灰度、观测与持续评测]
+```
+
+框架决策用最小实验和自有评测收敛候选，并把最终选择绑定到可观测、可迁移的生产基线。
+
 -   时间要求：1-2 周出 demo → 平台类（低代码）；按季度迭代的产品 → 代码类（库与编排框架）。
 -   数据与合规：数据不出域 → Dify 自托管等可私有化形态；跨境场景 → 评估站点、模型与数据驻留。
 -   团队构成：产品/运营为主、工程资源少 → 低代码平台；工程师为主 → 开发框架与编排。
@@ -295,6 +319,19 @@ MCP（Model Context Protocol）的机制、架构与安全在 [工具调用与 M
 -   在 MCP 出现之前，每个框架都要为每个工具写一套私有连接器，框架数 × 工具数的集成成本随两边增长；MCP 把工具提供方变成标准 Server，框架只需实现一次 Client，即可接入整个工具生态。集成成本从 N×M 变成 N+M（以[官方文档](https://modelcontextprotocol.io/)为准）。
 -   对框架选型的影响：框架的 MCP 支持成熟度（客户端管理、工具发现、权限控制、远程 Server 支持）正在成为与模型支持并列的选型维度；MCP 支持好的框架，接入内部系统与第三方工具的成本更低。
 -   对产品经理的提醒：MCP 标准化的是工具如何接入，不负责业务权限、工作流编排与多 Agent 协作。这些仍是产品自己的治理体系（见 [工具调用与 MCP](../ai/agent-tools.md) 的「什么时候不用 MCP」）。
+
+```mermaid
+flowchart LR
+    tool1[内部工具] --> server1[MCP Server]
+    tool2[第三方工具] --> server2[MCP Server]
+    server1 --> gateway[企业工具网关]
+    server2 --> gateway
+    gateway --> client[框架 MCP Client]
+    client --> agent[Agent 编排]
+    agent --> trace[权限、审计与调用追踪]
+```
+
+MCP 把工具连接标准化，但企业网关仍需负责权限与审计，框架客户端只承担接入和调用。
 
 ### 主流框架/平台的 MCP 支持现状
 

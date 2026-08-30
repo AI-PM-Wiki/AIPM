@@ -30,6 +30,19 @@ $$\hat\beta_1=\beta_1+\frac{\sum_i(x_i-\bar x)u_i}{\sum_i(x_i-\bar x)^2}$$
 
 **工具变量 Z**需同时满足三个条件：工具变量外生性 $\operatorname{cov}(Z,u)=0$，Z 与误差项不相关；工具变量相关性 $\operatorname{cov}(Z,X_j)\neq0$，Z 与内生变量高度相关；Z 与其他解释变量无高度相关性，避免多重共线性。相关性可用数据验证，外生性无法直接验证（误差项不可观测），须依据经济理论与常识论证。
 
+```mermaid
+flowchart TD
+    endogenous[内生解释变量 X] --> olsfail[OLS 有偏且不一致]
+    instrument[工具变量 Z] --> relevance[与 X 相关]
+    instrument --> exogeneity[与误差项不相关]
+    relevance --> twosls[2SLS 第一阶段得到 X̂]
+    exogeneity --> twosls
+    twosls --> consistent[第二阶段估计一致系数]
+```
+
+有效工具变量同时提供相关性与外生性，2SLS 用工具变量生成的外生变动替代内生变量的污染部分。
+
+
 IV 估计量是矩估计的一种形式。总体矩条件 $E(u_i)=0$ 与 $\operatorname{cov}(Z_i,u_i)=E(Z_iu_i)=0$ 对应两个样本矩，联立求解。一元情形
 
 $$\hat\beta_1^{IV}=\frac{\sum(z_i-\bar z)(y_i-\bar y)}{\sum(z_i-\bar z)(x_i-\bar x)},\qquad \hat\beta_0^{IV}=\bar y-\hat\beta_1^{IV}\bar x$$

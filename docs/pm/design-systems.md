@@ -23,6 +23,17 @@ description: 设计系统与规范：组件库、设计令牌、治理流程，�
 
 **设计系统 = 前三者 + 治理流程 + 工具链**：风格指南定义「看起来怎样」，模式库定义「行为怎样」，组件库定义「用什么实现」，治理流程与工具链保证三者不脱节、持续演进。只做一个 Figma 组件库或一套 CSS 变量，是设计系统的零件而不是设计系统。
 
+```mermaid
+flowchart TD
+    style[风格指南：视觉规则] --> system[设计系统]
+    pattern[模式库：交互规则] --> system
+    component[组件库：实现资产] --> system
+    governance[治理流程与工具链] --> system
+    system --> outcome[跨产品一致性与交付效率]
+```
+
+图示说明：设计系统把视觉、行为和实现资产放进治理机制，最终把局部规范转成可复用的组织能力。
+
 #### 设计系统不是"UI 库"
 
 UI 库管控件，设计系统管**决策**。一套完整的设计系统至少约束四件事：
@@ -156,6 +167,18 @@ token 命名是给全公司用的公共 API，规范不统一后面全是返工�
 - **Tokens Studio for Figma**：Figma 插件，在 Figma 内管理 token 并与代码仓库双向同步
 
 三者组合的典型流水线：**Tokens Studio 在 Figma 里维护 → Style Dictionary 编译出各端产物 → DTCG 格式作为交换标准**。
+
+```mermaid
+flowchart LR
+    figma[Tokens Studio/Figma] --> dtcg[DTCG 交换格式]
+    dtcg --> build[Style Dictionary 构建]
+    build --> web[Web CSS]
+    build --> ios[iOS Swift]
+    build --> android[Android/Compose]
+    build --> docs[组件与设计文档]
+```
+
+图示说明：token 以统一交换格式进入构建流水线，自动生成多端产物，避免设计与代码各自维护副本。
 
 #### token 与"像素级还原"
 
@@ -298,6 +321,17 @@ Brad Frost 在《Atomic Design》（2016）中提出从原子到页面的五层�
 2. **评审**：设计评审（是否与现有组件重复、是否符合 token 体系）+ 代码评审（实现质量、性能、可访问性）+ 无障碍走查
 3. **发布**：版本化发布 + 变更公告；新组件先进"实验性"，验证使用后再转正式
 4. **反馈**：使用方问题回收、使用数据统计，驱动下一轮迭代
+
+```mermaid
+flowchart LR
+    proposal[提案：用途与使用方] --> review[设计/代码/无障碍评审]
+    review --> experimental[实验性发布]
+    experimental --> release[正式发布与变更公告]
+    release --> feedback[使用反馈与使用数据]
+    feedback -. 下一轮提案 .-> proposal
+```
+
+图示说明：组件治理用提案、评审、分阶段发布和反馈形成闭环，既控制系统质量，也为持续演进保留入口。
 
 门槛铁律：**一个组件至少服务两个产品线，且有人承诺维护**。为单个页面造的「组件」是页面代码，不是系统资产。
 

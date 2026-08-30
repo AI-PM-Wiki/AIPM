@@ -24,7 +24,17 @@ description: 时间序列数据的平稳三条件与弱相关、白噪声、随�
 
 ## 随机游走与 AR(1)
 
-**无漂移随机游走**：$Y_t=Y_{t-1}+e_t$，e_t 为白噪声，递推得 $Y_t=Y_0+e_1+\cdots+e_t$。$E(Y_t)=Y_0$ 为常数，但 $\operatorname{Var}(Y_t)=t\sigma^2$ 随时间线性增大，方差非常数，序列不平稳；一阶差分 $\Delta Y_t=e_t$ 是白噪声，平稳。
+**随机游走（无漂移）**：$Y_t=Y_{t-1}+e_t$，e_t 为白噪声，递推得 $Y_t=Y_0+e_1+\cdots+e_t$。$E(Y_t)=Y_0$ 为常数，但 $\operatorname{Var}(Y_t)=t\sigma^2$ 随时间线性增大，方差非常数，序列不平稳；一阶差分 $\Delta Y_t=e_t$ 是白噪声，平稳。
+
+```mermaid
+flowchart LR
+    randomwalk[随机游走 Yt = Yt-1 + et] --> nonstationary[水平序列非平稳]
+    nonstationary --> difference[一阶差分 ΔYt]
+    difference --> white[白噪声与平稳序列]
+```
+
+随机游走的单位根使水平序列不平稳，一阶差分把持续累积的冲击转化为平稳变化。
+
 
 **有漂移随机游走**：$Y_t=\delta+Y_{t-1}+e_t$，$E(Y_t)=t\delta+Y_0$ 随时间线性变化，$\operatorname{Var}(Y_t)=t\sigma^2$ 同步增大，均值和方差都随时间变，图形呈长期漂移，漂移项 δ 决定方向。
 

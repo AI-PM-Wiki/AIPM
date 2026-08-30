@@ -53,12 +53,25 @@ RAG 的**知识机制**包括为什么需要、基本流程、关键环节、失
 
 ## RAG 的基本流程
 
-```text
-                        入库侧（离线，一次性/按更新触发）
-源文档 → 解析 → 切块 → 嵌入 → 向量库（含元数据）
-                                  ↑ 检索（在线，每次问答）
-用户问题 → 查询处理 → 嵌入 → 取回 top-k 候选 → 重排 → 组装提示词 → 模型生成 → 引用标注 → 回答
+```mermaid
+flowchart TB
+    subgraph ingest["入库侧：离线处理"]
+        source["源文档"] --> parse["解析"]
+        parse --> chunk["切块"]
+        chunk --> embed["嵌入"]
+        embed --> store[("向量库 + 元数据")]
+    end
+    question["用户问题"] --> query["查询处理 / 嵌入"]
+    query --> retrieve["取回 top-k 候选"]
+    store --> retrieve
+    retrieve --> rerank["重排"]
+    rerank --> prompt["组装提示词"]
+    prompt --> generate["模型生成"]
+    generate --> cite["引用标注"]
+    cite --> answer["回答"]
 ```
+
+核心关系：文档先离线解析、切块并建立索引，在线问题经过检索与重排后才进入生成，最终以引用把答案连回来源。
 
 1.  **文档处理**：解析源文档（PDF、Word、HTML、Markdown），提取正文与结构。常见坑：PDF 表格被拆乱、扫描件需要 OCR、Word 中的文本框丢失、代码块被当成正文。
 2.  **切块**：把长文档切成检索单元（chunk）。常见坑：在句子中间切断导致语义断裂、块太大导致检索不精确、切法与 embedding 模型不匹配（策略详见 [检索技术](rag-retrieval.md)）。
@@ -179,6 +192,19 @@ RAG 的**知识机制**包括为什么需要、基本流程、关键环节、失
 ### 失败模式的层级关系
 
 失败模式不是并列的，而是有因果层级：**切块失败 → 检索失败 → 生成失败 → 引用失败**，前面环节的失败会传染给后面。所以排查时永远先查上游：检索不到先看切块，幻觉仍有先看检索到的块里有没有答案。评测时也按层级拆指标，才能在整体变差了的时候定位到具体环节。
+
+```mermaid
+flowchart LR
+    chunk["切块失败"] --> retrieve["检索失败"]
+    retrieve --> generate["生成失败 / 幻觉"]
+    generate --> citation["引用失败"]
+    chunk -.上游修复优先.-> check["按层级定位 badcase"]
+    retrieve -.-> check
+    generate -.-> check
+    citation -.-> check
+```
+
+核心关系：RAG 错误会沿数据流向下游传播，排查应从切块和召回等上游环节开始，而不是先修改生成提示词。
 
 ### 先分清「检索不到」与「检索不准」
 

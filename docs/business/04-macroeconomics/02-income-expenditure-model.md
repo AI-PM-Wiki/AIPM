@@ -14,6 +14,18 @@ $$E = C + I = Y = C + S \Rightarrow I = S$$
 
 **凯恩斯主义交叉图（Keynesian cross）**中，纵轴为总支出 E、横轴为国民收入 Y，45° 线 $E=Y$ 与总支出线 $E=C+I$ 的交点给出均衡国民收入 $Y^*$。关键假设是消费为收入的函数 $C=C(Y)$，且边际消费倾向大于 0 小于 1。企业多生产时存货累积、随后减产，经济反复调整直至供给等于需求。
 
+```mermaid
+flowchart LR
+    autonomous[自发支出增加] --> income[收入增加]
+    income --> consumption[引致消费增加]
+    consumption --> spending[总支出增加]
+    spending --> income
+    spending --> equilibrium[收入—支出均衡]
+```
+
+乘数链条把一轮自发支出扩散为多轮收入与消费变化，直到总支出与总收入相等。
+
+
 ## 消费与储蓄
 
 **凯恩斯基本心理规律**：收入增加时消费也增加，但消费的增加不如收入增加那么多，边际消费倾向有递减趋势。

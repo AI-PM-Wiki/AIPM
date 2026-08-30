@@ -10,6 +10,21 @@ description: 需求分析方法：机会识别、假设、证据、需求定义�
 
 本页把「发现（discovery）」写成一条完整链路，不是孤立的技巧清单：
 
+```mermaid
+flowchart LR
+    opportunity[机会识别] --> hypothesis[提出可证伪假设]
+    hypothesis --> evidence[采集证据]
+    evidence --> enough{证据足够?}
+    enough -- 否 --> verify[最小成本验证]
+    verify --> evidence
+    enough -- 是 --> definition[需求定义]
+    definition --> priority[优先级判断]
+    priority --> breakdown[拆解与验收]
+    breakdown -. 每轮复核 .-> hypothesis
+```
+
+图示说明：需求分析用证据门禁把机会逐步收敛为可验收的工作，并在每轮迭代中重新检查假设。
+
 **机会识别 → 假设 → 证据 → 需求定义 → 优先级 → 拆解**
 
 | 环节 | 核心问题 | 主要产出 |

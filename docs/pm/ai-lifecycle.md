@@ -57,6 +57,19 @@ description: AI 产品开发生命周期（CC/CD 框架）：持续校准/持续
 
 借 CI/CD 的名字，它适用于行为非确定、代理需赚取的系统。开发（CD，Continuous Development）与校准（CC，Continuous Calibration）构成持续循环：
 
+```mermaid
+flowchart LR
+    cd1[CD 1 划定能力范围] --> cd2[CD 2 搭建应用]
+    cd2 --> cd3[CD 3 设计评测]
+    cd3 --> deploy[部署：小范围灰度]
+    deploy --> cc4[CC 4 运行评测]
+    cc4 --> cc5[CC 5 分析错误模式]
+    cc5 --> cc6[CC 6 应用修复]
+    cc6 -. 证据换下一版代理权 .-> cd1
+```
+
+图示说明：CD 负责把能力变成可观测的版本，CC 用真实反馈修复错误并决定下一轮是否扩展代理权。
+
 ???+ note "CC/CD 循环总览"
     CD 1 划定能力范围 → CD 2 搭建应用 → CD 3 设计评测 → **部署（过渡）** → CC 4 运行评测 → CC 5 分析错误模式 → CC 6 应用修复 → 回到 CD 1……
 
@@ -129,6 +142,18 @@ spike 的产出是**一串可复现的数字**，不是"模型很厉害"的感�
 -   **编程助手**（GitHub Copilot / Cursor 实际走的路径）：v1 行内补全 → v2 生成大块代码供人审 → v3 自主改代码并开 PR
 
 每一级代理权都要写明**准入信号、护栏、回退机制、退出条件**。参考 Claude Code 的权限模型（Manual 模式逐次征求批准、Auto 模式由分类器拦截风险操作、沙箱限定边界，见 [Claude Code 安全文档](https://code.claude.com/docs/en/security)）与 [Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents) 的「先简单后复杂」原则，可整理成一张通用阶梯：
+
+```mermaid
+flowchart LR
+    l0[L0 只读/建议] --> l1[L1 生成草稿]
+    l1 --> l2[L2 确认后执行]
+    l2 --> l3[L3 受限自治]
+    l3 --> l4[L4 全自主]
+    l3 -. 绊线/超阈值 .-> l2
+    l4 -. 不可回滚事故 .-> l2
+```
+
+图示说明：代理权只能沿证据支持的阶梯逐级上升，护栏触发时必须能退回到人工确认的低代理状态。
 
 | 层级 | 行为 | 准入信号 | 护栏 | 回退机制 | 退出条件 |
 | --- | --- | --- | --- | --- | --- |

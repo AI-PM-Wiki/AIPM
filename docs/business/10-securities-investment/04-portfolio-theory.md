@@ -74,6 +74,18 @@ $$\sigma_p^2 = w_A^2\sigma_A^2 + w_B^2\sigma_B^2 + 2w_A w_B \rho_{AB}\sigma_A\si
 
 **可行域**（feasible set）是全部可行组合在收益—风险平面上的集合。**有效边界**（efficient frontier）是可行域的上边界部分，比域内及下边界的任何可行组合都更有效率。**最优组合**是投资者无差异曲线与有效边界的切点。
 
+```mermaid
+flowchart LR
+    assets[资产收益与风险特征] --> feasible[全部可行组合]
+    feasible --> frontier[有效边界]
+    frontier --> preference[投资者风险偏好]
+    preference --> optimal[最优组合]
+    riskfree[无风险资产] --> optimal
+```
+
+最优组合由资产组合的有效边界与投资者风险偏好共同决定，无风险资产还能改变可选组合的风险收益结构。
+
+
 构建完整投资组合分三步：确定各类投资工具的收益风险特征，建立并确定最优风险资产组合，建立包含风险资产组合和无风险资产的最优资产组合。
 
 ## 资本配置线、资本市场线与 CAPM

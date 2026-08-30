@@ -29,6 +29,17 @@ description: 模型推理与部署机制：预填充/解码、KV Cache、量化�
 | Prefill | 高（序列维度并行） | 大矩阵乘，随输入长度近似平方增长 | 计算量、长序列注意力 | TTFT |
 | Decode | 低（时间上串行） | 每步小矩阵，读取权重 + 全部 KV Cache | 显存带宽、调度 | TPOT / TPS |
 
+```mermaid
+flowchart LR
+    input["完整输入 prompt"] --> prefill["Prefill：并行建立 KV Cache"]
+    prefill --> ttft["TTFT：首 token"]
+    ttft --> decode["Decode：逐 token 读取缓存"]
+    decode --> tpot["TPOT / TPS：生成速率"]
+    decode -.追加新 token 的 KV.-> decode
+```
+
+核心关系：Prefill 用并行计算换取首 token，Decode 依赖历史缓存逐步生成，二者的瓶颈与优化手段不同。
+
 ### 为什么解码慢
 
 训练时 GPU 可以并行处理整段文本；推理时下一个 token 依赖前一个 token 的输出，**时间上无法并行**。单请求的生成延迟 ≈ 输出长度 × 每 token 耗时，所以写 2000 字天然比写 50 字慢一个量级：这不是网络问题，是自回归机制决定的。
@@ -43,12 +54,19 @@ description: 模型推理与部署机制：预填充/解码、KV Cache、量化�
 
 一次 API 调用在推理服务内部经历的完整链路，按顺序排查问题就靠它：
 
-```text
-用户请求 → 排队（调度器分配槽位）
-→ Tokenizer 编码 → Prefill（并行处理输入，建立 KV Cache）→ 首个 token 返回
-→ Decode 循环（逐 token：读 KV Cache → 计算 → 采样 → 追加缓存 → 流式推送）
-→ 停止条件触发 → Tokenizer 解码 → 结束
+```mermaid
+flowchart LR
+    request["用户请求"] --> queue["排队 / 调度"]
+    queue --> encode["Tokenizer 编码"]
+    encode --> prefill["Prefill：并行处理输入"]
+    prefill --> first["首个 token / TTFT"]
+    first --> decode["Decode：逐 token 生成"]
+    decode --> stop{ "停止条件？" }
+    stop -->|否| decode
+    stop -->|是| decode_end["解码输出 / 结束"]
 ```
+
+核心关系：Prefill 决定首 token 等待时间，Decode 决定后续生成速率，停止条件决定何时结束请求。
 
 对应地，用户感知的延迟可以拆成四段：**排队时间 + Prefill 时间（决定 TTFT）+ 生成时间（输出长度 × TPOT）+ 网络传输**。产品侧排查延迟问题，先问哪一段慢：排队慢是容量问题（加卡/错峰），TTFT 慢是输入太长（压 prompt/缓存），生成慢是模型太大或带宽受限（量化/小模型），只盯着总延迟数字会误判。
 
@@ -230,13 +248,15 @@ MoE 的价值是用总参数买容量、用激活参数控制开销：总参数 
 
 不追求一步到位，按业务阶段演进：
 
-```text
-个人试用：Ollama / llama.cpp 单机跑通，验证模型可行性
-→ 原型验证：同一模型 + OpenAI 兼容 API，业务代码不换接口
-→ 小规模生产：vLLM / SGLang 单机多卡，量化 + 连续批处理
-→ 规模化：多机集群 + 负载均衡 + 监控告警 + 版本管理
-→ 可选：API + 本地混合，本地扛量大场景，API 兜底最难任务
+```mermaid
+flowchart LR
+    prototype["个人试用：Ollama / llama.cpp"] --> api["原型验证：OpenAI 兼容 API"]
+    api --> production["小规模生产：vLLM / SGLang"]
+    production --> scale["规模化：集群 / 负载均衡 / 监控"]
+    scale --> hybrid["可选：API + 本地混合"]
 ```
+
+核心关系：先用本地运行时验证模型，再通过兼容接口迁移到生产引擎，最后按流量与任务难度扩展集群或混合部署。
 
 关键决策点：**接口抽象在第一天就做**（OpenAI 兼容 API），否则后面每换一次引擎/模型都要改业务代码；**量化与评测同步做**，别先量化后才发现任务掉点。
 

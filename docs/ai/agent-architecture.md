@@ -12,6 +12,21 @@ description: Agent 架构核心设计模式、记忆系统、多智能体编排�
 
 > 设计模式不是炫技：它们用来控制复杂度、降低失败率、提高可解释性与工程可维护性。一个成熟系统往往同时用多种模式：比如编码 Agent 用 Plan-and-Execute 生成计划，用 ReAct 循环读文件跑测试，再用工作流强制生成 diff → 跑测试 → 人工 review → 创建 PR 的流程。
 
+```mermaid
+flowchart TB
+    task["任务特征"] --> fixed{ "步骤固定且可校验？" }
+    fixed -->|是| chain["提示词链 / 工作流"]
+    fixed -->|否| route{ "需要动态选择路径？" }
+    route -->|是| react["ReAct / 路由"]
+    route -->|否| parallel{ "子任务独立或需分工？" }
+    parallel -->|是| orchestrate["并行化 / 编排者-工作者"]
+    parallel -->|否| quality{ "有明确评估标准？" }
+    quality -->|是| optimize["评估者-优化者"]
+    quality -->|否| human["先补验证与人工兜底"]
+```
+
+核心关系：先按任务的确定性、动态性与可拆分程度选择模式，再以验证和人工兜底限制复杂度。
+
 | 模式 | 一句话机制 | 适用场景 | 代价 |
 | --- | --- | --- | --- |
 | 提示词链（Prompt Chaining） | 固定顺序步骤链，上一步输出是下一步输入 | 可拆成可校验小段的复杂任务 | 步骤多则延迟累积 |
@@ -84,6 +99,19 @@ Thought → Action → Observation → Thought → … → Final Answer
 -   **长期记忆**：上下文窗口之外的外部存储（向量库、键值存储、文件），保存用户偏好、稳定事实、任务经验：支持跨会话的个性化与连续任务。
 
 两者是互补关系：短期记忆解决这一轮，长期记忆解决记住之后。长上下文模型不能替代长期记忆：成本（每次全量塞入）、注意力稀释（长上下文里关键信息反而容易被忽略）、缺少结构化、缺少更新与遗忘、缺少权限隔离，都决定了长上下文用于当前任务的高价值材料、记忆系统负责长期存储与治理的分工。
+
+```mermaid
+flowchart LR
+    event["当前对话 / 工具结果"] --> short["短期记忆：上下文窗口"]
+    short --> context["本轮上下文组装"]
+    event --> filter["稳定性 / 复用 / 隐私过滤"]
+    filter --> long["长期记忆：向量 / KV / 文件"]
+    long --> retrieve["按需检索"]
+    retrieve --> context
+    context --> model["模型决策"]
+```
+
+核心关系：短期记忆支撑当前任务，长期记忆经过筛选后按需检索，两者共同构成模型本轮可用的上下文。
 
 ### 记忆与 RAG 的分工
 
@@ -182,6 +210,19 @@ Thought → Action → Observation → Thought → … → Final Answer
 ### 可持久化、可恢复的编排
 
 多 Agent 长任务必须把运行过程从临时对话变成状态机，四个关键设计：
+
+```mermaid
+flowchart LR
+    plan["plan"] --> execute["execute"]
+    execute --> evaluate["evaluate"]
+    evaluate -->|通过| review["human review / finalize"]
+    evaluate -->|失败| replan["replan"]
+    replan --> execute
+    review --> checkpoint["持久化 checkpoint"]
+    checkpoint -.中断后恢复.-> execute
+```
+
+核心关系：多 Agent 编排把计划、执行、评估和人工审批建模成可持久化状态机，失败可重规划，中断可从检查点恢复。
 
 -   **显式状态**：记录任务目标、当前步骤、已完成步骤、失败原因、待审批项、工具结果摘要。
 -   **节点化执行**：流程拆成 plan / execute / evaluate / human_review / replan / finalize 等节点，每个节点完成后持久化状态。

@@ -13,6 +13,24 @@ description: 多 Agent 产品决策：单 vs 多算账、编排模式、上下�
 -   **先单 Agent，评测证明收益后再多 Agent**：这是官方原则，也是社区血泪教训的共识
 -   **人是团队的一部分**：编排者、监督者、审批者三种角色，长期运行必须有治理
 
+### 单 Agent 与多 Agent 的决策路径
+
+```mermaid
+flowchart TD
+    task[复杂任务] --> parallel{子任务可独立并行？}
+    parallel -->|否| single[单 Agent + 工作流]
+    parallel -->|是| isolate{上下文可隔离且可独立验收？}
+    isolate -->|否| single
+    isolate -->|是| value{收益能覆盖成本与调试开销？}
+    value -->|否| single
+    value -->|是| multi[多 Agent：拆分、执行、汇总]
+    multi --> trace[追踪子任务、成本与责任]
+    trace --> eval[评测与回归]
+    eval -.收益不稳定.-> single
+```
+
+这条路径把多 Agent 视为有证据门槛的组织设计：先验证并行与隔离收益，再用 trace 和评测持续决定拆分还是合并。
+
 ### 单 Agent vs 多 Agent 的决策
 
 #### 官方实测：先把账算明白

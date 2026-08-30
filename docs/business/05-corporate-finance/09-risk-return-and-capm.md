@@ -54,6 +54,17 @@ $$\beta_i = \frac{Cov(R_i, R_M)}{Var(R_M)} = \frac{\rho_{iM}\sigma_i}{\sigma_M}$
 
 **资本资产定价模型**（capital asset pricing model, CAPM）：
 
+```mermaid
+flowchart LR
+    riskfree[无风险收益率 Rf] --> capm[要求回报率]
+    beta[系统性风险 β] --> premium[市场风险溢价 × β]
+    market[市场风险溢价] --> premium
+    premium --> capm
+```
+
+CAPM 把投资者要求的回报拆为时间价值与承担系统性风险的补偿，非系统性风险可通过分散化消除。
+
+
 $$E(R_i) = R_f + \beta_i \times [E(R_M) - R_f]$$
 
 任何资产的期望收益率 = 无风险收益率 + 系统性风险溢价。与 CML 的区别：β 度量的系统性风险部分对任何资产都适用，CAPM 适用于所有资产，单个股票与组合均成立。

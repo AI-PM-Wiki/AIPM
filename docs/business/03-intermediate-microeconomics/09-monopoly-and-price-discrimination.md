@@ -8,6 +8,18 @@ description: 垄断与价格歧视：垄断定价、加成定价、税收与效�
 
 **垄断**：市场唯一卖者，是价格制定者，不再是价格接受者；定价后卖出多少仍由市场决定。垄断问题为 $\max_y p(y)y - c(y)$，一阶条件 MR = MC。多生产一单位增加收入 MR、增加成本 MC，两者相等时企业才没有动机改变产量。
 
+```mermaid
+flowchart LR
+    demand[市场需求曲线] --> revenue[边际收入 MR]
+    cost[成本曲线] --> marginal[边际成本 MC]
+    revenue --> decision[MR = MC 的产量]
+    marginal --> decision
+    decision --> price[回到需求曲线确定价格]
+```
+
+垄断厂商先以 MR 与 MC 相等选择产量，再沿需求曲线读取价格，通常形成 P > MC 的价格加成。
+
+
 **边际收入的两重效应**：$r(y) = p(y) \cdot y$，增产时 $\Delta r = p\Delta y + y\Delta p$。卖出更多产品收入增加 $p\Delta y$；为多卖必须压低价格，且全部产品按新低价出售，收入减少 $|y\Delta p|$。除以 $\Delta y$ 得 $MR = p + y \cdot \frac{\Delta p}{\Delta y}$，利用弹性定义得：
 
 $$MR(y) = p(y)\left[1 - \frac{1}{|\varepsilon(y)|}\right]$$

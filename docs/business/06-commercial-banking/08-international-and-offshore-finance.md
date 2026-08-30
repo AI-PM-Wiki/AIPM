@@ -6,6 +6,19 @@ description: 商业银行国际结算、外汇买卖、贸易融资、国际借�
 
 商业银行国际业务的种类：国际结算、外汇买卖、贸易融资、国际借贷、离岸金融业务。
 
+```mermaid
+flowchart TD
+    international[商业银行国际业务]
+    international --> settlement[国际结算]
+    international --> fx[外汇买卖]
+    international --> trade[贸易融资]
+    international --> lending[国际借贷]
+    international --> offshore[离岸金融]
+```
+
+国际业务覆盖支付、汇兑、融资和离岸资金配置等环节，银行通过多类业务同时服务跨境交易并管理汇率与信用风险。
+
+
 ## 国际结算
 
 **国际结算（international settlement）**：以货币收付清偿债权债务关系、实现资金转移的行为。三种基本形式：
