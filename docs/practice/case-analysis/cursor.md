@@ -49,6 +49,25 @@ Cursor 是 Anysphere 的 AI 原生编程工具，VS Code 深度 fork 的原生 I
 
 ### 交互与体验设计
 
+核心交互流：编辑器内对话 → Agent 规划 → 多文件 diff 应用 → 人工审查。
+
+```mermaid
+flowchart LR
+    context[编辑器上下文：光标、文件、代码库索引] --> chat[编辑器内对话]
+    chat --> plan[Agent 规划影响面]
+    plan --> edit[跨文件修改]
+    edit --> diff[生成可审阅 diff]
+    diff --> review{开发者确认？}
+    review -->|通过| test[运行测试与构建]
+    review -->|拒绝或修改| revise[调整任务或方案]
+    revise --> plan
+    test --> result{验证通过？}
+    result -->|是| apply[应用结果 / 提交]
+    result -->|否| plan
+```
+
+这条闭环说明 Cursor 的核心不是单纯生成代码，而是把仓库上下文、跨文件执行、diff 审查和测试验证连在一起。
+
 核心交互流：编辑器内对话 → Agent 规划 → 多文件 diff 应用 → 人工审查。多文件编辑把改动以 diff 形式交用户审，**审 diff** 成为核心交互，产品给用户快速理解改动范围的工具。Tab 补全以幽灵文本低打断插入，误补全删除即回退。
 
 后台并行 agent：Cloud agent 与 Automations 把任务从前台对话移到后台执行，用户同时推进多条任务线，等 agent 完成后审结果。

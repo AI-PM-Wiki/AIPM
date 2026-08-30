@@ -40,6 +40,21 @@ description: 案例分析栏目：用产品拆解框架把真实 AI 产品还原
 -   做对了什么？做错了什么？
 -   如果重来，你会怎么做？
 
+## 拆解流程
+
+```mermaid
+flowchart LR
+    product[真实 AI 产品] --> position[定位：帮谁、解决什么]
+    position --> task[任务与场景]
+    task --> tech[技术方案与边界]
+    tech --> ux[交互、信任与兜底]
+    ux --> business[商业、成本与护城河]
+    business --> lesson[成败归因与重来方案]
+    lesson -.回到框架复盘.-> position
+```
+
+这条拆解流程把功能描述还原成决策链：从用户任务出发，依次追问技术、体验、商业和成败原因。
+
 ## 案例索引
 
 已收录的拆解按「应用层 AI vs 原生 AI」分类（呼应 [实战栏目](../index.md) 的应用层/原生视角）：

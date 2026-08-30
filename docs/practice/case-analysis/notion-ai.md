@@ -28,6 +28,22 @@ Notion AI 是应用层 AI 的典型样本:先有 Notion 文档与数据库产品
 - 会议纪要:从会议记录生成结构化纪要
 - 自定义 Agent(2025-09):配置触发条件与动作,自动执行工作流
 
+Notion AI 的核心链路是「本体内容 → 权限内检索 → 生成结果回到工作区」：
+
+```mermaid
+flowchart LR
+    workspace[文档、数据库与会议记录] --> permission[沿用页面与数据库权限]
+    permission --> retrieve[生成查询并检索工作区]
+    retrieve --> rank[排序相关内容]
+    rank --> generate[LLM 生成回答、摘要或填充]
+    generate --> cite[出处与原页面]
+    cite --> workspace
+    workspace --> agent[自定义 Agent 与自动化]
+    agent -->|触发条件 + 动作| workspace
+```
+
+这条链说明 Notion AI 的壁垒不在自研模型，而在把权限、结构化本体和生成结果放回同一个工作区。
+
 #### 技术方案与边界
 
 - 多模型路由,不自研大模型:官方安全页明确使用 Anthropic、OpenAI 等托管 LLM

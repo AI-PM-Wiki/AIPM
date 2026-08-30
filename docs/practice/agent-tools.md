@@ -13,6 +13,26 @@ Agent 的「聪明」由模型决定，Agent 能**做到什么**由工具决定�
 -   **工具集是权限问题**：每加一个工具都在扩大攻击面与选择噪音，默认「白名单即拒绝」
 -   **工具是运营对象**：选择准确率、参数正确率、调用成功率、结果可用率四类指标随工具上线一起进监控（指标口径见 [工具调用与 MCP](../ai/agent-tools.md) 的「工具质量指标」）
 
+**工具调用的产品闭环可以画成：**
+
+```mermaid
+flowchart LR
+    intent[用户目标] --> select[选择白名单工具]
+    select --> input[参数校验与权限检查]
+    input --> confirm{有不可逆副作用？}
+    confirm -->|是| approval[用户 / 人工确认]
+    confirm -->|否| execute[执行工具]
+    approval -->|批准| execute
+    approval -->|拒绝| fallback[修改、降级或转人工]
+    execute --> result[结果校验与脱敏]
+    result --> done[可验证结果]
+    result -->|失败| retry{可恢复？}
+    retry -->|是| input
+    retry -->|否| fallback
+```
+
+这条闭环说明工具设计不能止于调用成功：选择、授权、参数、结果验证和失败交接都要有产品出口。
+
 ### 工具是 Agent 产品的界面
 
 #### ACI：给模型看的界面

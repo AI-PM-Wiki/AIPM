@@ -43,6 +43,23 @@ description: 豆包产品拆解全文：定位、能力、交互、商业与竞�
 
 对话式交互为主入口，叠加多模态创作与智能体任务三类场景：
 
+```mermaid
+flowchart TD
+    entry[豆包对话入口] --> choose{用户任务类型}
+    choose -->|问答| dialog[多轮对话与联网搜索]
+    choose -->|创作| multimodal[文本、图像、视频、音频生成]
+    choose -->|办公任务| agent[专业版智能体：电脑、浏览器、Skills]
+    dialog --> free[免费额度]
+    multimodal --> free
+    agent --> paid[专业版额度与订阅]
+    free --> upgrade{高阶需求或额度不足？}
+    upgrade -->|是| paid
+    upgrade -->|否| retain[继续使用与反馈]
+    paid --> retain
+```
+
+这条路径展示豆包的产品取舍：用免费入口覆盖大众和多模态场景，再把高额度与办公 Agent 作为付费价值锚。
+
 - **对话问答**：多轮上下文、可追问，零门槛
 - **多模态创作**：文字、图像、视频、音频生成，创作结果即产品输出
 - **智能体任务**：专业版办公任务模式，AI 操作本地电脑/浏览器完成多步任务
