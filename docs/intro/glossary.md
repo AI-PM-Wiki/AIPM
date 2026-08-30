@@ -170,6 +170,32 @@ description: 产品经理黑话速查：覆盖大厂沟通、需求文档、数�
 | DRI | Directly Responsible Individual，直接负责人；为事项指定主要决策和推进人，协作方仍需参与 |
 | P0/P1/P2/P3 | 事故严重度分级，具体定义因团队而异，通常 P0 最高；每级应对应影响范围、响应时限、责任人和升级路径 |
 
+#### 算力与推理
+
+| 黑话 | 含义 |
+| --- | --- |
+| GPU / CPU | Graphics Processing Unit / Central Processing Unit，图形处理器 / 中央处理器；AI 训练和推理通常更依赖 GPU 的并行计算能力，业务逻辑与调度仍常由 CPU 承担 |
+| 算力 / Compute | 执行模型训练或推理所需的计算资源；实际可用能力不只由理论峰值决定，还受显存、带宽、并发和软件栈影响 |
+| 显存 / VRAM | Video Random Access Memory，GPU 用来存放模型权重、KV Cache 和中间数据的内存；显存不足时模型可能无法加载或并发量下降 |
+| 显存带宽 / Memory Bandwidth | GPU 在单位时间内读写显存的能力；Decode 阶段常受显存带宽限制，不等同于 GPU 的理论算力 |
+| FLOPS / TFLOPS | Floating-point Operations Per Second / Trillion FLOPS，每秒浮点运算次数 / 万亿次浮点运算次数；属于理论峰值，不等于真实模型吞吐 |
+| GPU 利用率 | GPU 计算单元处于工作的时间占比；利用率高不一定代表成本效率高，显存或带宽瓶颈也可能让服务变慢 |
+| 吞吐 / Throughput | 单位时间完成的请求数、token 数或任务量；需要和延迟、并发一起看，吞吐提高可能伴随单请求等待变长 |
+| 并发 / Concurrency | 同时处于处理中的请求或任务数量，不等于一段时间内的总流量；长上下文和 KV Cache 会显著影响并发上限 |
+| QPS / RPS | Queries Per Second / Requests Per Second，每秒查询数 / 请求数；用于描述服务请求速率，具体统计范围要写清楚 |
+| RPM / TPM | Requests Per Minute / Tokens Per Minute，每分钟请求数 / token 数；常见于模型供应商的速率配额，不等同于服务的实际吞吐 |
+| TPS | Tokens Per Second，每秒生成的 token 数；通用系统性能语境中也可能指 Transactions Per Second，每秒事务数，使用时要注明口径 |
+| TTFT | Time To First Token，首 token 延迟；从请求发出到用户看到第一个 token 的时间，主要受排队和 Prefill 影响 |
+| TPOT | Time Per Output Token，平均生成一个输出 token 所需的时间；主要反映 Decode 阶段的持续生成速度 |
+| KV Cache | Key-Value Cache，注意力机制缓存的历史 Key / Value；可以减少重复计算，但会随上下文长度和并发增长而占用显存 |
+| Prefill / Decode | Prefill 并行处理输入并建立 KV Cache；Decode 根据已有上下文逐 token 生成输出，二者的瓶颈和优化方式不同 |
+| 批处理 / Batch | 将多个请求合并后共同计算，以提高 GPU 利用率和吞吐；批次等待和大小会影响单请求延迟 |
+| 连续批处理 / Continuous Batching | 按 token 生成进度动态加入和移出请求的调度方式，减少等待空槽，通常比静态批处理有更高吞吐 |
+| 量化 / Quantization | 用更低精度表示模型权重或 KV Cache，以降低显存占用；速度和效果变化取决于硬件、模型与任务，需要实测 |
+| 蒸馏 / Distillation | 用大模型或教师模型的输出指导较小的学生模型，使其在更低成本下保留部分能力 |
+| 推理 / Inference | 使用已经训练好的模型处理输入并生成输出的过程；推理成本、延迟、吞吐和稳定性直接影响线上产品 |
+| GPU 时 / GPU Hour | 一张 GPU 被占用一小时的资源计量单位，常用于训练、托管和推理平台的成本核算；实际价格还受 GPU 型号和利用率影响 |
+
 ### 用户与运营
 
 | 黑话 | 含义 |
