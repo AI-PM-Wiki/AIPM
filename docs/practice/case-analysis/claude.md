@@ -16,6 +16,18 @@ Claude 是 Anthropic 的通用 AI 助手与 Agent 平台，与 ChatGPT 同赛道
 
 3. Agent 平台（2025-2026）：Claude Code 以终端编码 agent 形态切入开发者市场并 GA，成为主卖点；叠加 Subagents、MCP、Computer Use，定位扩展为「对话助手 + 编码 agent + API + 企业」全栈（以官方公告为准）。
 
+Claude 的产品路线可以按能力边界看成三段：
+
+```mermaid
+flowchart LR
+    safechat[安全对话助手：宪法 AI] --> capable[通用助手：长上下文、多模态、Artifacts]
+    capable --> agent[Agent 平台：Claude Code、MCP、Computer Use]
+    agent --> trust[开发者口碑与企业信任]
+    trust -.安全、上下文与工具反馈.-> capable
+```
+
+这条路线把安全差异化逐步转化为可执行能力：先建立信任，再把对话扩展为协作工作台和开发者 Agent。
+
 目标用户分层：
 
 - 大众：Claude.ai 网页与 App 的免费/Pro 用户，对话、写作、分析
