@@ -520,7 +520,7 @@ extra:
   # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
   chat_agent:
     enabled: true
-    version: 10
+    version: 11
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   # 大陆站点勿用 Google Analytics(GA 在大陆不可直连),建议自建 umami。
   #   provider: umami
@@ -541,6 +541,7 @@ extra_javascript:
   - '_static/js/header-line.js?v=1'
   - '_static/js/umami.js?v=1'
   - '_static/js/mermaid-zoom.js?v=3'
+  - '_static/js/hypothesis.js?v=7'
 extra_css:
   - '_static/css/extra.css?v=35'
   - '_static/css/mermaid-zoom.css?v=3'
