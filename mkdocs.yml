@@ -50,6 +50,14 @@ nav:
     - 开发流程与节奏: tech/dev-flow.md
     - AI-Native 研发流程: tech/ai-native-sdlc.md
     - 系统架构基础: tech/architecture.md
+    - 工程架构术语:
+      - 工程架构术语总览: tech/architecture-terminology.md
+      - 前端渲染技术与黑话: tech/frontend-rendering.md
+      - 后端与服务端术语: tech/backend-services.md
+      - 数据库与数据存储术语: tech/databases.md
+      - 缓存技术与黑话: tech/caching.md
+      - 消息队列与异步系统: tech/message-queues.md
+      - 第三方服务与外部依赖: tech/third-party-services.md
   - 工商管理:
     - 工商管理简介: management/index.md
     - 管理基础与方法:
@@ -405,8 +413,6 @@ nav:
     - 求职实操:
       - 内推机制: job/referral.md
       - 简历与作品集: job/resume-portfolio.md
-      - 裁员与劳动权益: job/layoff-and-labor.md
-      - 绩效管理与考核: job/positions/performance-management.md
     - 常见岗位与JD:
       - 岗位与JD简介: job/positions/index.md
       - AI 产品经理: job/positions/ai-pm.md
@@ -432,6 +438,12 @@ nav:
       - 社招面经: job/interviews/social-interviews.md
       - 面试复盘方法论: job/interviews/review-methodology.md
       - 谈薪与 Offer 选择: job/interviews/offer-negotiation.md
+    - 入职之后:
+      - 入职之后简介: job/after-entry/index.md
+      - 绩效管理与考核: job/positions/performance-management.md
+      - 晋升与职业发展: job/after-entry/promotion.md
+      - 转行与职业转换: job/after-entry/career-transition.md
+      - 裁员与劳动权益: job/layoff-and-labor.md
     - 真实感悟:
       - 真实感悟简介: job/insights/index.md
       - 入行感悟: job/insights/newcomers.md

@@ -42,6 +42,7 @@ flowchart LR
 
 - [开发流程与节奏](dev-flow.md)：端到端六环节、敏捷与瀑布差异、灰度发布与回滚
 - [系统架构基础](architecture.md)：系统组件职责、分层与架构取舍
+- [工程架构术语](architecture-terminology.md)：按请求链路拆解前端、后端、数据库、缓存、消息队列与第三方服务；组件术语与产品决策详见类目内文章
 - [AI-Native 研发流程](ai-native-sdlc.md)：AI 参与后的开发、评测与部署新范式
 
 ### 与全站相关页

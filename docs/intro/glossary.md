@@ -170,6 +170,19 @@ description: 产品经理黑话速查：覆盖大厂沟通、需求文档、数�
 | DRI | Directly Responsible Individual，直接负责人；为事项指定主要决策和推进人，协作方仍需参与 |
 | P0/P1/P2/P3 | 事故严重度分级，具体定义因团队而异，通常 P0 最高；每级应对应影响范围、响应时限、责任人和升级路径 |
 
+工程架构中的后端、数据库、缓存、消息队列和第三方服务术语，详见 [工程架构术语](../tech/architecture-terminology.md) 类目。
+
+#### 前端与渲染
+
+| 黑话 | 含义 |
+| --- | --- |
+| SSG | Static Site Generation，静态站点生成；在构建时预先生成 HTML，适合文档、博客和内容更新不频繁的页面，通常由 CDN 分发 |
+| SSR | Server-Side Rendering，服务端渲染；在请求时由服务端根据 URL、身份和数据生成 HTML，适合需要 SEO、个性化或较新数据的页面 |
+| CSR | Client-Side Rendering，客户端渲染；浏览器加载 JavaScript、请求数据后生成主要页面内容，常用于后台、编辑器和复杂工作台 |
+| SPA | Single-Page Application，单页应用；首次加载一个页面文档，后续路由切换由 JavaScript 完成，不等同于某一种渲染方式 |
+| ISR | Incremental Static Regeneration，增量静态再生成；保留静态页面分发效率，并按时间、请求或事件重新生成部分页面 |
+| Hydration（水合） | 浏览器为服务端或构建时生成的 HTML 绑定事件和状态，使静态内容变成可交互页面 |
+
 #### 算力与推理
 
 | 黑话 | 含义 |

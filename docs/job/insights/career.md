@@ -84,3 +84,5 @@ flowchart TD
 -   [踩坑教训](lessons.md)
 -   [心态感悟](mindset.md)
 -   [AI 产品经理能力模型](../../intro/capability.md)
+-   [晋升与职业发展指南](../after-entry/promotion.md)：把成果整理为目标职级可评审的证据
+-   [转行与职业转换](../after-entry/career-transition.md)：在已有经验基础上验证新的岗位或行业方向

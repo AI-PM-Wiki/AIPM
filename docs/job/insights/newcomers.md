@@ -79,3 +79,4 @@ flowchart TD
 -   [面试](../interviews/index.md)
 -   [自学路线](../../intro/self-study-roadmap.md)
 -   [AI 产品经理能力模型](../../intro/capability.md)
+-   [转行与职业转换](../after-entry/career-transition.md)：针对已有工作经历的在职转岗、转行业与桥接计划
