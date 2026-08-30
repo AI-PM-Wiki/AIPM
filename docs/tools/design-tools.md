@@ -9,6 +9,21 @@ description: 原型与设计工具链选型：白板、原型、视觉设计、�
 
 分工约定：**方法论见[原型与设计交付](../pm/design-prototyping.md)，本页讲工具本身**：那页回答「原型为什么做、保真度怎么定、怎么测试、怎么交接」，本页回答「每个工具能干什么、什么时候选它、什么时候别选它」；设计系统的概念与治理见[设计系统与规范](../pm/design-systems.md)。
 
+```mermaid
+flowchart LR
+    whiteboard[白板与流程图] --> prototype[线框与原型]
+    prototype --> visual[视觉设计]
+    visual --> handoff[设计交付]
+    handoff --> dev[开发实现]
+    system[组件与 token] --> prototype
+    system --> visual
+    system --> handoff
+    ai[AI 起稿] -.-> prototype
+    ai -.-> visual
+```
+
+设计工具的主链是从结构到实现，设计系统贯穿各环节，AI 生成主要加速起稿而不替代交付验收。
+
 ???+ note "时效说明"
     工具功能演进快，本页所有能力与价格描述均**以官方页面为准**（引用日期 2026-08-24）；价格、席位费、免费额度等没有把握的数字，一律不写精确值。
 
@@ -197,6 +212,18 @@ PM 使用频率最高的一类工具：它们产出的是「结构」：流程�
 
 AI 生成 UI 的工具在快速成熟，按形态分三类：**文生界面**（v0、Uizard、Galileo AI）、**设计工具内置 AI**（Figma AI、Framer AI、即时 AI）、**站点级生成**（Relume）。方法论层面的能力边界见[原型与设计交付](../pm/design-prototyping.md#ai-时代原型的特殊性)与[设计系统与规范](../pm/design-systems.md#ai-时代的设计系统)，这里给工具目录。
 
+```mermaid
+flowchart TD
+    brief[需求或草图] --> generate[AI 生成初稿]
+    generate --> states[补全加载、空、错与权限状态]
+    states --> align[对齐组件库与 token]
+    align --> review[人工审查与改稿]
+    review --> handoff[进入设计交付]
+    review -->|不合格| states
+```
+
+AI 设计工具的可用路径不是「生成即交付」，而是生成、补状态、对齐设计系统并经过人工审查后再交接。
+
 | 工具 | 形态 | 干什么 |
 | --- | --- | --- |
 | v0（Vercel） | 文生界面 | 一句话生成 UI 组件代码（React + Tailwind），支持组件库（以官方为准） |
@@ -250,6 +277,17 @@ AI 生成工具的幻觉不是「偶尔出错」，而是**系统性倾向**，�
 ## 选型建议（PM 视角）
 
 工具选型没有标准答案，但可以用四个维度快速收敛：
+
+```mermaid
+flowchart TD
+    goal[本轮验证目标] --> team[团队与协作半径]
+    team --> chain[设计、交付与代码链路]
+    chain --> exit[数据出口与锁定成本]
+    exit --> trial[免费版或试用验证]
+    trial --> choose[确定工具组合]
+```
+
+设计工具应按验证目标和上下游链路组合选择，试用确认可迁移后再投入长期资产。
 
 | 维度 | 要问的问题 | 影响 |
 | --- | --- | --- |
