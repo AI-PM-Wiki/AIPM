@@ -49,6 +49,32 @@ nav:
     - 开发流程与节奏: tech/dev-flow.md
     - AI-Native 研发流程: tech/ai-native-sdlc.md
     - 系统架构基础: tech/architecture.md
+  - 工商管理:
+    - 工商管理简介: management/index.md
+    - 管理基础与方法:
+      - 管理研究方法: management/01-management-research/index.md
+      - 管理统计: management/02-management-statistics/index.md
+      - 管理决策: management/03-management-decision/index.md
+    - 组织与沟通:
+      - 组织行为学: management/04-organizational-behavior/index.md
+      - 管理沟通: management/05-management-communication/index.md
+    - 市场与消费者:
+      - 市场营销学: management/06-marketing/index.md
+      - 消费者行为: management/07-consumer-behavior/index.md
+      - 消费者信息处理与决策: management/08-consumer-information-decision/index.md
+      - 消费者神经科学: management/09-consumer-neuroscience/index.md
+    - 战略、创新与创业:
+      - 战略管理: management/10-strategy/index.md
+      - 创新管理: management/11-innovation/index.md
+      - 商业模式设计与创新: management/12-business-model/index.md
+      - 创业管理: management/13-entrepreneurship/index.md
+    - 设计、项目与运营:
+      - 设计思维: management/14-design-thinking/index.md
+      - 项目管理: management/15-project-management/index.md
+      - 应用运筹学Ⅰ: management/16-operations-research/index.md
+      - IT 工程伦理和项目管理: management/17-engineering-ethics/index.md
+    - 财务管理:
+      - 财务管理: management/18-financial-management/index.md
   - 商业与财会:
     - 商业与财会简介: business/index.md
     - 金融学:
