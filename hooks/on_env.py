@@ -538,26 +538,6 @@ def _inject_jsonld(config):
             f.write(content)
 
 
-def _strip_mathjax(config):
-    """无公式页移除两个 mathjax script(性能减法);含 `class="arithmatex"` 的页保留。"""
-    site_dir = config["site_dir"]
-    mathjax_re = re.compile(r'<script\b[^>]*src="[^"]*mathjax\.js[^"]*"[^>]*>\s*</script>')
-    chtml_re = re.compile(r'<script\b[^>]*src="[^"]*tex-chtml\.js[^"]*"[^>]*>\s*</script>')
-    for page, file in _iter_built_pages(config):
-        html_path = os.path.join(site_dir, file.dest_path)
-        if not os.path.exists(html_path):
-            continue
-        with open(html_path, encoding="utf-8") as f:
-            content = f.read()
-        if 'class="arithmatex"' in content:
-            continue
-        new_content = mathjax_re.sub("", content)
-        new_content = chtml_re.sub("", new_content)
-        if new_content != content:
-            with open(html_path, "w", encoding="utf-8") as f:
-                f.write(new_content)
-
-
 def on_post_build(config, **kwargs):
     # 内置 search 插件把整页文本抹成一行(无 HTML 标签),Material 搜索 worker
     # 的摘要机制按块级标签切块,于是整页=一块,命中词所在"块"=全文。
@@ -595,8 +575,7 @@ def on_post_build(config, **kwargs):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(index, f, ensure_ascii=False)
 
-    # 2) Agent 可发现性 + 性能减法(RSS/sitemap 由插件 on_post_build 完成)
+    # 2) Agent 可发现性(RSS/sitemap 由插件 on_post_build 完成)
     _generate_llms_txt(config)
     _mirror_markdown(config)
     _inject_jsonld(config)
-    _strip_mathjax(config)

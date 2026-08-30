@@ -13,12 +13,25 @@ window.MathJax = {
   }
 };
 
-document$.subscribe(function () {
-  if (!window.MathJax || !MathJax.startup || !MathJax.typesetPromise) {
+function typesetMathJax() {
+  if (!window.MathJax || !MathJax.startup || !MathJax.startup.promise) {
     return;
   }
-  MathJax.startup.output.clearCache();
-  MathJax.typesetClear();
-  MathJax.texReset();
-  MathJax.typesetPromise();
-});
+  MathJax.startup.promise
+    .then(function () {
+      if (!MathJax.typesetPromise) {
+        return;
+      }
+      MathJax.startup.output.clearCache();
+      MathJax.typesetClear();
+      MathJax.texReset();
+      return MathJax.typesetPromise();
+    })
+    .catch(function (error) {
+      console.error("MathJax typesetting failed", error);
+    });
+}
+
+if (typeof document$ !== "undefined") {
+  document$.subscribe(typesetMathJax);
+}
