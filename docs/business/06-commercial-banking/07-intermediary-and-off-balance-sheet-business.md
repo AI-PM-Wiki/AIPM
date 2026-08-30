@@ -52,7 +52,23 @@ description: 中间业务的涵义、发展原因、分类与特征，租赁、�
 
 ## 表外业务
 
-**表外业务（off-balance-sheet business，OBS）**：商业银行从事的、按现行会计准则不计入资产负债表内、不形成现实资产负债、但有可能引起损益变动的业务，又称或然承诺、或然负债、或然合约。
+表外业务（off-balance-sheet business，OBS）：商业银行从事的、按现行会计准则不计入资产负债表内、不形成现实资产负债、但有可能引起损益变动的业务，又称或然承诺、或然负债、或然合约。
+
+```mermaid
+flowchart LR
+    bank[商业银行表外业务]
+    bank --> commitment[承诺类]
+    bank --> guarantee[担保类]
+    bank --> sale[贷款出售与资产证券化]
+    bank --> derivative[金融衍生工具]
+    commitment --> contingent[或有资产负债与风险]
+    guarantee --> contingent
+    sale --> contingent
+    derivative --> contingent
+```
+
+表外业务不立即形成表内资产负债，但承诺、担保和衍生品在事件触发时可能转化为真实风险敞口。
+
 
 ### 四大类别
 

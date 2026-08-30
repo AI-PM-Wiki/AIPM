@@ -60,6 +60,18 @@ $$TRS(x_1,x_2)=\frac{\Delta x_2}{\Delta x_1}=-\frac{MP_1(x_1,x_2)}{MP_2(x_1,x_2)
 
 **成本最小化问题**：两种要素价格 $w_1$、$w_2$，既定产量 $y$：
 
+```mermaid
+flowchart LR
+    technology[生产技术 f(x1,x2)] --> output[既定产量 y]
+    factorprice[要素价格 w1、w2] --> cost[成本最小化]
+    output --> cost
+    cost --> inputs[最优要素组合]
+    inputs --> costfunction[成本函数]
+```
+
+厂商先在既定产量约束下选择最省成本的要素组合，再由要素价格和产量形成成本函数。
+
+
 $$\min_{x_1,x_2}\ w_1x_1+w_2x_2 \quad \text{s.t.}\ f(x_1,x_2)=y$$
 
 实现既定产量的最小成本记为成本函数 $c(w_1,w_2,y)$，是产量与要素价格的函数，与产品价格无关。成本函数中的 $x_1$、$x_2$ 必须已被解成 $(w_1,w_2,y)$ 的函数。

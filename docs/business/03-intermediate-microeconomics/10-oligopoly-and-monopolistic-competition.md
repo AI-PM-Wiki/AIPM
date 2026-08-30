@@ -20,6 +20,20 @@ description: 寡头与垄断竞争：垄断竞争与产品差异化、Stackelber
 
 **寡头**：少数厂商主导的市场结构。竞争变量可为价格或数量，行动时序可同时或先后（序贯博弈），组合出四种模型：产量领导（Stackelberg）、价格领导、同时决定产量（古诺）、同时决定价格（伯特兰）。
 
+```mermaid
+flowchart TD
+    oligopoly[寡头市场]
+    oligopoly --> quantity[竞争变量：数量]
+    oligopoly --> price[竞争变量：价格]
+    quantity --> leader[先后行动：Stackelberg]
+    quantity --> cournot[同时行动：古诺]
+    price --> priceleader[先后行动：价格领导]
+    price --> bertrand[同时行动：伯特兰]
+```
+
+寡头模型由竞争变量和行动时序共同决定，求解方式随市场参与者的战略互动而变化。
+
+
 **模型选择依据**：厂商率先进行生产能力投资，是产量领导者；厂商分发价目表、由大型主导企业定价，是价格领导者。做题时题目直接说明存在价格或产量领导者。
 
 ## 产量领导（Stackelberg）

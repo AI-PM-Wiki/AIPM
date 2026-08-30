@@ -64,6 +64,20 @@ $$\text{不良贷款率} = \frac{\text{次级类} + \text{可疑类} + \text{损
 
 贷款工作过程八步：推销贷款；接受贷款申请；信用等级评估；贷前调查；贷款审查与审批；签订担保合同与借款合同；发放贷款；贷后检查、贷款收回与展期。
 
+```mermaid
+flowchart LR
+    marketing[推销贷款] --> apply[接受申请]
+    apply --> rating[信用评级]
+    rating --> survey[贷前调查]
+    survey --> approve[审查审批]
+    approve --> contract[签订合同]
+    contract --> lend[发放贷款]
+    lend --> monitor[贷后检查与收回]
+```
+
+贷款流程把客户准入、风险评估、合同约束和贷后管理串成闭环，贷后检查决定风险能否及时暴露和处置。
+
+
 ## 贷款定价与 LPR
 
 ### 贷款价格的构成
