@@ -225,6 +225,12 @@
 /* ----------------------------------------------------------------------------
    5. Chrome 组件
    ---------------------------------------------------------------------------- */
+/* 5.0 即时导航进度条:Material 默认使用 --md-primary-bg-color;
+   本站在亮/暗模式将其映射为页面底色,改用品牌色保证对比度。 */
+.md-progress {
+  background: var(--pm-accent);
+}
+
 /* 5.1 顶栏:全站唯一玻璃(blur 8px,无边框、无渐变高光条) */
 .md-header {
   background-color: rgba(255, 255, 255, .7);
@@ -331,6 +337,30 @@
    搜索打开时页头提级到 5,盖住发丝线,避免线横穿搜索框/候选框 */
 [data-md-toggle="search"]:checked ~ .md-header {
   z-index: 5;
+}
+
+/* 移动端搜索是 fixed 容器,但它位于 sticky 页头内;用视口单位避免
+   height:100% 解析为页头的 48px,否则放大的白色 overlay 会盖住结果。
+   同时暂时隐藏 body 顶层的问答入口和面板,避免固定层级压住搜索结果。 */
+@media screen and (max-width: 59.984375em) {
+  [data-md-toggle="search"]:checked ~ .md-header {
+    z-index: 100;
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__inner {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-container .aipm-chat {
+    visibility: hidden !important;
+    pointer-events: none;
+  }
+
+  [data-md-toggle="search"]:checked ~ .aipm-chat__fab {
+    display: none;
+  }
 }
 
 .md-header .md-search__form {
@@ -637,6 +667,16 @@ html {
 
 [data-md-color-scheme="slate"] html {
   scrollbar-color: rgba(255, 255, 255, .35) transparent;
+}
+
+/* 侧栏滚动条默认不显示,悬停或键盘聚焦侧栏时再显示;
+   保留滚动区域尺寸,避免三列布局中的导航内容发生横向跳动。 */
+.md-sidebar__scrollwrap {
+  scrollbar-color: transparent transparent;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+  background-color: transparent;
 }
 
 /* ----------------------------------------------------------------------------

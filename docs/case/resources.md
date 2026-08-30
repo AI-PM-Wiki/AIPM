@@ -31,7 +31,8 @@ flowchart TD
 
 ## 产品与行业分析
 
--   **产品拆解**：各类 AI 产品拆解文章/播客
+-   **产品拆解**：各类 AI 产品拆解文章与播客
+-   **播客笔记**：围绕产品、行业和求职整理的[播客节目](podcasts/index.md)
 -   **行业报告**：权威机构的 AI 行业报告，如 IDC、Gartner、麦肯锡；注意发布机构立场
 -   **数据库**：AI 产品榜单与目录站，如 There's An AI For That、Futurepedia
 

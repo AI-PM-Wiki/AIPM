@@ -111,6 +111,10 @@
   width: auto;
   border-left: 0;
 }
+/* 移动端全屏面板不提供桌面端的加宽操作 */
+.aipm-chat:not(.aipm-chat--docked) .aipm-chat__expand {
+  display: none;
+}
 
 /* ----------------------------------------------------------------------------
    3. 头部(spark 图标 + 标题 + 图标按钮)
