@@ -6,6 +6,22 @@ description: AI 基础栏目总览：面向 AI 产品经理的技术通识课，
 
 本栏目是 AI 产品经理的技术通识课：不讲怎么训练模型，讲清楚 **AI 能做什么、不能做什么、怎么用**，帮助你在产品决策中理解技术边界、与工程师高效协作。内容按知识类分卷，每个知识类拆多篇：先有地基（机器学习/深度学习/Transformer），再到大模型（训练、推理、能力边界），再到各应用技术（多模态、提示词、RAG、Agent），最后是评估与系统架构。相邻栏目：[产品方法论](../pm/index.md) 回答「怎么判断、怎么设计」，[商业与财会](../business/index.md) 回答「金融与财务领域是怎么运转的」，本栏目回答「模型能做什么」。
 
+```mermaid
+flowchart LR
+    foundation["机器学习 / 深度学习 / Transformer"] --> llm["大模型：训练 / 推理 / 能力"]
+    llm --> multimodal["多模态"]
+    llm --> prompting["提示词工程"]
+    llm --> rag["RAG 与知识检索"]
+    llm --> agent["Agent 与工作流"]
+    multimodal --> evaluation["评估与评测"]
+    prompting --> evaluation
+    rag --> evaluation
+    agent --> evaluation
+    evaluation --> architecture["AI 系统架构"]
+```
+
+核心关系：学习路径从模型地基走向应用能力，最终由评测与系统架构把各条技术线串成可落地的产品闭环。
+
 ## 内容列表
 
 ### 机器学习与深度学习(地基)
