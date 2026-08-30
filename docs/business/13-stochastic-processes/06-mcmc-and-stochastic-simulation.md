@@ -4,6 +4,20 @@ description: 蒙特卡罗方法、Metropolis-Hastings 算法、Kolmogorov 环路
 
 ## MCMC 与随机模拟
 
+```mermaid
+flowchart TD
+    A["目标分布 π(x)"] --> B{"能否直接抽样"}
+    B -->|"能"| C["Monte Carlo 抽样"]
+    B -->|"不能"| D["构造提议分布 q"]
+    D --> E["Metropolis-Hastings 接受或拒绝"]
+    E --> F["形成马尔可夫链"]
+    F --> G["遍历后估计期望"]
+    C --> G
+    G --> H["破产概率、首达时与排队应用"]
+```
+
+> 核心关系：Monte Carlo 直接用样本平均计算期望，MCMC 则用收敛到目标分布的链解决难抽样问题。
+
 ## 蒙特卡罗方法
 
 ### 积分化期望
