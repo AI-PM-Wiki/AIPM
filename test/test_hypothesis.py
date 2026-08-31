@@ -1,4 +1,4 @@
-"""Assert the Hypothesis loader contract used by instant navigation."""
+"""Assert the always-on Hypothesis integration contract."""
 
 from __future__ import annotations
 
@@ -20,48 +20,30 @@ class TestHypothesisScripts(unittest.TestCase):
         cls.hypothesis = HYPOTHESIS.read_text(encoding="utf-8")
         cls.about = ABOUT.read_text(encoding="utf-8")
 
-    def test_config_loads_one_versioned_local_wrapper(self):
+    def test_config_loads_vendor_before_local_controller(self):
+        self.assertEqual(self.config.count("https://hypothes.is/embed.js"), 1)
         entries = re.findall(r"_static/js/hypothesis\.js\?v=\d+", self.config)
-        self.assertEqual(entries, ["_static/js/hypothesis.js?v=7"])
-
-    def test_config_does_not_load_vendor_script_directly(self):
-        self.assertNotIn("https://hypothes.is/embed.js", self.config)
-
-    def test_wrapper_keeps_one_client_and_restores_vendor_assets(self):
-        self.assertIn('var STATE_KEY = "__aipm_hypothesis_loader";', self.hypothesis)
-        self.assertIn("if (state) {\n    return;\n  }", self.hypothesis)
-        self.assertEqual(self.hypothesis.count("https://hypothes.is/embed.js"), 1)
-        self.assertIn("function hasVendorScript()", self.hypothesis)
-        self.assertIn("function rememberVendorAssets()", self.hypothesis)
-        self.assertIn("function restoreVendorAssets()", self.hypothesis)
-        self.assertIn("state.assetTemplates", self.hypothesis)
-        self.assertIn(
-            "document.head.appendChild(template.content.firstElementChild);",
-            self.hypothesis,
-        )
-        self.assertIn("document.body.appendChild(script);", self.hypothesis)
-        self.assertIn("state.observer = new MutationObserver", self.hypothesis)
-
-    def test_wrapper_handles_load_and_failure(self):
-        self.assertIn('state.status = "loaded";', self.hypothesis)
-        self.assertIn('state.status = "failed";', self.hypothesis)
-        self.assertIn("script.addEventListener(\n        \"load\"", self.hypothesis)
-        self.assertIn("script.addEventListener(\n        \"error\"", self.hypothesis)
-
-    def test_document_subscription_is_guarded(self):
-        self.assertRegex(
-            self.hypothesis,
-            r'if \(typeof document\$ !== "undefined"\) \{\s*'
-            r'document\$\.subscribe\(',
+        self.assertEqual(entries, ["_static/js/hypothesis.js?v=8"])
+        self.assertLess(
+            self.config.index("https://hypothes.is/embed.js"),
+            self.config.index("_static/js/hypothesis.js?v=8"),
         )
 
-    def test_wrapper_injects_scoped_sidebar_style(self):
-        self.assertIn('hypothesis-sidebar', self.hypothesis)
-        self.assertIn(".shadowRoot", self.hypothesis)
-        self.assertIn('[data-testid="sidebar-edge"]', self.hypothesis)
-        self.assertIn('data-aipm-hypothesis-style', self.hypothesis)
+    def test_controller_does_not_create_vendor_script(self):
+        self.assertNotIn("https://hypothes.is/embed.js", self.hypothesis)
+        self.assertNotIn('document.createElement("script")', self.hypothesis)
+        self.assertNotIn("loadHypothesis", self.hypothesis)
+        self.assertNotIn("restoreVendorAssets", self.hypothesis)
+
+    def test_controller_keeps_one_style_controller_and_sidebar_observer(self):
+        self.assertIn('var STATE_KEY = "__aipm_hypothesis_style";', self.hypothesis)
         self.assertIn("function installSidebarStyle()", self.hypothesis)
         self.assertIn("function scheduleSidebarStyle()", self.hypothesis)
+        self.assertIn("state.sidebarObserver = new MutationObserver", self.hypothesis)
+        self.assertIn("state.sidebarRootObserver = new MutationObserver", self.hypothesis)
+        self.assertIn('data-aipm-hypothesis-style', self.hypothesis)
+        self.assertIn(".shadowRoot", self.hypothesis)
+        self.assertIn('[data-testid="sidebar-edge"]', self.hypothesis)
         self.assertIn("background: transparent !important", self.hypothesis)
         self.assertIn("box-shadow: none !important", self.hypothesis)
         self.assertIn("border-color: transparent !important", self.hypothesis)
@@ -70,19 +52,20 @@ class TestHypothesisScripts(unittest.TestCase):
         style_start = self.hypothesis.index("var SIDEBAR_STYLE =")
         style_end = self.hypothesis.index("function installSidebarStyle", style_start)
         sidebar_style = self.hypothesis[style_start:style_end]
-        for forbidden in ("display: none", "width: 0", "visibility: hidden", "pointer-events: none"):
+        for forbidden in (
+            "display: none",
+            "width: 0",
+            "visibility: hidden",
+            "pointer-events: none",
+        ):
             self.assertNotIn(forbidden, sidebar_style)
 
-    def test_sidebar_style_is_scheduled_after_load_and_navigation(self):
+    def test_sidebar_style_is_initialized_and_resubscribed_for_navigation(self):
+        self.assertIn("observeSidebarDom();", self.hypothesis)
         self.assertIn("scheduleSidebarStyle();", self.hypothesis)
-        self.assertRegex(
-            self.hypothesis,
-            r'state\.status = "loaded";[\s\S]*?scheduleSidebarStyle\(\);',
-        )
-        self.assertRegex(
-            self.hypothesis,
-            r'document\$\.subscribe\([\s\S]*?scheduleSidebarStyle\(\);',
-        )
+        self.assertIn('if (!state.subscribed && typeof document$ !== "undefined")', self.hypothesis)
+        self.assertIn("document$.subscribe(function ()", self.hypothesis)
+        self.assertIn("state.subscribed = true;", self.hypothesis)
 
     def test_sidebar_toolbar_leaves_mobile_header_clear(self):
         style_start = self.hypothesis.index("var SIDEBAR_STYLE =")
