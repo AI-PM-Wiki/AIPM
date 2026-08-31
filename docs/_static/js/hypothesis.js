@@ -1,7 +1,7 @@
 /*
  * Hypothesis 侧栏样式控制器。
- * 官方客户端由 mkdocs.yml 直接常驻加载；本脚本只处理 open shadow root 内的视觉覆盖，
- * 并在 instant 导航后重新确认侧栏样式仍然存在。
+ * 官方客户端由 mkdocs.yml 直接常驻加载；本脚本保存其动态注入的样式资源，
+ * 在 instant 导航后恢复高亮样式，并处理 open shadow root 内的侧栏视觉覆盖。
  */
 (function () {
   "use strict";
@@ -29,6 +29,9 @@
 
   if (!state) {
     state = {
+      assetTemplates: [],
+      observer: null,
+      restoreScheduled: false,
       sidebarObserver: null,
       sidebarRoot: null,
       sidebarRootObserver: null,
@@ -36,6 +39,91 @@
       subscribed: false
     };
     window[STATE_KEY] = state;
+  } else {
+    // 更新脚本时保留旧页面中的共享状态，避免 instant 导航期间丢失监听器。
+    state.assetTemplates = state.assetTemplates || [];
+    state.observer = state.observer || null;
+    state.restoreScheduled = Boolean(state.restoreScheduled);
+  }
+
+  function rememberVendorAssets() {
+    var assets = Array.from(document.querySelectorAll("[data-hypothesis-asset]"))
+      .filter(function (node) {
+        return node.tagName !== "SCRIPT";
+      })
+      .map(function (node) {
+        return {
+          key: [node.tagName, node.type, node.rel, node.href, node.src].join("|"),
+          html: node.outerHTML
+        };
+      });
+    if (assets.length) {
+      state.assetTemplates = assets;
+    }
+  }
+
+  function restoreVendorAssets() {
+    if (!state.assetTemplates.length) {
+      return;
+    }
+
+    var existing = new Set(
+      Array.from(document.querySelectorAll("[data-hypothesis-asset]"))
+        .filter(function (node) {
+          return node.tagName !== "SCRIPT";
+        })
+        .map(function (node) {
+          return [node.tagName, node.type, node.rel, node.href, node.src].join(
+            "|"
+          );
+        })
+    );
+    state.assetTemplates.forEach(function (asset) {
+      if (existing.has(asset.key)) {
+        return;
+      }
+      var template = document.createElement("template");
+      template.innerHTML = asset.html;
+      document.head.appendChild(template.content.firstElementChild);
+      existing.add(asset.key);
+    });
+  }
+
+  function scheduleRestore() {
+    if (state.restoreScheduled) {
+      return;
+    }
+    state.restoreScheduled = true;
+    window.setTimeout(function () {
+      state.restoreScheduled = false;
+      restoreVendorAssets();
+      scheduleSidebarStyle();
+    }, 0);
+  }
+
+  function observeNavigationDom() {
+    if (
+      typeof MutationObserver === "undefined" ||
+      !document.head ||
+      state.observer
+    ) {
+      return;
+    }
+    state.observer = new MutationObserver(function (mutations) {
+      var removedAsset = mutations.some(function (mutation) {
+        return Array.from(mutation.removedNodes).some(function (node) {
+          return (
+            node.nodeType === 1 &&
+            (node.matches("[data-hypothesis-asset]") ||
+              node.querySelector("[data-hypothesis-asset]"))
+          );
+        });
+      });
+      if (removedAsset) {
+        scheduleRestore();
+      }
+    });
+    state.observer.observe(document.head, { childList: true, subtree: true });
   }
 
   function installSidebarStyle() {
@@ -131,13 +219,16 @@
     });
   }
 
+  rememberVendorAssets();
+  observeNavigationDom();
   observeSidebarDom();
   scheduleSidebarStyle();
 
   if (!state.subscribed && typeof document$ !== "undefined") {
     state.subscribed = true;
     document$.subscribe(function () {
-      // Material 完成页面替换后，重新确认官方侧栏样式仍已安装。
+      // Material 完成页面替换后，恢复被 head 更新移除的官方样式资源。
+      scheduleRestore();
       scheduleSidebarStyle();
     });
   }
