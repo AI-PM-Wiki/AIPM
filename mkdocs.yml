@@ -399,6 +399,10 @@ nav:
       - 人人都是产品经理 2.0: case/books/pm-2-0.md
       - 启示录（INSPIRED）: case/books/inspired.md
       - 精益创业（The Lean Startup）: case/books/lean-startup.md
+    - 播客:
+      - 播客笔记索引: case/podcasts/index.md
+      - 我不是真有面试天赋：手握 15 个 Offer 的求职面试复盘: case/podcasts/interview-methods-15-offers.md
+      - Anthropic 技术产品经理：为什么最优秀的产品领导者正在为 2028 年布局: case/podcasts/anthropic-pm-2028.md
     - 信息源索引: case/info-sources.md
   - 求职专题:
     - 求职专题简介: job/index.md
@@ -429,6 +433,10 @@ nav:
       - FDE（前沿部署工程师）: job/positions/fde.md
       - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
       - 行政岗位与 JD 解读: job/positions/administrative-roles.md
+    - JD 拆解:
+      - JD 拆解索引: job/jd-breakdowns/index.md
+      - 字节跳动开发者 AI 产品经理: job/jd-breakdowns/bytedance-developer-ai-pm.md
+      - MiniMax AI Agent 产品经理: job/jd-breakdowns/minimax-ai-agent-pm.md
     - 面经:
       - 面经简介: job/interviews/index.md
       - AI 产品经理面试指南: job/interviews/interview-guide.md
@@ -484,6 +492,7 @@ theme:
     - content.action.edit
     - navigation.tabs
     - navigation.instant
+    - navigation.instant.progress
     - content.code.copy
   font:
     text: 'Noto Sans'
@@ -512,7 +521,7 @@ extra:
   # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
   chat_agent:
     enabled: true
-    version: 10
+    version: 11
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   # 大陆站点勿用 Google Analytics(GA 在大陆不可直连),建议自建 umami。
   #   provider: umami
@@ -532,8 +541,12 @@ extra_javascript:
   - '_static/js/banner.js?v=10'
   - '_static/js/header-line.js?v=1'
   - '_static/js/umami.js?v=1'
+  - '_static/js/mermaid-zoom.js?v=3'
+  - 'https://hypothes.is/embed.js'
+  - '_static/js/hypothesis.js?v=8'
 extra_css:
-  - '_static/css/extra.css?v=33'
+  - '_static/css/extra.css?v=35'
+  - '_static/css/mermaid-zoom.css?v=3'
 
 # Extensions
 markdown_extensions:

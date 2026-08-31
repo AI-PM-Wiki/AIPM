@@ -35,6 +35,10 @@ flowchart LR
 
 [常见岗位与 JD](positions/index.md)：AI 产品经理、大模型应用工程师与 Agent 工程师、算法工程师、提示词工程师等产品与技术岗，数据、评测与训练类岗位（含 AI 训练相关岗位），设计师、研发、测试、硬件、行政等协作岗，以及 AI Infra、FDE 与高管岗位，共 14 个岗位方向。
 
+### JD 拆解
+
+[JD 拆解](jd-breakdowns/index.md)：一篇文章拆一份真实 JD，逐条还原岗位职责、用户、技术协作、指标、面试信号和投递前需要确认的问题。先用岗位分类确定方向，再用具体案例判断某个团队的实际工作范围。
+
 ### 面经
 
 [面经](interviews/index.md)：校招与社招的真实面经、面试流程全览、复盘方法论与谈薪 Offer 选择。
@@ -53,12 +57,13 @@ flowchart LR
 
 1.  **看公司**：先读[常见大厂与架构](companies/index.md)，了解目标公司的 AI 组织形态与岗位分布，圈定目标清单
 2.  **选岗位**：对照[常见岗位与 JD](positions/index.md)，明确各岗位的职责边界，判断自己匹配哪个方向
-3.  **备面试**：读[面经](interviews/index.md)了解真实流程与常见问题，再配合[AI 产品经理面试](interviews/interview-guide.md)的答题框架做针对性练习
-4.  **查黑话**：面试用词必须准确，出口前查[产品经理黑话速查](../intro/glossary.md)
-5.  **做复盘**：每场面试后按[面试复盘方法论](interviews/review-methodology.md)系统复盘，避免在同一处跌倒两次
-6.  **做 Offer 决策**：结合[谈薪与 Offer 选择](interviews/offer-negotiation.md)核对书面条件，再决定是否入职
-7.  **入职后持续迭代**：先读[入职之后](after-entry/index.md)，按需查看绩效、晋升、转行和劳动权益内容
-8.  **定心态**：焦虑、纠结时读[真实感悟](insights/index.md)，看看过来人是怎么走过来的
+3.  **拆 JD**：从[JD 拆解](jd-breakdowns/index.md)中挑选具体案例，把岗位文字翻译成用户、任务、指标和面试准备问题
+4.  **备面试**：读[面经](interviews/index.md)了解真实流程与常见问题，再配合[AI 产品经理面试](interviews/interview-guide.md)的答题框架做针对性练习
+5.  **查黑话**：面试用词必须准确，出口前查[产品经理黑话速查](../intro/glossary.md)
+6.  **做复盘**：每场面试后按[面试复盘方法论](interviews/review-methodology.md)系统复盘，避免在同一处跌倒两次
+7.  **做 Offer 决策**：结合[谈薪与 Offer 选择](interviews/offer-negotiation.md)核对书面条件，再决定是否入职
+8.  **入职后持续迭代**：先读[入职之后](after-entry/index.md)，按需查看绩效、晋升、转行和劳动权益内容
+9.  **定心态**：焦虑、纠结时读[真实感悟](insights/index.md)，看看过来人是怎么走过来的
 
 ## 时效性声明
 
