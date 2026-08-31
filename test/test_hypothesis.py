@@ -23,17 +23,27 @@ class TestHypothesisScripts(unittest.TestCase):
     def test_config_loads_vendor_before_local_controller(self):
         self.assertEqual(self.config.count("https://hypothes.is/embed.js"), 1)
         entries = re.findall(r"_static/js/hypothesis\.js\?v=\d+", self.config)
-        self.assertEqual(entries, ["_static/js/hypothesis.js?v=8"])
+        self.assertEqual(entries, ["_static/js/hypothesis.js?v=9"])
         self.assertLess(
             self.config.index("https://hypothes.is/embed.js"),
-            self.config.index("_static/js/hypothesis.js?v=8"),
+            self.config.index("_static/js/hypothesis.js?v=9"),
         )
 
     def test_controller_does_not_create_vendor_script(self):
         self.assertNotIn("https://hypothes.is/embed.js", self.hypothesis)
         self.assertNotIn('document.createElement("script")', self.hypothesis)
         self.assertNotIn("loadHypothesis", self.hypothesis)
-        self.assertNotIn("restoreVendorAssets", self.hypothesis)
+
+    def test_controller_restores_vendor_styles_after_instant_navigation(self):
+        self.assertIn("function rememberVendorAssets()", self.hypothesis)
+        self.assertIn("function restoreVendorAssets()", self.hypothesis)
+        self.assertIn("state.observer = new MutationObserver", self.hypothesis)
+        self.assertIn('node.matches("[data-hypothesis-asset]")', self.hypothesis)
+        self.assertIn(
+            "document.head.appendChild(template.content.firstElementChild);",
+            self.hypothesis,
+        )
+        self.assertIn('return node.tagName !== "SCRIPT";', self.hypothesis)
 
     def test_controller_keeps_one_style_controller_and_sidebar_observer(self):
         self.assertIn('var STATE_KEY = "__aipm_hypothesis_style";', self.hypothesis)
