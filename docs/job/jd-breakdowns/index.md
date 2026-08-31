@@ -25,6 +25,7 @@ flowchart LR
 ## 案例列表
 
 -   [字节跳动开发者 AI 产品经理](bytedance-developer-ai-pm.md)：从一份 2025 校招 JD 出发，拆解 AI 编程产品的用户分层、IDE 形态、模型边界、评测与面试准备
+-   [MiniMax AI Agent 产品经理](minimax-ai-agent-pm.md)：从一份 Agent 产品 JD 出发，拆解用户场景、Agent 机制、效果评估、能力匹配与面试准备
 
 ## 一篇 JD 怎么拆
 
