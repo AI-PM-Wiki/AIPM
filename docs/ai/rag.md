@@ -134,6 +134,23 @@ flowchart TB
 -   **混合检索**：两路互补合并，通常好过任何单一路；再加 rerank 精排，是检索质量提升最大的单点改进之一（[LangChain 官方 reranker 文档](https://docs.langchain.com/oss/python/integrations/document_transformers/cross_encoder_reranker)）。
 -   机制与选型细节：见 [检索技术](rag-retrieval.md)。
 
+混合检索的在线链路可以画成两路召回、一路融合：
+
+```mermaid
+flowchart TB
+    question["用户问题"] --> embed["查询嵌入"]
+    question --> keywords["关键词提取"]
+    embed --> vector["向量检索"]
+    keywords --> bm25["BM25 / 倒排检索"]
+    vector --> fuse["候选融合与去重"]
+    bm25 --> fuse
+    fuse --> rerank["重排"]
+    rerank --> context["上下文组装"]
+    context --> llm["LLM 生成与引用"]
+```
+
+核心关系：向量检索覆盖语义改写，关键词检索守住精确术语，两路候选融合后再重排，才进入生成上下文。
+
 ### 检索质量自检清单
 
 每次改完检索相关配置，按清单快速自查：

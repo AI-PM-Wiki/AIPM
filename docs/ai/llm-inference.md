@@ -76,6 +76,21 @@ flowchart LR
 
 生成第 t 个 token 时，注意力机制需要让新 token 的 Query 与**所有历史 token** 的 Key/Value 做计算。历史 token 的 K/V 一旦算过就不会变：所以推理引擎把每层的 K/V 存下来（**KV Cache**），每步只算新 token 的 K/V 并追加，避免重复计算整个前缀。没有 KV Cache 的话，生成 1000 token 要重算约 50 万次前向，完全不可用。
 
+KV Cache 的读写可以拆成两条路径：历史 K/V 被读取，新 token 的 K/V 在本轮计算后追加回缓存。
+
+```mermaid
+flowchart LR
+    history["历史 token 的 K/V"] --> cache[("KV Cache")]
+    new["新 token"] --> project["计算 Q / K / V"]
+    cache --> attend["Q × 历史 K/V<br/>注意力计算"]
+    project --> attend
+    project --> append["追加新 K/V"]
+    append --> cache
+    attend --> output["当前 token 表示"]
+```
+
+核心关系：每一步复用历史 K/V，只计算当前位置并把新的 K/V 写回缓存，以显存换取解码速度。
+
 为什么只缓存 K/V 不缓存 Q？因为历史的 Q 只服务于它自己当时的查询；未来步骤需要的是"历史位置可以被匹配的 K"和"可以被取回的 V"，Q 用不上了。
 
 ### 显存估算
@@ -142,6 +157,22 @@ KV Cache 是**长上下文 × 大模型 × 高并发**的三重乘积：
 
 早期推理是**静态批处理**：一批请求等最慢的生成完才整体退出，短的被长的拖死。**连续批处理（Continuous Batching）**在 token 粒度上调度：谁生成完了谁退出，新请求随时补进来，GPU 空槽被填满。这是 vLLM 等生产引擎吞吐碾压早期方案的核心原因。批越大吞吐越高，但单个请求的排队延迟（TPOT）会变差：引擎要在吞吐与延迟之间设调度阈值（如限制最大 batch token 数）。
 
+连续批处理把调度单位从「整条请求」缩小到「下一个 token」：
+
+```mermaid
+flowchart TB
+    request1["请求 A"] --> scheduler["连续批处理调度器"]
+    request2["请求 B"] --> scheduler
+    scheduler --> batch["当前 token batch"]
+    batch --> gpu["GPU Decode"]
+    gpu --> done{ "请求完成？" }
+    done -->|否| scheduler
+    done -->|是| release["释放 KV Cache 页"]
+    new["新请求"] --> scheduler
+```
+
+核心关系：每轮只把仍在生成的请求放进 batch，完成的请求退出并释放缓存，新请求填入空槽，从而提高 GPU 利用率。
+
 ### PagedAttention
 
 **PagedAttention** 解决的是 KV Cache 的**显存管理**问题（不是把注意力算得更好）：借鉴操作系统虚拟内存，把 KV Cache 切成固定大小的页，每个请求按需分配、物理上不要求连续，生成完了释放。收益：消除按最大长度预留的浪费与外部碎片，支持请求动态增长，显著提高单卡可容纳的并发数。FlashAttention 优化算子 IO、PagedAttention 优化缓存管理，两者可同时使用。
@@ -189,6 +220,24 @@ LLM 的输入里通常有大量重复前缀：系统提示词、知识库片段�
 ### 专家混合（MoE）
 
 **MoE（Mixture of Experts，专家混合）** 把模型的 FFN 层替换成多个专家子网络，每次由路由网络（Router）为每个 token 挑选少量专家计算。代表：Mixtral 8x7B（总参数约 47B，每 token 激活约 13B）、Qwen3-MoE、DeepSeek V3。
+
+一个 token 经过 MoE 层时，不会激活全部专家，而是由 Router 选择 top-k 专家：
+
+```mermaid
+flowchart LR
+    token["输入 token"] --> router["Router<br/>计算路由分数"]
+    router --> expert1["专家 1"]
+    router --> expert2["专家 2"]
+    router --> expert3["专家 3"]
+    router -.只选 top-k.-> selected["选中的专家输出"]
+    expert1 --> selected
+    expert2 --> selected
+    expert3 --> selected
+    selected --> merge["按路由权重加权合并"]
+    merge --> output["MoE 层输出"]
+```
+
+核心关系：Router 决定每个 token 去哪些专家，只有少量专家参与计算，最后按路由权重合并；总参数决定存储规模，激活参数决定单 token 的计算量。
 
 ### 激活参数 vs 总参数
 
