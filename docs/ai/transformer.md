@@ -171,12 +171,43 @@ flowchart LR
 2. **交叉注意力**：**Q 来自解码器、K/V 来自编码器**：解码器生成每个词时，回头查编码器读懂的输入信息，这是 Encoder 与 Decoder 之间唯一的交互通道（机器翻译里：解码器生成译文时，每一步都要回头看原文）；
 3. **前馈网络**：同编码器。
 
+Encoder-Decoder 的信息流可以压缩成一张图：
+
+```mermaid
+flowchart LR
+    source["源序列"] --> encoder["Encoder stack<br/>双向自注意力"]
+    encoder --> memory[("编码表示")]
+    target["已生成目标 token"] --> decoder["Decoder stack<br/>掩码自注意力"]
+    decoder --> cross["交叉注意力<br/>Q × 编码表示 K/V"]
+    memory --> cross
+    cross --> output["输出 token"]
+```
+
+核心关系：Encoder 先把源序列编码成上下文表示，Decoder 只能看已生成内容，并通过交叉注意力按需读取源序列信息。
+
 ### 残差连接与层归一化
 
 每个子层外面都套着「**残差连接 + 层归一化**」：
 
 - **残差连接**：输出 = 子层输出 + 原始输入，给梯度一条直通路径，几十层的 Transformer 才能稳定训练（思想源自 ResNet，见 [深度学习基础](dl-basics.md)）；
 - **层归一化**：按每个样本的所有特征维度归一化，与 batch 无关、训练推理一致：序列长度多变、小 batch 训练的场景下比批归一化稳（两者对比见 [深度学习基础](dl-basics.md)）。
+
+以现代常见的 **Pre-LN Transformer Block** 为例，单层内部是两次子层计算与两次残差相加：
+
+```mermaid
+flowchart LR
+    input["输入表示 x"] --> norm1["LayerNorm"]
+    norm1 --> attention["多头自注意力"]
+    attention --> add1["残差相加<br/>x + Attention(x)"]
+    input --> add1
+    add1 --> norm2["LayerNorm"]
+    norm2 --> ffn["前馈网络 FFN<br/>GELU / SwiGLU"]
+    ffn --> add2["残差相加"]
+    add1 --> add2
+    add2 --> output["输出表示"]
+```
+
+核心关系：LayerNorm 稳定每个子层的输入，注意力负责 token 间信息交互，FFN 负责逐位置的非线性加工，残差把输入直接接到输出以稳定深层训练。
 
 ### 输入表示:嵌入、缩放与掩码
 
