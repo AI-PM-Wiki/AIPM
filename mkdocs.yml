@@ -403,6 +403,50 @@ nav:
       - 播客笔记索引: case/podcasts/index.md
       - 我不是真有面试天赋：手握 15 个 Offer 的求职面试复盘: case/podcasts/interview-methods-15-offers.md
       - Anthropic 技术产品经理：为什么最优秀的产品领导者正在为 2028 年布局: case/podcasts/anthropic-pm-2028.md
+    - 策略产品经理:
+      - 策略产品经理: case/strategy-pm/index.md
+      - 概念基础:
+        - 概念基础: case/strategy-pm/01-concepts/index.md
+        - 策略是什么: case/strategy-pm/01-concepts/01-what-is-strategy.md
+        - 策略四要素: case/strategy-pm/01-concepts/02-four-elements.md
+        - 策略如何诞生: case/strategy-pm/01-concepts/03-how-strategy-emerges.md
+        - 策略产品经理的工作循环: case/strategy-pm/01-concepts/04-workflow.md
+      - 发现问题:
+        - 发现问题: case/strategy-pm/02-discovering-problems/index.md
+        - 发现问题的四条途径: case/strategy-pm/02-discovering-problems/01-four-channels.md
+        - 用户反馈处理: case/strategy-pm/02-discovering-problems/02-user-feedback.md
+        - 效果监控与策略监控: case/strategy-pm/02-discovering-problems/03-monitoring.md
+        - 理想态: case/strategy-pm/02-discovering-problems/04-ideal-state.md
+        - 阶段性调研: case/strategy-pm/02-discovering-problems/05-periodic-research.md
+        - 抽样分析: case/strategy-pm/02-discovering-problems/06-sampling.md
+        - 优先级与项目计划: case/strategy-pm/02-discovering-problems/07-prioritization.md
+      - 需求与验证:
+        - 需求与验证: case/strategy-pm/03-spec-and-validation/index.md
+        - 简单策略需求文档: case/strategy-pm/03-spec-and-validation/01-simple-prd.md
+        - 复杂策略需求文档: case/strategy-pm/03-spec-and-validation/02-complex-prd.md
+        - 开发评估: case/strategy-pm/03-spec-and-validation/03-dev-evaluation.md
+        - Diff 评估: case/strategy-pm/03-spec-and-validation/04-diff-evaluation.md
+        - 效果回归: case/strategy-pm/03-spec-and-validation/05-effect-review.md
+        - 策略通用方法论: case/strategy-pm/03-spec-and-validation/06-methodology.md
+      - 应用总览:
+        - 应用总览: case/strategy-pm/04-application-map/index.md
+        - 四大业务方向: case/strategy-pm/04-application-map/01-four-directions.md
+      - 功能导向核心业务:
+        - 功能导向核心业务: case/strategy-pm/05-function-oriented/index.md
+        - 功能导向型策略框架: case/strategy-pm/05-function-oriented/01-framework.md
+        - 搜索策略: case/strategy-pm/05-function-oriented/02-search.md
+        - 推荐策略: case/strategy-pm/05-function-oriented/03-recommendation.md
+        - 目的地与路线策略: case/strategy-pm/05-function-oriented/04-destination-and-route.md
+      - 业务导向核心业务:
+        - 业务导向核心业务: case/strategy-pm/06-business-oriented/index.md
+        - 业务导向型策略框架: case/strategy-pm/06-business-oriented/01-framework.md
+        - 定价策略: case/strategy-pm/06-business-oriented/02-pricing.md
+        - 出行匹配策略: case/strategy-pm/06-business-oriented/03-ride-matching.md
+      - 增长、风控与数据:
+        - 增长、风控与数据: case/strategy-pm/07-growth-risk-data/index.md
+        - 增长策略: case/strategy-pm/07-growth-risk-data/01-growth.md
+        - 风控策略: case/strategy-pm/07-growth-risk-data/02-risk-control.md
+        - 数据策略: case/strategy-pm/07-growth-risk-data/03-data.md
     - 信息源索引: case/info-sources.md
   - 求职专题:
     - 求职专题简介: job/index.md
