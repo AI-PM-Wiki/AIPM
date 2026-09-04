@@ -1,10 +1,10 @@
 ---
-description: 前端渲染技术黑话：SSR、SSG、CSR、ISR 与 SPA 的生成时机、请求链路、首屏、SEO、数据时效和部署成本，帮助 AI 产品经理在内容站、后台与交互产品中做架构取舍
+description: 前端渲染技术黑话：SSR、SSG、CSR、ISR、RSC 与 SPA 的生成时机、组件执行位置、首屏、SEO 和数据时效，帮助 AI 产品经理在内容站、后台与交互产品中做架构取舍
 ---
 
 ## 前端渲染技术与黑话
 
-页面 HTML 在哪里生成、什么时候生成，决定首屏速度、SEO、数据新鲜度、服务器成本和交互启动方式。**SSG**、**SSR**、**CSR** 不是框架名称，同一站点可以按页面和组件混合使用。
+页面 HTML 在哪里生成、什么时候生成，决定首屏速度、SEO、数据新鲜度、服务器成本和交互启动方式。**SSG**、**SSR**、**CSR** 描述生成时机，同一站点可以按页面和组件混合使用。
 
 ### 先看 HTML 的生成时机
 
@@ -14,10 +14,9 @@ flowchart LR
     c -->|构建时| ssg[SSG<br>部署前生成]
     c -->|请求时| ssr[SSR<br>服务端生成]
     c -->|浏览器加载后| csr[CSR<br>客户端生成]
-    c -->|按需重新生成| isr[ISR<br>静态输出+重新验证]
 ```
 
-核心区别是：**SSG 在构建时生成，SSR 在请求时生成，CSR 由浏览器加载 JavaScript 后生成，ISR 在静态输出与重新生成之间折中**。
+核心区别是：**SSG 在构建时生成，SSR 在请求时生成，CSR 由浏览器加载 JavaScript 后生成**。ISR 是 Next.js 对静态页按规则重新生成的叫法，归在 SSG 的增量更新里。
 
 ### 术语速查
 
@@ -27,8 +26,10 @@ flowchart LR
 | **SSR** | Server-Side Rendering，服务端渲染 | 每次请求时，或由服务端缓存后返回 | 服务端根据请求和数据生成 HTML；适合需要 SEO、个性化或较新数据的页面，但需要服务端或边缘运行时 |
 | **CSR** | Client-Side Rendering，客户端渲染 | 浏览器加载 JavaScript 后 | 先返回 HTML 外壳，再由浏览器请求数据并生成页面；交互复杂，服务端部署简单，但首屏与 SEO 依赖优化 |
 | **SPA** | Single-Page Application，单页应用 | 通常采用 CSR，也可以对首屏使用 SSR 或 SSG | 首次加载一个页面文档，后续路由切换由 JavaScript 完成；它描述应用形态，不等同于某一种渲染方式 |
-| **ISR** | Incremental Static Regeneration，增量静态再生成 | 首次静态生成，之后按时间、请求或事件重新生成 | 保留静态页面的分发效率，同时更新部分内容；失效规则、重新生成时机和短暂旧数据需要明确 |
-| **Hydration** | 水合 | 浏览器加载 HTML 后 | JavaScript 为服务端或构建时生成的 HTML 绑定事件和状态，使静态内容变成可交互页面 |
+| **ISR** | Incremental Static Regeneration，增量静态再生成（Next.js 用语） | 首次静态生成，之后按时间、请求或事件重新生成 | 保留静态分发效率并更新部分内容；失效规则、短暂旧数据和重新生成失败路径要写清 |
+| **RSC** | React Server Components，服务端组件 | 与 HTML 生成时机正交 | 组件代码在服务端执行、默认不打进浏览器包；SSR/SSG 仍要单独问 HTML 何时生成 |
+| **PPR** | Partial Prerendering，部分预渲染 | 构建时静态外壳 + 请求时流式补动态区块 | 同一路由里静态与动态并存；Next.js Cache Components 默认走这条路径 |
+| **Hydration** | 水合 | 浏览器拿到 HTML 之后 | JavaScript 为已有 HTML 绑定事件和状态，使页面可交互 |
 | **预渲染** | Pre-rendering | 构建时或请求时 | 统称在浏览器执行前准备好 HTML 的做法，通常包含 SSG 与 SSR |
 
 ### 三种渲染的请求链路
@@ -89,15 +90,16 @@ CSR 先返回一个页面外壳，浏览器下载 JavaScript、请求数据，�
 | 交互启动 | 常需要 Hydration | 常需要 Hydration | JavaScript 就绪后开始 |
 | 常见场景 | 文档、博客、官网 | 个性化页面、动态内容 | 后台、编辑器、复杂工作台 |
 
-这张表只能用于初筛。真实项目常采用混合方案：官网和文档使用 SSG，商品或内容详情页使用 SSG/ISR，个性化模块使用 SSR，复杂交互区域使用 CSR。
+真实项目常采用混合方案：官网和文档使用 SSG，商品或内容详情页使用 SSG 或按规则重新生成，个性化模块使用 SSR，复杂交互区域使用 CSR。React 应用还要另问：哪些组件在服务端执行（RSC），哪些必须在浏览器执行。
 
-### SPA 与三种渲染方式的关系
+### SPA、RSC 与三种渲染方式的关系
 
-**SPA** 描述路由和页面切换方式：用户首次加载一个文档，后续导航通常由 JavaScript 接管。**CSR** 描述页面内容主要在哪里生成，两者经常同时出现，但不是同一个概念。
+**SPA** 描述路由和页面切换方式：用户首次加载一个文档，后续导航通常由 JavaScript 接管。**CSR** 描述页面内容主要在哪里生成。**RSC** 描述组件代码在哪运行、是否下发到浏览器。三者经常同时出现，评审时要分开问。
 
 - SPA + CSR：常见于后台和工作台，首次返回应用外壳，路由与内容都在浏览器中处理。
 - SPA + SSR：首次请求由服务端输出内容，Hydration 后继续由客户端接管导航和交互。
 - SPA + SSG：构建时生成首屏或路由页面，浏览器加载后继续执行客户端路由。
+- RSC + 静态外壳：服务端组件在构建或请求时出 HTML / RSC 载荷，客户端组件负责交互；可与 SSG、SSR 或部分预渲染组合。
 - 多页应用 + SSR/SSG：每次导航获取新的 HTML，不属于 SPA，但仍可以使用 SSR 或 SSG。
 
 ### 产品经理要问的五个问题
@@ -116,9 +118,10 @@ CSR 先返回一个页面外壳，浏览器下载 JavaScript、请求数据，�
 | 这是静态站 | 页面 HTML 是否 SSG？动态数据是否仍通过 API 获取？ |
 | CSR 对 SEO 不友好 | 哪些页面需要 SEO？是否可以对这些路由使用 SSG、SSR 或预渲染？ |
 | SSR 首屏一定快 | 服务端响应、数据查询、缓存命中和 Hydration 各自耗时多少？ |
-| 上 ISR 就能实时更新 | 失效触发条件是什么？允许用户看到多久的旧数据？重新生成失败怎么处理？ |
+| 上 ISR 就能实时更新 | 失效触发条件是什么？允许用户看到多久的旧数据？重新生成失败怎么处理？ISR 只是 Next.js 的叫法，其他框架对应什么机制？ |
 | 做成 SPA 以后体验更好 | 用户是否接受首屏脚本加载？路由切换、浏览器后退、分享链接和无障碍怎么保证？ |
 | 前端发版很快 | 静态资源、服务端代码、API 和缓存分别如何发布与回滚？ |
+| 我们用了 RSC | 哪些组件在服务端执行？哪些必须下发到浏览器？首屏 HTML 仍然是 SSG、SSR 还是部分预渲染？ |
 
 ### 给产品经理的架构速记
 
@@ -132,13 +135,14 @@ CSR 先返回一个页面外壳，浏览器下载 JavaScript、请求数据，�
 - [工程架构术语](architecture-terminology.md)：工程组件术语类总览与阅读顺序
 - [系统架构基础](architecture.md)：前端接入网关、服务端和数据层的整体请求链路
 - [后端与服务端术语](backend-services.md)：前端请求对应的接口、会话和服务端处理
+- [身份认证与权限](identity-access.md)：个性化页面依赖的登录态与权限
 
 ### 来源说明
 
-本文为前端工程通识整理，概念与框架实现以官方文档为准（访问日期 2026-08-30）：
+本文为前端工程通识整理，概念与框架实现以官方文档为准（访问日期 2026-09-04）：
 
 - [MDN：Server-side rendering](https://developer.mozilla.org/en-US/docs/Glossary/SSR)
 - [MDN：Client-side rendering](https://developer.mozilla.org/en-US/docs/Glossary/CSR)
 - [web.dev：Rendering on the Web](https://web.dev/articles/rendering-on-the-web)
-- [Next.js：Rendering](https://nextjs.org/docs/app/building-your-application/rendering)
+- [Next.js：The Server and Client Boundary](https://nextjs.org/docs/app/guides/server-and-client-boundary)
 - [React：hydrateRoot](https://react.dev/reference/react-dom/client/hydrateRoot)

@@ -146,12 +146,16 @@ Webhook 设计不能只看供应商文档中的「通知成功」：
 - [系统架构基础](architecture.md)：第三方服务在整体请求链路中的位置与集成风险
 - [后端与服务端术语](backend-services.md)：服务端的超时、重试、熔断和降级
 - [消息队列与异步系统](message-queues.md)：异步调用、重试、死信和补偿任务
+- [身份认证与权限](identity-access.md)：OAuth、凭据与授权范围
+- [LLM API 与供应商](../tools/llm-api.md)：模型 API 选型、限流与供应商风险
+- [LLM 成本测算](../tools/llm-cost.md)：调用成本、配额与预算
 - [内容安全](../practice/content-safety.md)：AI 产品接入内容安全能力时的治理边界
 
 ### 来源说明
 
-本文为外部服务集成通识整理，具体协议、合同和数据处理条款以供应商官方文档与合同为准（访问日期 2026-08-30）：
+本文为外部服务集成通识整理，具体协议、合同和数据处理条款以供应商官方文档与合同为准（访问日期 2026-09-04）：
 
-- [MDN：HTTP overview](https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview)
+- [Stripe：Webhooks](https://docs.stripe.com/webhooks)
 - [OpenAPI Specification](https://spec.openapis.org/oas/latest.html)
 - [RFC 9110：HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110)
+- [MDN：HTTP overview](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview)

@@ -85,13 +85,40 @@
        深/浅同值时读 html 也碰巧正确,两套调性分家后必须读 body */
     const T = {};
     const TOKENS = ["line", "major", "grid", "ink", "faint", "accent", "glyph"];
+    /* CSS 尚未应用时不能让空值落成黑色不透明,否则首屏会出现黑底黑字。
+       默认值与 extra.css 的两套 token 同步;样式加载后仍会重新读取实际值。 */
+    const TOKEN_DEFAULTS = {
+      default: {
+        line: "rgba(37, 99, 235, .30)",
+        major: "rgba(8, 145, 178, .55)",
+        grid: "rgba(30, 64, 175, .06)",
+        glyph: "rgba(59, 130, 246, .08)",
+        ink: "rgba(15, 27, 45, .88)",
+        faint: "rgba(15, 27, 45, .88)",
+        accent: "rgba(14, 116, 144, .45)",
+      },
+      slate: {
+        line: "rgba(34, 211, 238, .22)",
+        major: "rgba(165, 243, 252, .6)",
+        grid: "rgba(148, 196, 255, .05)",
+        glyph: "rgba(34, 211, 238, .07)",
+        ink: "rgba(230, 240, 250, .88)",
+        faint: "rgba(126, 156, 192, .6)",
+        accent: "rgba(165, 243, 252, .95)",
+      },
+    };
     const readTokens = () => {
       const s = getComputedStyle(document.body);
-      for (const k of TOKENS) T[k] = parseColor(s.getPropertyValue(`--pm-banner-${k}`).trim());
+      const scheme = document.body.getAttribute("data-md-color-scheme") === "slate"
+        ? "slate" : "default";
+      for (const k of TOKENS) {
+        const value = s.getPropertyValue(`--pm-banner-${k}`).trim();
+        T[k] = parseColor(value) || parseColor(TOKEN_DEFAULTS[scheme][k]);
+      }
     };
     /* "#rrggbb" | "rgb()" | "rgba()" → {r,g,b,a} (0-1) */
     const parseColor = (str) => {
-      if (!str) return { r: 0, g: 0, b: 0, a: 1 };
+      if (!str) return null;
       if (str[0] === "#") {
         const h = str.slice(1);
         const n = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
@@ -99,6 +126,7 @@
         return { r: ((v >> 16) & 255) / 255, g: ((v >> 8) & 255) / 255, b: (v & 255) / 255, a: 1 };
       }
       const m = str.match(/[\d.]+/g) || [];
+      if (m.length < 3) return null;
       return {
         r: (+m[0] || 0) / 255, g: (+m[1] || 0) / 255, b: (+m[2] || 0) / 255,
         a: m.length > 3 ? +m[3] : 1,
@@ -523,6 +551,16 @@ void main(){
       drawFallback();
     }
 
+    /* 首帧可能早于异步样式表完成:下一帧和 window.load 各重读一次 token,
+       让 fallback/首个 WebGL 帧不会把临时空值固化成错误颜色。 */
+    const settleTheme = () => {
+      if (disposed) return;
+      readTokens();
+      render();
+    };
+    requestAnimationFrame(settleTheme);
+    window.addEventListener("load", settleTheme, { once: true });
+
     /* 卸载(instant 导航换 DOM 时由顶层同步器调用):停转、断观察、放 GL */
     const dispose = () => {
       disposed = true;
@@ -536,6 +574,7 @@ void main(){
       window.removeEventListener("scroll", refreshRect);
       glCanvas.removeEventListener("webglcontextlost", onContextLost);
       glCanvas.removeEventListener("webglcontextrestored", onContextRestored);
+      window.removeEventListener("load", settleTheme);
       if (gl) {
         const lose = gl.getExtension("WEBGL_lose_context");
         if (lose) lose.loseContext();

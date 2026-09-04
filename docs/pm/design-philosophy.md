@@ -1,5 +1,5 @@
 ---
-description: 设计哲学与设计思维谱系：设计思维、以用户为中心、认知心理学、情感化与设计伦理
+description: 设计哲学与设计思维：梳理设计思维、以用户为中心、Norman 认知心理学、情感化设计与设计伦理，并说明每个框架在 AI 产品里的适用边界。
 ---
 
 ## 设计哲学与设计思维
@@ -219,15 +219,17 @@ Rams 与 Apple 的关系常被讨论：Jonathan Ive 公开承认 Rams 的影响�
 
 ### Kano 模型与设计优先级
 
-1984 年狩野纪昭（Noriaki Kano）提出 Kano 模型，把用户对功能的态度分为三类：
+1984 年狩野纪昭（Noriaki Kano）提出 Kano 模型，把用户对功能的态度分为五类。产品决策最常用前三类，后两类用来排除「不该做」的功能：
 
 | 类型 | 用户感知 | 设计策略 |
 | --- | --- | --- |
 | 基本型（Must-be） | 没有会不满，有了觉得理所应当 | 必须做，但不构成卖点；缺了是事故 |
 | 期望型（One-dimensional） | 越多越好，满意度线性上升 | 重点投入，是与竞品比较的分战场 |
 | 兴奋型（Attractive） | 没有不介意，有了惊喜 | 差异化来源，但会随时间降级为期望型甚至基本型 |
+| 无差异型（Indifferent） | 有无都不影响满意度 | 不做，或仅作实验，避免占用研发 |
+| 反向型（Reverse） | 有了反而不满 | 不要做成默认；做成可关闭选项，或对敏感人群关闭 |
 
-Kano 对设计决策的用法：**先保证基本型（痛点清零），再提升期望型（效率与质量），最后用兴奋型制造记忆点**。两个陷阱：兴奋型会「审美疲劳」：去年让人惊喜的功能今年成为默认预期（如 AI 摘要）；Kano 分类随用户群体变化：对新手是兴奋型的功能，对专家可能是基本型。评测方法：Kano 问卷用「具备 / 不具备」双问题配对测量态度，可与 [用户研究](user-research.md) 的问卷方法结合。
+Kano 对设计决策的用法：**先保证基本型（痛点清零），再提升期望型（效率与质量），最后用兴奋型制造记忆点**。两个陷阱：兴奋型会随时间降级；分类随用户群体变化。AI 产品里「自动执行」对专家可能是期望型，对风险敏感用户可能是反向型。评测方法：Kano 问卷用「具备 / 不具备」双问题配对测量态度，可与 [用户研究](user-research.md) 的问卷方法、[需求分析](requirements.md) 的优先级模型结合。
 
 ## 情感化设计
 
@@ -329,7 +331,7 @@ VSD 的关键贡献：把价值当作**需求分析的输入**，而不是设计
 | 出错时 | 7. 支持高效唤起；8. 支持高效解除；9. 支持高效纠正；10. 不确定时收窄服务范围；11. 说明系统为何如此行为；12. 记住近期交互；13. 从用户行为学习；14. 审慎地更新与适配；15. 鼓励细粒度反馈；16. 保持用户控制 |
 | 长期 | 17. 帮助用户理解系统能力与局限随时间的变化；18. 提供全局性反馈 |
 
-这 18 条与总览页的 AI 专章（自主性阶梯、失败分级、透明度）高度同构，是评审 AI 交互时的官方基准。设计层的落点还包括：
+这 18 条与总览页的 AI 专章（L0–L4 代理权阶梯、失败分级、透明度）高度同构，是评审 AI 交互时的官方基准。设计层的落点还包括：
 
 - Anthropic 的工程文档（《Building Effective Agents》的 human-in-the-loop 部分、Claude Code 安全与最佳实践）把「人工审批、最小权限、可审计可撤销」落成工程实践，设计师的职责是把它们翻译成界面要求
 - OpenAI 的《Model Spec》与《安全最佳实践》从模型行为与部署两层约束产品设计；对设计师，重点是读懂其中「系统级护栏」与「界面级表达」的接口位置
@@ -376,7 +378,7 @@ Verganti 的关键主张与边界：意义创新来自**与「诠释者」的对
 
 - **不确定性表达**：模型输出没有正确 / 错误标签，界面必须把不确定性翻译给用户：置信度分级、引用溯源、「这是推测」的明示；不可用假装精确的百分比
 - **信任校准（Trust Calibration）**：用户对 AI 的信任应与其真实能力匹配：过度信任（盲从错误建议）与信任不足（拒绝使用有效功能）都是设计失败；校准手段：能力声明、成功案例、失败反馈的持续教育
-- **控制权交接（Control Handoff）**：人与 AI 之间的控制权转移必须显式、可逆：谁在什么条件下接管、如何交回、交接失败怎么办。总览页的自主性阶梯（建议 → 草稿 → 确认执行 → 自动执行 → 审计）给出落地层级
+- **控制权交接（Control Handoff）**：人与 AI 之间的控制权转移必须显式、可逆：谁在什么条件下接管、如何交回、交接失败怎么办。落地层级用 [产品设计与原型](design.md) 与 [CC/CD 生命周期](ai-lifecycle.md) 的 L0–L4，不要另造一套阶梯
 - **长期关系设计**：AI 会记住用户、会随时间改变：记忆管理、版本变化通知、「系统变了」的告知机制成为新常态（对应微软准则第 17、18 条）
 
 ???+ note "提示"
@@ -390,7 +392,7 @@ Verganti 的关键主张与边界：意义创新来自**与「诠释者」的对
 
 **官方机构与标准**
 
-- [Stanford d.school Design Thinking Bootcamp](https://designthinking.stanford.edu/)（五阶段模型与工具包）
+- [Stanford d.school](https://dschool.stanford.edu/)（设计思维五阶段模型与工具包）
 - [IDEO Design Kit](https://www.designkit.org/)（设计思维方法卡）
 - [UK Design Council: The Double Diamond](https://www.designcouncil.org.uk/our-resources/the-double-diamond/)（双钻模型与 2019 年更新）
 - [ISO 9241-210:2019, Ergonomics of human-system interaction — Part 210](https://www.iso.org/standard/77520.html)（以人为中心的交互系统设计）
@@ -400,7 +402,7 @@ Verganti 的关键主张与边界：意义创新来自**与「诠释者」的对
 - [Claude Code Best Practices](https://code.claude.com/docs/en/best-practices) 与 [Security](https://code.claude.com/docs/en/security)（最小权限与可审计实践）
 - [OpenAI Model Spec](https://openai.com/index/model-spec/)（模型行为规范，设计层翻译对象）
 - [OpenAI Safety Best Practices](https://platform.openai.com/docs/guides/safety-best-practices)（应用层安全实践）
-- [Value Sensitive Design（designprinciples.uw.edu）](https://designprinciples.uw.edu/)（Friedman 团队官方资源）
+- [Value Sensitive Design Lab](https://vsdesign.org/)（Friedman 团队官方资源）
 - [Deceptive Design（darkpatterns.org）](https://www.deceptive.design/)（黑暗模式档案与类型定义）
 
 **经典著作与论文**

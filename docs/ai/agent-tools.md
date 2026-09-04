@@ -1,5 +1,5 @@
 ---
-description: 工具调用（Function Calling）机制、MCP 协议、A2A 协作与工具安全的产品视角
+description: 工具调用与 MCP：Function Calling、Host/Client/Server 协议、A2A 与工具安全，讲清接入标准不替代权限、编排和副作用治理
 ---
 
 ## 工具调用与 MCP
@@ -43,6 +43,8 @@ flowchart LR
 -   **名称**：动词 + 对象，语义明确，如 `search_customer_orders` 优于 `query`。
 -   **描述**：告诉模型什么时候用、怎么用、不能怎么用，描述质量直接决定调用质量。
 -   **参数 Schema**：JSON Schema 约束参数类型、必填项、枚举值，减少模型自由发挥。
+
+### 工具清单本身要控制规模
 
 工具清单本身要控制规模：工具太多会稀释模型的选择能力，工具描述太长会挤占上下文。业界经验是把常用工具控制在几十个以内，并用工具分组/按任务加载控制每轮的可见工具数（工具越多选择错误率越高）。
 
@@ -163,7 +165,7 @@ MCP 是 Anthropic 于 2024 年底开源的**开放协议**（[官方文档](http
 Agent Host（应用） ↔ MCP Client ↔ MCP Server ↔ 工具/数据源
 ```
 
-工具生态从每个应用单独集成走向工具服务器可复用：常被类比为 Agent 工具生态的 USB-C。注意 MCP 标准化的是工具与上下文如何接入，不负责业务权限、工作流编排与多 Agent 协作，那些仍需产品自己的治理体系。
+工具生态从每个应用单独集成走向工具服务器可复用：MCP 规定 Host、Client、Server 如何发现和调用外部能力。注意 MCP 标准化的是工具与上下文如何接入，不负责业务权限、工作流编排与多 Agent 协作，那些仍需产品自己的治理体系。
 
 ```mermaid
 flowchart LR
@@ -344,4 +346,4 @@ MCP 让工具成为可插拔的生态层，随之而来的是工具市场：应�
 3.  [A2A 协议官网](https://a2a-protocol.org)：Agent Card、Task、Artifact 与互操作设计（以官方为准）。
 4.  [OpenAI — Function calling 文档](https://platform.openai.com/docs/guides/function-calling)与 [Anthropic — Tool use 文档](https://platform.claude.com/docs/en/build-with-claude/tool-use)：工具调用机制与结构化输出（以官方为准）。
 5.  [Anthropic — Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)：工具设计（ACI）与描述质量建议。
-6.  AIGC-Interview-Book《AI Agent 基础》系列（预取内部参考）：工具 Schema 设计、MCP 安全与 A2A 分工。
+6.  AIGC-Interview-Book《AI Agent 基础》系列：仅供维护者交叉验证的本地预取材料，读者以 MCP / A2A / 各厂商工具调用官方文档为准。

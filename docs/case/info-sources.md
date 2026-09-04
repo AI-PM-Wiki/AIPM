@@ -4,7 +4,7 @@ description: 高质量信息渠道索引：中文社区、博客、Newsletter �
 
 ## 信息源索引
 
-本页汇总 AI 产品经理主题的高质量信息渠道：中文社区、微信公众号检索、国内外产品经理博客与 Newsletter、X 与海外社区、教程类站点，以及本站原创的 [读书笔记](books/index.md) 系列。每类注明访问方式（含门槛）与 Agent 使用提示。与 [学习资源](resources.md) 互补：那页是内容精选，本页是渠道索引。
+本页汇总 AI 产品经理主题的高质量信息渠道：中文社区、微信公众号检索、国内外产品经理博客与 Newsletter、X 与海外社区、教程类站点，以及本站原创的 [读书笔记](books/index.md) 系列。每类注明访问方式（含门槛）与 Agent 使用提示。与同属信息源的 [资源清单](resources.md) 互补：那页是内容精选，本页是渠道索引。
 
 ### 使用说明
 
@@ -76,7 +76,7 @@ flowchart TD
 
 -   X 关注清单（需登录）：@shreyas（Shreyas Doshi，产品管理方法）、@lennysan（Lenny Rachitsky）、@andrewchen（Andrew Chen）、@johncutlefish（John Cutler）
 -   Product Hunt | https://www.producthunt.com | 新产品发现 | 公开
--   Hacker News | https://news.ycombinator.com | 全球 AI 与产品动态（亦见[学习资源](resources.md)）
+-   Hacker News | https://news.ycombinator.com | 全球 AI 与产品动态（亦见[资源清单](resources.md)）
 
 ### 教程与文档类
 
@@ -88,7 +88,7 @@ flowchart TD
 | awesome 清单 | https://github.com/sindresorhus/awesome | 各领域精选列表索引 | 公开 |
 | Prompt 工程指南 | https://github.com/dair-ai/Prompt-Engineering-Guide | Prompt 教程与资源 | 公开 |
 | Awesome-LLM | https://github.com/Hannibal046/Awesome-LLM | 大模型学习资源索引 | 公开 |
-| 大模型官方文档（OpenAI/Anthropic 等） | 见 [学习资源](resources.md) 官方文档一节 | 官方能力与定价 | 公开 |
+| 大模型官方文档（OpenAI/Anthropic 等） | 见 [资源清单](resources.md) 官方文档一节 | 官方能力与定价 | 公开 |
 
 ### 读书笔记（本站原创精读）
 

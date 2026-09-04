@@ -23,11 +23,19 @@ nav:
     - AI-PM 不是什么: intro/what-ai-pm-is-not.md
     - F.A.Q.: intro/faq.md
     - 产品经理黑话速查: intro/glossary.md
-    - AI 产品经理能力模型: intro/capability.md
-    - 产品经理岗位类别: intro/product-manager-types.md
     - 自学路线: intro/self-study-roadmap.md
   - 产品方法论:
     - 产品方法论简介: pm/index.md
+    - 思维模型:
+      - 思维模型总览: intro/thinking-models/index.md
+      - MoSCoW：需求优先级分类: intro/thinking-models/moscow.md
+      - 第一性原理: intro/thinking-models/first-principles.md
+      - 5W2H1R：从任务澄清到结果复盘: intro/thinking-models/5w2h1r.md
+      - PRC：问题—根因—对策: intro/thinking-models/prc.md
+      - GROW：教练式目标推进: intro/thinking-models/grow.md
+    - AI 产品经理能力模型: intro/capability.md
+    - 产品战略与竞争: pm/strategy.md
+    - 产品生命周期: pm/product-lifecycle.md
     - 需求分析: pm/requirements.md
     - 用户研究: pm/user-research.md
     - 数据分析入门: pm/data-analysis.md
@@ -40,24 +48,26 @@ nav:
       - 原型与设计交付: pm/design-prototyping.md
       - 设计评审与可用性度量: pm/design-evaluation.md
       - 设计师黑话速查: pm/design-jargon.md
+    - AI 产品 PRD: pm/prd.md
     - 项目管理与迭代: pm/project-management.md
     - AI 产品开发生命周期（CC/CD）: pm/ai-lifecycle.md
-    - AI 产品 PRD: pm/prd.md
     - 商业化与增长: pm/monetization.md
-    - 产品战略与竞争: pm/strategy.md
   - 工程与架构:
     - 工程与架构简介: tech/index.md
     - 开发流程与节奏: tech/dev-flow.md
+    - 部署与环境: tech/deployment.md
     - AI-Native 研发流程: tech/ai-native-sdlc.md
     - 系统架构基础: tech/architecture.md
     - 工程架构术语:
       - 工程架构术语总览: tech/architecture-terminology.md
       - 前端渲染技术与黑话: tech/frontend-rendering.md
       - 后端与服务端术语: tech/backend-services.md
+      - 身份认证与权限: tech/identity-access.md
       - 数据库与数据存储术语: tech/databases.md
       - 缓存技术与黑话: tech/caching.md
       - 消息队列与异步系统: tech/message-queues.md
       - 第三方服务与外部依赖: tech/third-party-services.md
+      - 可观测性: tech/observability.md
   - 工商管理:
     - 工商管理简介: management/index.md
     - 管理基础与方法:
@@ -323,12 +333,13 @@ nav:
     - 机器学习与深度学习:
       - 机器学习基础: ai/ml-basics.md
       - 深度学习基础: ai/dl-basics.md
+      - 深度学习工程实践: ai/deep-learning-practice.md
       - Transformer 架构: ai/transformer.md
     - 大模型:
       - 大模型基础: ai/llm-basics.md
       - 模型训练与对齐: ai/llm-training.md
       - 模型推理与部署: ai/llm-inference.md
-      - 模型能力与选型: ai/capabilities.md
+      - 模型能力与边界: ai/capabilities.md
       - 开源与闭源模型生态: ai/model-ecosystem.md
     - 多模态:
       - 多模态理解: ai/multimodal.md
@@ -347,13 +358,38 @@ nav:
       - Agent 与工作流: ai/agent.md
       - 工具调用与 MCP: ai/agent-tools.md
       - Agent 架构与多智能体: ai/agent-architecture.md
-    - 评估与评测: ai/evaluation.md
-    - AI 安全与对齐: ai/ai-safety.md
-    - AI 系统架构: ai/architecture.md
+    - 评估、安全与架构:
+      - 评估与评测: ai/evaluation.md
+      - AI 安全与对齐: ai/ai-safety.md
+      - AI 系统架构: ai/architecture.md
+    - AI 前沿:
+      - AI 经典论文: ai/classic-papers.md
+      - 大模型前沿论文: ai/llm-frontier-papers.md
+      - 架构与序列:
+        - 架构组件与训练稳定性: ai/llm-frontier-architecture.md
+        - 注意力与 KV Cache: ai/llm-frontier-attention.md
+        - 稀疏与局部注意力: ai/llm-frontier-sparse-attention.md
+        - 线性注意力与状态空间: ai/llm-frontier-sequence-models.md
+        - 混合专家模型: ai/llm-frontier-moe.md
+        - 世界模型与具身智能: ai/world-models-embodied.md
+      - 推理与训练:
+        - 推理时扩展: ai/llm-reasoning-scaling.md
+        - RLVR 与 GRPO: ai/llm-rlvr-grpo.md
+        - 推理系统与量化: ai/llm-inference-systems-quantization.md
+      - Agent 与多模态:
+        - Agent 与 Computer Use: ai/agent-computer-use-frontier.md
+        - 多模态前沿论文: ai/multimodal-frontier-papers.md
+      - 记忆与替代范式:
+        - 外部记忆与模型编辑: ai/llm-memory-model-editing.md
+        - Diffusion Language Model: ai/diffusion-language-models.md
+        - Tokenizer-free 模型: ai/tokenizer-free-models.md
+      - 可信前沿:
+        - 可解释性与安全前沿: ai/interpretability-safety-frontier.md
   - AI 产品实战:
     - 实战简介: practice/index.md
     - 对话助手类产品:
       - 对话助手: practice/chatbot.md
+      - 智能语音产品: practice/voice-product.md
       - 客服自动化: practice/support-bot.md
       - AI 搜索: practice/ai-search.md
     - 知识库问答类产品:
@@ -392,7 +428,9 @@ nav:
     - 产品经理工作台工具: tools/pm-workbench.md
   - 学习资源:
     - 学习资源简介: case/index.md
-    - 资源清单: case/resources.md
+    - 信息源:
+      - 资源清单: case/resources.md
+      - 信息源索引: case/info-sources.md
     - 读书笔记:
       - 读书笔记索引: case/books/index.md
       - 俞军产品方法论: case/books/yujun-product-methodology.md
@@ -403,49 +441,102 @@ nav:
       - 播客笔记索引: case/podcasts/index.md
       - 我不是真有面试天赋：手握 15 个 Offer 的求职面试复盘: case/podcasts/interview-methods-15-offers.md
       - Anthropic 技术产品经理：为什么最优秀的产品领导者正在为 2028 年布局: case/podcasts/anthropic-pm-2028.md
-    - 信息源索引: case/info-sources.md
+      - Twitter 前产品增长总监：不要为了招产品经理而招产品经理: case/podcasts/whatnot-cpo-regret-pm.md
+    - 策略产品经理:
+      - 策略产品经理: case/strategy-pm/index.md
+      - 概念基础:
+        - 概念基础: case/strategy-pm/01-concepts/index.md
+        - 策略是什么: case/strategy-pm/01-concepts/01-what-is-strategy.md
+        - 策略四要素: case/strategy-pm/01-concepts/02-four-elements.md
+        - 策略如何诞生: case/strategy-pm/01-concepts/03-how-strategy-emerges.md
+        - 策略产品经理的工作循环: case/strategy-pm/01-concepts/04-workflow.md
+      - 发现问题:
+        - 发现问题: case/strategy-pm/02-discovering-problems/index.md
+        - 发现问题的四条途径: case/strategy-pm/02-discovering-problems/01-four-channels.md
+        - 用户反馈处理: case/strategy-pm/02-discovering-problems/02-user-feedback.md
+        - 效果监控与策略监控: case/strategy-pm/02-discovering-problems/03-monitoring.md
+        - 理想态: case/strategy-pm/02-discovering-problems/04-ideal-state.md
+        - 阶段性调研: case/strategy-pm/02-discovering-problems/05-periodic-research.md
+        - 抽样分析: case/strategy-pm/02-discovering-problems/06-sampling.md
+        - 优先级与项目计划: case/strategy-pm/02-discovering-problems/07-prioritization.md
+      - 需求与验证:
+        - 需求与验证: case/strategy-pm/03-spec-and-validation/index.md
+        - 简单策略需求文档: case/strategy-pm/03-spec-and-validation/01-simple-prd.md
+        - 复杂策略需求文档: case/strategy-pm/03-spec-and-validation/02-complex-prd.md
+        - 开发评估: case/strategy-pm/03-spec-and-validation/03-dev-evaluation.md
+        - Diff 评估: case/strategy-pm/03-spec-and-validation/04-diff-evaluation.md
+        - 效果回归: case/strategy-pm/03-spec-and-validation/05-effect-review.md
+        - 策略通用方法论: case/strategy-pm/03-spec-and-validation/06-methodology.md
+      - 应用总览:
+        - 应用总览: case/strategy-pm/04-application-map/index.md
+        - 四大业务方向: case/strategy-pm/04-application-map/01-four-directions.md
+      - 功能导向核心业务:
+        - 功能导向核心业务: case/strategy-pm/05-function-oriented/index.md
+        - 功能导向型策略框架: case/strategy-pm/05-function-oriented/01-framework.md
+        - 搜索策略: case/strategy-pm/05-function-oriented/02-search.md
+        - 推荐策略: case/strategy-pm/05-function-oriented/03-recommendation.md
+        - 目的地与路线策略: case/strategy-pm/05-function-oriented/04-destination-and-route.md
+      - 业务导向核心业务:
+        - 业务导向核心业务: case/strategy-pm/06-business-oriented/index.md
+        - 业务导向型策略框架: case/strategy-pm/06-business-oriented/01-framework.md
+        - 定价策略: case/strategy-pm/06-business-oriented/02-pricing.md
+        - 出行匹配策略: case/strategy-pm/06-business-oriented/03-ride-matching.md
+      - 增长、风控与数据:
+        - 增长、风控与数据: case/strategy-pm/07-growth-risk-data/index.md
+        - 增长策略: case/strategy-pm/07-growth-risk-data/01-growth.md
+        - 风控策略: case/strategy-pm/07-growth-risk-data/02-risk-control.md
+        - 数据策略: case/strategy-pm/07-growth-risk-data/03-data.md
   - 求职专题:
     - 求职专题简介: job/index.md
-    - 常见大厂与架构:
-      - 大厂与架构简介: job/companies/index.md
-      - 字节跳动: job/companies/bytedance.md
-      - 阿里巴巴: job/companies/alibaba.md
-      - 腾讯: job/companies/tencent.md
-      - 百度与美团: job/companies/baidu-meituan.md
-      - 华为: job/companies/huawei.md
-      - 大模型创业公司: job/companies/ai-startups.md
+    - 公司架构与岗位:
+      - 常见大厂与架构:
+        - 大厂与架构简介: job/companies/index.md
+        - 字节跳动: job/companies/bytedance.md
+        - 阿里巴巴: job/companies/alibaba.md
+        - 腾讯: job/companies/tencent.md
+        - 百度与美团: job/companies/baidu-meituan.md
+        - 华为: job/companies/huawei.md
+        - 大模型创业公司: job/companies/ai-startups.md
+      - 产品经理岗位类别:
+        - 产品经理岗位类别简介: job/product-manager-types/index.md
+        - AI 产品经理方向: job/product-manager-types/ai-product-manager.md
+        - 互联网产品经理方向: job/product-manager-types/internet-product-manager.md
+        - 选择方向与阅读 JD: job/product-manager-types/selection-and-jd.md
+      - 产品经理协作团队与岗位:
+        - 协作团队与岗位简介: job/positions/index.md
+        - AI 产品经理: job/positions/ai-pm.md
+        - 大模型应用工程师: job/positions/llm-app-engineer.md
+        - 算法工程师: job/positions/algorithm-engineer.md
+        - 提示词工程师: job/positions/prompt-engineer.md
+        - 数据、评测与训练类岗位: job/positions/data-ai-trainer.md
+        - 设计师: job/positions/designer.md
+        - 研发工程师: job/positions/rd-engineer.md
+        - 测试工程师: job/positions/test-engineer.md
+        - 硬件相关岗位: job/positions/hardware-pm.md
+        - AI 训练相关岗位: job/positions/ai-trainer.md
+        - AI Infra 相关岗位: job/positions/ai-infra.md
+        - FDE（前沿部署工程师）: job/positions/fde.md
+        - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
+        - 行政岗位与 JD 解读: job/positions/administrative-roles.md
     - 求职实操:
       - 内推机制: job/referral.md
       - 简历与作品集: job/resume-portfolio.md
-    - 常见岗位与JD:
-      - 岗位与JD简介: job/positions/index.md
-      - AI 产品经理: job/positions/ai-pm.md
-      - 大模型应用工程师: job/positions/llm-app-engineer.md
-      - 算法工程师: job/positions/algorithm-engineer.md
-      - 提示词工程师: job/positions/prompt-engineer.md
-      - 数据、评测与训练类岗位: job/positions/data-ai-trainer.md
-      - 设计师: job/positions/designer.md
-      - 研发工程师: job/positions/rd-engineer.md
-      - 测试工程师: job/positions/test-engineer.md
-      - 硬件相关岗位: job/positions/hardware-pm.md
-      - AI 训练相关岗位: job/positions/ai-trainer.md
-      - AI Infra 相关岗位: job/positions/ai-infra.md
-      - FDE（前沿部署工程师）: job/positions/fde.md
-      - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
-      - 行政岗位与 JD 解读: job/positions/administrative-roles.md
-    - JD 拆解:
-      - JD 拆解索引: job/jd-breakdowns/index.md
-      - 字节跳动开发者 AI 产品经理: job/jd-breakdowns/bytedance-developer-ai-pm.md
-      - MiniMax AI Agent 产品经理: job/jd-breakdowns/minimax-ai-agent-pm.md
-    - 面经:
-      - 面经简介: job/interviews/index.md
-      - AI 产品经理面试指南: job/interviews/interview-guide.md
-      - 面试流程全览: job/interviews/interview-process.md
-      - 群面与无领导小组: job/interviews/group-interview.md
-      - 校招面经: job/interviews/campus-interviews.md
-      - 社招面经: job/interviews/social-interviews.md
-      - 面试复盘方法论: job/interviews/review-methodology.md
-      - 谈薪与 Offer 选择: job/interviews/offer-negotiation.md
+      - JD 拆解:
+        - JD 拆解索引: job/jd-breakdowns/index.md
+        - 「校招」字节跳动｜开发者 AI 产品经理: job/jd-breakdowns/bytedance-developer-ai-pm.md
+        - 「社招」MiniMax｜AI Agent 产品经理: job/jd-breakdowns/minimax-ai-agent-pm.md
+        - 「实习」百度｜策略产品实习生: job/jd-breakdowns/baidu-strategy-product-intern.md
+        - 「校招」字节跳动｜产品经理 - 业务中台: job/jd-breakdowns/bytedance-business-platform-pm.md
+        - 「校招」腾讯｜地图 AI 产品经理培训生: job/jd-breakdowns/tencent-map-ai-pm-trainee.md
+      - 面经:
+        - 面经简介: job/interviews/index.md
+        - AI 产品经理面试指南: job/interviews/interview-guide.md
+        - 面试流程全览: job/interviews/interview-process.md
+        - 群面与无领导小组: job/interviews/group-interview.md
+        - 校招面经: job/interviews/campus-interviews.md
+        - 社招面经: job/interviews/social-interviews.md
+        - 面试复盘方法论: job/interviews/review-methodology.md
+        - 谈薪与 Offer 选择: job/interviews/offer-negotiation.md
     - 入职之后:
       - 入职之后简介: job/after-entry/index.md
       - 绩效管理与考核: job/positions/performance-management.md
@@ -458,6 +549,155 @@ nav:
       - 职业发展感悟: job/insights/career.md
       - 踩坑教训: job/insights/lessons.md
       - 心态感悟: job/insights/mindset.md
+  - 垂直领域:
+    - 垂直领域简介: vertical/index.md
+    - 网络安全:
+      - 网络安全: vertical/cybersecurity/index.md
+      - 密码、身份与架构:
+        - 密码、身份与架构: vertical/cybersecurity/foundations/index.md
+        - 威胁与攻击面: vertical/cybersecurity/foundations/threats-and-attack-surface.md
+        - 身份认证与访问控制: vertical/cybersecurity/foundations/identity-and-access.md
+        - 密码学与密钥管理: vertical/cybersecurity/foundations/cryptography-and-keys.md
+        - 安全架构与零信任: vertical/cybersecurity/foundations/architecture-and-zero-trust.md
+      - 安全运营:
+        - 安全运营: vertical/cybersecurity/operations/index.md
+        - 漏洞管理: vertical/cybersecurity/operations/vulnerability-management.md
+        - 检测与响应: vertical/cybersecurity/operations/detection-and-response.md
+        - 安全运营中心: vertical/cybersecurity/operations/soc.md
+        - 威胁情报: vertical/cybersecurity/operations/threat-intelligence.md
+      - 数据与系统安全:
+        - 数据与系统安全: vertical/cybersecurity/data-app-cloud/index.md
+        - 数据安全: vertical/cybersecurity/data-app-cloud/data-security.md
+        - 应用安全: vertical/cybersecurity/data-app-cloud/application-security.md
+        - 云与供应链安全: vertical/cybersecurity/data-app-cloud/cloud-and-supply-chain.md
+        - 终端与网络安全: vertical/cybersecurity/data-app-cloud/endpoint-and-network.md
+      - 治理与合规:
+        - 治理与合规: vertical/cybersecurity/governance/index.md
+        - 等保与关基: vertical/cybersecurity/governance/mlps-and-cii.md
+        - 隐私与个人信息保护: vertical/cybersecurity/governance/privacy.md
+        - 安全产品与市场: vertical/cybersecurity/governance/security-products.md
+    - 金融:
+      - 金融: vertical/finance/index.md
+      - 银行业:
+        - 银行业: vertical/finance/banking/index.md
+        - 零售银行: vertical/finance/banking/retail-banking.md
+        - 对公与交易银行: vertical/finance/banking/corporate-banking.md
+        - 信贷与风控: vertical/finance/banking/credit-and-risk.md
+      - 资本市场:
+        - 资本市场: vertical/finance/capital-markets/index.md
+        - 证券经纪与财富管理: vertical/finance/capital-markets/brokerage-and-wealth.md
+        - 投行与一级市场: vertical/finance/capital-markets/ib-and-primary.md
+        - 资产管理: vertical/finance/capital-markets/asset-management.md
+        - 交易与市场结构: vertical/finance/capital-markets/trading-and-market-structure.md
+      - 保险业:
+        - 保险业: vertical/finance/insurance/index.md
+        - 寿险与健康险: vertical/finance/insurance/life-and-health.md
+        - 财产险: vertical/finance/insurance/property-casualty.md
+        - 再保险与精算: vertical/finance/insurance/reinsurance-and-actuarial.md
+      - 支付清算与金融监管:
+        - 支付清算与金融监管: vertical/finance/infrastructure-regulation/index.md
+        - 支付与清算: vertical/finance/infrastructure-regulation/payments-and-clearing.md
+        - 征信与反欺诈: vertical/finance/infrastructure-regulation/credit-reporting-and-fraud.md
+        - 反洗钱与合规: vertical/finance/infrastructure-regulation/aml-and-compliance.md
+        - 监管科技与开放银行: vertical/finance/infrastructure-regulation/regtech-and-open-banking.md
+    - 法律:
+      - 法律: vertical/law/index.md
+      - 部门法:
+        - 部门法: vertical/law/legal-system/index.md
+        - 宪法与行政法: vertical/law/legal-system/constitutional-and-admin.md
+        - 民商法: vertical/law/legal-system/civil-and-commercial.md
+        - 刑法: vertical/law/legal-system/criminal.md
+        - 国际法与比较法: vertical/law/legal-system/international-and-comparative.md
+      - 法律实务:
+        - 法律实务: vertical/law/practice/index.md
+        - 合同与尽调: vertical/law/practice/contracts-and-dd.md
+        - 诉讼与仲裁: vertical/law/practice/litigation-and-arbitration.md
+        - 知识产权: vertical/law/practice/intellectual-property.md
+        - 劳动与合规: vertical/law/practice/labor-and-compliance.md
+      - 法律科技:
+        - 法律科技: vertical/law/legaltech/index.md
+        - 法律检索与知识库: vertical/law/legaltech/legal-search.md
+        - 合同审查: vertical/law/legaltech/contract-review.md
+        - 电子取证: vertical/law/legaltech/e-discovery.md
+        - 智慧司法: vertical/law/legaltech/smart-justice.md
+    - 教育:
+      - 教育: vertical/education/index.md
+      - 教育阶段:
+        - 教育阶段: vertical/education/stages/index.md
+        - 基础教育: vertical/education/stages/k12.md
+        - 高等教育: vertical/education/stages/higher-education.md
+        - 职业教育: vertical/education/stages/vocational.md
+        - 企业培训与终身学习: vertical/education/stages/corporate-and-lifelong.md
+      - 课程、教学与评价:
+        - 课程、教学与评价: vertical/education/teaching-assessment/index.md
+        - 课程与教学内容: vertical/education/teaching-assessment/curriculum.md
+        - 教学设计: vertical/education/teaching-assessment/instructional-design.md
+        - 测评与考试: vertical/education/teaching-assessment/assessment.md
+        - 学习分析: vertical/education/teaching-assessment/learning-analytics.md
+      - 教育技术:
+        - 教育技术: vertical/education/edtech/index.md
+        - 自适应学习: vertical/education/edtech/adaptive-learning.md
+        - 智能辅导: vertical/education/edtech/intelligent-tutoring.md
+        - 教育管理与教务: vertical/education/edtech/admin-and-sis.md
+        - 学术诚信: vertical/education/edtech/academic-integrity.md
+    - 地球科学:
+      - 地球科学: vertical/earth-science/index.md
+      - 大气科学:
+        - 大气科学: vertical/earth-science/atmosphere-climate/index.md
+        - 天气预报: vertical/earth-science/atmosphere-climate/weather-forecast.md
+        - 气候系统: vertical/earth-science/atmosphere-climate/climate-system.md
+        - 空气质量: vertical/earth-science/atmosphere-climate/air-quality.md
+      - 固体地球科学:
+        - 固体地球科学: vertical/earth-science/solid-earth/index.md
+        - 地质与矿产: vertical/earth-science/solid-earth/geology-and-minerals.md
+        - 地震与地球物理: vertical/earth-science/solid-earth/seismology.md
+        - 灾害风险: vertical/earth-science/solid-earth/disaster-risk.md
+      - 水文与海洋科学:
+        - 水文与海洋科学: vertical/earth-science/hydrosphere-ocean/index.md
+        - 水文与水资源: vertical/earth-science/hydrosphere-ocean/hydrology.md
+        - 海洋学: vertical/earth-science/hydrosphere-ocean/oceanography.md
+      - 地球信息科学:
+        - 地球信息科学: vertical/earth-science/geospatial/index.md
+        - 遥感: vertical/earth-science/geospatial/remote-sensing.md
+        - GIS 与测绘: vertical/earth-science/geospatial/gis-and-surveying.md
+        - 地球观测产品: vertical/earth-science/geospatial/earth-observation-products.md
+      - 空间数据库:
+        - 空间数据库: vertical/earth-science/spatial-database/index.md
+        - 概论: vertical/earth-science/spatial-database/01-overview.md
+        - 关系模型与关系代数: vertical/earth-science/spatial-database/02-relational-model.md
+        - SQL: vertical/earth-science/spatial-database/03-sql.md
+        - 几何对象与 PostGIS: vertical/earth-science/spatial-database/04-geometry-and-postgis.md
+        - 空间扩展 E/R: vertical/earth-science/spatial-database/05-spatial-er.md
+        - 关系设计理论: vertical/earth-science/spatial-database/06-normalization.md
+        - 空间存储与索引: vertical/earth-science/spatial-database/07-storage-and-index.md
+        - 空间查询处理: vertical/earth-science/spatial-database/08-query-processing.md
+        - 空间网络: vertical/earth-science/spatial-database/09-spatial-network.md
+        - 安全与完整性: vertical/earth-science/spatial-database/10-security-and-integrity.md
+        - 服务器编程: vertical/earth-science/spatial-database/11-server-programming.md
+        - 事务处理: vertical/earth-science/spatial-database/12-transactions.md
+        - OLAP: vertical/earth-science/spatial-database/13-olap.md
+        - 要点检查: vertical/earth-science/spatial-database/14-review.md
+        - 实践路径: vertical/earth-science/spatial-database/15-practice.md
+    - 医疗健康:
+      - 医疗健康: vertical/healthcare/index.md
+      - 临床医学:
+        - 临床医学: vertical/healthcare/clinical/index.md
+        - 诊疗路径与临床决策: vertical/healthcare/clinical/clinical-pathways.md
+        - 医学影像: vertical/healthcare/clinical/medical-imaging.md
+        - 检验与病理: vertical/healthcare/clinical/lab-and-pathology.md
+      - 药学与医疗器械:
+        - 药学与医疗器械: vertical/healthcare/pharma-device/index.md
+        - 药物研发: vertical/healthcare/pharma-device/drug-discovery.md
+        - 器械与数字疗法: vertical/healthcare/pharma-device/devices-and-dtx.md
+      - 卫生事业管理:
+        - 卫生事业管理: vertical/healthcare/operations/index.md
+        - 医院信息化: vertical/healthcare/operations/hospital-it.md
+        - 医保与支付: vertical/healthcare/operations/insurance-and-payment.md
+        - 公共卫生: vertical/healthcare/operations/public-health.md
+      - 卫生信息与监管:
+        - 卫生信息与监管: vertical/healthcare/data-compliance/index.md
+        - 医疗数据与互操作: vertical/healthcare/data-compliance/health-data.md
+        - 药械监管与合规: vertical/healthcare/data-compliance/regulatory.md
 
 # Theme
 theme:
@@ -538,7 +778,7 @@ extra:
 extra_javascript:
   - '_static/js/mathjax.js?v=2'
   - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
-  - '_static/js/banner.js?v=10'
+  - '_static/js/banner.js?v=11'
   - '_static/js/header-line.js?v=1'
   - '_static/js/umami.js?v=1'
   - '_static/js/mermaid-zoom.js?v=3'

@@ -2,7 +2,7 @@
 description: 拆解 MiniMax AI Agent 产品经理 JD：从产品规划、用户场景、Agent 机制与效果评估，到能力匹配、面试准备和职业发展判断岗位边界
 ---
 
-## MiniMax AI Agent 产品经理：一份 JD 的拆解
+## 「社招」MiniMax｜AI Agent 产品经理
 
 这是一份面向 AI Agent 产品的产品经理 JD。岗位标题是「AI Agent 产品经理」，职责同时覆盖产品规划、用户研究、Agent 场景设计、跨团队落地和效果评估，核心不是把模型能力包装成单个功能，而是对 Agent 产品从规划到优化的闭环负责。
 

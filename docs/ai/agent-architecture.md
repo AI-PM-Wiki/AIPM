@@ -1,10 +1,10 @@
 ---
-description: Agent 架构核心设计模式、记忆系统、多智能体编排与 AgentOps 框架
+description: Agent 架构：设计模式、记忆、多智能体编排与 AgentOps，给出工具选择率、终态成功率等生产指标和模式选择方法。按任务确定性选模式，把多智能体代价写进预算。
 ---
 
 ## Agent 架构与多智能体
 
-单次调用模型不难，难的是把模型 + 工具 + 状态 + 循环组织成稳定、可观测、可恢复的系统。Agent 的核心设计模式（提示词链、路由、并行化、编排者-工作者、评估者-优化者、ReAct、Plan-and-Execute、反思）、记忆系统、多智能体编排、主流编排框架与 AgentOps。产品落地视角见 [Agent 产品设计深度篇](../practice/agent-product.md)，框架选型清单见 [框架与平台选型速查](../tools/frameworks.md)。
+工作流与 Agent 的定义、何时不该上 Agent、产品确认点见 [Agent 与工作流](agent.md)。本文不重复那一页的五类工作流定义，只展开模式实现、记忆、多智能体代价与 AgentOps。产品落地见 [Agent 产品](../practice/agent-product.md)，框架选型见 [框架与平台选型速查](../tools/frameworks.md)。
 
 ## 核心设计模式
 
@@ -233,7 +233,7 @@ LangGraph 这类图编排框架的价值正在于此：把复杂编排变成可�
 
 ### 多 Agent 的代价
 
-多 Agent 不是免费的：**成本 ×N**（官方实测多 Agent 系统 token 消耗约为普通对话的 15 倍）、**不一致**（角色之间互相矛盾、错误跨 Agent 传播）、**调试难**（上下文重复、信息丢失、问题难以复现）。社区实测也印证了这一点：有团队复盘自研的 7-Agent 研发流水线，结论是链路冗余、职责边界模糊：多 Agent 的传话游戏会让信息失真，子 Agent 产出经转述后丢失细节，因此官方建议让子 Agent 直接写产物文件、只传引用。结论：**先单 Agent，多 Agent 只在评测证明收益时上**。适合多 Agent 的场景：任务天然可拆、需要并行探索、需要互相审查、不同子任务需要不同权限；不适合：需要共享同一上下文、Agent 间强依赖的任务。
+多 Agent 的成本量级（官方实测约 15 倍 token）与「先单 Agent」的决策见 [Agent 与工作流](agent.md)。本节只谈编排实现：子 Agent 直接写产物文件、只传引用，避免传话游戏式的信息失真。适合多 Agent 的场景：任务天然可拆、需要并行探索、需要互相审查、不同子任务需要不同权限；不适合：需要共享同一上下文、Agent 间强依赖的任务。
 
 ## 编排框架概览
 
@@ -340,4 +340,4 @@ Agent 产品的设计要点（权限最小化、确认节点、进度可见、�
 3.  [Reflexion 论文](https://arxiv.org/abs/2303.11366)与 [Plan-and-Solve 论文](https://arxiv.org/abs/2305.04091)：反思与计划模式（视需要引用）。
 4.  [Anthropic — How We Built Our Multi-Agent Research System](https://www.anthropic.com/engineering/multi-agent-research-system)：多 Agent 成本量级（15 倍 token）与编排实测。
 5.  [LangGraph 官方文档](https://docs.langchain.com/oss/python/langgraph/overview)与 [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)：框架定位（以官方为准）。
-6.  AIGC-Interview-Book《AI Agent 基础》系列（预取内部参考）：记忆生命周期、上下文工程、AgentOps 与多智能体编排模式。
+6.  AIGC-Interview-Book《AI Agent 基础》系列：仅供维护者交叉验证的本地预取材料，读者以 Anthropic 官方博文与框架文档为准。

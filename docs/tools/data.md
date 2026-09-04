@@ -5,7 +5,7 @@ description: AI 数据工作全景：采集、清洗、标注、管理各环节�
 
 ## 数据与标注
 
-高质量数据是 AI 产品效果的基石：无论是 RAG 知识库、微调数据还是评测集。本页只讲数据工作本身：数据从哪来、怎么变成可用资产、工具与流程怎么组织。模型能力与定价对比见 [模型能力与选型](../ai/capabilities.md)，数据与推理成本测算见 [LLM 成本测算](llm-cost.md)；检索技术细节见 [检索技术](../ai/rag-retrieval.md)，RAG 落地实践见 [RAG 产品化实战](../practice/rag-practice.md)，法规红线见 [出海与合规](../practice/compliance.md)。
+高质量数据是 AI 产品效果的基石：无论是 RAG 知识库、微调数据还是评测集。本页只讲数据工作本身：数据从哪来、怎么变成可用资产、工具与流程怎么组织。模型能力与定价对比见 [模型能力与边界](../ai/capabilities.md)，数据与推理成本测算见 [LLM 成本测算](llm-cost.md)；检索技术细节见 [检索技术](../ai/rag-retrieval.md)，RAG 落地实践见 [RAG 产品化实战](../practice/rag-practice.md)，法规红线见 [出海与合规](../practice/compliance.md)。
 
 ## 数据工作全景
 

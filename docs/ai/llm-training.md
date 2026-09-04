@@ -1,10 +1,10 @@
 ---
-description: 模型训练与对齐链路：预训练、扩展定律、RLHF/DPO、微调与蒸馏的取舍
+description: 模型训练与对齐：预训练、扩展定律、SFT、RLHF/DPO、RLVR/GRPO、微调与蒸馏，区分 R1-Zero 与 R1，理解推理模型从哪来、成本为什么高
 ---
 
 ## 模型训练与对齐
 
-大模型不是炼出来就完事的：从海量文本里学出语言能力的**预训练**，到让它听话、安全、会干活的**后训练**，再到面向具体业务的**微调**，每一段都对应不同的数据、算力与成本。讲清这条链路，并回答产品经理最关心的问题：**什么时候该微调，什么时候用 RAG 和提示词就够了**。基础概念见 [大模型基础](llm-basics.md)，部署与推理成本见 [模型推理与部署](llm-inference.md)。
+大模型不是炼出来就完事的：从海量文本里学出语言能力的**预训练**，到让它听话、安全、会干活的**后训练**，再到面向具体业务的**微调**，每一段都对应不同的数据、算力与成本。讲清这条链路，并回答产品经理最关心的问题：**什么时候该微调，什么时候用 RAG 和提示词就够了**。基础概念见 [大模型基础](llm-basics.md)，通用深度学习的训练循环、复现、checkpoint、调试、导出与服务化见[深度学习工程实践](deep-learning-practice.md)，部署与推理成本见 [模型推理与部署](llm-inference.md)。
 
 ## 预训练
 
@@ -79,6 +79,21 @@ flowchart LR
 
 再叠加 ZeRO/FSDP 这类**分片技术**（把参数、梯度、优化器状态分散到多卡，用通信换显存）和混合精度（BF16 为主，稳定性好、省显存），现代大模型才能跑起来。MoE 模型还要加**专家并行**（不同专家放不同卡，token 按路由跨卡分发）。
 
+三种并行维度可以组合使用，分别解决 batch、单层宽度和网络深度的问题：
+
+```mermaid
+flowchart TB
+    task["大模型训练任务"] --> data["数据并行<br/>按样本切 batch"]
+    task --> tensor["张量并行<br/>按矩阵切单层计算"]
+    task --> pipeline["流水线并行<br/>按层切网络"]
+    data --> hybrid["组合并行<br/>+ ZeRO / FSDP 分片"]
+    tensor --> hybrid
+    pipeline --> hybrid
+    hybrid --> cluster["多 GPU 集群训练"]
+```
+
+核心关系：数据并行扩大吞吐，张量并行解决单层放不下，流水线并行解决模型太深；分片技术进一步降低每张卡必须保留的状态。
+
 ### 预训练的常见失败模式
 
 大模型训练跑崩是常态，提前认识失败模式，遇到时才能定位：
@@ -101,8 +116,9 @@ flowchart LR
 **扩展定律（Scaling Law）**描述：在架构与数据分布稳定时，预训练损失随参数量、数据量、计算量的增大按幂律下降：规模继续扩大仍能带来收益，但收益递减。DeepMind 的 Chinchilla 研究修正了此前的配比认知：
 
 - **核心结论**：固定算力下，参数和数据要**同步扩展**，不能只堆参数；
-- **经验配比**：训练 token 数约为参数量的 20 倍（70B 参数配 1.4T token），是常见的计算最优经验值；
-- **实际中为什么常欠训练**：计算最优 ≠ 经济最优：欠训练的小参数模型**部署与推理更便宜**，同一个算力预算可以服务更多用户。InstructGPT 论文就明确选择了训练不足但推理成本低的模型。所以模型没训够在工程上往往是理性选择。
+- **经验配比**：在 Chinchilla 论文的实验设定下，训练 token 数约为参数量的 20 倍（70B 参数配 1.4T token），是计算最优的经验比值，不是所有架构与推理优先目标的硬规则；
+- **实际中为什么常欠训练**：计算最优不等于经济最优。欠训练的较小模型部署与推理更便宜，同一算力预算可以服务更多用户，所以「没训够」在工程上经常是理性选择。
+- **不要和 InstructGPT 混为一谈**：InstructGPT 证明的是小参数**对齐**模型可以优于更大的未对齐 GPT-3，讲的是后训练与偏好，不是 Chinchilla 的参数–数据配比。对齐税见下文 RLHF 一节。
 
 扩展定律的工程用法：先用小规模实验拟合损失曲线，外推估算大训练任务的收益与成本；它也用来识别加数据没用了（边际收益递减）和模型欠训练（参数与数据不匹配）：但记住它预测的是语言建模损失，**不直接等于下游能力、事实性与产品体验**。
 
@@ -206,6 +222,21 @@ flowchart LR
 
 核心关系：SFT 先建立对话行为，奖励模型把人类偏好变成分数，PPO 在 KL 约束下优化策略模型。
 
+后训练不是只有一条路线：从 SFT 出发，可以按任务是否有偏好标注、是否能自动验证来选择不同分支：
+
+```mermaid
+flowchart LR
+    base["基座模型"] --> sft["SFT<br/>指令微调"]
+    sft --> rlhf["RLHF<br/>奖励模型 + PPO"]
+    sft --> dpo["DPO<br/>偏好对直接优化"]
+    sft --> rlvr["RLVR / GRPO<br/>可验证奖励"]
+    rlhf --> aligned["对齐后的模型"]
+    dpo --> aligned
+    rlvr --> aligned
+```
+
+核心关系：SFT 是共同起点；RLHF、DPO 与 RLVR/GRPO 是不同的偏好或奖励优化分支，选择取决于反馈信号与任务是否可验证。
+
 ### PPO 直觉
 
 PPO 的直觉：让模型**多采样、多对比**：生成一批回答，奖励模型打分，高分回答对应的生成概率被上调，低分的被下调，逐步逼近人类偏好。KL 约束的作用是**防跑偏**：如果只追求奖励高分，模型会钻奖励模型的空子（**reward hacking**），比如输出越来越长、越来越模板化来讨好打分器，实际质量反而下降。工业界还专门发明了长度奖励惩罚（overlong reward shaping）来对抗变长刷分。
@@ -244,14 +275,19 @@ RLHF 是出了名的贵和难调：需要奖励模型 + 策略模型 + 参考模
 
 ### 推理模型时代的 RL：DeepSeek-R1 案例
 
-2025 年的 DeepSeek-R1 证明了一条新路线：**纯强化学习也能训出推理能力**。做法要点：
+2025 年的 DeepSeek-R1 路线证明：**可验证奖励上的强化学习可以训出推理能力**。论文里要分开两条产物：
+
+- **DeepSeek-R1-Zero**：从基座出发、几乎不做 SFT，用纯 RL（GRPO + 可验证奖励）就能涌现思考与自我纠错，但训练更不稳、可读性较差；
+- **DeepSeek-R1**：先用少量高质量思维链做 SFT 冷启动，再大规模 RL，产品上更常用。
+
+做法要点：
 
 - 用**可验证奖励**（数学答案是否正确、格式是否合规）替代人类偏好，不需要奖励模型打分；
 - 算法用 **GRPO**：同一道题采样多个回答，用**组内相对奖励**判断优劣（组内平均分作基线，高于平均的强化），因此不需要 PPO 那套价值网络（critic）；
 - 冷启动用少量高质量思维链样本做 SFT 种子，之后大规模 RL 训练，模型自发涌现出思考、反思、自我纠错行为；
 - 同一份推理能力还通过**蒸馏**迁移给了 1.5B-70B 的小模型（见「蒸馏」节）。
 
-这套范式把推理模型训练成本从人类标注 + 奖励模型 + PPO 压缩到可验证任务 + 采样 + 组内比较，是 2025 年推理模型浪潮（o1、R1 及各家的 Thinking 模式）的共同技术基础。前提是**任务可自动验证**（数学有标准答案、代码有测试用例）：开放写作这类任务没有客观对错，还得回到偏好路线。
+这套范式把可验证任务上的训练成本，从人类标注 + 奖励模型 + PPO，压到规则验证 + 采样 + 组内比较。它是 **DeepSeek-R1 路线的公开基础**。OpenAI o1 等闭源推理模型没有公开训练算法，不能外推为同一套 GRPO；各家 Thinking 模式是产品形态，也不等于同一套 RL。前提仍是**任务可自动验证**（数学有标准答案、代码有测试）：开放写作没有客观对错，还得回到偏好路线。展开见 [RLVR 与 GRPO](llm-rlvr-grpo.md)。
 
 ### 推理模型训练的成本与门槛
 
@@ -260,7 +296,7 @@ RLHF 是出了名的贵和难调：需要奖励模型 + 策略模型 + 参考模
 - **长度失控**：纯 RL 容易让模型为想而想，输出无限变长（token 成本爆炸），需要长度奖励塑形与输出上限约束；
 - **冷启动数据仍要 SFT**：R1 的经验是先给少量高质量思维链种子，纯 RL 从零起很难训稳：纯 RL 是宣传重点，工程上仍是组合拳。
 
-对产品经理的含义：推理模型训练是**重算力的玩法**，多数团队不会自己训，但理解成本结构有助于评估推理 API 为什么贵：思考 token 按输出计费且不可省略，预算公式要把思考量算进去（见 [模型能力与选型](capabilities.md)）。
+对产品经理的含义：推理模型训练是**重算力的玩法**，多数团队不会自己训，但理解成本结构有助于评估推理 API 为什么贵：思考 token 按输出计费且不可省略，预算公式要把思考量算进去（见 [模型能力与边界](capabilities.md)）。
 
 ## 微调技术
 
@@ -284,6 +320,20 @@ RLHF 是出了名的贵和难调：需要奖励模型 + 策略模型 + 参考模
 | target modules | 插在哪些层 | 常插注意力 q/v 投影；覆盖越多越强也越贵 |
 
 **QLoRA** 再把冻结的底座量化到 4-bit（配合 NF4 格式 + 双重量化 + 分页优化器），消费级显卡就能微调几十 B 的模型：代价是训练速度略慢、部署时量化底座与适配器合并更复杂。同类还有 **Adapter**（层间插入小瓶颈模块，适合多任务插件化管理）、**Prefix/Prompt Tuning**（学连续向量前缀，参数最少但表达力有限），但 LoRA/QLoRA 因效果、成本、部署便利最均衡，是实际默认。
+
+LoRA 的数据流可以简化为一条冻结主干与一条可训练旁路：
+
+```mermaid
+flowchart LR
+    x["输入表示 x"] --> base["冻结底座<br/>W x"]
+    x --> down["LoRA A<br/>降维"]
+    down --> up["LoRA B<br/>升维"]
+    base --> add["相加<br/>W x + B A x"]
+    up --> add
+    add --> output["输出表示"]
+```
+
+核心关系：底座权重 W 保持不变，LoRA 只学习低秩增量 BA；推理时把两条分支相加，获得定制行为而不必更新全部参数。
 
 ### 微调的数据需求与风险
 
@@ -424,12 +474,11 @@ Anthropic 官方工程博客（Building Effective Agents）与 OpenAI 官方文�
 
 > 本文为原创整理，综合以下资料撰写，访问验证日期 2026-08-23；模型与论文信息以官方页面为准。
 
-1. AIGC-Interview-Book「大模型基础（精华版）」：预训练（数据与算力）、后训练（微调与对齐）、模型评估章节（预取参考材料）
-2. [Training Language Models to Follow Instructions (InstructGPT)](https://arxiv.org/abs/2203.02155)：RLHF 四步流程、对齐税、欠训练的经济性
-3. [Chinchilla (Training Compute-Optimal LLMs)](https://arxiv.org/abs/2203.15556)：计算最优配比与 20 倍经验值
-4. [Language Models are Few-Shot Learners (GPT-3)](https://arxiv.org/abs/2005.14165)：GPT-3 规模量级
-5. [Direct Preference Optimization (DPO)](https://arxiv.org/abs/2305.18290)：无需奖励模型的直接偏好优化
-6. [LoRA](https://arxiv.org/abs/2106.09685) 与 [QLoRA](https://arxiv.org/abs/2305.14314)：参数高效微调
-7. [DeepSeek-R1](https://github.com/deepseek-ai/DeepSeek-R1)：纯 RL 训练推理（GRPO）与蒸馏案例
-8. [Anthropic Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)：先提示词与检索、评测证明后再微调的原则
-9. 站内关联：[大模型基础](llm-basics.md)、[模型推理与部署](llm-inference.md)、[评估与评测](evaluation.md)、[RAG 基础](rag.md)
+1. [Training Language Models to Follow Instructions (InstructGPT)](https://arxiv.org/abs/2203.02155)：RLHF 流程、对齐税、小参数对齐模型优于更大未对齐模型
+2. [Chinchilla (Training Compute-Optimal LLMs)](https://arxiv.org/abs/2203.15556)：计算最优配比与 20 倍经验值；欠训练的经济性
+3. [Language Models are Few-Shot Learners (GPT-3)](https://arxiv.org/abs/2005.14165)：GPT-3 规模量级
+4. [Direct Preference Optimization (DPO)](https://arxiv.org/abs/2305.18290)：无需奖励模型的直接偏好优化
+5. [LoRA](https://arxiv.org/abs/2106.09685) 与 [QLoRA](https://arxiv.org/abs/2305.14314)：参数高效微调
+6. [DeepSeek-R1](https://arxiv.org/abs/2501.12948)：R1-Zero 为纯 RL，产品化 R1 含 SFT 冷启动；GRPO 与蒸馏
+7. [Anthropic Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)：先提示词与检索、评测证明后再微调的原则
+8. 站内关联：[大模型基础](llm-basics.md)、[模型推理与部署](llm-inference.md)、[评估与评测](evaluation.md)、[RAG 基础](rag.md)、[RLVR 与 GRPO](llm-rlvr-grpo.md)

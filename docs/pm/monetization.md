@@ -1,5 +1,5 @@
 ---
-description: AI 产品商业化与定价：商业模式、定价模型、unit economics、增长与变现指标
+description: AI 产品商业化与增长：五类收费模式、定价与单位经济、GTM 渠道、增长循环与毛利护栏，帮助产品经理在立项前算清推理成本、上线后守住变现。
 ---
 
 ## AI 产品商业化与定价
@@ -15,7 +15,7 @@ description: AI 产品商业化与定价：商业模式、定价模型、unit ec
 
 ### 本文路线
 
-四步走：先判断「能不能收钱」（商业化前置判断、客群与包装、价值指标与支付意愿），再设计「怎么收钱」（定价流程、定价模型与 unit economics、真实定价案例），然后放大「收到的钱」（增长系统、渠道与 GTAM、企业与开发者商业化、平台与生态），最后守住「收来的钱」（增长与变现指标、商业化实验治理、财务模型、反模式）。
+四步走：先判断「能不能收钱」（商业化前置判断、客群与包装、价值指标与支付意愿），再设计「怎么收钱」（定价流程、定价模型与 unit economics、真实定价案例），然后放大「收到的钱」（增长系统、渠道与 GTM、企业与开发者商业化、平台与生态），最后守住「收来的钱」（增长与变现指标、商业化实验治理、财务模型、反模式）。
 
 ## 商业模式全景
 
@@ -23,14 +23,14 @@ description: AI 产品商业化与定价：商业模式、定价模型、unit ec
 
 ### 订阅制
 
-按月/年收费、按能力分层（免费/个人/团队/企业），是消费级 AI 产品的主流。ChatGPT 提供免费版、Go（8 美元/月）、Plus（20 美元/月）、Pro（100 美元/月起）四档个人订阅，团队与企业另有按席位计费方案（以 [ChatGPT 官方定价页](https://chatgpt.com/zh-Hans-CN/pricing/) 为准）。Claude 同样采用免费 + Pro（20 美元/月）+ Max（100 美元/月起）+ 团队/企业席位制（以 [Claude 官方定价页](https://claude.com/pricing) 为准）。
+按月/年收费、按能力分层（免费/个人/团队/企业），是消费级 AI 产品的主流。ChatGPT 提供免费版、Go（8 美元/月）、Plus（20 美元/月）、Pro（100 美元/月起）四档个人订阅，团队与企业另有按席位计费方案（以 [ChatGPT 官方定价页](https://chatgpt.com/pricing) 为准）。Claude 同样采用免费 + Pro（20 美元/月）+ Max（100 美元/月起）+ 团队/企业席位制（以 [Claude 官方定价页](https://claude.com/pricing) 为准）。
 
 -   优点：收入可预测、现金流稳定，用户按「价值感知」而非「用量」付费
 -   缺点：必须持续提供「值得续费」的新能力；免费层成本与付费转化率的平衡难把握；重度用户会「用爆」订阅，若不分档则毛利受损
 
 ### 按量计费
 
-按 token/调用量/处理量计费，是 API 与工具类产品的主流。主流模型厂商均提供按量 API：Google [Gemini API](https://ai.google.dev/pricing) 按每百万 token 计费且 Batch 档位半价；[DeepSeek API](https://api-docs.deepseek.com/quick_start/pricing) 按 token 计费并区分高峰/非高峰价；字节[火山方舟](https://docs.volcengine.com/docs/82379/1544106)豆包模型按 token 计费，部分模型按输入长度分段计价。
+按 token/调用量/处理量计费，是 API 与工具类产品的主流。主流模型厂商均提供按量 API：Google [Gemini API](https://ai.google.dev/gemini-api/docs/pricing) 按每百万 token 计费且 Batch 档位半价；[DeepSeek API](https://api-docs.deepseek.com/quick_start/pricing) 按 token 计费并区分高峰/非高峰价；字节[火山方舟](https://docs.volcengine.com/docs/82379/1544106)豆包模型按 token 计费，部分模型按输入长度分段计价。
 
 -   优点：成本与收入同向变动，天然对冲推理成本风险；对低频/开发类用户友好
 -   缺点：收入随用量波动；用户对「计费不可预期」敏感，需要用量预估与预算护栏；单价压得太低会变成「成本直传」没有包装空间（见 [反模式](#反模式)）
@@ -41,7 +41,7 @@ description: AI 产品商业化与定价：商业模式、定价模型、unit ec
 
 ### 企业定制与私有化
 
-面向大客户的定制部署、私有化与合规定制。ChatGPT 的 Business 套餐按席位计费（按年 20 美元/用户/月，2 人起），Enterprise 为自定义价格并支持按 Token 计费（以 [ChatGPT 官方定价页](https://chatgpt.com/zh-Hans-CN/pricing/) 为准）；Claude Enterprise 采用「席位费 + API 用量费」结构（以 [Claude 官方定价页](https://claude.com/pricing) 为准）。企业市场客单价高、谈判空间大，但销售周期长、定制成本高（详见 [企业与开发者商业化](#企业与开发者商业化)）。
+面向大客户的定制部署、私有化与合规定制。ChatGPT 的 Business 套餐按席位计费（按年 20 美元/用户/月，2 人起），Enterprise 为自定义价格并支持按 Token 计费（以 [ChatGPT 官方定价页](https://chatgpt.com/pricing) 为准）；Claude Enterprise 采用「席位费 + API 用量费」结构（以 [Claude 官方定价页](https://claude.com/pricing) 为准）。企业市场客单价高、谈判空间大，但销售周期长、定制成本高（详见 [企业与开发者商业化](#企业与开发者商业化)）。
 
 ### 交易抽成与收入分成
 
@@ -78,6 +78,20 @@ flowchart TD
 1.  **价值是持续使用还是单次消耗**：持续使用（对话助手、写作伴侣）适合订阅；单次消耗（翻译、图片生成、内容批处理）适合按量或用量包
 2.  **用量是否可预测**：用量平稳（团队协作）用席位；用量波动大（Agent 调度、批处理）用按量 + 用量包兜底
 3.  **谁来付款**：个人自费适合低价订阅（决策快、取消也快）；企业付款适合席位 + 合同价（决策慢、留存稳，但销售成本高）
+
+### 商业模式画布
+
+战略画布回答「凭什么赢」，**商业模式画布**回答「怎么赚钱」。 Osterwalder 与 Pigneur 的九格是：客户细分、价值主张、渠道、客户关系、收入来源、核心资源、关键业务、重要合作、成本结构（出自《商业模式新生代》，本站有[读书笔记](../case/books/pm-2-0.md)里的画布展开）。
+
+AI 产品填画布时，先钉死三格：
+
+| 格子 | 要写清的内容 | 常见漏项 |
+| --- | --- | --- |
+| 价值主张 | 对谁、完成哪项任务、比替代方案好在哪 | 写成「接入大模型」而不是用户结果 |
+| 收入来源 | 订阅、按量、混合、企业合同或抽成中的哪一种 | 免费层没有对应的转化路径 |
+| 成本结构 | 推理、评测、护栏、人工审核、销售 | 只写服务器，不写 token 与抽检 |
+
+两画布一起用：战略画布挑出差异要素（垂直深度、行业知识），商业模式画布确认这些要素能对应到收入与毛利。画完九格仍算不清单次调用成本和毛利门槛，就还停在模式选择，不要进入定价。
 
 ## 商业化前置判断
 
@@ -239,7 +253,7 @@ DeepSeek 2026-08 涨价是反面教材：缓存命中单价涨约 12 倍、输�
 ### 两种定价锚点
 
 -   **成本加成**：以推理成本为底价加毛利。DeepSeek 长期贴着成本底线定价（涨价前 10 元充值可用约 1 亿 token），最终因算力供给紧张大幅提价。成本结构一变价格必须跟着变，是成本加成定价的脆弱性（[人人都是产品经理](https://www.woshipm.com/ai/6451866.html)）
--   **价值定价**：按「帮用户省下/赚到的钱」定价。ChatGPT Plus 20 美元/月、Pro 100 美元/月起，定价明显高于边际成本，对应的是时间节省与生产力价值（以 [ChatGPT 官方定价页](https://chatgpt.com/zh-Hans-CN/pricing/) 为准）
+-   **价值定价**：按「帮用户省下/赚到的钱」定价。ChatGPT Plus 20 美元/月、Pro 100 美元/月起，定价明显高于边际成本，对应的是时间节省与生产力价值（以 [ChatGPT 官方定价页](https://chatgpt.com/pricing) 为准）
 
 价值定价的上限由「用户认可的价值」决定，下限由「推理成本 + 护栏成本 + 获客成本」决定。两者之间是毛利空间；AI 产品要警惕下限随用量上升（见敏感性分析），价值定价如果没留足安全垫，用户「用爆」时就会亏损。
 
@@ -279,8 +293,8 @@ flowchart LR
 
 -   **推理成本**：输入/输出 token 单价 × 用量（估算方法见 [LLM 成本测算](../tools/llm-cost.md)）
 -   **上下文增长**：长对话、长文档使输入随会话非线性膨胀：长会话用户的成本是短会话的数倍
--   **缓存**：上下文缓存命中按折扣价计费，把稳定前缀（系统提示、知识库）做进缓存是降本第一杠杆（以 [Gemini 官方定价页](https://ai.google.dev/pricing) 为准，缓存存储 1 美元/百万 token/小时）
--   **批处理**：非实时任务走 Batch 档位半价（以 [Gemini 官方定价页](https://ai.google.dev/pricing) 为准）
+-   **缓存**：上下文缓存命中按折扣价计费，把稳定前缀（系统提示、知识库）做进缓存是降本第一杠杆（以 [Gemini 官方定价页](https://ai.google.dev/gemini-api/docs/pricing) 为准，缓存存储 1 美元/百万 token/小时）
+-   **批处理**：非实时任务走 Batch 档位半价（以 [Gemini 官方定价页](https://ai.google.dev/gemini-api/docs/pricing) 为准）
 -   **模型路由**：简单任务走小模型/低成本模型，复杂任务才调旗舰：影响成本的最大产品决策
 -   **人工审核**：内容安全、敏感场景的人工兜底，是隐性但刚性的成本
 -   **存储与向量库**：会话记录、知识库、embedding 的存储成本随用户规模线性涨
@@ -288,8 +302,8 @@ flowchart LR
 
 ### 成本优化的三个杠杆
 
--   **模型选型**：简单任务用更小、更便宜的档位（如 Gemini Flash 系列标准输入 0.75 美元/百万 token 促销价，远低于 Pro 系列，以 [Gemini 官方定价页](https://ai.google.dev/pricing) 为准）
--   **缓存与批处理**：上下文缓存命中输入价约为标准输入价的 1/10（缓存存储 1 美元/百万 token/小时），Batch API 半价（以 [Gemini 官方定价页](https://ai.google.dev/pricing) 为准）
+-   **模型选型**：简单任务用更小、更便宜的档位（如 Gemini Flash 系列标准输入 0.75 美元/百万 token 促销价，远低于 Pro 系列，以 [Gemini 官方定价页](https://ai.google.dev/gemini-api/docs/pricing) 为准）
+-   **缓存与批处理**：上下文缓存命中输入价约为标准输入价的 1/10（缓存存储 1 美元/百万 token/小时），Batch API 半价（以 [Gemini 官方定价页](https://ai.google.dev/gemini-api/docs/pricing) 为准）
 -   **峰谷计价**：DeepSeek 非高峰时段价格减半，并自 2026-08-23 起周末全天按非高峰计价（以 [DeepSeek 官方定价页](https://api-docs.deepseek.com/quick_start/pricing) 为准）。用价格杠杆把负载平移到低谷，是算力生意的典型做法
 
 ### 敏感性表：什么会吃掉毛利
@@ -312,7 +326,7 @@ flowchart LR
 ???+ example "单位经济演练"
     一位重度用户每月消耗 100 万输出 token：按 Gemini 3.7 Flash 标准输出价 3.75 美元/百万 token（促销价）计，直接推理成本约 3.75 美元/月，20 美元订阅毛利可观。
 
-    若换成 Pro 级模型（输出 12 美元/百万 token 起），同用量成本约 12 美元/月，毛利被吃掉大半（价格以 [Gemini 官方定价页](https://ai.google.dev/pricing) 为准）。
+    若换成 Pro 级模型（输出 12 美元/百万 token 起），同用量成本约 12 美元/月，毛利被吃掉大半（价格以 [Gemini 官方定价页](https://ai.google.dev/gemini-api/docs/pricing) 为准）。
 
     **模型选型直接决定 unit economics**。
 
@@ -322,7 +336,7 @@ flowchart LR
 
 ### ChatGPT：分层订阅 + 企业双轨
 
-个人免费版之外，Go 8 美元/月、Plus 20 美元/月、Pro 100 美元/月起；团队 Business 按年 20 美元/用户/月（2 人起）、按月 25 美元；Enterprise 自定义价格并支持按 Token 计费（以 [ChatGPT 官方定价页](https://chatgpt.com/zh-Hans-CN/pricing/) 为准，2026-08-23 引用）。低门槛免费/低价层承担拉新，高价层承担重度用户变现，企业双轨承担大客户收入。
+个人免费版之外，Go 8 美元/月、Plus 20 美元/月、Pro 100 美元/月起；团队 Business 按年 20 美元/用户/月（2 人起）、按月 25 美元；Enterprise 自定义价格并支持按 Token 计费（以 [ChatGPT 官方定价页](https://chatgpt.com/pricing) 为准，2026-08-23 引用）。低门槛免费/低价层承担拉新，高价层承担重度用户变现，企业双轨承担大客户收入。
 
 ### Claude：订阅 + API 双轨
 
@@ -330,7 +344,7 @@ Pro 20 美元/月（年付约 17 美元/月）、Max 从 100 美元/月起（5 �
 
 ### Gemini API：免费层 + 按量 + 缓存
 
-Google 为 Gemini API 提供免费层（免费输入输出 token，适合开发者与小型项目起步），付费层按量计费且数据不用于改进产品，Batch/Flex 档位半价，上下文缓存大幅降低重复前缀成本（以 [Gemini 官方定价页](https://ai.google.dev/pricing) 为准，2026-08-23 引用）。免费层是典型的「开发者漏斗」：先零成本试用，再随用量自然付费。
+Google 为 Gemini API 提供免费层（免费输入输出 token，适合开发者与小型项目起步），付费层按量计费且数据不用于改进产品，Batch/Flex 档位半价，上下文缓存大幅降低重复前缀成本（以 [Gemini 官方定价页](https://ai.google.dev/gemini-api/docs/pricing) 为准，2026-08-23 引用）。免费层是典型的「开发者漏斗」：先零成本试用，再随用量自然付费。
 
 ### DeepSeek：低价 API 与 2026 涨价
 
@@ -371,6 +385,8 @@ DeepSeek 的差异化是极低的 API 价格与「无订阅」策略：没有会
 
 增长是「让每个环节复利」，不是「把漏斗做宽」。先分清漏斗与循环，再逐环建设。
 
+产品运营与客户成功在本页的位置是：**日常触达、活动、续费和标杆案例，都服务于下面的增长循环**，而不是另做一套玩法清单。活动能拉新，循环决定能不能复利；客户成功产出案例与转介绍，对应后文的销售辅助 loop。
+
 ### 从 AARRR 到 growth loops
 
 AARRR（获取、激活、留存、变现、传播）是线性漏斗（[爱范儿专访范冰](https://www.ifanr.com/621422)），它适合诊断「哪一环断了」，但**漏斗是消耗型的**：每一环都在漏，流量买多少漏多少。Growth loops 是循环型的：**循环的输出是下一轮循环的输入**，每个用户带来下一个用户（或下一次使用），因此可以复利。
@@ -399,7 +415,7 @@ flowchart LR
 
 **每一类循环都会衰减**：内容 loop 在内容供给饱和后衰减，协作 loop 在团队满员后衰减，API loop 在平台抽成上涨后衰减。增长系统的建设 = 同时持有多个循环，并在主循环衰减前孵化新循环（《精益创业》的引擎组合思想：调优现有引擎 + 孵化新引擎）。
 
-口碑 loop 的 B2B 变体是**销售辅助 loop**：客户成功推动标杆客户产出案例与转介绍 → 销售跟进放大为新客户 → 新客户再产出新案例，形成「口碑 + 销售」的闭环。它的衰减点在销售产能：转介绍线索一旦喂不饱销售团队，闭环就退化成普通漏斗（对应 [渠道与 GTAM](#渠道与-gtam) 的 sales-assisted PLG）。
+口碑 loop 的 B2B 变体是**销售辅助 loop**：客户成功推动标杆客户产出案例与转介绍 → 销售跟进放大为新客户 → 新客户再产出新案例，形成「口碑 + 销售」的闭环。它的衰减点在销售产能：转介绍线索一旦喂不饱销售团队，闭环就退化成普通漏斗（对应 [渠道与 GTM](#渠道与-gtm) 的 sales-assisted PLG）。
 
 ### 激活：定义与实验
 
@@ -438,9 +454,9 @@ DeepSeek 涨价后调用量次日即下滑约 55%–59%（[人人都是产品经
 
 留存之后靠扩张：**席位扩张**（团队加人）、**模块 upsell**（从 AI 写作加购到 AI 自动化）、**用量增长**（用户用得更深，按量收入自然涨）、**跨产品 adoption**（从单产品扩展到全家桶）。AI 产品的 NRR 主要靠用量增长驱动：用户用得更深 = 推理成本上升，所以扩张收入必须与毛利监控同步（见敏感性表）。
 
-## 渠道与 GTAM
+## 渠道与 GTM
 
-GTM（Go-To-Market）决定「产品做出来后怎么到达付费客户」。AI 产品常见的六种渠道：
+GTM（Go-To-Market，上市策略）决定「产品做出来后怎么到达付费客户」。AI 产品常见的六种渠道：
 
 ### 渠道类型
 
@@ -542,7 +558,7 @@ Perplexity 的出版商计划是理解 AI 生态收入的起点：当用户的�
 
 ### AI 产品的特殊指标
 
--   **上下文成本**：输入 token 随上下文增长，长对话/长文档场景成本非线性上升：这正是上下文缓存存在的原因（以 [Gemini 官方定价页](https://ai.google.dev/pricing) 为准）
+-   **上下文成本**：输入 token 随上下文增长，长对话/长文档场景成本非线性上升：这正是上下文缓存存在的原因（以 [Gemini 官方定价页](https://ai.google.dev/gemini-api/docs/pricing) 为准）
 -   **评估成本**：模型输出质量需持续评测（评测集 + 人工抽检，方法见 [评估与评测](../ai/evaluation.md)），是「看不见」的持续投入
 -   **API 毛利率**：提供 API 的产品需单独核算模型调用成本与收入，避免「卖得越多亏得越多」
 -   **护栏成本**：安全、合规、审核的隐性支出：如火山方舟视频生成「仅对成功生成的视频计费，审核失败不收费」（[火山方舟模型价格页](https://docs.volcengine.com/docs/82379/1544106)），把失败成本留在提供方一侧
@@ -644,9 +660,9 @@ Perplexity 的出版商计划是理解 AI 生态收入的起点：当用户的�
 
 ### 官方一手来源（2026-08-23 验证可达）
 
-1.  [ChatGPT 官方定价页](https://chatgpt.com/zh-Hans-CN/pricing/)（OpenAI 官方，个人分层订阅与 Business/Enterprise 定价）
+1.  [ChatGPT 官方定价页](https://chatgpt.com/pricing)（OpenAI 官方，个人分层订阅与 Business/Enterprise 定价）
 2.  [Claude 官方定价页](https://claude.com/pricing)（Anthropic 官方，anthropic.com/pricing 301 重定向至此）
-3.  [Gemini API 定价](https://ai.google.dev/pricing)（Google 官方，免费层、缓存、Batch 档位）
+3.  [Gemini API 定价](https://ai.google.dev/gemini-api/docs/pricing)（Google 官方，免费层、缓存、Batch 档位）
 4.  [DeepSeek API 定价](https://api-docs.deepseek.com/quick_start/pricing)（DeepSeek 官方，高峰/非高峰计价）
 5.  [Notion 官方定价页](https://www.notion.com/pricing)（Notion 官方，席位 + 信用点计费）
 6.  [Perplexity 官方帮助中心：套餐对比](https://www.perplexity.ai/help-center/en/articles/11187416-which-perplexity-subscription-plan-is-right-for-you)（Perplexity 官方）
