@@ -1,5 +1,5 @@
 ---
-description: 模型推理与部署机制：预填充/解码、KV Cache、量化、延迟-成本-吞吐三角
+description: 模型推理与部署：预填充与解码、KV Cache、MQA/GQA/MLA、量化、吞吐与私有化，讲清延迟、成本和并发如何被缓存与调度决定。服务优化见本页，论文出处见推理系统前沿页。
 ---
 
 ## 模型推理与部署
@@ -112,11 +112,12 @@ KV Cache 是**长上下文 × 大模型 × 高并发**的三重乘积：
 
 | 优化 | 思路 | 效果 |
 | --- | --- | --- |
-| MQA/GQA | 多个 Query 头共享同一组 K/V 头 | 缓存缩到原来的几分之一（架构层面） |
+| MQA | 全部 Query 头共享 **1 组** K/V | 缓存约为 MHA 的 `1/H_q`；头间 K/V 多样性下降 |
+| GQA | Query 头分组，组内共享 K/V（`1 < H_kv < H_q`） | 质量与缓存折中；Llama 等常用 |
+| MLA | 把 K/V 压缩到低维潜空间再投影 | DeepSeek 系架构，缓存大幅缩水 |
 | PagedAttention | KV Cache 分页管理，按需分配 | 消除预留浪费与碎片，提并发（见「吞吐优化」） |
 | KV Cache 量化 | 缓存用 INT8 存储 | 显存再砍一半，质量影响通常小 |
 | 窗口/淘汰 | 只保留最近 N 个 token 的缓存 | 适合流式对话，放弃超远历史 |
-| MLA | 把 K/V 压缩到低维潜空间再投影 | DeepSeek 系架构，缓存大幅缩水 |
 
 ## 采样与解码策略
 
@@ -131,7 +132,7 @@ KV Cache 是**长上下文 × 大模型 × 高并发**的三重乘积：
 
 ### 停止条件
 
-生成何时停？常见停止条件：生成结束符（EOS）、命中停止序列（stop strings）、达到 `max_tokens` 上限、结构化解码器确认语法已闭合、业务主动中止（超时、用户打断）。模型不会在说完一句话时天然停止：**话痨、截断、停不下来**这些问题，一半是停止条件没设好。
+生成何时停？常见停止条件：生成结束符（EOS）、命中停止序列（stop strings）、达到 `max_tokens` 上限、结构化解码器确认语法已闭合、业务主动中止（超时、用户打断）。模型不会在说完一句话时天然停止：**话痨、截断、停不下来**这些问题，一半是停止条件没设好。经典 RNN seq2seq 中的 `<EOS>`、batch `finished mask` 与长度惩罚见[深度学习基础](dl-basics.md)。
 
 ### 参数推荐与常见坑
 
@@ -356,13 +357,15 @@ flowchart LR
 
 1. **异步化**：生成不阻塞用户：任务进队列，完成后推送/轮询结果（如报告生成、批量分析），用户该干嘛干嘛；
 2. **预生成**：高频问答、常见场景提前生成缓存结果，命中直接返回（应用层缓存，连模型都不用调）；
-3. **分层**：简单请求走快模型/低 effort，复杂请求才上旗舰/高 effort：把重计算留给真正需要的 10%（路由做法见 [模型能力与选型](capabilities.md)）。
+3. **分层**：简单请求走快模型/低 effort，复杂请求才上旗舰/高 effort：把重计算留给真正需要的 10%（路由做法见 [模型能力与边界](capabilities.md)）。
 
 ### 与相关页面的分工
 
 | 页面 | 回答什么 |
 | --- | --- |
 | 本文（llm-inference） | 推理的**机制**：为什么慢、为什么贵、怎么优化 |
+| [推理系统与量化](llm-inference-systems-quantization.md) | 论文导读：FlashAttention、PagedAttention、投机解码、量化 |
+| [注意力与 KV Cache](llm-frontier-attention.md) | 论文导读：MHA/MQA/GQA/MLA 与缓存压缩 |
 | [LLM API 与供应商](../tools/llm-api.md) | 怎么**选**：供应商、模型、API 参数、评测清单 |
 | [LLM 成本测算](../tools/llm-cost.md) | 怎么**算账**：单次成本、月预算、降本杠杆 |
 | [模型训练与对齐](llm-training.md) | 模型侧的另一半：训练、微调、对齐 |
@@ -371,9 +374,9 @@ flowchart LR
 
 > 本文为原创整理，综合以下资料撰写，访问验证日期 2026-08-23；推理引擎与价格变动频繁，以官方页面为准。
 
-1. AIGC-Interview-Book「大模型基础（精华版）」：模型架构与工作原理（Prefill/Decode、KV Cache、批处理、量化、MoE 章节）（预取参考材料）
+1. AIGC-Interview-Book「大模型基础（精华版）」：仅供维护者交叉验证的本地预取材料（Prefill/Decode、KV Cache、批处理、量化、MoE），读者以 vLLM 等公开文档为准
 2. [vLLM](https://github.com/vllm-project/vllm)：连续批处理、PagedAttention 与高吞吐推理
 3. [SGLang](https://github.com/sgl-project/sglang)：结构化生成与推理优化
 4. [Ollama](https://ollama.com) 与 [llama.cpp](https://github.com/ggml-org/llama.cpp)：本地运行时
 5. [DeepSeek-R1](https://github.com/deepseek-ai/DeepSeek-R1)：MoE 与蒸馏部署案例
-6. 站内关联：[大模型基础](llm-basics.md)、[模型训练与对齐](llm-training.md)、[模型能力与选型](capabilities.md)、[LLM API 与供应商](../tools/llm-api.md)、[LLM 成本测算](../tools/llm-cost.md)
+6. 站内关联：[大模型基础](llm-basics.md)、[模型训练与对齐](llm-training.md)、[模型能力与边界](capabilities.md)、[LLM API 与供应商](../tools/llm-api.md)、[LLM 成本测算](../tools/llm-cost.md)、[推理系统与量化](llm-inference-systems-quantization.md)

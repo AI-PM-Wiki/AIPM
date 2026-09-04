@@ -197,7 +197,7 @@ flowchart LR
 -   [入职之后](index.md)：绩效、晋升、转行与劳动权益的栏目导航
 -   [入行感悟](../insights/newcomers.md)：三类切入路径与 AI 产品经理第一年体验
 -   [职业发展感悟](../insights/career.md)：跳槽、平台选择与职业瓶颈的经验视角
--   [常见岗位与 JD](../positions/index.md)：目标岗位职责与 JD 关键词
+-   [产品经理协作团队与岗位](../positions/index.md)：目标岗位职责与协作边界
 -   [简历与作品集](../resume-portfolio.md)：把项目经历整理成可追问的材料
 -   [自学路线](../../intro/self-study-roadmap.md)：从通用产品技能到 AI 深耕的学习路径
 -   [AI 产品经理能力模型](../../intro/capability.md)：识别当前能力与目标岗位差距

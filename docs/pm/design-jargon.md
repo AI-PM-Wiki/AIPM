@@ -1,5 +1,5 @@
 ---
-description: 设计师黑话速查：9 类 160+ 条术语、JD 与评审潜台词，设计沟通必备
+description: 设计师黑话速查：按角色、方法、组件、视觉、动效、可访问性和 AI 设计整理 160 余条术语，方便评审、JD 阅读和跨角色沟通。
 ---
 
 ## 设计师黑话速查
@@ -253,4 +253,4 @@ AI 时代的新黑话，更新极快，以官方页面为准。
 -   [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/)（可访问性规范）
 -   [WAI-ARIA](https://www.w3.org/TR/wai-aria-1.2/)（无障碍语义规范）
 -   [Figma 帮助中心](https://help.figma.com)（Auto Layout、Variants 等工具术语）
--   [Style Dictionary](https://amzn.github.io/style-dictionary/)（设计令牌编译工具）
+-   [Style Dictionary](https://styledictionary.com)（设计令牌编译工具）

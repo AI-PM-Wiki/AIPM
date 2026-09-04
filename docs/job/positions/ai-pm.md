@@ -21,7 +21,7 @@ AI 产品经理的工作不止是选择模型或编写 Prompt。真实职责通�
 | 模型与评测型 | 能力规划、评测集、模型版本与发布 | 基础模型、模型 API、评测平台 | 任务质量、评测通过、延迟、成本与安全 |
 | 行业与交付型 | 领域规则、客户流程、部署、合规与产品化 | 金融、医疗、教育、政企 AI | 验收、采用、续费、交付效率与风险 |
 
-同一个岗位可以同时属于多个方向，例如“企业级 × RAG × Agent”岗位。行业岗位版图见[产品经理岗位类别](../../intro/product-manager-types.md)，能力坐标见[AI 产品经理能力模型](../../intro/capability.md)。
+同一个岗位可以同时属于多个方向，例如“企业级 × RAG × Agent”岗位。行业岗位版图见[产品经理岗位类别](../product-manager-types/index.md)，能力坐标见[AI 产品经理能力模型](../../intro/capability.md)。
 
 ???+ note "时效性说明"
     本页的能力与职责按 2026-08-30 的站内工作模型整理。
@@ -165,7 +165,7 @@ AI 产品经理的工作不止是选择模型或编写 Prompt。真实职责通�
 ## 相关阅读
 
 -   [AI 产品经理能力模型](../../intro/capability.md)：五维能力、四层责任和岗位分析坐标
--   [产品经理岗位类别](../../intro/product-manager-types.md)：从技术对象、服务对象和结果责任选择方向
+-   [产品经理岗位类别](../product-manager-types/index.md)：从技术对象、服务对象和结果责任选择方向
 -   [自学路线](../../intro/self-study-roadmap.md)：从产品基本功到 AI 系统、评测、Agent 与上线治理
 -   [评估与评测](../../ai/evaluation.md)：评测集、线上指标、人工评测与 badcase 闭环
 -   [Agent 产品](../../practice/agent-product.md)：权限、观测、失败恢复与工作流选择

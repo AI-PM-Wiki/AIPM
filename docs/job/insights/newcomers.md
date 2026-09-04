@@ -41,7 +41,7 @@ flowchart TD
 
 **为什么**：三类路径各有利弊。AI 公司节奏快、认知新，但竞争激烈、岗位要求高；传统行业的 AI 岗更稳、竞争小，但 AI 深度和话语权往往有限；技能切入最能体现主动性，但需要时间和自律。没有哪条一定对，取决于你的背景与风险承受力。
 
-**建议**：结合自己的背景选一条主路径深耕，不要三条同时铺开；同时对照[常见岗位与JD](../positions/index.md)栏目了解当前市场上各类岗位的真实要求，避免凭想象求职。
+**建议**：结合自己的背景选一条主路径深耕，不要三条同时铺开；同时对照[产品经理岗位类别](../product-manager-types/index.md)和[产品经理协作团队与岗位](../positions/index.md)了解当前市场上的真实岗位要求与协作边界，避免凭想象求职。
 
 ### 共识三：第一年的真实体验——信息差大，上手靠做
 
@@ -75,7 +75,8 @@ flowchart TD
 ## 相关阅读
 
 -   [求职专题首页](../index.md)
--   [常见岗位与JD](../positions/index.md)
+-   [产品经理协作团队与岗位](../positions/index.md)
+-   [产品经理岗位类别](../product-manager-types/index.md)
 -   [面试](../interviews/index.md)
 -   [自学路线](../../intro/self-study-roadmap.md)
 -   [AI 产品经理能力模型](../../intro/capability.md)

@@ -12,6 +12,7 @@ description: 本站基于播客节目整理的学习笔记，聚焦 AI 产品、
 | --- | --- | --- |
 | 《看我 72 变》ep17 | 海投练习、面试表达、反向面试与 Offer 选择 | [我不是真有面试天赋：手握 15 个 Offer 的求职面试复盘](interview-methods-15-offers.md) |
 | 《跨国串门儿计划》ep649 | Anthropic、Claude Code、Evals、PRD 与 AI 时代的产品工作 | [Anthropic 技术产品经理：为什么最优秀的产品领导者正在为 2028 年布局](anthropic-pm-2028.md) |
+| 《跨国串门儿计划》ep660 | 不要为了招产品经理而招产品经理、个人贡献者工作、拉手风琴 | [Twitter 前产品增长总监：不要为了招产品经理而招产品经理](whatnot-cpo-regret-pm.md) |
 
 ### 阅读方式
 
