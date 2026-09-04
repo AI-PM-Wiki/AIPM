@@ -61,7 +61,7 @@ flowchart TB
 
 概念基础只回答「这是不是策略、怎样写下来」。问题从哪来、怎样才算好，见[发现问题](../02-discovering-problems/index.md)。怎样写成可开发需求并在上线后验证，见[需求与验证](../03-spec-and-validation/index.md)。
 
-岗位边界因公司而异。百度常说功能型 / 策略型，腾讯常说产品策划 / 产品运营，名称不能直接决定职责。先对照[产品经理岗位类别](../../../intro/product-manager-types.md)里的策略产品说明，再看本模块的工作循环。
+岗位边界因公司而异。百度常说功能型 / 策略型，腾讯常说产品策划 / 产品运营，名称不能直接决定职责。先对照[策略产品经理](../../../job/product-manager-types/internet-product-manager.md#策略产品经理)，再看本模块的工作循环。
 
 评测指标、实验设计和模型协作的工程细节，见[评测](../../../ai/evaluation.md)。本模块不展开算法公式和实验平台。
 
@@ -90,7 +90,7 @@ flowchart TB
 | 开发评估 | 输入口径、逻辑冲突、权重、数据链路 | 策略错误可能在页面上看不出来 |
 | 效果回归 | 总体、分群、高风险 Case 与下一轮假设 | 平均值会掩盖误伤 |
 
-岗位名称只描述擅长的手段。百度常说功能型 / 策略型，腾讯常说产品策划 / 产品运营，判断岗位应看交付物。对照见[产品经理岗位类别](../../../intro/product-manager-types.md)。
+岗位名称只描述擅长的手段。百度常说功能型 / 策略型，腾讯常说产品策划 / 产品运营，判断岗位应看交付物。对照见[策略产品经理](../../../job/product-manager-types/internet-product-manager.md#策略产品经理)。
 
 ### 贯穿检查
 
@@ -110,7 +110,7 @@ flowchart TB
 -   [策略产品经理专题](../index.md)：七个模块的阅读顺序和贯穿检查
 -   [发现问题](../02-discovering-problems/index.md)：反馈、监控、回归、调研如何从结果走进问题
 -   [策略通用方法论](../03-spec-and-validation/06-methodology.md)：定义理想态、拆未达、给方案、验证
--   [产品经理岗位类别](../../../intro/product-manager-types.md)：策略产品与其他方向的分工
+-   [策略产品经理](../../../job/product-manager-types/internet-product-manager.md#策略产品经理)：与 C 端、商业化、数据等方向的分工
 -   [评测](../../../ai/evaluation.md)：指标、实验与模型协作
 
 ## 来源说明
