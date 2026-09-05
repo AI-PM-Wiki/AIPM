@@ -192,7 +192,7 @@ flowchart LR
 -   [阿里巴巴](alibaba.md)、[腾讯](tencent.md)：同梯队大厂的组织与岗位对比
 -   [大模型创业公司](ai-startups.md)：创业公司与大厂的岗位差异
 -   [「校招」字节跳动｜开发者 AI 产品经理](../jd-breakdowns/bytedance-developer-ai-pm.md)：TRAE / 豆包编程产品岗的 JD 拆解
--   [「校招」字节跳动｜产品经理 - 业务中台](../jd-breakdowns/bytedance-business-platform-pm.md)：中台能力服务多条产品线的 JD 拆解
+-   [「校招」字节跳动｜产品经理 - 业务中台](../jd-breakdowns/bytedance-business-platform-pm.md)：地图数据与地理位置中台服务多条产品线的 JD 拆解
 -   [豆包拆解](../../practice/case-analysis/doubao.md)：C 端助手的定位、能力与商业化
 -   [AI 产品经理面试](../interviews/interview-guide.md)：题型结构与答题框架
 -   [求职专题简介](../index.md)

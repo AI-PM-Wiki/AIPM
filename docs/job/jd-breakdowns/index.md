@@ -26,8 +26,8 @@ flowchart LR
 
 -   [「校招」字节跳动｜开发者 AI 产品经理](bytedance-developer-ai-pm.md)：从一份 2025 校招 JD 出发，拆解 AI 编程产品的用户分层、IDE 形态、模型边界、评测与面试准备
 -   [「社招」MiniMax｜AI Agent 产品经理](minimax-ai-agent-pm.md)：从一份 Agent 产品 JD 出发，拆解用户场景、Agent 机制、效果评估、能力匹配与面试准备
--   [「实习」百度｜策略产品实习生](baidu-strategy-product-intern.md)：从一份策略产品实习 JD 出发，拆解线索流程、内容策略、大模型准召、数据分析与跨团队落地
--   [「校招」字节跳动｜产品经理 - 业务中台](bytedance-business-platform-pm.md)：从一份 2027 届校招 JD 出发，拆解地图数据、中台能力、业务场景、策略方案与项目落地
+-   [「实习」百度｜策略产品实习生](baidu-strategy-product-intern.md)：从一份 MEG 北京日常实习 JD 出发，拆解线索流程、内容策略、教育 AI 产品线、大模型准召与跨团队落地
+-   [「校招」字节跳动｜产品经理 - 业务中台](bytedance-business-platform-pm.md)：从一份 2027 届校招 JD 出发，拆解地图数据、地理位置中台、跨产品应用场景、策略方案与项目落地
 -   [「校招」腾讯｜地图 AI 产品经理培训生](tencent-map-ai-pm-trainee.md)：从一份地图导航 AI 产品岗位 JD 出发，拆解导航 Agent、AI Buddy、用户体验、数据分析与模型协作
 
 ## 一篇 JD 怎么拆
