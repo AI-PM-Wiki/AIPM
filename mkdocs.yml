@@ -331,6 +331,9 @@ nav:
       - 投资入门与职业发展: business/19-frontier-finance-practice/09-investment-career-guide.md
   - AI 基础:
     - AI 基础简介: ai/index.md
+    - AI 黑话与定理:
+      - AI 黑话速查: ai/jargon.md
+      - AI 定理与经验定律: ai/theorems.md
     - 机器学习与深度学习:
       - 机器学习基础: ai/ml-basics.md
       - 深度学习基础: ai/dl-basics.md
@@ -495,7 +498,8 @@ nav:
         - 字节跳动: job/companies/bytedance.md
         - 阿里巴巴: job/companies/alibaba.md
         - 腾讯: job/companies/tencent.md
-        - 百度与美团: job/companies/baidu-meituan.md
+        - 百度: job/companies/baidu.md
+        - 美团: job/companies/meituan.md
         - 华为: job/companies/huawei.md
         - 大模型创业公司: job/companies/ai-startups.md
       - 产品经理岗位类别:
@@ -782,12 +786,12 @@ extra_javascript:
   - '_static/js/banner.js?v=11'
   - '_static/js/header-line.js?v=1'
   - '_static/js/umami.js?v=1'
-  - '_static/js/mermaid-zoom.js?v=3'
+  - '_static/js/mermaid-zoom.js?v=4'
   - 'https://hypothes.is/embed.js'
   - '_static/js/hypothesis.js?v=9'
 extra_css:
   - '_static/css/extra.css?v=35'
-  - '_static/css/mermaid-zoom.css?v=3'
+  - '_static/css/mermaid-zoom.css?v=4'
 
 # Extensions
 markdown_extensions:

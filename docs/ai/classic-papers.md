@@ -110,8 +110,8 @@ flowchart LR
 | 31 | [*An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale*](https://arxiv.org/abs/2010.11929)（Dosovitskiy 等，2020） | ViT 把图像切成 patch 当 token，用 Transformer 做视觉识别 | 视觉也可以走 token 化；分辨率、patch 大小和算力一起决定成本；详见 [Transformer 架构](transformer.md) |
 | 32 | [*Learning Transferable Visual Models From Natural Language Supervision*](https://arxiv.org/abs/2103.00020)（Radford 等，2021） | CLIP 用图文对比学习对齐视觉与语言空间 | 多模态检索和零样本分类的基础；对齐空间不等于细粒度推理；详见 [多模态理解](multimodal.md) |
 | 33 | [*Training Language Models to Follow Instructions with Human Feedback*](https://arxiv.org/abs/2203.02155)（Ouyang 等，2022） | InstructGPT：SFT + RM + PPO，小参数对齐模型优于更大未对齐 GPT-3 | 对齐改变的是「听不听人话」，不是 Chinchilla 意义上的训练/推理算力配比；详见 [模型训练与对齐](llm-training.md) |
-| 34 | [*Scaling Laws for Neural Language Models*](https://arxiv.org/abs/2001.08361)（Kaplan 等，2020） | 损失随参数、数据、算力呈可预测的幂律 | 规模是杠杆，但幂律在数据质量、重复和过训练区间会拐弯 |
-| 35 | [*Training Compute-Optimal Large Language Models*](https://arxiv.org/abs/2203.15556)（Hoffmann 等，2022） | Chinchilla：同等算力下应给模型配足够 token，许多大模型当时欠训练 | 训练/推理经济最优 ≠ 对齐税；不要和 InstructGPT 的结论混写；详见 [模型训练与对齐](llm-training.md) |
+| 34 | [*Scaling Laws for Neural Language Models*](https://arxiv.org/abs/2001.08361)（Kaplan 等，2020） | 损失随参数、数据、算力呈可预测的幂律 | 规模是杠杆，但幂律在数据质量、重复和过训练区间会拐弯；定律对照见 [AI 定理与经验定律](theorems.md#scaling-law) |
+| 35 | [*Training Compute-Optimal Large Language Models*](https://arxiv.org/abs/2203.15556)（Hoffmann 等，2022） | Chinchilla：同等算力下应给模型配足够 token，许多大模型当时欠训练 | 训练/推理经济最优 ≠ 对齐税；不要和 InstructGPT 的结论混写；详见 [模型训练与对齐](llm-training.md)、[AI 定理与经验定律](theorems.md#chinchilla-计算最优配比) |
 
 ## 经典编号接到哪一页
 

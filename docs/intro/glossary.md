@@ -175,6 +175,8 @@ description: 产品经理黑话速查：覆盖大厂沟通、需求文档、数�
 
 ### AI 产品与工程
 
+研究圈、训练和论文口径见 [AI 黑话速查](../ai/jargon.md)；Scaling Law、Bitter Lesson、Densing Law、莫拉维克悖论等见 [AI 定理与经验定律](../ai/theorems.md)。
+
 | 黑话 | 含义 |
 | --- | --- |
 | LLM | Large Language Model，大语言模型；通过大规模数据训练、按上下文生成和理解内容的模型，具体能力取决于模型版本、上下文和调用方式 |

@@ -179,11 +179,13 @@
   user-select: none;
 }
 
-/* 画布填满视口,图表平移不受内容尺寸限制,模拟无限画布。 */
+/* 画布填满视口;平移由 JS 写在 canvas 的 2D translate 上。
+   倍率用宿主 CSS zoom 重绘,不要 will-change / 3D transform,以免把 SVG 栅格化。 */
 .mermaid-zoom__canvas {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  transform-origin: 0 0;
 }
 
 .mermaid-zoom__canvas > .mermaid {
@@ -191,8 +193,6 @@
   flex: none;
   margin: 0;
   pointer-events: auto;
-  transform-origin: top left;
-  will-change: transform;
 }
 
 @media (max-width: 44rem) {
