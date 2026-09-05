@@ -446,6 +446,21 @@ nav:
       - 我不是真有面试天赋：手握 15 个 Offer 的求职面试复盘: case/podcasts/interview-methods-15-offers.md
       - Anthropic 技术产品经理：为什么最优秀的产品领导者正在为 2028 年布局: case/podcasts/anthropic-pm-2028.md
       - Twitter 前产品增长总监：不要为了招产品经理而招产品经理: case/podcasts/whatnot-cpo-regret-pm.md
+      - 产品小白升级攻略:
+        - 系列简介: case/podcasts/product-xiaobai-upgrade-guide/index.md
+        - 1. 你为什么想做产品经理？: case/podcasts/product-xiaobai-upgrade-guide/01-why-become-product-manager.md
+        - 2. 产品经理的工作流程？: case/podcasts/product-xiaobai-upgrade-guide/02-product-manager-workflow.md
+        - 3. ToB/ToC 的产品经理有什么区别？: case/podcasts/product-xiaobai-upgrade-guide/03-tob-vs-toc-product-manager.md
+        - 4. 需求的优先级如何排布？: case/podcasts/product-xiaobai-upgrade-guide/04-requirement-prioritization.md
+        - 5. 当研发不认可你怎么办？: case/podcasts/product-xiaobai-upgrade-guide/05-when-engineering-disagrees.md
+        - 6. 如果功能上线效果不符合预期怎么办？: case/podcasts/product-xiaobai-upgrade-guide/06-when-feature-underperforms.md
+        - 7. 推荐一款你喜欢的 App: case/podcasts/product-xiaobai-upgrade-guide/07-recommend-an-app.md
+        - 8. 在过去的经历中遇到最大的困难？: case/podcasts/product-xiaobai-upgrade-guide/08-biggest-difficulty.md
+        - 9. 你有什么问题想要问我？: case/podcasts/product-xiaobai-upgrade-guide/09-questions-for-interviewer.md
+        - 10. 策略产品通用基本功：链路与漏斗: case/podcasts/product-xiaobai-upgrade-guide/10-strategy-funnel.md
+        - 11. 如何做好策略产品：大爱: case/podcasts/product-xiaobai-upgrade-guide/11-strategy-product-collaboration.md
+        - 12. 搜广推：不同策略相似逻辑: case/podcasts/product-xiaobai-upgrade-guide/12-search-recommendation-advertising.md
+        - 番外 1：新闻 × 产品经理: case/podcasts/product-xiaobai-upgrade-guide/13-extra-news-product.md
     - 策略产品经理:
       - 策略产品经理: case/strategy-pm/index.md
       - 概念基础:
