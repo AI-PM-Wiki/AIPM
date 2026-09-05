@@ -7,9 +7,13 @@
   本身的矢量内容放大,关闭后原位恢复。
 
   放大视图是一个不设边界的画布:
-  - 鼠标左键拖动平移;
-  - 滚轮按指针位置缩放;
-  - 触摸设备用 Pointer Events 支持单指拖动与双指缩放。
+    - 鼠标左键拖动平移;
+    - 滚轮按指针位置缩放;
+    - 触摸设备用 Pointer Events 支持单指拖动与双指缩放。
+    - 倍率用 CSS zoom 重绘 closed-shadow 里的 SVG,保持矢量清晰;
+      平移写在画布的 2D translate 上。不要把宿主提成 3D 合成层再 scale:
+      那会按原始像素栅格化后再拉伸,放大即糊。
+    - MAX_SCALE 只是防止极端倍率撑爆绘制的护栏,不是 3 倍那样的体验顶盖。
 
   生命周期:
   - 首次扫描 + MutationObserver:等待 Mermaid 渲染和 instant 换页;
@@ -21,9 +25,9 @@
 
   const DIALOG_ID = "aipm-mermaid-dialog";
   const READY_ATTR = "data-mermaid-zoom-ready";
-  const MIN_SCALE = 0.5;
-  const MAX_SCALE = 3;
-  const SCALE_STEP = 0.25;
+  const MIN_SCALE = 0.05;
+  const MAX_SCALE = 64;
+  const ZOOM_FACTOR = 1.25;
   const DEFAULT_SCALE_CAP = 1.5;
   const FOCUSABLE_SELECTOR =
     "button:not([disabled]), [href], input:not([disabled]), " +
@@ -115,10 +119,10 @@
 
     dialog.querySelector('[data-mermaid-action="fit"]').addEventListener("click", fitToWindow);
     dialog.querySelector('[data-mermaid-action="zoom-out"]').addEventListener("click", () => {
-      zoomAt(state.scale - SCALE_STEP, viewportCenterX(), viewportCenterY());
+      zoomAt(state.scale / ZOOM_FACTOR, viewportCenterX(), viewportCenterY());
     });
     dialog.querySelector('[data-mermaid-action="zoom-in"]').addEventListener("click", () => {
-      zoomAt(state.scale + SCALE_STEP, viewportCenterX(), viewportCenterY());
+      zoomAt(state.scale * ZOOM_FACTOR, viewportCenterX(), viewportCenterY());
     });
     state.closeButton.addEventListener("click", () => closeViewer(true));
 
@@ -281,10 +285,10 @@
   }
 
   const applyTransform = () => {
-    if (!state.source) return;
-    state.source.style.transform =
-      `translate3d(${state.panX}px, ${state.panY}px, 0) scale(${state.scale})`;
-    state.source.style.transformOrigin = "top left";
+    if (!state.source || !state.canvas) return;
+    state.source.style.zoom = String(state.scale);
+    state.source.style.transform = "none";
+    state.canvas.style.transform = `translate(${state.panX}px, ${state.panY}px)`;
     if (state.scaleText) state.scaleText.textContent = `${Math.round(state.scale * 100)}%`;
   };
 
@@ -411,7 +415,8 @@
     host.style.position = "absolute";
     host.style.left = "0";
     host.style.top = "0";
-    host.style.transformOrigin = "top left";
+    host.style.transform = "none";
+    host.style.zoom = "1";
     document.body.style.overflow = "hidden";
 
     try {
@@ -454,7 +459,10 @@
     if (state.sourceStyle === null) source.removeAttribute("style");
     else source.setAttribute("style", state.sourceStyle);
     if (trigger) trigger.hidden = false;
-    if (state.canvas) state.canvas.replaceChildren();
+    if (state.canvas) {
+      state.canvas.replaceChildren();
+      state.canvas.style.transform = "";
+    }
     document.body.style.overflow = state.previousOverflow;
 
     state.source = null;
