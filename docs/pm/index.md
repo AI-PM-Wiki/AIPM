@@ -75,7 +75,7 @@ flowchart LR
 
 ## 内容列表
 
-本栏目与其他栏目的分工：**[AI 基础](../ai/index.md)**回答"模型能做什么"（能力边界与评测），**[实战](../practice/index.md)**回答"具体产品形态怎么设计"（Agent、Copilot、知识库问答），**[工具](../tools/index.md)**回答"怎么算账"（成本、数据），**[商业与财会](../business/index.md)**回答"金融与财务领域是怎么运转的"，**[工商管理](../management/index.md)**回答"课堂里的战略、营销、组织与项目管理原理"，**[垂直领域](../vertical/index.md)**回答"具体行业的对象、流程、监管和 AI 切入点"，**[求职](../job/index.md)**回答"怎么把方法论讲给面试官"。本页负责把方法论串成决策链。
+本栏目与其他栏目的分工：**[AI 基础](../ai/index.md)**回答"模型能做什么"（能力边界与评测），**[实战](../practice/index.md)**回答"具体产品形态怎么设计"（Agent、Copilot、知识库问答），**[工具](../tools/index.md)**回答"怎么算账"（成本、数据），**[商业与财会](../business/index.md)**回答"金融与财务领域是怎么运转的"，**[工商管理](../management/index.md)**回答"课堂里的战略、营销、组织与项目管理原理"，**[垂直领域](../vertical/index.md)**回答"具体行业和企业系统的对象、流程、责任和 AI 切入点"，**[求职](../job/index.md)**回答"怎么把方法论讲给面试官"。本页负责把方法论串成决策链。
 
 读工商管理时，先用本栏目落地，再回课堂页补原理：[产品战略](strategy.md)对应[战略管理](../management/10-strategy/index.md)，[商业化与增长](monetization.md)对应[市场营销](../management/06-marketing/index.md)与[商业模式](../management/12-business-model/index.md)，[项目管理与迭代](project-management.md)对应[项目管理](../management/15-project-management/index.md)，[设计哲学](design-philosophy.md)对应[设计思维](../management/14-design-thinking/index.md)。
 

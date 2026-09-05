@@ -52,7 +52,7 @@ template: home.html
   <a class="pm-card" href="vertical/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
     <span class="pm-card__title">垂直领域</span>
-    <span class="pm-card__desc">网络安全、金融、法律、教育、地球科学与医疗的行业结构、规则与 AI 切入点</span>
+    <span class="pm-card__desc">网络安全、金融、法律、教育、地球科学、医疗与企业服务的对象、规则与 AI 切入点</span>
   </a>
   <a class="pm-card" href="intro/about/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
@@ -74,5 +74,5 @@ template: home.html
 -   想理解 AI 产品：阅读[AI 基础](ai/index.md)与[AI 产品实战](practice/index.md)，同步练习评测与失败分析
 -   想补工程协作：阅读[工程与架构](tech/index.md)，重点关注系统边界、上线流程和 AI-Native 研发
 -   想准备求职：先看[AI 产品经理能力模型](intro/capability.md)，再进入[求职专题](job/index.md)
--   想补行业知识：进入[垂直领域](vertical/index.md)，按网络安全、金融、法律、教育、地球科学或医疗健康进入对应行业
+-   想补行业知识：进入[垂直领域](vertical/index.md)，按网络安全、金融、法律、教育、地球科学、医疗健康或企业服务进入对应领域
 -   想贡献内容：阅读[如何参与](intro/htc.md)，通过 GitHub Issues 或 Pull Request 反馈和提交

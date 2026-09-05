@@ -703,6 +703,13 @@ nav:
         - 卫生信息与监管: vertical/healthcare/data-compliance/index.md
         - 医疗数据与互操作: vertical/healthcare/data-compliance/health-data.md
         - 药械监管与合规: vertical/healthcare/data-compliance/regulatory.md
+    - 企业服务:
+      - 企业服务: vertical/enterprise/index.md
+      - CRM 与客户运营: vertical/enterprise/crm.md
+      - ERP 与资源计划: vertical/enterprise/erp.md
+      - HCM 与人力资源: vertical/enterprise/hcm.md
+      - 工单与 IT 服务: vertical/enterprise/itsm.md
+      - 主数据、集成与权限: vertical/enterprise/integration.md
 
 # Theme
 theme:
