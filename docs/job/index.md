@@ -41,7 +41,7 @@ flowchart LR
 
 ### 求职实操
 
-[内推机制](referral.md)与[简历与作品集](resume-portfolio.md)：准备求职材料、寻找内推机会，并把项目经历整理成可验证、可追问的证据。
+[求职黑话合集](jargon.md)、[内推机制](referral.md)与[简历与作品集](resume-portfolio.md)：先听懂 HR 通知和谈薪口径，再准备材料、寻找内推，并把项目经历整理成可验证、可追问的证据。
 
 #### JD 拆解
 
@@ -65,7 +65,7 @@ flowchart LR
 2.  **选岗位**：先读[产品经理岗位类别](product-manager-types/index.md)，用真实 JD 样本判断目标方向；再看[产品经理协作团队与岗位](positions/index.md)，确认需要共同工作的团队和角色
 3.  **拆 JD**：从[JD 拆解](jd-breakdowns/index.md)中挑选具体案例，把岗位文字翻译成用户、任务、指标和面试准备问题
 4.  **备面试**：读[面经](interviews/index.md)了解真实流程与常见问题，再配合[AI 产品经理面试](interviews/interview-guide.md)的答题框架做针对性练习
-5.  **查黑话**：面试用词必须准确，出口前查[产品经理黑话速查](../intro/glossary.md)
+5.  **查黑话**：HR 通知、面试形式和谈薪口径先查[求职黑话合集](jargon.md)；产品与工程用词查[产品经理黑话速查](../intro/glossary.md)
 6.  **做复盘**：每场面试后按[面试复盘方法论](interviews/review-methodology.md)系统复盘，避免在同一处跌倒两次
 7.  **做 Offer 决策**：结合[谈薪与 Offer 选择](interviews/offer-negotiation.md)核对书面条件，再决定是否入职
 8.  **入职后持续迭代**：先读[入职之后](after-entry/index.md)，按需查看绩效、晋升、转行和劳动权益内容
@@ -78,6 +78,7 @@ AI 行业变化极快，组织架构、岗位 JD 与薪酬信息**以最新公�
 ## 相关阅读
 
 -   [AI 产品经理面试](interviews/interview-guide.md)：题型结构与典型题答题框架
--   [产品经理黑话速查](../intro/glossary.md)：面试用语准确性的保障
+-   [求职黑话合集](jargon.md)：投递、面试形式、总包与编制口径
+-   [产品经理黑话速查](../intro/glossary.md)：产品与工程用词准确性的保障
 -   [如何参与](../intro/htc.md)：贡献面经、公司观察与感悟，帮助后来者
 -   [垂直领域](../vertical/index.md)：行业与交付型岗位需要的领域结构、监管和 AI 切入点

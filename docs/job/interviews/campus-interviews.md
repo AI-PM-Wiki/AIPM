@@ -88,3 +88,4 @@ flowchart LR
 -   [AI 产品经理面试指南](interview-guide.md)：答题框架
 -   [自学路线](../../intro/self-study-roadmap.md)：面试前的系统准备路径
 -   [谈薪与 Offer 选择](offer-negotiation.md)：拿到 Offer 后怎么选
+-   [求职黑话合集](../jargon.md)：网申、OT、Base、三方与备胎池

@@ -99,4 +99,5 @@ flowchart TD
 -   [大厂面试流程全览](interview-process.md)：Offer 审批与发放环节
 -   [校招面经](campus-interviews.md) / [社招面经](social-interviews.md)：不同阶段的 Offer 场景
 -   [面试复盘方法论](review-methodology.md)：面试全过程的记录与改进
--   [产品经理黑话速查](../../intro/glossary.md)：「总包」「HC」「备胎池」等词义确认
+-   [求职黑话合集](../jargon.md)：Base、总包、白菜 / SP / SSP、Argue 等谈薪口径
+-   [产品经理黑话速查](../../intro/glossary.md)：入职后沟通用词
