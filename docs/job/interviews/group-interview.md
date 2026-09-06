@@ -315,6 +315,7 @@ flowchart LR
 
 ## 相关阅读
 
+-   [求职黑话合集](../jargon.md)：AC、GA、群面与无领导的叫法
 -   [校招面经](campus-interviews.md)：校招时间线、笔试准备与常见坑
 -   [AI 产品经理面试指南](interview-guide.md)：单面题型与答题框架
 -   [大厂面试流程全览](interview-process.md)：从投递到 Offer 的完整流程

@@ -26,6 +26,7 @@ flowchart LR
 -   [社招面经](social-interviews.md)：社招节奏、讲项目的方法与背调注意事项
 -   [面试复盘方法论](review-methodology.md)：把面试当评测，迭代自己的方法
 -   [谈薪与 Offer 选择](offer-negotiation.md)：总包拆解、谈薪话术与 Offer 比较维度
+-   [求职黑话合集](../jargon.md)：Base、总包、VI、AC、白菜 / SP 等面试和谈薪用词
 
 ## 怎么用本类
 
