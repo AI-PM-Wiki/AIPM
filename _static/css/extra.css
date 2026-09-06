@@ -1,0 +1,1506 @@
+/* ============================================================================
+   AI-PM — 设计语言主题样式(extra.css)
+
+   设计契约(实测计算样式,亮/暗双主题照搬):
+   - 白底(暗:#0B0C0F 蓝调黑)+ indigo(#4051b5)/ accent(#526cfe)克制学术风
+   - 全站唯一玻璃:顶栏 .md-header(blur 8px);其余组件纯色或透明,无 backdrop-filter
+   - 无背景光斑(body::before 已删)、无 hero 光晕、无装饰动画
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   1. 设计 token(亮色)
+   ---------------------------------------------------------------------------- */
+:root {
+  /* 品牌色 */
+  --pm-primary: #4051b5;
+  --pm-accent: #526cfe;
+  --pm-accent-soft: rgba(82, 108, 254, .1);
+  --pm-admonition-bg: rgba(68, 138, 255, .1);
+
+  /* 中性色(白底灰字) */
+  --pm-ink: rgba(0, 0, 0, .87);
+  --pm-muted: rgba(0, 0, 0, .6);
+  --pm-faint: rgba(0, 0, 0, .4);
+  --pm-line: rgba(0, 0, 0, .12);
+
+  /* 代码与表格 */
+  --pm-code-bg: #f6f8fa;
+  --pm-code-border: rgba(0, 0, 0, .1);
+  --pm-zebra: rgba(0, 0, 0, .025);
+
+  /* 卡片 */
+  --pm-card-bg: #ffffff;
+  --pm-card-hover-shadow: 0 2px 8px rgba(0, 0, 0, .06),
+                          0 10px 22px rgba(0, 0, 0, .08);
+
+  /* 字体栈(2026-08-27 用户要求:不关闭 webfont,设字体栈顺序):
+     拉丁字符用 Noto Sans webfont(继续走 fonts.googleapis prefetch);
+     中文字符落到系统字体栈——即使跨境 webfont 请求失败也不劣化渲染。 */
+  --md-text-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "PingFang SC",
+                  "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
+                  "WenQuanYi Micro Hei", sans-serif;
+  --md-code-font: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+                  Consolas, monospace;
+  --md-text-font-family: var(--md-text-font);
+  --md-code-font-family: var(--md-code-font);
+}
+
+/* ----------------------------------------------------------------------------
+   2. Material 主题变量映射(亮色)
+      双属性选择器:与 palette.css 的同级规则持平,靠加载顺序取胜
+   ---------------------------------------------------------------------------- */
+[data-md-color-scheme="default"][data-md-color-scheme="default"] {
+  --md-default-bg-color: #ffffff;
+  --md-default-bg-color--light: rgba(255, 255, 255, .85);
+  --md-default-bg-color--lighter: rgba(255, 255, 255, .55);
+  --md-default-bg-color--lightest: rgba(255, 255, 255, .28);
+
+  --md-default-fg-color: rgba(0, 0, 0, .87);
+  --md-default-fg-color--light: rgba(0, 0, 0, .6);
+  --md-default-fg-color--lighter: rgba(0, 0, 0, .4);
+  --md-default-fg-color--lightest: rgba(0, 0, 0, .12);
+
+  --md-primary-fg-color: #4051b5;
+  --md-primary-fg-color--light: #6a7ad0;
+  --md-primary-fg-color--dark: #34408f;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: rgba(255, 255, 255, .75);
+
+  --md-accent-fg-color: #526cfe;
+  --md-accent-fg-color--transparent: rgba(82, 108, 254, .1);
+  --md-accent-bg-color: #ffffff;
+
+  --md-typeset-a-color: #4051b5;
+
+  --md-code-fg-color: #1f2328;
+  --md-code-bg-color: #f6f8fa;
+  --md-code-hl-color: #e8eafd;
+  --md-code-hl-color--light: rgba(82, 108, 254, .12);
+  --md-code-hl-number-color: #b25e09;
+  --md-code-hl-special-color: #cf2f6e;
+  --md-code-hl-function-color: #6f42c1;
+  --md-code-hl-constant-color: #6f42c1;
+  --md-code-hl-keyword-color: #4051b5;
+  --md-code-hl-string-color: #1a7f37;
+  --md-code-hl-name-color: var(--md-code-fg-color);
+  --md-code-hl-operator-color: #57606a;
+  --md-code-hl-punctuation-color: #57606a;
+  --md-code-hl-comment-color: #8a9199;
+  --md-code-hl-generic-color: #57606a;
+  --md-code-hl-variable-color: #1f2328;
+
+  --md-typeset-mark-color: rgba(255, 213, 0, .35);
+  --md-typeset-del-color: rgba(255, 82, 82, .12);
+  --md-typeset-ins-color: rgba(0, 200, 83, .12);
+  --md-typeset-kbd-color: #f6f8fa;
+  --md-typeset-kbd-accent-color: #eaeef2;
+  --md-typeset-kbd-border-color: rgba(0, 0, 0, .25);
+  --md-typeset-table-color: rgba(0, 0, 0, .12);
+  --md-typeset-table-color--light: rgba(0, 0, 0, .035);
+
+  --md-admonition-fg-color: rgba(0, 0, 0, .87);
+  --md-admonition-bg-color: rgba(68, 138, 255, .1);
+  --md-warning-fg-color: rgba(0, 0, 0, .87);
+  --md-warning-bg-color: rgba(68, 138, 255, .1);
+
+  --md-footer-fg-color: rgba(0, 0, 0, .6);
+  --md-footer-fg-color--light: rgba(0, 0, 0, .42);
+  --md-footer-fg-color--lighter: rgba(0, 0, 0, .32);
+  --md-footer-bg-color: #ffffff;
+  --md-footer-bg-color--dark: #ffffff;
+
+  --md-shadow-z1: 0 .2rem .5rem rgba(0, 0, 0, .06), 0 0 .05rem rgba(0, 0, 0, .1);
+  --md-shadow-z2: 0 .2rem .5rem rgba(0, 0, 0, .12), 0 0 .05rem rgba(0, 0, 0, .25);
+  --md-shadow-z3: 0 .2rem .5rem rgba(0, 0, 0, .18), 0 0 .05rem rgba(0, 0, 0, .35);
+}
+
+/* ----------------------------------------------------------------------------
+   3. 暗色模式:slate(#0B0C0F 蓝调黑)
+   ---------------------------------------------------------------------------- */
+[data-md-color-scheme="slate"] {
+  --pm-primary: #4051b5;
+  --pm-accent: #526cfe;
+  --pm-accent-soft: rgba(82, 108, 254, .1);
+  --pm-admonition-bg: rgba(68, 138, 255, .1);
+
+  --pm-ink: hsla(225, 15%, 90%, .82);
+  --pm-muted: hsla(225, 15%, 90%, .6);
+  --pm-faint: hsla(225, 15%, 90%, .4);
+  --pm-line: rgba(255, 255, 255, .12);
+
+  --pm-code-bg: hsla(225, 20%, 10%);
+  --pm-code-border: rgba(255, 255, 255, .1);
+  --pm-zebra: rgba(255, 255, 255, .03);
+
+  --pm-card-bg: hsla(225, 15%, 7%);
+  --pm-card-hover-shadow: 0 2px 8px rgba(0, 0, 0, .4),
+                          0 12px 26px rgba(0, 0, 0, .45);
+}
+
+[data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
+  --md-default-bg-color: #0B0C0F;
+  --md-default-bg-color--light: rgba(11, 12, 15, .85);
+  --md-default-bg-color--lighter: rgba(11, 12, 15, .55);
+  --md-default-bg-color--lightest: rgba(11, 12, 15, .28);
+
+  --md-default-fg-color: hsla(225, 15%, 90%, .82);
+  --md-default-fg-color--light: hsla(225, 15%, 90%, .6);
+  --md-default-fg-color--lighter: hsla(225, 15%, 90%, .4);
+  --md-default-fg-color--lightest: hsla(225, 15%, 90%, .12);
+
+  --md-primary-fg-color: #526cfe;
+  --md-primary-fg-color--light: #7a8cff;
+  --md-primary-fg-color--dark: #34408f;
+  --md-primary-bg-color: #0B0C0F;
+  --md-primary-bg-color--light: rgba(11, 12, 15, .75);
+
+  --md-accent-fg-color: #526cfe;
+  --md-accent-fg-color--transparent: rgba(82, 108, 254, .1);
+  --md-accent-bg-color: #0B0C0F;
+
+  --md-typeset-a-color: #526cfe;
+
+  --md-code-fg-color: hsla(225, 20%, 80%);
+  --md-code-bg-color: hsla(225, 20%, 10%);
+  --md-code-hl-color: rgba(82, 108, 254, .18);
+  --md-code-hl-color--light: rgba(82, 108, 254, .14);
+  --md-code-hl-number-color: #f2a60d;
+  --md-code-hl-special-color: #f778ba;
+  --md-code-hl-function-color: #d2a8ff;
+  --md-code-hl-constant-color: #d2a8ff;
+  --md-code-hl-keyword-color: #8ea6ff;
+  --md-code-hl-string-color: #7ee787;
+  --md-code-hl-name-color: var(--md-code-fg-color);
+  --md-code-hl-operator-color: #8b949e;
+  --md-code-hl-punctuation-color: #8b949e;
+  --md-code-hl-comment-color: #8b949e;
+  --md-code-hl-generic-color: #8b949e;
+  --md-code-hl-variable-color: #e6edf3;
+
+  --md-typeset-mark-color: rgba(242, 166, 13, .4);
+  --md-typeset-del-color: rgba(255, 82, 82, .2);
+  --md-typeset-ins-color: rgba(0, 200, 83, .2);
+  --md-typeset-kbd-color: rgba(255, 255, 255, .08);
+  --md-typeset-kbd-accent-color: rgba(255, 255, 255, .14);
+  --md-typeset-kbd-border-color: rgba(255, 255, 255, .35);
+  --md-typeset-table-color: rgba(255, 255, 255, .12);
+  --md-typeset-table-color--light: rgba(255, 255, 255, .04);
+
+  --md-admonition-fg-color: hsla(225, 15%, 90%, .82);
+  --md-admonition-bg-color: rgba(68, 138, 255, .1);
+  --md-warning-fg-color: hsla(225, 15%, 90%, .82);
+  --md-warning-bg-color: rgba(68, 138, 255, .1);
+
+  --md-footer-fg-color: hsla(225, 15%, 90%, .6);
+  --md-footer-fg-color--light: hsla(225, 15%, 90%, .42);
+  --md-footer-fg-color--lighter: hsla(225, 15%, 90%, .32);
+  --md-footer-bg-color: #0B0C0F;
+  --md-footer-bg-color--dark: #0B0C0F;
+
+  --md-shadow-z1: 0 .2rem .5rem rgba(0, 0, 0, .2), 0 0 .05rem rgba(0, 0, 0, .4);
+  --md-shadow-z2: 0 .2rem .5rem rgba(0, 0, 0, .3), 0 0 .05rem rgba(0, 0, 0, .5);
+  --md-shadow-z3: 0 .2rem .5rem rgba(0, 0, 0, .4), 0 0 .05rem rgba(0, 0, 0, .6);
+}
+
+/* ----------------------------------------------------------------------------
+   4. 正文与标题:15px/27px 行高,h1 28px/700
+   ---------------------------------------------------------------------------- */
+.md-typeset {
+  font-size: 15px;
+  line-height: 1.8; /* 27px */
+}
+
+.md-typeset h1 {
+  font-size: 1.75rem; /* 28px */
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -.01em;
+  color: var(--md-default-fg-color);
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1 {
+  color: #ffffff;
+}
+
+/* ----------------------------------------------------------------------------
+   5. Chrome 组件
+   ---------------------------------------------------------------------------- */
+/* 5.0 即时导航进度条:Material 默认使用 --md-primary-bg-color;
+   本站在亮/暗模式将其映射为页面底色,改用品牌色保证对比度。 */
+.md-progress {
+  background: var(--pm-accent);
+}
+
+/* 5.1 顶栏:全站唯一玻璃(blur 8px,无边框、无渐变高光条) */
+.md-header {
+  background-color: rgba(255, 255, 255, .7);
+  box-shadow: rgba(0, 0, 0, .05) 0 1px 0 0;
+  color: var(--pm-ink);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  background-color: rgba(11, 12, 15, .54);
+  box-shadow: rgba(0, 0, 0, .3) 0 1px 0 0;
+}
+
+/* 滚动时仅阴影加深,无高光 */
+.md-header.md-header--shadow {
+  box-shadow: rgba(0, 0, 0, .05) 0 1px 0 0,
+              0 4px 12px rgba(0, 0, 0, .05);
+}
+
+[data-md-color-scheme="slate"] .md-header.md-header--shadow {
+  box-shadow: rgba(0, 0, 0, .3) 0 1px 0 0,
+              0 4px 12px rgba(0, 0, 0, .25);
+}
+
+.md-header__button:hover {
+  background-color: var(--pm-accent-soft);
+  color: var(--pm-ink);
+}
+
+/* 不支持 backdrop-filter 时回退为实色 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .md-header { background-color: #ffffff; }
+  [data-md-color-scheme="slate"] .md-header { background-color: #0B0C0F; }
+}
+
+/* 5.2 Tab 栏:透明底,激活项 accent 胶囊 */
+.md-tabs {
+  background-color: transparent;
+  color: var(--pm-muted);
+  box-shadow: none;
+}
+
+.md-tabs__link {
+  color: var(--pm-muted);
+  border-radius: 999px;
+  transition: color 125ms, background-color 125ms;
+}
+
+.md-tabs__link:hover { color: var(--pm-ink); }
+
+.md-tabs__item--active .md-tabs__link {
+  background-color: var(--pm-accent-soft);
+  color: var(--pm-accent);
+  opacity: 1;
+}
+
+/* 5.3 侧边栏 / toc:透明,激活项 accent 胶囊 */
+.md-sidebar__inner {
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.md-nav__link {
+  border-radius: .6rem;
+  transition: color 125ms, background-color 125ms;
+}
+
+.md-nav__link:hover { color: var(--md-accent-fg-color); }
+
+.md-sidebar .md-nav__item--active > .md-nav__link,
+.md-nav--secondary .md-nav__link--active {
+  color: var(--pm-accent);
+  position: static;
+}
+
+/* 5.3.1 导航栏与文章交界线(粘性发丝线,由 header-line.js 注入,
+   位于 .md-tabs 与正文之间):
+   - 页顶两栏(tabs 常驻):线在 tabs 底缘(tabs 下方一条);
+     滚动时线随内容上移,直到吸顶页头下缘(top 2.4rem)粘住 ——
+     中间过渡段始终只有这一条线;
+   - 一栏(tabs 随断点收起 display:none):线紧跟页头,页面顶/滚动后
+     都在页头下缘一条;
+   - z-index 与页头同级,盖过滚动正文与 tabs,始终唯一;
+   - 高度 0 + border-top,不占布局。 */
+.md-header__line {
+  position: sticky;
+  top: 2.4rem;                    /* 吸顶页头高度,线贴页头下缘 */
+  z-index: 4;                     /* 与页头同级,晚于页头在 DOM 中 */
+  height: 0;
+  border-top: 1px solid var(--pm-line);
+  pointer-events: none;
+}
+@media print {
+  .md-header__line {
+    display: none;
+  }
+}
+
+/* 5.4 搜索:顶栏浅灰胶囊,下拉纯色卡片 */
+/* 搜索展开时,顶栏(含搜索框与候选框)整体置于发丝线之上:
+   .md-header__line 与页头同级但 DOM 靠后,默认盖住页头内容;
+   搜索打开时页头提级到 5,盖住发丝线,避免线横穿搜索框/候选框 */
+[data-md-toggle="search"]:checked ~ .md-header {
+  z-index: 5;
+}
+
+/* 移动端搜索是 fixed 容器,但它位于 sticky 页头内;用视口单位避免
+   height:100% 解析为页头的 48px,否则放大的白色 overlay 会盖住结果。
+   同时暂时隐藏 body 顶层的问答入口和面板,避免固定层级压住搜索结果。 */
+@media screen and (max-width: 59.984375em) {
+  [data-md-toggle="search"]:checked ~ .md-header {
+    z-index: 100;
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__inner {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-container .aipm-chat {
+    visibility: hidden !important;
+    pointer-events: none;
+  }
+
+  [data-md-toggle="search"]:checked ~ .aipm-chat__fab {
+    display: none;
+  }
+}
+
+.md-header .md-search__form {
+  background-color: rgba(0, 0, 0, .05);
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.md-header .md-search__form:hover {
+  background-color: rgba(0, 0, 0, .09);
+}
+
+.md-header .md-search__form:focus-within {
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px var(--pm-accent-soft),
+              0 0 0 1px var(--pm-accent);
+}
+
+.md-header .md-search__icon { color: var(--pm-faint); }
+
+.md-search__input { color: var(--pm-ink); }
+.md-search__input::placeholder { color: var(--pm-faint); }
+.md-search__suggest { color: var(--pm-faint); }
+
+.md-search__output {
+  background-color: #ffffff;
+  border: 1px solid var(--pm-line);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+}
+
+[data-md-color-scheme="slate"] .md-header .md-search__form {
+  background-color: rgba(255, 255, 255, .08);
+}
+
+[data-md-color-scheme="slate"] .md-header .md-search__form:hover {
+  background-color: rgba(255, 255, 255, .12);
+}
+
+[data-md-color-scheme="slate"] .md-header .md-search__form:focus-within {
+  background-color: #0B0C0F;
+  box-shadow: 0 0 0 2px rgba(82, 108, 254, .2),
+              0 0 0 1px var(--pm-accent);
+}
+
+[data-md-color-scheme="slate"] .md-search__output {
+  background-color: #0B0C0F;
+  border-color: var(--pm-line);
+}
+
+/* 5.5 底栏:主题底色 + 顶部分隔线 */
+.md-footer {
+  border-top: 1px solid var(--pm-line);
+}
+
+.md-footer-meta { background-color: transparent; }
+
+.md-footer__link:hover,
+.md-footer__link:focus {
+  color: var(--md-accent-fg-color);
+}
+
+/* 5.6 回顶按钮(内置 .md-top) */
+.md-top {
+  background-color: #ffffff;
+  border: 1px solid var(--pm-line);
+  border-radius: 999px;
+  color: var(--pm-muted);
+}
+
+.md-top:hover {
+  background-color: var(--pm-accent-soft);
+  color: var(--pm-accent);
+}
+
+[data-md-color-scheme="slate"] .md-top {
+  background-color: #0B0C0F;
+}
+
+/* ----------------------------------------------------------------------------
+   6. 内容区
+   ---------------------------------------------------------------------------- */
+/* 6.1 表格:主题底 + 2px 圆角 + 细边框 + 轻斑马纹 */
+.md-typeset table:not([class]) {
+  border-color: var(--pm-line);
+  border-width: 1px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.md-typeset table:not([class]) tbody tr:nth-child(odd) {
+  background-color: var(--pm-zebra);
+}
+
+.md-typeset table:not([class]) tbody tr:hover {
+  background-color: var(--pm-accent-soft);
+}
+
+/* 6.2 代码块:低调实底 + 细边框 + 8px 圆角 */
+.md-typeset .highlight > pre,
+.md-typeset pre {
+  background-color: var(--pm-code-bg);
+  border: 1px solid var(--pm-code-border);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+/* 行号弱化 */
+.md-typeset .linenos,
+.md-typeset .linenodiv pre {
+  background-color: transparent;
+  color: var(--pm-faint);
+}
+
+/* 带行号表格容器统一底与圆角 */
+.md-typeset .highlighttable {
+  background-color: var(--pm-code-bg);
+  border: 1px solid var(--pm-code-border);
+  border-radius: 8px;
+}
+
+.md-typeset .highlighttable .highlight > pre,
+.md-typeset .highlighttable pre {
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* 6.3 admonition / details:淡蓝底 + 8px 圆角 + 左侧蓝系色条 */
+.md-typeset .admonition,
+.md-typeset details {
+  background-color: var(--pm-admonition-bg);
+  border-left-width: .22rem;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.md-typeset details:not([class]) {
+  border-color: var(--pm-accent);
+}
+
+/* 类型色:同一蓝系深浅(accent #526cfe 为基准) */
+.md-typeset .admonition.note,     .md-typeset details.note     { border-color: #526cfe; }
+.md-typeset .admonition.abstract, .md-typeset details.abstract { border-color: #526cfe; }
+.md-typeset .admonition.info,     .md-typeset details.info     { border-color: #448aff; }
+.md-typeset .admonition.tip,      .md-typeset details.tip      { border-color: #448aff; }
+.md-typeset .admonition.success,  .md-typeset details.success  { border-color: #2f81f7; }
+.md-typeset .admonition.question, .md-typeset details.question { border-color: #6e84ff; }
+.md-typeset .admonition.warning,  .md-typeset details.warning  { border-color: #4051b5; }
+.md-typeset .admonition.failure,  .md-typeset details.failure  { border-color: #4051b5; }
+.md-typeset .admonition.danger,   .md-typeset details.danger   { border-color: #4051b5; }
+.md-typeset .admonition.bug,      .md-typeset details.bug      { border-color: #526cfe; }
+.md-typeset .admonition.example,  .md-typeset details.example  { border-color: #6e84ff; }
+.md-typeset .admonition.quote,    .md-typeset details.quote    { border-color: var(--pm-faint); }
+
+/* 标题图标同色 */
+.md-typeset .note > .admonition-title:before,      .md-typeset .note > summary:before      { background-color: #526cfe; }
+.md-typeset .abstract > .admonition-title:before,  .md-typeset .abstract > summary:before  { background-color: #526cfe; }
+.md-typeset .info > .admonition-title:before,      .md-typeset .info > summary:before      { background-color: #448aff; }
+.md-typeset .tip > .admonition-title:before,       .md-typeset .tip > summary:before       { background-color: #448aff; }
+.md-typeset .success > .admonition-title:before,   .md-typeset .success > summary:before   { background-color: #2f81f7; }
+.md-typeset .question > .admonition-title:before,  .md-typeset .question > summary:before  { background-color: #6e84ff; }
+.md-typeset .warning > .admonition-title:before,   .md-typeset .warning > summary:before   { background-color: #4051b5; }
+.md-typeset .failure > .admonition-title:before,   .md-typeset .failure > summary:before   { background-color: #4051b5; }
+.md-typeset .danger > .admonition-title:before,    .md-typeset .danger > summary:before    { background-color: #4051b5; }
+.md-typeset .bug > .admonition-title:before,       .md-typeset .bug > summary:before       { background-color: #526cfe; }
+.md-typeset .example > .admonition-title:before,   .md-typeset .example > summary:before   { background-color: #6e84ff; }
+.md-typeset .quote > .admonition-title:before,     .md-typeset .quote > summary:before     { background-color: var(--pm-faint); }
+
+/* 6.4 任务列表:勾选状态 accent 化 */
+.md-typeset .task-list-indicator:before {
+  background-color: var(--pm-line);
+}
+
+.md-typeset [type="checkbox"]:checked + .task-list-indicator:before {
+  background-color: var(--pm-accent);
+}
+
+/* 6.5 链接与 .md-button:克制的颜色过渡,无光晕 */
+.md-typeset a {
+  transition: color 125ms;
+}
+
+.md-typeset a:hover {
+  color: var(--md-accent-fg-color);
+}
+
+.md-button {
+  border-radius: 8px;
+}
+
+/* 6.6 引用:灰色系细左边框,克制 */
+.md-typeset blockquote {
+  border-left-color: rgba(0, 0, 0, .25);
+  color: var(--pm-muted);
+}
+
+[data-md-color-scheme="slate"] .md-typeset blockquote {
+  border-left-color: rgba(255, 255, 255, .25);
+}
+
+/* 页首/页尾 meta 引用(语义保留,换蓝系色) */
+blockquote.page-time {
+  margin: 20px 0 !important;
+  border-left-color: var(--pm-accent) !important;
+}
+
+blockquote.page-copyright {
+  margin: 20px 0 !important;
+  border-left-color: var(--pm-faint) !important;
+}
+
+blockquote.page-copyright i.md-icon {
+  display: inline-block;
+  margin-right: 5px;
+  transform: translateY(3.5px);
+  width: 18px;
+}
+
+/* 6.7 图片:8px 圆角 + 轻描边;暗色下亮度/对比度微调 */
+.md-typeset img {
+  border: 1px solid var(--pm-line);
+  border-radius: 8px;
+}
+
+[data-md-color-scheme="slate"] .md-typeset img {
+  background: #ffffff;
+  filter: brightness(.88) contrast(1.05);
+}
+
+[data-md-color-scheme="slate"] .md-typeset img[src$=".svg"] {
+  border: 2px solid #ffffff;
+}
+
+/* ----------------------------------------------------------------------------
+   7. 评论区与 404 页:纯色卡片,无玻璃
+   ---------------------------------------------------------------------------- */
+#__comments {
+  margin-top: 2rem;
+  padding: .8rem 1rem;
+  background-color: #ffffff;
+  border: 1px solid var(--pm-line);
+  border-radius: 8px;
+}
+
+[data-md-color-scheme="slate"] #__comments {
+  background-color: #0B0C0F;
+}
+
+.giscus {
+  width: 100%;
+}
+
+/* 404 静态页:正文只有 页面标题 + hr + page-copyright + 评论区 */
+.md-content__inner:has(> h1:first-child + hr + blockquote.page-copyright) {
+  margin-top: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  background-color: #ffffff;
+  border: 1px solid var(--pm-line);
+  border-radius: 8px;
+}
+
+[data-md-color-scheme="slate"] .md-content__inner:has(> h1:first-child + hr + blockquote.page-copyright) {
+  background-color: #0B0C0F;
+}
+
+/* ----------------------------------------------------------------------------
+   8. 滚动条:细圆角灰系,亮暗适配
+   ---------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, .22);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, .35);
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, .22);
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, .35);
+}
+
+html {
+  scrollbar-color: rgba(0, 0, 0, .35) transparent;
+  scrollbar-width: thin;
+}
+
+[data-md-color-scheme="slate"] html {
+  scrollbar-color: rgba(255, 255, 255, .35) transparent;
+}
+
+/* 侧栏滚动条默认不显示,悬停或键盘聚焦侧栏时再显示;
+   保留滚动区域尺寸,避免三列布局中的导航内容发生横向跳动。 */
+.md-sidebar__scrollwrap {
+  scrollbar-color: transparent transparent;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
+/* ----------------------------------------------------------------------------
+   9. 响应式(≤760px)
+   ---------------------------------------------------------------------------- */
+@media screen and (max-width: 760px) {
+  .md-content__inner:has(> h1:first-child + hr + blockquote.page-copyright) {
+    padding: 2rem 1.2rem;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   10. 保留的既有站点样式(语义不变,仅换色)
+   ---------------------------------------------------------------------------- */
+/* Logo title */
+.md-header__topic:first-child {
+  font-weight: initial !important;
+}
+
+/* Code font size in <details> */
+details .linenos, details code {
+  font-size: inherit !important;
+}
+
+/* Code block / tab in details */
+details > summary + .highlight, details > summary + .tabbed-set { margin: 0 -0.6rem !important; }
+details > summary + .highlight > .highlighttable { margin: 0 !important; }
+
+/* Table full width */
+.md-typeset__table { display: block !important; }
+.md-typeset table:not(.highlighttable) { display: table !important; }
+
+.md-typeset table:not([class]) th {
+    min-width: 0rem;
+}
+
+.headerlink { transform: translateY(-2.5px); }
+
+.md-nav__link[for=__toc] .md-icon { margin-left: auto !important; }
+
+#color-button > button {
+  cursor: pointer;
+  transition: opacity .25s;
+  display: inline-block;
+  width: 6.5rem;
+  margin-bottom: 0.2rem;
+  padding: 1.2rem 0.4rem 0.2rem;
+  font-size: 0.64rem;
+  text-align: left;
+}
+
+#color-button > button[data-md-color-primary] {
+  background-color: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+}
+#color-button > button[data-md-color-primary=white] {
+  box-shadow: inset 0 0 0.05rem rgb(0 0 0 / 54%);
+}
+
+#color-button > button[data-md-color-accent] {
+  background-color: var(--md-accent-fg-color);
+  color: var(--md-code-bg-color);
+}
+
+/* CHTML 用字符排版,子级 img 只作度量占位;隐藏以免撑开行高。
+   不用「所有 mjx-container > img」,以免 SVG 回退时把公式本身藏掉。 */
+mjx-container[jax="CHTML"] > img {
+  width: 0;
+  height: 0;
+}
+
+.md-typeset mjx-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}
+
+div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
+  overflow: visible;
+}
+
+/* ----------------------------------------------------------------------------
+   11. 首页 hero / 卡片 / 按钮(玻璃 UI + sonar 青 + mono 仪器风;
+       2026-08-25 用户指令改版「黑蓝深海 / 玻璃 UI / ASCII 原子像素」,
+       同日打磨:hero 去除大面积深色带与流动光效,背景与站点其余页面一致
+       (亮=站点亮底 / 暗=站点暗底),深海视觉收敛到 banner 视口卡内)
+   ---------------------------------------------------------------------------- */
+
+/* 11.0 深海设计 token:供玻璃卡片(slate 侧)/按钮/banner 使用;
+      hero 文字不再硬编码深海浅色,随 --md-default-fg-color 主题化 */
+:root {
+  --pm-dive-abyss: #04070D;                         /* primary 按钮文字(青底深字) */
+  --pm-dive-sonar: #22D3EE;                         /* 生物荧光青 accent */
+  --pm-dive-phosphor: #A5F3FC;                      /* 暗底高亮文字/微光 */
+  --pm-dive-ink: #E6F0FA;                           /* slate 侧卡片主文字 */
+  --pm-dive-line: rgba(148, 196, 255, .18);         /* 玻璃描边/分隔 */
+}
+
+/* 11.1 首页容器:与 .md-grid 同宽,正文等宽居中;
+   2026-08-25 打磨:去除「潜航器甲板」玻璃面板(原 ::before 渐变底+描边+inset 高光),
+   与站点正文背景融为一体——卡片直接坐落在站点背景上(同旧版首页观感) */
+.pm-home-body {
+  max-width: 61rem;
+  margin: 0 auto;
+}
+
+/* 11.2 hero:「知识潜航器」页首——站点背景,不设底色/不外扩/无流动光效;
+   (2026-08-25 打磨:hero 与站点其余页面同底,亮=站点亮底 / 暗=站点暗底,
+   视觉重心收敛在 banner 视口卡内;深海画只存在于卡内) */
+.pm-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .9rem;
+  padding: 1.1rem 0 .9rem;   /* 顶部承 content__inner 的 .6rem,底部接卡片网格 */
+  text-align: center;
+}
+
+/* 眉题:仪器风格的 mono 小字 + 「//」前缀 + 静态方块光标(不闪烁,去晕眩) */
+.pm-hero__eyebrow {
+  margin: 0;
+  font-family: var(--md-code-font);
+  font-size: .66rem;
+  font-weight: 500;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+}
+
+.pm-hero__eyebrow::before {
+  content: "// ";
+  color: var(--pm-dive-sonar);
+}
+
+.pm-hero__eyebrow::after {
+  content: "";
+  display: inline-block;
+  width: .52em;
+  height: 1.1em;
+  margin-left: .62em;
+  vertical-align: -.14em;
+  background-color: var(--pm-dive-sonar);
+  opacity: .55;
+}
+
+/* 品牌:主题前景色(亮=深字 / 暗=浅字),无发光晕 */
+.pm-hero .site-name {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: .02em;
+  color: var(--md-default-fg-color);
+}
+
+.pm-hero .tagline {
+  max-width: 42rem;
+  margin: .2rem auto 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--md-default-fg-color--light);
+  text-wrap: balance; /* 避免末行孤字 */
+}
+
+/* 视口 HUD 状态行:紧贴 banner 下缘的 mono 状态行(静态值 + 静态光标,不闪烁);
+   行体挂 brand::before,光标挂 brand::after(absolute,贴行右端);
+   行色/发丝刻度随主题前景色 */
+.pm-hero__brand {
+  position: relative;
+}
+
+.pm-hero__brand::before {
+  content: "SONAR.OK ▸ DEPTH 342M ▸ MOD 07/07 ▸ SIGNAL LOCKED";
+  display: block;
+  margin-top: -1.1rem;   /* 抵消 hero gap + banner 下边距,贴住视口底缘 */
+  padding: .35rem 13% .2rem;
+  font-family: var(--md-code-font);
+  font-size: .58rem;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: .22em;
+  text-align: center;
+  color: var(--md-default-fg-color--light);
+  background-image:
+    linear-gradient(90deg, var(--md-default-fg-color--lightest), var(--md-default-fg-color--lightest)) left center / 10% 1px no-repeat,
+    linear-gradient(90deg, var(--md-default-fg-color--lightest), var(--md-default-fg-color--lightest)) right center / 10% 1px no-repeat;
+}
+
+.pm-hero__brand::after {
+  content: "";
+  position: absolute;
+  top: -.72rem;           /* 与 HUD 行文本中心对齐(行顶 -1.1rem + 文本偏移) */
+  right: 3.5%;
+  width: .48em;
+  height: 1em;
+  font-size: .58rem;      /* 与 HUD 行同字号,em 对齐 */
+  background-color: var(--pm-dive-sonar);
+  opacity: .55;
+}
+
+.pm-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  margin-top: .2rem;
+}
+
+/* 11.3 按钮(玻璃胶囊)
+   注:`.md-typeset a`(0,1,1)与 `md-typeset a:focus/:hover`(0,2,1)的链接色
+   优先级高于 `.pm-btn`(0,1,0),会覆盖按钮文字色;故所有作用于 <a> 按钮的规则
+   都配 `.md-typeset a.pm-btn…` 前置选择器提权(0,2,1/0,3,1)。
+   `.pm-btn--search` 是 <button>,不适用,保留原选择器。
+   hero 随主题后,ghost/search 玻璃底与文字色也按主题分支(亮=白玻璃 /
+   暗=trench 玻璃);primary 仍是 sonar 青实底(两种主题下都成立)。 */
+.md-typeset a.pm-btn,
+.pm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  padding: .6em 1.4em;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: .95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease, border-color 150ms ease,
+              color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.md-typeset a.pm-btn:hover,
+.md-typeset a.pm-btn:focus-visible,
+.pm-btn:hover,
+.pm-btn:focus-visible {
+  transform: translateY(-1px);
+}
+
+.md-typeset a.pm-btn:active,
+.pm-btn:active {
+  transform: translateY(0);
+}
+
+.md-typeset a.pm-btn:focus-visible,
+.pm-btn:focus-visible {
+  outline: 2px solid var(--pm-dive-sonar);
+  outline-offset: 2px;
+}
+
+/* 主按钮:sonar 荧光青实底 + 深海深字 + hover 提为 phosphor(生物荧光) */
+.md-typeset a.pm-btn--primary,
+.pm-btn--primary {
+  color: var(--pm-dive-abyss);
+  background-color: var(--pm-dive-sonar);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .35),
+              0 0 18px rgba(34, 211, 238, .18);
+}
+
+.md-typeset a.pm-btn--primary:hover,
+.md-typeset a.pm-btn--primary:focus-visible,
+.pm-btn--primary:hover,
+.pm-btn--primary:focus-visible {
+  color: var(--pm-dive-abyss);
+  background-color: var(--pm-dive-phosphor);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .35),
+              0 0 22px rgba(165, 243, 252, .28);
+}
+
+/* 幽灵按钮:主题玻璃 + 发丝描边 + hover sonar 青辉 */
+.md-typeset a.pm-btn--ghost,
+.pm-btn--ghost {
+  color: var(--md-default-fg-color);
+}
+
+[data-md-color-scheme="default"] .md-typeset a.pm-btn--ghost,
+[data-md-color-scheme="default"] .pm-btn--ghost {
+  background-color: rgba(255, 255, 255, .65);
+  border-color: rgba(34, 211, 238, .3);
+}
+
+[data-md-color-scheme="slate"] .md-typeset a.pm-btn--ghost,
+[data-md-color-scheme="slate"] .pm-btn--ghost {
+  background-color: rgba(10, 20, 40, .45);
+  border-color: var(--pm-dive-line);
+}
+
+.md-typeset a.pm-btn--ghost:hover,
+.md-typeset a.pm-btn--ghost:focus-visible,
+.pm-btn--ghost:hover,
+.pm-btn--ghost:focus-visible {
+  background-color: rgba(34, 211, 238, .12);
+  border-color: var(--pm-dive-sonar);
+}
+
+[data-md-color-scheme="default"] .md-typeset a.pm-btn--ghost:hover,
+[data-md-color-scheme="default"] .md-typeset a.pm-btn--ghost:focus-visible,
+[data-md-color-scheme="default"] .pm-btn--ghost:hover,
+[data-md-color-scheme="default"] .pm-btn--ghost:focus-visible {
+  color: #0E7490; /* 亮底上 sonar 对比不足,提为同系深青 */
+}
+
+[data-md-color-scheme="slate"] .md-typeset a.pm-btn--ghost:hover,
+[data-md-color-scheme="slate"] .md-typeset a.pm-btn--ghost:focus-visible,
+[data-md-color-scheme="slate"] .pm-btn--ghost:hover,
+[data-md-color-scheme="slate"] .pm-btn--ghost:focus-visible {
+  color: var(--pm-dive-phosphor);
+}
+
+/* 搜索按钮:ghost 胶囊 + 放大镜图标(纯样式,点击聚焦行为在模板) */
+.pm-btn--search {
+  border-radius: 999px;
+  color: var(--md-default-fg-color--light);
+}
+
+[data-md-color-scheme="default"] .pm-btn--search {
+  background-color: rgba(255, 255, 255, .65);
+  border-color: rgba(34, 211, 238, .3);
+}
+
+[data-md-color-scheme="slate"] .pm-btn--search {
+  background-color: rgba(10, 20, 40, .45);
+  border-color: var(--pm-dive-line);
+}
+
+.pm-btn--search::before {
+  content: "";
+  display: inline-block;
+  width: 1.05em;
+  height: 1.05em;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.2'%20stroke-linecap='round'%3E%3Ccircle%20cx='11'%20cy='11'%20r='7'/%3E%3Cline%20x1='16.4'%20y1='16.4'%20x2='21'%20y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml;utf8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.2'%20stroke-linecap='round'%3E%3Ccircle%20cx='11'%20cy='11'%20r='7'/%3E%3Cline%20x1='16.4'%20y1='16.4'%20x2='21'%20y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+.pm-btn--search:hover,
+.pm-btn--search:focus-visible {
+  background-color: rgba(34, 211, 238, .12);
+  border-color: var(--pm-dive-sonar);
+}
+
+[data-md-color-scheme="default"] .pm-btn--search:hover,
+[data-md-color-scheme="default"] .pm-btn--search:focus-visible {
+  color: #0E7490;
+}
+
+[data-md-color-scheme="slate"] .pm-btn--search:hover,
+[data-md-color-scheme="slate"] .pm-btn--search:focus-visible {
+  color: var(--pm-dive-phosphor);
+}
+
+/* 11.4 卡片网格:桌面 3 列 → 平板 2 列 → 移动 1 列 */
+.pm-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: .9rem 0 2rem;
+}
+
+@media screen and (max-width: 960px) {
+  .pm-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .pm-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 11.5 栏目卡片:玻璃(blur + 1px 青描边 + 顶部高光),随主题:
+   亮 = 海面白玻璃 / 暗 = trench 深海玻璃;hover 上浮 + 青辉 + 角像素点 */
+.pm-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--pm-dive-line);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: transform 150ms ease, box-shadow 150ms ease,
+              border-color 150ms ease, background-color 150ms ease;
+}
+
+[data-md-color-scheme="default"] .pm-card {
+  background-color: rgba(255, 255, 255, .66);
+  border-color: rgba(34, 211, 238, .3);
+  color: #0F1B2D;
+  box-shadow: 0 1px 3px rgba(15, 27, 45, .05),
+              inset 0 1px 0 rgba(255, 255, 255, .9);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+[data-md-color-scheme="slate"] .pm-card {
+  background-color: rgba(10, 20, 40, .52);
+  border-color: rgba(148, 196, 255, .16);
+  color: var(--pm-dive-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3),
+              inset 0 1px 0 rgba(148, 196, 255, .08);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* 顶部高光:青系发丝,恒亮 */
+.pm-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14%;
+  right: 14%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, .55), transparent);
+  pointer-events: none;
+}
+
+/* hover 角像素点:右上角 ASCII 折角,呼应视口框语言 */
+.pm-card::after {
+  content: "";
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+  width: 7px;
+  height: 7px;
+  border-top: 1px solid var(--pm-dive-sonar);
+  border-right: 1px solid var(--pm-dive-sonar);
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+}
+
+/* 卡片图标:手绘 stroke 风(lucide 语言),sonar 青;暗色 hover 提为 phosphor */
+.pm-card__icon {
+  width: 22px;
+  height: 22px;
+  margin-bottom: .1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--pm-dive-sonar);
+  transition: color 150ms ease, opacity 150ms ease;
+}
+
+[data-md-color-scheme="default"] .pm-card__icon {
+  opacity: .9;
+}
+
+[data-md-color-scheme="slate"] .pm-card__icon {
+  opacity: .95;
+}
+
+.pm-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: inherit;
+  transition: color 150ms ease;
+}
+
+.pm-card__desc {
+  font-size: .85rem;
+  line-height: 1.65;
+  color: inherit;
+  opacity: .68;
+}
+
+.pm-card:hover,
+.pm-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(34, 211, 238, .55);
+  box-shadow: var(--pm-card-hover-shadow),
+              0 0 0 1px rgba(34, 211, 238, .12),
+              0 0 24px rgba(34, 211, 238, .12);
+}
+
+.pm-card:hover::after,
+.pm-card:focus-visible::after {
+  opacity: 1;
+}
+
+.pm-card:hover .pm-card__title,
+.pm-card:focus-visible .pm-card__title {
+  color: var(--pm-dive-sonar);
+}
+
+[data-md-color-scheme="default"] .pm-card:hover .pm-card__title,
+[data-md-color-scheme="default"] .pm-card:focus-visible .pm-card__title {
+  color: #0891B2; /* 海面亮卡上 sonar 对比不足,提为同系深青 */
+}
+
+.pm-card:hover .pm-card__icon,
+.pm-card:focus-visible .pm-card__icon {
+  color: var(--pm-dive-sonar);
+  opacity: 1;
+}
+
+[data-md-color-scheme="slate"] .pm-card:hover .pm-card__icon,
+[data-md-color-scheme="slate"] .pm-card:focus-visible .pm-card__icon {
+  color: var(--pm-dive-phosphor);
+}
+
+/* 11.6 响应式 hero 与按钮(窄屏:HUD 缩短,视口角框淡出) */
+@media screen and (max-width: 600px) {
+  .pm-hero {
+    padding: 1.4rem 0 1.2rem; /* 无深色带/外扩,仅垂直留白 */
+  }
+
+  /* 眉题:窄屏收敛字距/字号,防整句右溢裁切(完整显示,光标块对齐) */
+  .pm-hero__eyebrow {
+    font-size: .6rem;
+    letter-spacing: .18em;
+  }
+
+  .pm-hero .site-name {
+    font-size: 1.6rem;
+  }
+
+  .pm-hero__cta {
+    flex-direction: column;
+    gap: .6rem;
+  }
+
+  .pm-hero__cta .pm-btn,
+  .pm-btn--search {
+    width: 100%;
+  }
+
+  /* HUD 缩短:SONAR ▸ DEPTH 342M ▸ MOD 07/07 */
+  .pm-hero__brand::before {
+    content: "SONAR ▸ DEPTH 342M ▸ MOD 07/07";
+    font-size: .56rem;
+    letter-spacing: .16em;
+    padding: .35rem 11% .2rem;
+  }
+
+  .pm-hero__brand::after {
+    right: 3%;
+  }
+}
+
+/* 11.7 减少动态:关闭位移过渡的静态回退(hero 洋流/光标闪烁已移除,无动画可关) */
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset a.pm-btn,
+  .pm-btn,
+  .pm-card {
+    transition: none;
+  }
+
+  .md-typeset a.pm-btn:hover,
+  .md-typeset a.pm-btn:focus-visible,
+  .pm-btn:hover,
+  .pm-btn:focus-visible,
+  .pm-card:hover,
+  .pm-card:focus-visible {
+    transform: none;
+  }
+}
+
+/* 11.8 首屏入场编排:hero 子元素(眉题/banner/品牌/CTA/搜索)依次淡入上浮,
+   再轮到卡片网格;RM 降级在此块内部末尾,保证覆盖上面的 animation 声明 */
+@keyframes pm-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.pm-hero > * {
+  animation: pm-rise .55s cubic-bezier(.2, .7, .3, 1) both;
+}
+
+.pm-hero > :nth-child(2) { animation-delay: .06s; }
+.pm-hero > :nth-child(3) { animation-delay: .12s; }
+.pm-hero > :nth-child(4) { animation-delay: .18s; }
+.pm-hero > :nth-child(5) { animation-delay: .24s; }
+
+.pm-banner {
+  animation: pm-rise .6s cubic-bezier(.2, .7, .3, 1) .28s both;
+}
+
+.pm-card {
+  animation: pm-rise .5s cubic-bezier(.2, .7, .3, 1) both;
+}
+
+.pm-card:nth-child(1) { animation-delay: .36s; }
+.pm-card:nth-child(2) { animation-delay: .41s; }
+.pm-card:nth-child(3) { animation-delay: .46s; }
+.pm-card:nth-child(4) { animation-delay: .51s; }
+.pm-card:nth-child(5) { animation-delay: .56s; }
+.pm-card:nth-child(6) { animation-delay: .61s; }
+.pm-card:nth-child(7) { animation-delay: .66s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-hero > *,
+  .pm-banner,
+  .pm-card {
+    animation: none;
+  }
+}
+
+/* 11.9 「本站的原则」列表与 note:页身内的玻璃行(随主题,与卡片同语言) */
+[data-md-color-scheme="default"] .pm-home-body h2,
+[data-md-color-scheme="default"] .pm-home-body .admonition-title {
+  color: #0F1B2D;
+}
+
+[data-md-color-scheme="slate"] .pm-home-body h2,
+[data-md-color-scheme="slate"] .pm-home-body .admonition-title {
+  color: var(--pm-dive-ink);
+}
+
+.pm-home-body ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+.pm-home-body > ul li {
+  margin: .45rem 0;
+  padding: .6rem .9rem;
+  border: 1px solid var(--pm-dive-line);
+  border-radius: 10px;
+}
+
+[data-md-color-scheme="default"] .pm-home-body > ul li {
+  background-color: rgba(255, 255, 255, .55);
+  border-color: rgba(34, 211, 238, .22);
+}
+
+[data-md-color-scheme="slate"] .pm-home-body > ul li {
+  background-color: rgba(10, 20, 40, .4);
+  border-color: rgba(148, 196, 255, .14);
+}
+
+/* 页身 note:玻璃卡片 + sonar 色条/图标(首页专属覆盖) */
+.pm-home-body .admonition,
+.pm-home-body details {
+  background-color: rgba(10, 20, 40, .4);
+  border-radius: 12px;
+}
+
+[data-md-color-scheme="default"] .pm-home-body .admonition,
+[data-md-color-scheme="default"] .pm-home-body details {
+  background-color: rgba(255, 255, 255, .55);
+  border-color: rgba(34, 211, 238, .35);
+}
+
+[data-md-color-scheme="slate"] .pm-home-body .admonition,
+[data-md-color-scheme="slate"] .pm-home-body details {
+  background-color: rgba(10, 20, 40, .4);
+  border-color: rgba(34, 211, 238, .3);
+}
+
+.pm-home-body .note > .admonition-title::before,
+.pm-home-body .note > summary::before {
+  background-color: var(--pm-dive-sonar);
+}
+
+.pm-home-body a {
+  color: #0891B2;
+}
+
+[data-md-color-scheme="slate"] .pm-home-body a {
+  color: var(--pm-dive-sonar);
+}
+
+.pm-home-body a:hover {
+  color: var(--pm-dive-phosphor);
+}
+
+[data-md-color-scheme="default"] .pm-home-body a:hover {
+  color: #0E7490;
+}
+
+/* ----------------------------------------------------------------------------
+   12. 首页 banner:「深海测深场 · Carved AIPM」(WebGL,2026-08-23 第三版引擎,
+       2026-08-25 深海改版:等势线地形读作「知识海沟」的测深地形图,
+       等势线 = 水深线 = sonar 青,计曲线 = phosphor,字形 AIPM 是「知识海沟」;
+       视口四角 ASCII 折线 + 顶条 VESSEL.SYS + 生物荧光粒子流(JS ink 层);
+       domain-warped fbm 标量场 / 电荷 / 字形雕刻等契约全部不变。
+       2026-08-25 打磨(用户定案):卡内随主题、深/浅两个风格(同构两调性)——
+       深色 = 深海(现状不动:黑蓝底 + sonar 青 + 荧光粒子);
+       浅色 = 白昼海面:浅海面底 + 青蓝等势线 + 深墨 mono 仪器 chrome,
+       白天测深图观感,禁止灰蒙。
+       token 七色(细线/计曲线/网格/字形洗色/正文/标签/强调)由 banner.js
+       解析(只支持 hex/rgb()/rgba(),请勿用 hsl()/hsla()),主题切换自动重绘;
+       :root 为浅色集,slate 块为深色集,两套各自成调,深色集一个值不许动。
+   ---------------------------------------------------------------------------- */
+:root {
+  --pm-banner-line: rgba(37, 99, 235, .30);      /* 细等势线:白天测深图蓝(可见但克制) */
+  --pm-banner-major: rgba(8, 145, 178, .55);     /* 计曲线/字缘轮廓:青 */
+  --pm-banner-grid: rgba(30, 64, 175, .06);      /* 底纹发丝网格 */
+  --pm-banner-glyph: rgba(59, 130, 246, .08);    /* 字形洗色:蓝极淡 */
+  --pm-banner-ink: rgba(15, 27, 45, .88);        /* ink-text:深墨蓝 */
+  --pm-banner-faint: rgba(15, 27, 45, .88);      /* 标签:深墨蓝(浅底 mono 深字) */
+  --pm-banner-accent: rgba(14, 116, 144, .45);   /* 强调/粒子:深青 */
+}
+
+[data-md-color-scheme="slate"] {
+  --pm-banner-line: rgba(34, 211, 238, .22);
+  --pm-banner-major: rgba(165, 243, 252, .6);
+  --pm-banner-grid: rgba(148, 196, 255, .05);
+  --pm-banner-glyph: rgba(34, 211, 238, .07);
+  --pm-banner-ink: rgba(230, 240, 250, .88);
+  --pm-banner-faint: rgba(126, 156, 192, .6);
+  --pm-banner-accent: rgba(165, 243, 252, .95);
+}
+
+/* 12.1 容器:「潜航器视口」—— trench 玻璃面板 + 发丝描边 + 大圆角;
+   位于首页 hero(替代原 logo 位),宽度收敛到 61rem 与正文同宽;
+   四角括号用 border 折角绘制(TL 顶条自含、BR ::after,克制) */
+.pm-banner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 2;
+  min-height: 210px;
+  margin: .9rem 0 1.4rem;
+  border: 1px solid var(--pm-dive-line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(10, 20, 40, .5);
+  isolation: isolate;
+}
+
+/* 浅色 = 白昼海面视口:白玻璃 + 青描边 + blur(与站点浅色玻璃卡片同语言),
+   底为海面雾蓝微渐变,嵌在站点亮底上如一帧白天测深图 */
+[data-md-color-scheme="default"] .pm-banner {
+  background: linear-gradient(180deg, rgba(237, 244, 251, .82),
+                                     rgba(226, 238, 248, .88));
+  border-color: rgba(34, 211, 238, .3);
+  box-shadow: 0 1px 3px rgba(15, 27, 45, .05),
+              inset 0 1px 0 rgba(255, 255, 255, .9);
+  /* 不加 backdrop-filter:iOS Safari 会把含子 canvas 的元素打成合成组,
+     WebGL 直通 alpha 被丢掉,视口只剩空心 AIPM 字缘(桌面 Chromium 无此问题)。
+     底已是不透明渐变,blur 也看不到背后内容。 */
+}
+
+.pm-hero .pm-banner {
+  max-width: 61rem;
+  margin: .4rem 0 .2rem;
+}
+
+@media (max-width: 640px) {
+  .pm-banner {
+    aspect-ratio: 2 / 1;
+  }
+}
+
+/* 12.2 画布:WebGL 场层(--gl)与 2D 标签层(--ink)叠放,均由 banner.js 驱动 */
+.pm-banner__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 12.3 视口顶条:ASCII 终端框的左上折角 + VESSEL.SYS 标签 + 双 led 点 */
+.pm-banner::before {
+  content: "VESSEL.SYS";
+  position: absolute;
+  z-index: 2;
+  top: .8rem;
+  left: .9rem;
+  width: min(56%, 20rem);
+  padding: .42rem .6rem .3rem 0;
+  font-family: var(--md-code-font);
+  font-size: .58rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: .3em;
+  color: rgba(126, 156, 192, .9);
+  border-top: 1px solid rgba(165, 243, 252, .45);
+  border-left: 1px solid rgba(165, 243, 252, .45);
+  background-image:
+    radial-gradient(circle 2px at calc(100% - 1.3rem) 50%, rgba(165, 243, 252, .8) 99%, transparent),
+    radial-gradient(circle 2px at calc(100% - 2rem) 50%, rgba(165, 243, 252, .4) 99%, transparent);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: 0 0;
+  pointer-events: none;
+}
+
+/* 浅色顶条:深墨 mono 字 + 青折角/双 led(暗色 phosphor 的白天反转) */
+[data-md-color-scheme="default"] .pm-banner::before {
+  color: rgba(15, 27, 45, .88);
+  border-color: rgba(8, 145, 178, .45);
+  background-image:
+    radial-gradient(circle 2px at calc(100% - 1.3rem) 50%, rgba(8, 145, 178, .8) 99%, transparent),
+    radial-gradient(circle 2px at calc(100% - 2rem) 50%, rgba(8, 145, 178, .4) 99%, transparent);
+}
+
+/* 12.4 视口右下折角(BR 对角,与顶条左上呼应) */
+.pm-banner::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  right: .8rem;
+  bottom: .8rem;
+  width: .85rem;
+  height: .85rem;
+  border-right: 2px solid rgba(165, 243, 252, .35);
+  border-bottom: 2px solid rgba(165, 243, 252, .35);
+  pointer-events: none;
+}
+
+[data-md-color-scheme="default"] .pm-banner::after {
+  border-color: rgba(8, 145, 178, .4);
+}
+
+@media (max-width: 640px) {
+  .pm-banner::before {
+    width: auto;
+    max-width: 62%;
+  }
+
+  .pm-banner::after {
+    display: none;
+  }
+}

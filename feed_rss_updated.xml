@@ -1,0 +1,3609 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>AI-PM</title>
+    <link>https://aipm.ac</link>
+    <description>AI-PM 是一个 AI 产品经理知识整合站点，提供有趣又实用的 AI 产品、模型、工具与工作流知识，帮助广大 AI 产品从业者更快更深入地学习与实践</description>
+    <atom:link href="https://aipm.ac/feed_rss_updated.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>产品经理黑话速查</title>
+      <link>https://aipm.ac/intro/glossary/</link>
+      <description>产品经理黑话速查：覆盖大厂沟通、需求文档、数据指标、AI 产品与工程、商业模式、岗位 JD 与职场潜台词，帮助读者快速理解高频术语及其在不同工作语境中的实际含义</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>求职专题简介</title>
+      <link>https://aipm.ac/job/</link>
+      <description>求职专题简介：产品经理岗位类别、协作团队与岗位、真实 JD 样本、面经、真实感悟与入职后的发展资源导航</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>求职黑话合集</title>
+      <link>https://aipm.ac/job/jargon/</link>
+      <description>求职黑话合集：按投递筛选、面试形式、薪酬 Offer 与组织编制整理校招和社招高频术语，帮助应届生与转岗者听懂人事通知、面经和谈薪口径，并分清基础工资、总包、白菜价与特殊 Offer 等容易混用的词。</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>面经简介</title>
+      <link>https://aipm.ac/job/interviews/</link>
+      <description>面经栏目：面试流程、各阶段经验与复盘方法，把面试变成可迭代的评测</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>校招面经</title>
+      <link>https://aipm.ac/job/interviews/campus-interviews/</link>
+      <description>校招面经：应届生求职时间线、暑期实习转正、笔试准备与常见坑</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>群面与无领导小组</title>
+      <link>https://aipm.ac/job/interviews/group-interview/</link>
+      <description>群面 / 无领导小组 / AC 面的形式区别、无领导打法、AI 产品群面真题思路与 AC 面准备</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 产品经理面试指南</title>
+      <link>https://aipm.ac/job/interviews/interview-guide/</link>
+      <description>AI 产品经理面试指南：概念题、产品设计题、案例题、行为面题型与答题框架</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>面试流程全览</title>
+      <link>https://aipm.ac/job/interviews/interview-process/</link>
+      <description>大厂面试流程全览：简历筛选、笔试、业务面、负责人面、HR 面考察点</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>谈薪与 Offer 选择</title>
+      <link>https://aipm.ac/job/interviews/offer-negotiation/</link>
+      <description>谈薪与 Offer 选择：总包拆解、谈薪话术、Offer 比较维度与背调注意事项</description>
+      <pubDate>Sun, 06 Sep 2026 19:36:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>播客笔记索引</title>
+      <link>https://aipm.ac/case/podcasts/</link>
+      <description>本站基于播客节目整理的学习笔记，聚焦 AI 产品、产品方法与产品经理求职中的真实经验，区分节目原话、嘉宾判断与整理者的实践归纳。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>系列简介</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/</link>
+      <description>《产品小白升级攻略》整理产品经理求职、基础工作方法与策略产品思维，覆盖动机回答、工作流程、需求排序、产品研发协作、面试表达、链路漏斗以及搜广推等主题，适合产品新人按阶段阅读与复盘。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>1. 你为什么想做产品经理？</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/01-why-become-product-manager/</link>
+      <description>本文整理《产品小白升级路》第 1 期关于“为什么想做产品经理”的面试思路，说明如何从经历、兴趣、准备行动与长期投入回答职业动机，并提供可复用的表达框架与复盘问题。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>2. 产品经理的工作流程？</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/02-product-manager-workflow/</link>
+      <description>本文整理产品经理从需求分析、产品设计到落地推进的完整工作流程，说明各阶段的关键判断、协作对象与常见产出，帮助新人在面试和实际工作中建立结果负责的视角。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>3. ToB/ToC 的产品经理有什么区别？</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/03-tob-vs-toc-product-manager/</link>
+      <description>本文从用户结构、产品形态、需求来源、设计重点与价值实现方式比较 ToB 和 ToC 产品经理，进一步说明两类经验如何迁移，以及求职时如何避免把一种场景的思维直接套用到另一种场景。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>4. 需求的优先级如何排布？</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/04-requirement-prioritization/</link>
+      <description>本文整理需求优先级的判断框架，围绕产品阶段、用户与业务价值、影响范围、实现成本、风险和替代方案展开，并补充如何结合真实项目复盘取舍、训练优先级能力。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>5. 当研发不认可你怎么办？</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/05-when-engineering-disagrees/</link>
+      <description>本文整理产品与研发出现分歧时的处理方法，先区分价值、规范、技术可行性与资源问题，再通过澄清目标、理解约束、拆分需求、置换优先级和升级决策推进共同目标。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>6. 如果功能上线效果不符合预期怎么办？</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/06-when-feature-underperforms/</link>
+      <description>本文整理功能上线后效果偏差的排查与补救框架，按功能生效、数据口径、外部因素和方案本身逐步缩小问题范围，再根据负向程度选择止损、观察、实验或迭代动作。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>7. 推荐一款你喜欢的 App</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/07-recommend-an-app/</link>
+      <description>本文整理面试中“推荐一款你喜欢的 App”的回答方法，以真实使用、用户理解、竞品比较、产品优势与不足为主线，帮助候选人把产品体验转化为有判断、有证据的表达。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>8. 在过去的经历中遇到最大的困难？</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/08-biggest-difficulty/</link>
+      <description>本文整理“过去经历中遇到的最大困难”这一面试题的回答框架，说明如何选择真实而复杂的项目，讲清背景、冲突、取舍、行动、结果与复盘，并处理尚未完全解决的问题。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>9. 你有什么问题想要问我？</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/09-questions-for-interviewer/</link>
+      <description>本文整理面试反问环节的定位、常见形态与问题方向，说明如何根据了解岗位、向面试官学习和获得反馈等真实诉求选择问题，把一次收尾交流变成判断匹配与复盘提升的机会。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>10. 策略产品通用基本功：链路与漏斗</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/10-strategy-funnel/</link>
+      <description>本文整理策略产品从明确目标、理解业务到拆解指标、沿链路定位问题和上线验证的通用方法，重点解释漏斗如何帮助找到薄弱环节，并给出策略项目的面试表达结构。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>11. 如何做好策略产品：大爱</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/11-strategy-product-collaboration/</link>
+      <description>本文解释策略产品语境中的“大爱”所代表的 DA 与算法协作，梳理产品、数据分析和算法如何共同定义问题、设计解法、推动上线与验证，并明确产品经理的独特增量价值。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>12. 搜广推：不同策略相似逻辑</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/12-search-recommendation-advertising/</link>
+      <description>本文从匹配问题出发比较搜索、推荐与广告策略，说明 query 与 document、user 与 item、user 与 ad 的共同底层逻辑，以及准确交付、兴趣匹配和商业生态之间的业务差异。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>番外 1：新闻 × 产品经理</title>
+      <link>https://aipm.ac/case/podcasts/product-xiaobai-upgrade-guide/13-extra-news-product/</link>
+      <description>本文整理新闻产品的用户需求、内容组织困境与 AI 应用方向，围绕信息筛选、可信理解、讨论参与和多模态消费展开，并提供面试中分析新闻平台问题与验证效果的产品框架。</description>
+      <pubDate>Sun, 06 Sep 2026 06:43:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>快速开始</title>
+      <link>https://aipm.ac/</link>
+      <description>产品方法论 需求分析、用户研究、产品设计与原型、项目管理与迭代、商业化与增长 工程与架构 开发流程、系统架构、工程术语与 AI-Native 研发流程 工商管理 组织与决策、市场与消费者、战略创新、项目与财务 商业与财会 金融学、会计学、公司金融、计量经济学等 19 门课 AI 基础 机器学习地基、大模型、多模态、提示词、RAG、Agent、评估安全与前沿 AI 产品实战 对话助手、知识库问答、Agent、Copilot、工作流自动化 工具与平台 LLM API、开源框架、提示词与评测工具、数据标注 学习资源 信息源、读书笔记与播客笔记 求职专题 产品经理岗位类别、协作团队与岗位、真实 JD </description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>关于本项目</title>
+      <link>https://aipm.ac/intro/about/</link>
+      <description>AI-PM 站点介绍：面向 AI 产品从业者和学习者，梳理产品方法、工程架构、AI 能力、实战工具、商业财会、学习资源、求职专题与垂直领域，并说明项目技术、更新原则与参与方式</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>百度</title>
+      <link>https://aipm.ac/job/companies/baidu/</link>
+      <description>百度按 MEG、ACG、IDG、PSIG 四大事业群经营。文心由 BMC 统筹，搜索与商业在 MEG，云在 ACG，文库网盘在 PSIG。教育能力散落各群，读完能对照事业群落点准备面试。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>字节跳动</title>
+      <link>https://aipm.ac/job/companies/bytedance/</link>
+      <description>字节跳动按产品业务单元经营。Seed 做基模，豆包产品承接助手与办公入口，火山引擎与创造力服务平台做 To B 出口，抖音与 TikTok 完成场景落地。读完能对照业务线判断岗位落点，并准备数据与评测驱动的 AI 产品经理面试。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>JD 拆解索引</title>
+      <link>https://aipm.ac/job/jd-breakdowns/</link>
+      <description>JD 拆解案例索引：按真实岗位逐份分析职责、用户、技术协作、面试信号与投递前核验方法，帮助求职者从岗位名称进入实际工作场景</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>「实习」百度｜策略产品实习生</title>
+      <link>https://aipm.ac/job/jd-breakdowns/baidu-strategy-product-intern/</link>
+      <description>拆解百度 MEG 策略产品实习生 JD：结合北京日常实习编制、线索与内容策略、教育 AI 产品线和模型准召，判断岗位落点、工作边界与准备重点</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>「校招」字节跳动｜产品经理 - 业务中台</title>
+      <link>https://aipm.ac/job/jd-breakdowns/bytedance-business-platform-pm/</link>
+      <description>拆解字节跳动 2027 届业务中台产品经理校招 JD：结合地图数据、地理位置能力与跨产品场景，把需求分析、策略方案、数据验证和项目落地转成可核验的工作边界与面试准备。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>互联网产品经理方向</title>
+      <link>https://aipm.ac/job/product-manager-types/internet-product-manager/</link>
+      <description>产品经理岗位类别：按技术对象、服务对象和结果责任理解不同产品经理方向</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>产品方法论简介</title>
+      <link>https://aipm.ac/pm/</link>
+      <description>产品方法论栏目总览：用从机会到商业的决策链串起战略、需求、研究、数据、设计、交付、校准与变现，并给出内容地图、指标对照和分场景阅读路径，读完能判断每篇解决什么问题、怎么衔接。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>Agent 产品设计</title>
+      <link>https://aipm.ac/practice/agent-product/</link>
+      <description>Agent 产品设计决策框架：形态选型、自主度分级、代理权与信任、失败恢复与运营。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>垂直领域简介</title>
+      <link>https://aipm.ac/vertical/</link>
+      <description>垂直领域按行业知识体系与企业职能系统写对象、制度、数据和责任主体，覆盖网络安全、金融、法律、教育、地球科学、医疗健康与企业服务，读完能把规则和系统记录写成产品范围与审计约束。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>企业服务</title>
+      <link>https://aipm.ac/vertical/enterprise/</link>
+      <description>企业服务按客户运营、资源计划、人力资源、内部服务与系统集成组织跨行业业务系统，读完能把系统记录、主数据归属、过账责任和 AI 辅助边界写成 ToB 产品的默认结构。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>CRM 与客户运营</title>
+      <link>https://aipm.ac/vertical/enterprise/crm/</link>
+      <description>CRM 以线索、客户、联系人、商机和工单记录获客到续费的全过程，读完能把销售漏斗、角色权限、主数据质量和 AI 写入规则写成可验收的客户运营产品约束。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>ERP 与资源计划</title>
+      <link>https://aipm.ac/vertical/enterprise/erp/</link>
+      <description>ERP 以物料、供应商、客户、科目和单据把采购、库存、订单与总账连成同一套账，读完能把过账责任、关账窗口和 AI 禁止直写总账写成可审计的资源计划产品约束。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>HCM 与人力资源</title>
+      <link>https://aipm.ac/vertical/enterprise/hcm/</link>
+      <description>HCM 以组织、职位、员工、合同和薪酬记录雇佣全周期，读完能把入职开通、发薪责任、离职关闭和 AI 禁止自动处分写成可审计的人力资源产品约束。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>主数据、集成与权限</title>
+      <link>https://aipm.ac/vertical/enterprise/integration/</link>
+      <description>主数据与集成规定客户、物料、员工和权限在多套系统中的唯一来源，读完能把系统记录、同步冲突、服务身份和 AI 最小权限写成可验收的企业集成约束。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>工单与 IT 服务</title>
+      <link>https://aipm.ac/vertical/enterprise/itsm/</link>
+      <description>工单与 IT 服务以事故、请求、变更和配置项记录内部服务闭环，读完能把优先级、变更评审、配置真实性和 AI 禁止未授权发布写成可验收的服务管理产品约束。</description>
+      <pubDate>Sun, 06 Sep 2026 01:29:12 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 基础简介</title>
+      <link>https://aipm.ac/ai/</link>
+      <description>AI 基础栏目总览：面向 AI 产品经理的技术通识课，按黑话与定理、机器学习、大模型、多模态、提示词、RAG、Agent、评估、安全、架构与前沿组织内容地图和学习路径</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 经典论文</title>
+      <link>https://aipm.ac/ai/classic-papers/</link>
+      <description>AI 经典论文学习路线：按概念依赖组织代表作，从训练、视觉、序列、Transformer、预训练、生成、强化学习到 CLIP / ViT / InstructGPT / 扩展定律，并接到前沿专题。</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 黑话速查</title>
+      <link>https://aipm.ac/ai/jargon/</link>
+      <description>AI 黑话速查：按训练后训练、数据、架构、推理服务、提示与 Agent、评测、对齐安全和社区口语整理实验室与论文圈高频术语，帮助产品经理听懂评审、论文和工程讨论里的真实含义。</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>模型训练与对齐</title>
+      <link>https://aipm.ac/ai/llm-training/</link>
+      <description>模型训练与对齐：预训练、扩展定律、SFT、RLHF/DPO、RLVR/GRPO、微调与蒸馏，区分 R1-Zero 与 R1，理解推理模型从哪来、成本为什么高</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 定理与经验定律</title>
+      <link>https://aipm.ac/ai/theorems/</link>
+      <description>AI 定理与经验定律：整理 Scaling Law、Bitter Lesson、Densing Law、莫拉维克悖论等规模、学习、评测与系统规律的出处、含义、产品用法和适用边界，帮助判断规模投入与能力预期。</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>自学路线</title>
+      <link>https://aipm.ac/intro/self-study-roadmap/</link>
+      <description>面向 AI 产品经理的自学路线：从产品判断和用户研究出发，经过 AI 系统认知、最小实验、评测与 Agent 工作流，练到上线治理、商业化和可展示的完整作品，按目标岗位倒推学习重点</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>大厂与架构简介</title>
+      <link>https://aipm.ac/job/companies/</link>
+      <description>大厂与架构简介：从前台、中台、后台，到职能制、事业群制、矩阵制与中台 + BP 制，理解 AI 组织模式、岗位落点和字节、阿里、腾讯等具体案例</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>阿里巴巴</title>
+      <link>https://aipm.ac/job/companies/alibaba/</link>
+      <description>阿里巴巴 AI 组织：千问大模型、ATH 事业群、夸克、阿里云百炼架构与 AI 产品经理求职观察</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>华为</title>
+      <link>https://aipm.ac/job/companies/huawei/</link>
+      <description>华为 AI 组织：昇腾算力、盘古行业大模型、华为云平台与 AI 产品经理求职观察</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>美团</title>
+      <link>https://aipm.ac/job/companies/meituan/</link>
+      <description>美团按核心本地商业与新业务两段经营。LongCat 做模型底座，CatPaw 推进商家改造，小团和小美承接用户侧，履约与无人配送承接物理世界。读完能对照业务线判断岗位落点，并准备带成本账的面试。</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>腾讯</title>
+      <link>https://aipm.ac/job/companies/tencent/</link>
+      <description>腾讯按六大事业群加 S 线经营。混元基础模型在 TEG，元宝、云与办公智能体在 CSIG，微信小微在 WXG，游戏与广告各自接入场景。读完能对照事业群判断岗位落点，并准备场景驱动的 AI 产品经理面试。</description>
+      <pubDate>Sat, 05 Sep 2026 23:57:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>策略产品经理</title>
+      <link>https://aipm.ac/case/strategy-pm/</link>
+      <description>策略产品经理学习专题：把公开课程整理为概念、发现问题、需求验证与四类业务应用，建立可复用的策略工作方法，并说明与岗位类别、评测和增长页的分工。</description>
+      <pubDate>Fri, 04 Sep 2026 14:39:34 +0800</pubDate>
+    </item>
+    <item>
+      <title>概念基础</title>
+      <link>https://aipm.ac/case/strategy-pm/01-concepts/</link>
+      <description>概念基础讲清策略是什么、四要素怎么写、策略何时从功能里长出来，以及策略产品经理按发现问题到效果回归的循环干活，用来判断眼前问题要不要用策略、怎样写成可开发决策。</description>
+      <pubDate>Fri, 04 Sep 2026 14:39:34 +0800</pubDate>
+    </item>
+    <item>
+      <title>策略产品经理的工作循环</title>
+      <link>https://aipm.ac/case/strategy-pm/01-concepts/04-workflow/</link>
+      <description>策略产品经理首先仍是产品经理，工作按发现问题、写需求、开发评估、效果回归循环。本页对照功能 PM 与策略 PM 的手段差异，并给出需求、评估和回归的最小结构，循环把四要素真正跑起来。</description>
+      <pubDate>Fri, 04 Sep 2026 14:39:34 +0800</pubDate>
+    </item>
+    <item>
+      <title>产品经理岗位类别</title>
+      <link>https://aipm.ac/intro/product-manager-types/</link>
+      <description>产品经理岗位类别：按技术对象、服务对象和结果责任理解不同产品经理方向</description>
+      <pubDate>Fri, 04 Sep 2026 14:39:34 +0800</pubDate>
+    </item>
+    <item>
+      <title>Agent 架构与多智能体</title>
+      <link>https://aipm.ac/ai/agent-architecture/</link>
+      <description>Agent 架构：设计模式、记忆、多智能体编排与 AgentOps，给出工具选择率、终态成功率等生产指标和模式选择方法。按任务确定性选模式，把多智能体代价写进预算。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>Agent 与 Computer Use</title>
+      <link>https://aipm.ac/ai/agent-computer-use-frontier/</link>
+      <description>Agent 与 Computer Use 前沿：ReAct、GUI grounding、浏览器与桌面环境，以及产品化时的感知输入、动作空间和不可逆操作确认</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>工具调用与 MCP</title>
+      <link>https://aipm.ac/ai/agent-tools/</link>
+      <description>工具调用与 MCP：Function Calling、Host/Client/Server 协议、A2A 与工具安全，讲清接入标准不替代权限、编排和副作用治理</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>Agent 与工作流</title>
+      <link>https://aipm.ac/ai/agent/</link>
+      <description>Agent 机制：感知-规划-行动-反思循环、工作流与自主代理的边界、产品设计要点，以及何时不该上 Agent、如何与评测和权限一起设计。Computer Use 单独验收感知、动作空间和确认闸门。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 安全与对齐</title>
+      <link>https://aipm.ac/ai/ai-safety/</link>
+      <description>AI 安全与对齐：模型、应用与内容三层框架，对齐技术、危险能力评估、红队与全球治理，并与提示词安全、评测枢纽分工。上线前按三层清单评审，而不是只加一句提示词。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 系统架构</title>
+      <link>https://aipm.ac/ai/architecture/</link>
+      <description>AI 系统架构四层地图：业务、应用、技术、数据各层回答什么问题，产品经理如何判断落地、成本、护栏和改动会冲到哪一层。并与工程请求链路页分工，避免点错入口。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>语音与音频</title>
+      <link>https://aipm.ac/ai/audio/</link>
+      <description>语音与音频：ASR、TTS、级联与端到端实时对话、音乐生成与合规，覆盖延迟成本路由以及音色授权、深度伪造等产品约束。实时对话按延迟预算选型，合规单独验收。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>模型能力与边界</title>
+      <link>https://aipm.ac/ai/capabilities/</link>
+      <description>模型能力与边界：先判断做得到做不到，再按推理预算、档位路由和官方定价快照选型；机制见大模型基础，许可见模型生态，评测见评估与评测。价格与型号以本页快照为准，按季度对照官方页。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>深度学习工程实践</title>
+      <link>https://aipm.ac/ai/deep-learning-practice/</link>
+      <description>深度学习工程实践：从数据与模型契约、变长 batch、训练调试与 checkpoint，到评估、导出、服务化、监控和灰度回滚，把模型做成可维护系统</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>Diffusion Language Model</title>
+      <link>https://aipm.ac/ai/diffusion-language-models/</link>
+      <description>Diffusion Language Model：离散扩散、SEDD、Masked Diffusion 与 LLaDA，比较并行生成、infilling 和自回归在延迟与生态上的取舍</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>深度学习基础</title>
+      <link>https://aipm.ac/ai/dl-basics/</link>
+      <description>深度学习基础：神经网络构成与反向传播、CNN/RNN/GNN 经典架构、Encoder-Decoder 变长序列、优化与解码，以及相对传统机器学习的工程边界</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>评估与评测</title>
+      <link>https://aipm.ac/ai/evaluation/</link>
+      <description>AI 产品评估：离线评测集、线上指标与定性体验如何对应能力、任务、产品三层，以及基准、Judge、红队、灰度和按形态选指标。污染隔离与校准决定评测能不能持续用。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>图像生成</title>
+      <link>https://aipm.ac/ai/image-generation/</link>
+      <description>图像生成原理与生态：扩散模型、可控生成、质量评估与商用边界，说明 FID 只是工程指标、产品验收要以业务可用率为准。CFG 与 token 权重分开调，不要靠抽卡换准。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>可解释性与安全前沿</title>
+      <link>https://aipm.ac/ai/interpretability-safety-frontier/</link>
+      <description>可解释性与安全前沿：因果追踪、SAE、表征操控，并拆开过程监督与 Debate 等可扩展监督，接到上线安全证据。论文证据不能替代上线红队与权限隔离。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>大模型基础</title>
+      <link>https://aipm.ac/ai/llm-basics/</link>
+      <description>大模型基础：token、上下文窗口、温度、幻觉、预训练与后训练、MoE 与推理强化，帮产品经理完成能力边界与选型前的概念对齐。先对齐概念，再进入训练、推理和选型。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>架构组件与训练稳定性</title>
+      <link>https://aipm.ac/ai/llm-frontier-architecture/</link>
+      <description>架构组件前沿：位置编码、RoPE 扩展族、归一化、激活与残差，分析训练稳定性和长度外推，不把标称窗口当成有效窗口。连接改动要看稳定性和 kernel，不只看公式。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>注意力与 KV Cache</title>
+      <link>https://aipm.ac/ai/llm-frontier-attention/</link>
+      <description>注意力与 KV Cache 前沿：从 MHA、MQA、GQA 到 MLA、CSA/HCA，比较表达能力、缓存压缩和解码带宽，纠正 MOA/GOA 等误写，并接到推理通识页</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>混合专家模型</title>
+      <link>https://aipm.ac/ai/llm-frontier-moe/</link>
+      <description>混合专家模型前沿：稀疏门控、Switch、DeepSeekMoE，分析路由、负载均衡和分布式通信，强调总参数不等于单次激活算力。选型看激活算力与路由失败，不看总参数广告。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>大模型前沿论文</title>
+      <link>https://aipm.ac/ai/llm-frontier-papers/</link>
+      <description>大模型前沿论文导读总入口：按瓶颈组织架构、推理、训练、Agent、多模态、记忆与可信研究地图，专题页讲机制与不可外推边界，明确不替代通识课。先读通识再按瓶颈选专题，不要用导读代替地基。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>线性注意力与状态空间</title>
+      <link>https://aipm.ac/ai/llm-frontier-sequence-models/</link>
+      <description>线性注意力与状态空间前沿：Lightning Attention、Mamba、DeltaNet、KDA 与 Mamba-3，比较有限状态的表达力、效率和失败模式</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>稀疏与局部注意力</title>
+      <link>https://aipm.ac/ai/llm-frontier-sparse-attention/</link>
+      <description>稀疏与局部注意力前沿：结构化稀疏、滑动窗口、DSA 与局部—全局交错，分析长上下文计算量能否变成真实吞吐。并对照 CSA、NSA、BigBird 减少的对象各不相同。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>推理系统与量化</title>
+      <link>https://aipm.ac/ai/llm-inference-systems-quantization/</link>
+      <description>推理系统与量化前沿：FlashAttention、PagedAttention、投机解码、量化和 KV 压缩，核对理论复杂度如何变成线上延迟与成本</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>模型推理与部署</title>
+      <link>https://aipm.ac/ai/llm-inference/</link>
+      <description>模型推理与部署：预填充与解码、KV Cache、MQA/GQA/MLA、量化、吞吐与私有化，讲清延迟、成本和并发如何被缓存与调度决定。服务优化见本页，论文出处见推理系统前沿页。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>外部记忆与模型编辑</title>
+      <link>https://aipm.ac/ai/llm-memory-model-editing/</link>
+      <description>外部记忆与模型编辑：检索式模型、测试时记忆、ROME/MEMIT 等参数编辑与遗忘，区分产品 RAG 与训练时检索、编辑的治理边界。编辑、RAG 与 Agent 记忆不要合成一个指标。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>推理时扩展</title>
+      <link>https://aipm.ac/ai/llm-reasoning-scaling/</link>
+      <description>推理时扩展：Best-of-N、搜索、验证器与自适应 test-time compute，把思考深度写成质量、延迟和成本可以一起算的预算。先画质量-延迟-成本曲线，再决定加预算。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>RLVR 与 GRPO</title>
+      <link>https://aipm.ac/ai/llm-rlvr-grpo/</link>
+      <description>RLVR 与 GRPO：可验证奖励、过程监督、DeepSeekMath 与 R1，相对训练基础页补充验证器设计、reward hacking 和评测口径</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>机器学习基础</title>
+      <link>https://aipm.ac/ai/ml-basics/</link>
+      <description>机器学习基础全景：监督、无监督与强化学习，回归、分类与聚类，模型评估、特征工程与缩放方法，帮助产品经理建立传统 ML 选型与评测的共同语言。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>开源与闭源模型生态</title>
+      <link>https://aipm.ac/ai/model-ecosystem/</link>
+      <description>开源与闭源模型生态：许可、格局、本地化、蒸馏与迁移风险（2026-09 查证），帮产品经理在 API、开源权重和混合路由之间做决策。许可闸门先于能力表，价表以能力与边界页为准。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>多模态前沿论文</title>
+      <link>https://aipm.ac/ai/multimodal-frontier-papers/</link>
+      <description>多模态前沿论文：CLIP、LLaVA、原生多模态，以及 Video-LLaVA、长视频音频与视觉 grounding，区分单帧识别和事件顺序验收</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>多模态理解</title>
+      <link>https://aipm.ac/ai/multimodal/</link>
+      <description>多模态理解：图像、文档、视频、音频的架构路线、成熟度、失败模式与 2026-08 选型表，区分 GPT-4o omni 与 o 系列推理线。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>高级提示词技巧</title>
+      <link>https://aipm.ac/ai/prompt-advanced/</link>
+      <description>生产级提示词：结构化提示、上下文工程、结构化输出、链式调用、路由与漂移治理，把提示词从一次对话变成可回归的企业资产。ReAct 提示形态在本页，工程循环在 Agent 架构页。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>提示词安全</title>
+      <link>https://aipm.ac/ai/prompt-security/</link>
+      <description>提示词安全：注入与越狱、防护体系、红队、OWASP LLM Top 10 与合规，给出可落地的攻击面清单和上线前回归用例。防护要落在输入、工具和输出三层，而不是单条规则。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>提示词工程</title>
+      <link>https://aipm.ac/ai/prompting/</link>
+      <description>提示词工程入门：为什么有效、基本结构、常用技巧、编写流程与产品化管理，以及和推理模型思考模式、系统提示词的配合方式。思考默认开启时不要再套零样本思维链。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>高级 RAG</title>
+      <link>https://aipm.ac/ai/rag-advanced/</link>
+      <description>高级 RAG：查询处理、多路召回、GraphRAG、Agentic RAG 与 RAGAS 评测；L0 是混合召回起步基线，L1 才是含 rerank 的生产标配，按评测决定是否升级</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>检索技术</title>
+      <link>https://aipm.ac/ai/rag-retrieval/</link>
+      <description>RAG 检索技术：BM25、向量检索、embedding、混合检索、重排与切块，以及 hit rate、recall@k、MRR、NDCG 的组件级评测口径</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>RAG 基础</title>
+      <link>https://aipm.ac/ai/rag/</link>
+      <description>RAG 基础：入库与在线流程、切块检索重排、失败模式、hit rate 与 recall@k，以及 RAG、微调和长上下文如何组合而不是互相替代，并统一 L0 起步基线与 L1 生产标配</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>Tokenizer-free 模型</title>
+      <link>https://aipm.ac/ai/tokenizer-free-models/</link>
+      <description>Tokenizer-free 模型：字节级、字符级、MegaByte 与 Byte Latent Transformer，分析多语言公平性、序列变长和部署成本</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>Transformer 架构</title>
+      <link>https://aipm.ac/ai/transformer/</link>
+      <description>Transformer 架构拆解：自注意力、多头、位置编码、Encoder/Decoder 三种形态，以及训练并行、KV Cache 与长上下文对产品成本的含义</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>视频生成</title>
+      <link>https://aipm.ac/ai/video-generation/</link>
+      <description>视频生成全景：为什么难、架构路线、Sora/Veo/可灵等现状、编辑与数字人，以及运动一致性、指令遵循和成本时长的产品边界。理解能力归多模态页，本页只验收生成与编辑。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>世界模型与具身智能</title>
+      <link>https://aipm.ac/ai/world-models-embodied/</link>
+      <description>世界模型与具身智能：环境动力学、潜在 rollout、VLA 与机器人闭环，把预测、规划、控制、安全回退分成可分别验收的层。预测、规划、控制要分开验收，不把视频生成当闭环。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业与财会简介</title>
+      <link>https://aipm.ac/business/</link>
+      <description>商业与财会专题：金融学、会计学、公司金融、计量经济学等 19 门课程，按知识依赖顺序组织</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>公司金融课程导论</title>
+      <link>https://aipm.ac/business/05-corporate-finance/00-intro/</link>
+      <description>公司金融课程导论：理解投资、融资与股利三大决策，掌握货币时间价值和项目评价指标，并从责任、治理、融资、税收与退出机制比较个人独资、合伙与公司等企业组织形式</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>学习资源简介</title>
+      <link>https://aipm.ac/case/</link>
+      <description>学习资源栏目入口：收录信息源（资源清单与渠道索引）、原创读书笔记、播客笔记与策略产品经理专题。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>信息源索引</title>
+      <link>https://aipm.ac/case/info-sources/</link>
+      <description>高质量信息渠道索引：中文社区、博客、Newsletter 与读书笔记。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>Twitter 前产品增长总监：不要为了招产品经理而招产品经理</title>
+      <link>https://aipm.ac/case/podcasts/whatnot-cpo-regret-pm/</link>
+      <description>整理《跨国串门儿计划》ep660 对 Whatnot CPO Tom Verrilli 的访谈。按小宇宙官方文稿忠实记录：不要为了招产品经理而招产品经理、产品管理是手艺、个人贡献者工作、拉手风琴节奏与平均值陷阱。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 产品经理能力模型</title>
+      <link>https://aipm.ac/intro/capability/</link>
+      <description>AI 产品经理能力模型：用产品判断、系统理解、评测观测、代理权治理、交付与商业五维组织可观察证据，并给出四级责任、岗位映射和自测清单，对应产品方法论栏目的能力出口。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>思维模型总览</title>
+      <link>https://aipm.ac/intro/thinking-models/</link>
+      <description>面向 AI 产品经理的思维模型入口：按范围取舍、问题重构、根因诊断、任务澄清和目标推进选择 MoSCoW、第一性原理、PRC、5W2H1R 与 GROW，并说明输入、产出、边界和与需求分析排序模型的分工。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>5W2H1R：从任务澄清到结果复盘</title>
+      <link>https://aipm.ac/intro/thinking-models/5w2h1r/</link>
+      <description>5W2H1R 任务澄清：用 What、Why、Who、When、Where、How、How much 和 Result 把已选方案写成可执行、可验收、可复盘的行动卡，并声明本站 R 表示结果。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>第一性原理</title>
+      <link>https://aipm.ac/intro/thinking-models/first-principles/</link>
+      <description>产品工作中的第一性原理：把目标、事实、假设、约束和惯例拆开，从必要条件重构方案，再用最小实验验证，避免把历史做法当成不可变需求。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>GROW：教练式目标推进</title>
+      <link>https://aipm.ac/intro/thinking-models/grow/</link>
+      <description>GROW 教练式目标推进：按 Goal、Reality、Options、Will 组织 1:1 与复盘，把目标、事实、选项和行动承诺写成可跟进的下一步，不替代立项或绩效裁决。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>MoSCoW：需求优先级分类</title>
+      <link>https://aipm.ac/intro/thinking-models/moscow/</link>
+      <description>MoSCoW 需求优先级分类：在固定时间盒下把范围分成 Must、Should、Could、Won&apos;t，说明准入条件、协商步骤、AI 客服案例，以及为何它不能代替 RICE 排序。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>PRC：问题—根因—对策</title>
+      <link>https://aipm.ac/intro/thinking-models/prc/</link>
+      <description>PRC 问题诊断：按本站约定用 Problem、Root Cause、Countermeasure 分开写偏差、根因证据和最小对策，形成可复查的改进闭环，而不是用流畅解释替代证据。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>裁员与劳动权益</title>
+      <link>https://aipm.ac/job/layoff-and-labor/</link>
+      <description>裁员、PIP 与劳动权益：AI 从业者面对被裁的信号识别、N+1 补偿算法、竞业限制、三方与试用期权益的自我保护手册</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>转行与职业转换</title>
+      <link>https://aipm.ac/job/after-entry/career-transition/</link>
+      <description>转行与职业转换指南：从区分转岗和转行业、盘点可迁移能力与 JD 差距，到低成本验证、桥接项目、求职叙事和风险管理，帮助从业者稳妥切换新的职业方向</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>大模型创业公司</title>
+      <link>https://aipm.ac/job/companies/ai-startups/</link>
+      <description>大模型创业公司组织与岗位：智谱AI、月之暗面、MiniMax、深度求索、百川智能的 AI 战略与求职观察</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>真实感悟简介</title>
+      <link>https://aipm.ac/job/insights/</link>
+      <description>真实感悟栏目：入行、职业发展、踩坑教训与心态建设的过来人经验分享</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>职业发展感悟</title>
+      <link>https://aipm.ac/job/insights/career/</link>
+      <description>职业发展感悟：AI 产品经理晋升、跳槽节奏、平台选择与职业瓶颈</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>入行感悟</title>
+      <link>https://aipm.ac/job/insights/newcomers/</link>
+      <description>入行感悟：AI 产品经理切入点、第一年体验、能力自评与上手路径</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>「校招」字节跳动｜开发者 AI 产品经理</title>
+      <link>https://aipm.ac/job/jd-breakdowns/bytedance-developer-ai-pm/</link>
+      <description>拆解字节跳动开发者 AI 团队的 AI 产品经理 JD：从职责、用户分层、IDE 形态、模型边界、评测指标与面试准备判断岗位的实际工作范围</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>「社招」MiniMax｜AI Agent 产品经理</title>
+      <link>https://aipm.ac/job/jd-breakdowns/minimax-ai-agent-pm/</link>
+      <description>拆解 MiniMax AI Agent 产品经理 JD：从产品规划、用户场景、Agent 机制与效果评估，到能力匹配、面试准备和职业发展判断岗位边界</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>「校招」腾讯｜地图 AI 产品经理培训生</title>
+      <link>https://aipm.ac/job/jd-breakdowns/tencent-map-ai-pm-trainee/</link>
+      <description>拆解腾讯地图 AI 产品经理培训生 JD：围绕导航 Agent、用户意图理解、主动需求识别、地图场景体验、数据分析与 AI 产品落地，判断岗位边界和准备重点</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>协作团队与岗位简介</title>
+      <link>https://aipm.ac/job/positions/</link>
+      <description>产品经理协作团队与岗位：梳理 AI 产品经理需要沟通的业务、算法、研发、设计、测试、运营、销售、合规与管理角色，以及各自的交付边界</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 产品经理</title>
+      <link>https://aipm.ac/job/positions/ai-pm/</link>
+      <description>AI 产品经理岗位解读：按应用、工作流、平台、模型、评测与行业交付拆分职责，说明 JD 关键词、能力证据、作品要求和面试前的核验方法，帮助识别实际责任范围</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>产品经理岗位类别简介</title>
+      <link>https://aipm.ac/job/product-manager-types/</link>
+      <description>产品经理岗位类别：按技术对象、服务对象和结果责任理解不同产品经理方向</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 产品经理方向</title>
+      <link>https://aipm.ac/job/product-manager-types/ai-product-manager/</link>
+      <description>产品经理岗位类别：按技术对象、服务对象和结果责任理解不同产品经理方向</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>选择方向与阅读 JD</title>
+      <link>https://aipm.ac/job/product-manager-types/selection-and-jd/</link>
+      <description>产品经理岗位类别：按技术对象、服务对象和结果责任理解不同产品经理方向</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 产品开发生命周期（CC/CD）</title>
+      <link>https://aipm.ac/pm/ai-lifecycle/</link>
+      <description>AI 产品开发生命周期：用持续开发与持续校准（CC/CD）替代一次规划，按代理权阶梯上线、评测、修复，让系统靠表现逐步扩权。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>数据分析入门</title>
+      <link>https://aipm.ac/pm/data-analysis/</link>
+      <description>面向产品经理的数据分析入门：用指标分层、漏斗、留存、同期群和看板把业务问题译成可行动的数，并覆盖 AI 产品的采纳漏斗与 badcase 回流。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>设计评审与可用性度量</title>
+      <link>https://aipm.ac/pm/design-evaluation/</link>
+      <description>设计评审与可用性度量：用专家评估、可用性测试、SUS / HEART 与 A/B 实验给设计假设找证据，并和用户研究、模型评测划清分工。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>交互设计基础</title>
+      <link>https://aipm.ac/pm/design-interaction/</link>
+      <description>交互设计基础：用心智模型、反馈、设计定律、导航、表单和可访问性设计用户与系统的对话，并为 AI 的不确定输出准备兜底。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>设计师黑话速查</title>
+      <link>https://aipm.ac/pm/design-jargon/</link>
+      <description>设计师黑话速查：按角色、方法、组件、视觉、动效、可访问性和 AI 设计整理 160 余条术语，方便评审、JD 阅读和跨角色沟通。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>设计哲学与设计思维</title>
+      <link>https://aipm.ac/pm/design-philosophy/</link>
+      <description>设计哲学与设计思维：梳理设计思维、以用户为中心、Norman 认知心理学、情感化设计与设计伦理，并说明每个框架在 AI 产品里的适用边界。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>原型与设计交付</title>
+      <link>https://aipm.ac/pm/design-prototyping/</link>
+      <description>原型与设计交付：按假设选择保真度，用线框、可点击原型和绿野仙踪验证价值，再把标注、token 和状态交给开发。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>设计系统与规范</title>
+      <link>https://aipm.ac/pm/design-systems/</link>
+      <description>设计系统与规范：用 design token、组件库和治理流程把设计决策变成可复用资产，并说明 AI 生成界面为什么更依赖系统约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>视觉设计基础</title>
+      <link>https://aipm.ac/pm/design-visual/</link>
+      <description>视觉设计基础：用格式塔、视觉层级、色彩、排版和栅格把界面做成可扫读、可信任的结构，并给出对比度、色觉缺陷与检查清单。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>产品设计与原型总览</title>
+      <link>https://aipm.ac/pm/design/</link>
+      <description>AI 产品设计与原型总览：从问题框架到失败兜底的九步设计链路，覆盖体验五层、交互范式、原型策略和评审验收，并指向七个设计深度页。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业化与增长</title>
+      <link>https://aipm.ac/pm/monetization/</link>
+      <description>AI 产品商业化与增长：五类收费模式、定价与单位经济、GTM 渠道、增长循环与毛利护栏，帮助产品经理在立项前算清推理成本、上线后守住变现。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 产品 PRD</title>
+      <link>https://aipm.ac/pm/prd/</link>
+      <description>AI 产品 PRD 模板：用十节结构把能力边界、评测标准、失败路径和成本预算写成开发可执行、验收有据的文档，并给出工单助手示例与评审清单。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>产品生命周期</title>
+      <link>https://aipm.ac/pm/product-lifecycle/</link>
+      <description>产品生命周期的阶段判断与经营策略：按导入、成长、成熟、衰退四阶段看用户、收入、竞争与成本信号，决定资源投向、变现、留存或收缩，并和 AI 产品开发生命周期区分开。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>项目管理与迭代</title>
+      <link>https://aipm.ac/pm/project-management/</link>
+      <description>AI 产品项目管理与迭代：在不确定性下并行发现与交付，用两快一慢节奏、评测门禁、灰度和干系人 RACI 保证按时按质上线。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>需求分析</title>
+      <link>https://aipm.ac/pm/requirements/</link>
+      <description>需求分析方法：从机会识别、可证伪假设、证据层级到优先级与拆解，给出 P0-P3 治理和 AI 特判五查，把模糊诉求变成可验收的需求。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>产品战略与竞争</title>
+      <link>https://aipm.ac/pm/strategy/</link>
+      <description>产品战略与竞争：用五力、STP、护城河和一页纸战略判断在哪个市场竞争、凭什么赢，并回答套壳、模型趋同与产品市场契合（PMF）怎么落到优先级。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>用户研究</title>
+      <link>https://aipm.ac/pm/user-research/</link>
+      <description>用户研究方法：按发现、验证、监控三种时机选择访谈、问卷、可用性测试与行为数据，降低决策不确定性，并把洞察写回需求与 PRD。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>实战简介</title>
+      <link>https://aipm.ac/practice/</link>
+      <description>AI 产品实战栏目导航：五类产品形态地图、选型决策与从 0 到 1 的阅读路径。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>对话助手</title>
+      <link>https://aipm.ac/practice/chatbot/</link>
+      <description>对话助手产品设计：通用/垂直/角色化分类、冷启动、对话体验、记忆、信任与评测。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>客服自动化</title>
+      <link>https://aipm.ac/practice/support-bot/</link>
+      <description>客服自动化产品设计：ROI 账本、场景分层、系统组成、转人工控制交接与评测运营。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>智能语音产品</title>
+      <link>https://aipm.ac/practice/voice-product/</link>
+      <description>智能语音产品从麦克风采集、ASR、语言理解与对话决策到 TTS 和播放反馈的产品设计指南，覆盖场景选型、实时交互、打断与轮次、评测运营、成本和语音数据合规，帮助产品经理把三段技术链路落成可用体验。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>工程与架构简介</title>
+      <link>https://aipm.ac/tech/</link>
+      <description>工程与架构专题总览：从需求到上线的开发与发布、请求链路与组件术语、部署与可观测性，以及 AI 改写后的研发关卡，帮助产品经理对齐排期、评估技术风险并判断架构取舍。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI-Native 研发流程</title>
+      <link>https://aipm.ac/tech/ai-native-sdlc/</link>
+      <description>AI-Native 研发流程：代码生产变便宜后，卡点转到意图、关卡评审与评测；标准产物进版本控制，人保留判断问责。通识框架之外附 Anthropic 案例，便于对照本团队的协作方式。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>工程架构术语总览</title>
+      <link>https://aipm.ac/tech/architecture-terminology/</link>
+      <description>工程架构术语类总览：按用户请求链路串联前端、网关、身份、后端、数据库、缓存、消息队列、第三方与可观测性，帮助 AI 产品经理建立组件边界、选型取舍、性能成本和故障风险的共同语言</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>系统架构基础</title>
+      <link>https://aipm.ac/tech/architecture/</link>
+      <description>系统架构基础：从用户请求穿过网关、服务、数据库、缓存与消息队列讲起，拆解前端、后端、身份、数据、异步与外部依赖的选型与风险，看懂链路即知砍成本、提性能、排风险动哪一层。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>后端与服务端术语</title>
+      <link>https://aipm.ac/tech/backend-services/</link>
+      <description>后端与服务端术语黑话：单体、微服务、API 网关、无状态、接口契约、同步异步、扩容与降级，帮助 AI 产品经理理解请求如何执行、服务如何拆分以及技术取舍如何影响体验和排期</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>缓存技术与黑话</title>
+      <link>https://aipm.ac/tech/caching/</link>
+      <description>缓存技术黑话：CDN、本地缓存、分布式缓存、TTL、缓存旁路、失效与一致性，拆解命中率、击穿、穿透、雪崩等常见故障，帮助 AI 产品经理判断性能收益、旧数据风险和缓存成本</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>数据库与数据存储术语</title>
+      <link>https://aipm.ac/tech/databases/</link>
+      <description>数据库与数据存储术语黑话：关系型数据库、NoSQL、Schema、事务、索引、复制、分区、迁移与备份恢复，帮助 AI 产品经理判断数据事实归属、查询性能、一致性、容量成本和故障风险</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>部署与环境</title>
+      <link>https://aipm.ac/tech/deployment/</link>
+      <description>部署与环境：开发、预发与生产如何隔离产物和配置，滚动、蓝绿与金丝雀如何放量，容器与编排如何影响排期、兼容和回滚，帮助产品经理把上线验收写成可验证、可回退的发布条件。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>开发流程与节奏</title>
+      <link>https://aipm.ac/tech/dev-flow/</link>
+      <description>开发流程与节奏：工程侧从需求到上线的端到端流程，敏捷迭代与瀑布流程的差异，灰度发布与回滚的工程机制，AI 产品经理据此对齐排期、评估技术风险与发布节奏</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>前端渲染技术与黑话</title>
+      <link>https://aipm.ac/tech/frontend-rendering/</link>
+      <description>前端渲染技术黑话：SSR、SSG、CSR、ISR、RSC 与 SPA 的生成时机、组件执行位置、首屏、SEO 和数据时效，帮助 AI 产品经理在内容站、后台与交互产品中做架构取舍</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>身份认证与权限</title>
+      <link>https://aipm.ac/tech/identity-access/</link>
+      <description>身份认证与权限：认证确认是谁、授权决定能做什么，覆盖会话、JWT、OAuth、RBAC 与最小权限，帮助产品经理把登录、越权、第三方登录和权限变更写成可验收的产品规则。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>消息队列与异步系统</title>
+      <link>https://aipm.ac/tech/message-queues/</link>
+      <description>消息队列与异步系统术语黑话：队列、发布订阅、投递语义、重试、死信、幂等、顺序、背压与消费延迟，帮助 AI 产品经理判断哪些工作应异步化以及可靠性成本由谁承担</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>可观测性</title>
+      <link>https://aipm.ac/tech/observability/</link>
+      <description>可观测性：用指标、日志和 Trace 判断线上是否正常、故障在哪一层，覆盖黄金信号、告警、SLI/SLO 以及 AI 调用链的成本与工具轨迹，帮助产品经理把灰度门禁和事故复盘落到可测量的信号。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>第三方服务与外部依赖</title>
+      <link>https://aipm.ac/tech/third-party-services/</link>
+      <description>第三方服务与外部依赖术语黑话：SLA、配额、Webhook、超时、重试、降级、数据出域和供应商锁定，帮助 AI 产品经理评估支付、登录、通知、存储等依赖的可用性、合规与退出成本</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>工具简介</title>
+      <link>https://aipm.ac/tools/</link>
+      <description>工具与平台栏目导航：AI 产品构建全链路的工具分类与选型决策框架。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 平台汇总</title>
+      <link>https://aipm.ac/tools/ai-platforms/</link>
+      <description>调用与试用模型的平台清单：聚合 API 网关、竞技场、第三方评测站与开源平台。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>数据与标注</title>
+      <link>https://aipm.ac/tools/data/</link>
+      <description>AI 数据工作全景：采集、清洗、标注、管理各环节的质量门与合规要点。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>开源框架</title>
+      <link>https://aipm.ac/tools/frameworks/</link>
+      <description>LLM 框架与平台选型速查：低代码平台、开发框架、Agent 编排与 RAG 数据框架。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>LLM API 与供应商</title>
+      <link>https://aipm.ac/tools/llm-api/</link>
+      <description>LLM API 与供应商选型：供应商全景、定价结构、能力维度、实测方法与风险控制。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>LLM 成本测算</title>
+      <link>https://aipm.ac/tools/llm-cost/</link>
+      <description>LLM 成本测算方法：单次与月成本估算三步法、降本手段、TCO 与成本治理。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>效率工具</title>
+      <link>https://aipm.ac/tools/misc/</link>
+      <description>AI 产品经理效率工具清单：对话、笔记、搜索、文档办公与会议纪要等单兵工具。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>产品经理工作台工具</title>
+      <link>https://aipm.ac/tools/pm-workbench/</link>
+      <description>PM 团队协作与管理工具全景：知识库、项目任务、需求缺陷、埋点分析与用户研究。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>提示词与评测工具</title>
+      <link>https://aipm.ac/tools/prompt-tools/</link>
+      <description>提示词开发与评测工具链：调试、评测集平台、追踪可观测与反馈回流四环节。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>网络安全</title>
+      <link>https://aipm.ac/vertical/cybersecurity/</link>
+      <description>网络安全按身份密码与架构、安全运营、数据与系统防护、治理与合规组织，对照 NIST CSF 2.0 与等保技术管理要求，读完能把攻击面、检测响应和审计证据写成产品约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>数据与系统安全</title>
+      <link>https://aipm.ac/vertical/cybersecurity/data-app-cloud/</link>
+      <description>数据与系统安全对应保护控制：数据安全、应用安全、云与供应链、终端与网络，读完能把分类分级、安全开发生命周期和云上共享责任写成上线约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>应用安全</title>
+      <link>https://aipm.ac/vertical/cybersecurity/data-app-cloud/application-security/</link>
+      <description>应用安全：把威胁建模、安全需求、SAST、DAST、依赖扫描和发布门槛写进研发生命周期，读完能在 PRD 里列出安全验收项，而不是上线后再补扫描。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>云与供应链安全</title>
+      <link>https://aipm.ac/vertical/cybersecurity/data-app-cloud/cloud-and-supply-chain/</link>
+      <description>云与供应链安全：用共享责任、配置管理、身份蔓延、SBOM 和第三方接入说明云上风险，读完能把厂商权限、镜像来源和自动扩容写成可审计的产品约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>数据安全</title>
+      <link>https://aipm.ac/vertical/cybersecurity/data-app-cloud/data-security/</link>
+      <description>数据安全：用分类分级、加密、脱敏、水印和 DLP 把数据对象管起来，读完能定义哪些字段可进模型上下文、哪些必须脱敏、泄露后如何追溯。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>终端与网络安全</title>
+      <link>https://aipm.ac/vertical/cybersecurity/data-app-cloud/endpoint-and-network/</link>
+      <description>终端与网络安全：覆盖 EDR、防火墙、准入、DNS 安全与零信任网络访问，读完能处理 Agent 部署摩擦、远程办公访问和东西向流量看不见的问题。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>密码、身份与架构</title>
+      <link>https://aipm.ac/vertical/cybersecurity/foundations/</link>
+      <description>密码、身份与架构对应识别与保护：威胁与攻击面、身份认证与访问控制、密码学与密钥管理、安全架构与零信任，读完能在功能设计前列出资产、身份和信任边界。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>安全架构与零信任</title>
+      <link>https://aipm.ac/vertical/cybersecurity/foundations/architecture-and-zero-trust/</link>
+      <description>安全架构与零信任：用纵深防御和默认不信任设计网络、身份与工具调用边界，读完能把分段、持续验证和失陷假设写成产品的默认拒绝与审计要求。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>密码学与密钥管理</title>
+      <link>https://aipm.ac/vertical/cybersecurity/foundations/cryptography-and-keys/</link>
+      <description>密码学与密钥管理：在算法选型之上把密钥生成、存储、轮换、吊销和信封加密写成产品规则，读完能判断哪些数据必须加密、谁能解密、客服能否查看明文。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>身份认证与访问控制</title>
+      <link>https://aipm.ac/vertical/cybersecurity/foundations/identity-and-access/</link>
+      <description>身份认证与访问控制：区分认证、授权、特权访问与身份治理，覆盖 SSO、MFA、PAM 和即时权限，读完能把登录、越权和第三方身份写成可回收的产品规则。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>威胁与攻击面</title>
+      <link>https://aipm.ac/vertical/cybersecurity/foundations/threats-and-attack-surface/</link>
+      <description>威胁与攻击面：用 CIA、STRIDE 和 ATT&amp;CK 把资产、身份、接口与模型暴露整理成攻击路径，读完能列出本产品的攻击面清单、优先修补项和必须记录的安全事件。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>治理与合规</title>
+      <link>https://aipm.ac/vertical/cybersecurity/governance/</link>
+      <description>治理与合规对应 Govern：等保与关基、隐私与个人信息保护、安全采购与产业，读完能把审计证据、隐私设计和安全采购决策写进路线图。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>等保与关基</title>
+      <link>https://aipm.ac/vertical/cybersecurity/governance/mlps-and-cii/</link>
+      <description>等保与关基：用等级保护定级、备案、测评和关键信息基础设施义务，说明安全控制如何成为上线门槛，读完能把等保条款映射到产品功能与证据清单。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>隐私与个人信息保护</title>
+      <link>https://aipm.ac/vertical/cybersecurity/governance/privacy/</link>
+      <description>隐私与个人信息保护：用最小必要、告知同意、目的限制、主体权利和跨境评估约束产品数据流，读完能画出个人信息从收集到删除的路径并标出模型调用点。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>安全产品与市场</title>
+      <link>https://aipm.ac/vertical/cybersecurity/governance/security-products/</link>
+      <description>安全产品与市场：从 CISO 采购、证明材料、平台化与托管服务说明安全产品如何成交，读完能设计评测、ROI 叙事和集成路线，避免只做功能 Demo。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>安全运营</title>
+      <link>https://aipm.ac/vertical/cybersecurity/operations/</link>
+      <description>安全运营对应检测与响应：漏洞管理、检测与响应、安全运营中心和威胁情报，读完能用修复窗口、误报率、MTTD 和情报落地程度验收安全产品。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>检测与响应</title>
+      <link>https://aipm.ac/vertical/cybersecurity/operations/detection-and-response/</link>
+      <description>检测与响应：覆盖 SIEM、EDR、SOAR、研判剧本和遏制隔离，读完能用 MTTD、MTTR、误报率和漏报演练定义安全检测产品的验收标准。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>安全运营中心</title>
+      <link>https://aipm.ac/vertical/cybersecurity/operations/soc/</link>
+      <description>安全运营中心：用分层值班、工单质量、知识库和自动化比例描述 SOC 如何运转，读完能设计面向分析师的工作台，而不是再做一个通用聊天窗口。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>威胁情报</title>
+      <link>https://aipm.ac/vertical/cybersecurity/operations/threat-intelligence/</link>
+      <description>威胁情报：区分战略、运营与战术情报，把 IOC 和 TTP 接到检测规则与漏洞优先级，读完能要求情报产品输出可执行检测，而不是只生成阅读报告。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>漏洞管理</title>
+      <link>https://aipm.ac/vertical/cybersecurity/operations/vulnerability-management/</link>
+      <description>漏洞管理：从扫描、分级、修复窗口到例外审批，把 CVE 与业务暴露结合起来排序，读完能把漏洞当产品待办项管理，而不是只看扫描器红灯数量。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>地球科学</title>
+      <link>https://aipm.ac/vertical/earth-science/</link>
+      <description>地球科学按大气科学、固体地球科学、水文与海洋科学、地球信息科学和空间数据库组织观测、模式、产品时效与空间存储，读完能把预报、预警和空间查询的不确定性写成可说明的服务约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>大气科学</title>
+      <link>https://aipm.ac/vertical/earth-science/atmosphere-climate/</link>
+      <description>大气科学覆盖天气预报、气候系统、空气质量，读完能区分天气时效、气候情景和空气污染产品的用户、责任与检验方法。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>空气质量</title>
+      <link>https://aipm.ac/vertical/earth-science/atmosphere-climate/air-quality/</link>
+      <description>空气质量：覆盖污染物、监测网络、扩散模式和健康建议，读完能把 AQI 产品的站点代表性、预报时效和健康提示责任写进规格。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>气候系统</title>
+      <link>https://aipm.ac/vertical/earth-science/atmosphere-climate/climate-system/</link>
+      <description>气候系统：覆盖气候与天气的区别、气候模式、排放情景和降尺度，读完能把气候相关产品的时间尺度、情景假设和适用边界写清楚，避免当成天气预报卖。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>天气预报</title>
+      <link>https://aipm.ac/vertical/earth-science/atmosphere-climate/weather-forecast/</link>
+      <description>天气预报：覆盖数值天气预测、集合预报、临近预报和预警发布，读完能把气象 AI 产品的时效、空间尺度和官方预警衔接写成可验收的服务等级。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>地球信息科学</title>
+      <link>https://aipm.ac/vertical/earth-science/geospatial/</link>
+      <description>地球信息科学覆盖遥感、测绘与 GIS、地球观测产品，读完能处理坐标系、分辨率、云遮挡和分析就绪数据的产品化约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>地球观测产品</title>
+      <link>https://aipm.ac/vertical/earth-science/geospatial/earth-observation-products/</link>
+      <description>地球观测产品：覆盖分析就绪数据、产品层级、时效 SLA 和行业指标，读完能把卫星能力包装成可订阅的数据服务，并写清更新频率与质量旗标。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>GIS 与测绘</title>
+      <link>https://aipm.ac/vertical/earth-science/geospatial/gis-and-surveying/</link>
+      <description>GIS 与测绘：覆盖坐标系、拓扑、精度等级和法定测绘，读完能把地图产品的测量权威、导航误差和地址匹配限制写清楚。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>遥感</title>
+      <link>https://aipm.ac/vertical/earth-science/geospatial/remote-sensing/</link>
+      <description>遥感：覆盖轨道、光谱、空间时间分辨率、云遮挡和反演，读完能把遥感 AI 的训练样本、云检测和物理量产品的适用条件写进说明书。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>水文与海洋科学</title>
+      <link>https://aipm.ac/vertical/earth-science/hydrosphere-ocean/</link>
+      <description>水文与海洋科学覆盖陆地水文与水资源、海洋学，读完能处理流域预报、水量调度和海洋观测产品中不同的时空尺度。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>水文与水资源</title>
+      <link>https://aipm.ac/vertical/earth-science/hydrosphere-ocean/hydrology/</link>
+      <description>水文与水资源：覆盖流域、径流、洪水预报、水质和调度，读完能把水利 AI 接到监测站点、调度规则和防汛责任体系，而不是只做地图着色。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>海洋学</title>
+      <link>https://aipm.ac/vertical/earth-science/hydrosphere-ocean/oceanography/</link>
+      <description>海洋学：覆盖海流、海温、潮汐、海浪和海洋观测网，读完能把海洋产品的时效、深度层和船舶安全用途写进规格，并处理观测稀疏。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>固体地球科学</title>
+      <link>https://aipm.ac/vertical/earth-science/solid-earth/</link>
+      <description>固体地球科学覆盖地质与矿产、地震与地球物理、灾害风险，读完能理解地下数据稀疏、地震预警的秒级窗口，以及风险是危险性、暴露与脆弱性的组合。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>灾害风险</title>
+      <link>https://aipm.ac/vertical/earth-science/solid-earth/disaster-risk/</link>
+      <description>灾害风险：用危险性、暴露、脆弱性和能力描述风险，读完能把应急和保险类产品的地图含义说清，并区分预警、风险评估和损失预估。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>地质与矿产</title>
+      <link>https://aipm.ac/vertical/earth-science/solid-earth/geology-and-minerals/</link>
+      <description>地质与矿产：覆盖地层、构造、勘探数据和资源量分类，读完能把地质 AI 用在解释辅助和资料管理，并避免把生成剖面当成已钻探事实。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>地震与地球物理</title>
+      <link>https://aipm.ac/vertical/earth-science/solid-earth/seismology/</link>
+      <description>地震与地球物理：覆盖震级、烈度、预警秒级窗口和结构响应，读完能把地震产品分成信息、预警和工程参数三类，并严格限制自动警报的发布权。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>空间数据库</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/</link>
+      <description>空间数据库把矢量地物放进对象关系数据库：几何类型、九交谓词、空间索引和路网查询。用来把坐标系、拓扑、GiST 与最短路写成数据产品的存储和验收约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>概论</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/01-overview/</link>
+      <description>空间数据库把带地球表面位置参照的数据交给数据库管理系统，实现上等于对象关系库加上几何类型、空间谓词与空间索引。本页写全五层模型、三级模式与两级映象、矢量五特征与三大要素、四代管理技术以及 SFA SQL 与 SQL/MM 两个标准，并把时空合取写成查询与验收约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>关系模型与关系代数</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/02-relational-model/</link>
+      <description>关系模型用域、码与三类完整性把实体和联系装进非嵌套二维表，关系代数用选择、投影、积、并、差以及连接、交、除把查询写成集合表达式。本页讲清候选码、主码与外码，集合语义与包语义的分界，以及存在、全称、否定与最值如何落到交、差和自积。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>SQL</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/03-sql/</link>
+      <description>SQL 把关系代数落成可执行语句：DDL 定义表与主码、外码、检查约束，DML 插入、更新与删除元组，SELECT 按 FROM、WHERE、GROUP BY、HAVING、投影与排序求值。读完能写嵌套、连接、分组、空值与除法查询，并把参照完整性策略写成数据产品的验收约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>几何对象与 PostGIS</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/04-geometry-and-postgis/</link>
+      <description>几何对象模型把点、线、面与空间参考系放进对象关系数据库，用约三十个方法、九交、DE-9IM 与八种拓扑关系写相交包含，再用 PostGIS 查询。读完能分清 geometry 与 geography、ST_DWithin 的距离单位，并把 SRID、审图和直线距离写成空间查询验收约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>空间扩展 E/R</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/05-spatial-er/</link>
+      <description>空间扩展 E/R 把点、线、面象形图写进独立于 DBMS 的概念模式，覆盖设计六阶段、实体联系约束、1:1 与 1:N 与 M:N 转换，以及几何列落表规则。读完能从需求画出可转换的空间扩展图，并判断哪些空间谓词落表、哪些运行时计算。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>关系设计理论</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/06-normalization/</link>
+      <description>关系数据库规范化：函数依赖的元组判定、属性闭包求码、课上 BCNF 分解（含 A→A+）、多值依赖与第四范式，以及几何列上的函数依赖与不当主码。读完按伪代码把 mega relation 逐步分解，并判断无损连接与依赖丢失。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>空间存储与索引</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/07-storage-and-index/</link>
+      <description>逻辑模式经规范化后进入物理设计：磁盘上的三种文件与 B+ 树、用 Z 曲线和 Hilbert 曲线把二维压成一维键以复用有序文件，以及网格、四叉树、R 树和 PostGIS GiST。本页给出 Z 值正反算、Hilbert 七步与 R 树父子包围盒剪枝的可跟做步骤，并写清哪些空间谓词走索引。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>空间查询处理</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/08-query-processing/</link>
+      <description>空间查询处理把声明性 SQL 变成执行计划：过滤–精炼用最小包围矩形与 overlap 得到候选超集，再为点查询、范围查询、最近邻和空间连接选择扫描、填充曲线、R 树或划分策略，读完能用元组数 T、块数 B 与不同值个数 V 估计块 I/O，并用 PostgreSQL EXPLAIN 判断空间选择下推是否更省。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>空间网络</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/09-spatial-network/</link>
+      <description>空间网络模型把道路、铁路与河流建成图，用顶点、边与代价回答可达和最短路。读完能写 PostgreSQL 的 WITH RECURSIVE 迭代求值，理解工作表只含上一轮新行，用 pgRouting 边表契约、pgr_createTopology 与 pgr_dijkstra 把 LineString 变成可导航网络，并把驾驶距离写进数据产品的验收约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>安全与完整性</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/10-security-and-integrity/</link>
+      <description>数据库安全性用预编译挡住注入，用 GRANT 与 REVOKE、授权图和角色控制谁能看见、谁能改；完整性用主码、外码、CHECK、立即与延迟约束、标准 SQL 触发器以及四类视图保证写入合法。读完能对照 PostgreSQL 与 SQL 标准差异，并把视图裁剪与可更新标准写成空间库验收约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>服务器编程</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/11-server-programming/</link>
+      <description>PostgreSQL 服务器编程把完整性约束、审计日志与空间谓词写成 PL/pgSQL 函数：函数名、参数、返回类型、主体与语言构成五块积木，SETOF 返回集合，异常中止当前事务。触发器先写 RETURNS trigger 的函数再挂到表事件上。读完能分清函数体 BEGIN 与事务 BEGIN，并用 IMMUTABLE 函数索引加速几何谓词。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>事务处理</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/12-transactions/</link>
+      <description>事务把多条读写捆成现实世界的一笔，用 ACID 约束崩溃与并发。本页写清冲突可串行化与冲突图、两段锁协议与死锁、SQL 四级隔离、WAL 两条刷盘规则，以及账户转账加利息的调度判定。读完能把隔离与恢复写成空间库运行时约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>OLAP</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/13-olap/</link>
+      <description>联机分析处理把操作型数据抽进仓库，按度量、维与层次做多维观察：星型与雪片组织事实表，切片、切块、旋转与上卷、下钻改变观察粒度，SQL 的 CUBE 与 ROLLUP 一次求出多层分组。读完能对照联机事务处理写清仓库流水线、立方体操作与 PostgreSQL 语法，并把物化立方体上的空值读成该维全体。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>要点检查</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/14-review/</link>
+      <description>空间数据库要点检查把各章收成可验收条目与易混点：九交、Z 曲线与 Hilbert、BCNF、两段锁、递归查询与 Dijkstra。读完能按设计流程核对几何对象模型与空间网络，并把量词、无向图、视图写入和 GiST 谓词写成产品约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>实践路径</title>
+      <link>https://aipm.ac/vertical/earth-science/spatial-database/15-practice/</link>
+      <description>空间数据库实践路径把六类练习对照到各章：关系查询、几何对象与 PostGIS、空间扩展 E/R 与 BCNF、填充曲线与查询规划、空间网络、函数触发器与路网。读完按练习类型回翻对应章，并识别复合主码、九交、范围谓词、无损分解、递归终止与拓扑容差上的易错写法。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>教育</title>
+      <link>https://aipm.ac/vertical/education/</link>
+      <description>教育按教育阶段、课程教学与评价、教育技术组织课标、教学设计和辅导系统，读完能把学习目标、测量信度和学术规范写成教育产品的验收标准。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>教育技术</title>
+      <link>https://aipm.ac/vertical/education/edtech/</link>
+      <description>教育技术覆盖自适应学习、智能辅导、教育管理与教务、学术诚信，读完能把算法接到学校工作流、测量要求和学术规范。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>学术诚信</title>
+      <link>https://aipm.ac/vertical/education/edtech/academic-integrity/</link>
+      <description>学术诚信：覆盖抄袭、代写、过程证据和 AIGC 披露，读完能把检测产品设计成教育过程的一部分，并处理误报对学生的伤害。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>自适应学习</title>
+      <link>https://aipm.ac/vertical/education/edtech/adaptive-learning/</link>
+      <description>自适应学习：覆盖知识追踪、题目推荐、冷启动和掌握标准，读完能把个性化限制在可解释的目标函数内，并处理探索与应试之间的冲突。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>教育管理与教务</title>
+      <link>https://aipm.ac/vertical/education/edtech/admin-and-sis/</link>
+      <description>教育管理与教务：覆盖学籍、排课、选课、成绩和多租户学校，读完能把教育 AI 的权限、审计和主数据做进 SIS，而不是旁路聊天改档案。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>智能辅导</title>
+      <link>https://aipm.ac/vertical/education/edtech/intelligent-tutoring/</link>
+      <description>智能辅导：覆盖步骤级反馈、苏格拉底对话、误解诊断和提示策略，读完能把辅导系统的成功定义成错误被纠正，并把幻觉当教学事故处理。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>教育阶段</title>
+      <link>https://aipm.ac/vertical/education/stages/</link>
+      <description>教育阶段按基础教育、高等教育、职业教育、企业培训与终身学习划分对象、目标和制度，读完能避免把一套产品套到全部阶段。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>企业培训与终身学习</title>
+      <link>https://aipm.ac/vertical/education/stages/corporate-and-lifelong/</link>
+      <description>企业培训与终身学习：覆盖技能图谱、学习项目、完成率与行为改变，读完能把培训 AI 的指标从看完视频改成岗位行为和业务结果。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>高等教育</title>
+      <link>https://aipm.ac/vertical/education/stages/higher-education/</link>
+      <description>高等教育：覆盖学分、教务、科研训练和学术规范，读完能把课程助手、论文辅助和教务问答分开设计，并守住学术诚信边界。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>基础教育</title>
+      <link>https://aipm.ac/vertical/education/stages/k12/</link>
+      <description>基础教育：覆盖课标、减负、家校协同和未成年人保护，读完能把练习、讲解和数据采集限制在学校教育目标与儿童个人信息规则之内。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>职业教育</title>
+      <link>https://aipm.ac/vertical/education/stages/vocational/</link>
+      <description>职业教育：覆盖技能标准、产教融合、实训和考证，读完能把练习任务设计成可观察的操作步骤与评分量表，而不是知识点讲解。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>课程、教学与评价</title>
+      <link>https://aipm.ac/vertical/education/teaching-assessment/</link>
+      <description>课程、教学与评价覆盖课程与教学内容、教学设计、测评与考试、学习分析，读完能用学习目标和测量质量约束内容生成。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>测评与考试</title>
+      <link>https://aipm.ac/vertical/education/teaching-assessment/assessment/</link>
+      <description>测评与考试：覆盖信度、效度、区分度、题库等值和考试安全，读完能把自动出题和自动阅卷限制在测量学可接受的范围内。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>课程与教学内容</title>
+      <link>https://aipm.ac/vertical/education/teaching-assessment/curriculum/</link>
+      <description>课程与教学内容：覆盖课标、知识点图谱、教材版本和内容审核，读完能把生成内容挂到稳定的知识结构上，并处理版本与地区差异。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>教学设计</title>
+      <link>https://aipm.ac/vertical/education/teaching-assessment/instructional-design/</link>
+      <description>教学设计：用学习目标、认知负荷、活动序列和反馈时机约束 AI 课程，读完能把「生成一节课」拆成目标、测验、讲解和练习的可验证结构。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>学习分析</title>
+      <link>https://aipm.ac/vertical/education/teaching-assessment/learning-analytics/</link>
+      <description>学习分析：覆盖过程数据、预警、干预伦理和教师看板，读完能把学习数据做成可行动的提示，并避免把算法标签变成对学生的永久判决。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融</title>
+      <link>https://aipm.ac/vertical/finance/</link>
+      <description>金融按银行业、资本市场、保险业、支付清算与金融监管组织持牌展业与法定职责，读完能把金融 AI 写成可审计的辅助流程，并与商业与财会课程衔接。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>银行业</title>
+      <link>https://aipm.ac/vertical/finance/banking/</link>
+      <description>银行业覆盖持牌商业银行的零售、对公与信贷风控，读完能把账户、授信和授权矩阵写成产品对象；跨行清算见支付清算与金融监管。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>对公与交易银行</title>
+      <link>https://aipm.ac/vertical/finance/banking/corporate-banking/</link>
+      <description>对公与交易银行：覆盖对公账户、现金管理、贸易融资和财资管理，读完能把企业授权、制单复核、跨境与供应链金融写成多人审批的工作流产品。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>信贷与风控</title>
+      <link>https://aipm.ac/vertical/finance/banking/credit-and-risk/</link>
+      <description>信贷与风控：用准入、评级、定价、额度、贷后和资本约束描述信贷决策链，读完能把评分模型、规则引擎和人工审批的分工写成可审计的产品流程。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>零售银行</title>
+      <link>https://aipm.ac/vertical/finance/banking/retail-banking/</link>
+      <description>零售银行：覆盖个人存款、支付账户、卡片、财富货架和手机银行渠道，读完能把开户、KYC、动账、客服与营销分成不同风险等级的产品任务。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>资本市场</title>
+      <link>https://aipm.ac/vertical/finance/capital-markets/</link>
+      <description>资本市场覆盖证券经纪与财富管理、投行与一级市场、资产管理、交易与市场结构，读完能分清客户账户、发行承销、组合限制和交易所撮合。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>资产管理</title>
+      <link>https://aipm.ac/vertical/finance/capital-markets/asset-management/</link>
+      <description>资产管理：覆盖公募私募、净值、申赎、投资限制和信息披露，读完能把组合合规检查、运营对账和投资者报告做成可追溯流程。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>证券经纪与财富管理</title>
+      <link>https://aipm.ac/vertical/finance/capital-markets/brokerage-and-wealth/</link>
+      <description>证券经纪与财富管理：覆盖开户、适当性、交易通道、投顾与产品销售，读完能把行情展示、下单风控和投顾建议的责任边界写进产品方案。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>投行与一级市场</title>
+      <link>https://aipm.ac/vertical/finance/capital-markets/ib-and-primary/</link>
+      <description>投行与一级市场：覆盖上市、承销、并购、债券发行和尽调，读完能把文档核对、风险披露和项目流程做成辅助工具，而不是自动给出估值结论。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>交易与市场结构</title>
+      <link>https://aipm.ac/vertical/finance/capital-markets/trading-and-market-structure/</link>
+      <description>交易与市场结构：覆盖订单类型、撮合、做市、延迟和最佳执行，读完能把交易产品的正确性定义成价格、数量、时间和市场规则，而不是对话体验。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>支付清算与金融监管</title>
+      <link>https://aipm.ac/vertical/finance/infrastructure-regulation/</link>
+      <description>支付清算与金融监管覆盖跨机构清算、征信、反洗钱与监管科技。支付系统属于金融市场基础设施，征信与反洗钱是央行法定职责，读完能把指令、共享数据和报送义务写成系统能力。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>反洗钱与合规</title>
+      <link>https://aipm.ac/vertical/finance/infrastructure-regulation/aml-and-compliance/</link>
+      <description>反洗钱与合规：覆盖 KYC、客户尽职调查、名单扫描、可疑交易报告和制裁，读完能把监测规则、案例调查和报送时限做成合规工作台。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>征信与反欺诈</title>
+      <link>https://aipm.ac/vertical/finance/infrastructure-regulation/credit-reporting-and-fraud/</link>
+      <description>征信与反欺诈：覆盖征信采集、异议处理、多头借贷和设备行为对抗，读完能把查询授权、特征质量和对抗样本写成风控数据产品的硬约束。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>支付与清算</title>
+      <link>https://aipm.ac/vertical/finance/infrastructure-regulation/payments-and-clearing/</link>
+      <description>支付与清算：区分支付指令、清算与结算，覆盖卡组织、网联银联、即时支付和四方模式，读完能把到账、对账、退款和差错处理写成状态机而不是聊天任务。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>监管科技与开放银行</title>
+      <link>https://aipm.ac/vertical/finance/infrastructure-regulation/regtech-and-open-banking/</link>
+      <description>监管科技与开放银行：覆盖监管报送、API 开放、数据可携带和开发者治理，读完能把开放接口的同意、限额、审计和报送口径设计成平台能力。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>保险业</title>
+      <link>https://aipm.ac/vertical/finance/insurance/</link>
+      <description>保险业覆盖人身险、财产险、再保险与精算，读完能理解承保、定价、理赔和准备金如何决定保险 AI 的任务边界。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>寿险与健康险</title>
+      <link>https://aipm.ac/vertical/finance/insurance/life-and-health/</link>
+      <description>寿险与健康险：覆盖产品形态、核保、等待期、理赔和长期负债，读完能把健康告知、除外责任和医疗单据审核写成可解释的辅助流程。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>财产险</title>
+      <link>https://aipm.ac/vertical/finance/insurance/property-casualty/</link>
+      <description>财产险：覆盖车险、财产损失、责任险的定价、承保、查勘和理赔周期，读完能把照片定损、欺诈识别和准备金变动设计成有人终审的工作流。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>再保险与精算</title>
+      <link>https://aipm.ac/vertical/finance/insurance/reinsurance-and-actuarial/</link>
+      <description>再保险与精算：覆盖生命表、准备金、再保合约和资本模型，读完能理解保险 AI 的定价与准备金变更为什么必须走精算签字和模型治理。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>医疗健康</title>
+      <link>https://aipm.ac/vertical/healthcare/</link>
+      <description>医疗健康按临床医学、药学与医疗器械、卫生事业管理、卫生信息与监管组织诊疗责任、注册证据和互联互通，读完能把医疗 AI 限制在辅助决策并写清注册路径。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>临床医学</title>
+      <link>https://aipm.ac/vertical/healthcare/clinical/</link>
+      <description>临床医学覆盖诊疗路径与临床决策、医学影像、检验与病理，读完能按指南、检查闭环和危急值设计辅助工具，并由医师签发结论。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>诊疗路径与临床决策</title>
+      <link>https://aipm.ac/vertical/healthcare/clinical/clinical-pathways/</link>
+      <description>诊疗路径与临床决策：覆盖指南、临床路径、变异、医嘱和决策支持，读完能把 CDSS 设计成提示与核对，而不是自动开医嘱。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>检验与病理</title>
+      <link>https://aipm.ac/vertical/healthcare/clinical/lab-and-pathology/</link>
+      <description>检验与病理：覆盖 LIS、参考区间、危急值、标本链和病理诊断，读完能把实验室 AI 限制在审核辅助与质控，并处理参考区间个体化问题。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>医学影像</title>
+      <link>https://aipm.ac/vertical/healthcare/clinical/medical-imaging/</link>
+      <description>医学影像：覆盖模态、PACS、辅助检测与筛查定位，读完能把影像 AI 的任务定义成病灶提示或测量，并把假阴性和设备域偏移当成核心风险。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>卫生信息与监管</title>
+      <link>https://aipm.ac/vertical/healthcare/data-compliance/</link>
+      <description>卫生信息与监管覆盖医疗数据与互操作、药械监管与合规，读完能处理主索引、术语体系和注册变更，并把合法上线当成产品排期。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>医疗数据与互操作</title>
+      <link>https://aipm.ac/vertical/healthcare/data-compliance/health-data/</link>
+      <description>医疗数据与互操作：覆盖主索引、FHIR/HL7、术语体系和脱敏，读完能把医疗 AI 的数据合同写成字段、编码和再识别风险，而不是「把病历扔进模型」。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>药械监管与合规</title>
+      <link>https://aipm.ac/vertical/healthcare/data-compliance/regulatory/</link>
+      <description>药械监管与合规：覆盖注册检验、质量管理体系、不良事件和广告宣传，读完能把医疗 AI 的上线、变更和话术当成受监管活动来排期。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>卫生事业管理</title>
+      <link>https://aipm.ac/vertical/healthcare/operations/</link>
+      <description>卫生事业管理覆盖医院信息化、医疗保障支付、公共卫生，读完能把医疗 AI 接到 HIS、结算规则和人群监测，并分清机构运行与人群健康的不同责任。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>医院信息化</title>
+      <link>https://aipm.ac/vertical/healthcare/operations/hospital-it/</link>
+      <description>医院信息化：覆盖 HIS、EMR、医嘱闭环、互认和集成，读完能把医疗 AI 做成医生工作站里的一块，而不是平行病历系统。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>医保与支付</title>
+      <link>https://aipm.ac/vertical/healthcare/operations/insurance-and-payment/</link>
+      <description>医保与支付：覆盖目录、DRG/DIP、审核和商保，读完能把审核 AI 做成规则+证据的辅助，并处理控费与医疗质量之间的冲突。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>公共卫生</title>
+      <link>https://aipm.ac/vertical/healthcare/operations/public-health/</link>
+      <description>公共卫生：覆盖监测、传染病报告、预防接种和健康教育，读完能把人群级产品的法定报告、隐私例外和谣言应对写成产品规则。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>药学与医疗器械</title>
+      <link>https://aipm.ac/vertical/healthcare/pharma-device/</link>
+      <description>药学与医疗器械覆盖药物研发、器械与数字疗法，读完能理解临床分期、证据等级和软件作为医疗器械的路径。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>器械与数字疗法</title>
+      <link>https://aipm.ac/vertical/healthcare/pharma-device/devices-and-dtx/</link>
+      <description>器械与数字疗法：覆盖分类、软件生命周期、网络安全和数字疗法证据，读完能判断产品走科研、I 类备案还是高类注册，并把更新当成监管事件。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>药物研发</title>
+      <link>https://aipm.ac/vertical/healthcare/pharma-device/drug-discovery/</link>
+      <description>药物研发：覆盖靶点、成药性、临床分期和真实世界证据，读完能把科研 AI 用在文献、分子设计和试验运营，并避免把生成分子当成已验证药物。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>法律</title>
+      <link>https://aipm.ac/vertical/law/</link>
+      <description>法律按部门法、法律实务、法律科技组织规范效力、职业活动与检索审查工具，读完能把引用、时效、免责和律师终审写成法律产品的默认结构。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>部门法</title>
+      <link>https://aipm.ac/vertical/law/legal-system/</link>
+      <description>部门法按宪法与行政法、民商法、刑法、国际法与比较法划分调整对象和救济程序，读完能判断问题适用哪套规范、哪级效力、哪类程序。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>民商法</title>
+      <link>https://aipm.ac/vertical/law/legal-system/civil-and-commercial/</link>
+      <description>民商法：覆盖民事主体、物权债权、合同、侵权和公司证券基础关系，读完能把交易产品中的意思表示、权利负担和违约救济写成业务对象。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>宪法与行政法</title>
+      <link>https://aipm.ac/vertical/law/legal-system/constitutional-and-admin/</link>
+      <description>宪法与行政法：覆盖宪法原则、依法行政、许可处罚、复议诉讼和政府信息公开，读完能把政务与平台合规产品中的公权力行为写成可救济的流程。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>刑法</title>
+      <link>https://aipm.ac/vertical/law/legal-system/criminal/</link>
+      <description>刑法：覆盖罪刑法定、犯罪构成、证据标准和程序强制措施，读完能识别哪些产品功能一旦出错会进入刑事风险，必须升级人工与法律审查。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际法与比较法</title>
+      <link>https://aipm.ac/vertical/law/legal-system/international-and-comparative/</link>
+      <description>国际法与比较法：覆盖条约、管辖、法律冲突、跨境取证和数据出境，读完能在多法域产品中写出适用法、争议解决和本地化存储的决策表。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>法律科技</title>
+      <link>https://aipm.ac/vertical/law/legaltech/</link>
+      <description>法律科技覆盖法律检索与知识库、合同审查、电子取证、智慧司法，读完能按引用准确性、证据可采性和责任主体设计法律信息系统。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>合同审查</title>
+      <link>https://aipm.ac/vertical/law/legaltech/contract-review/</link>
+      <description>合同审查：覆盖抽取、比对、风险分级和律师确认，读完能设计条款级工作流：每条意见对应原文、风险级别和建议动作，并由律师关闭。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>电子取证</title>
+      <link>https://aipm.ac/vertical/law/legaltech/e-discovery/</link>
+      <description>电子取证：覆盖保全、哈希、收集范围、审查特权和出示，读完能把证据工作流写成不可篡改的时间线，并避免模型破坏证据可采性。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>法律检索与知识库</title>
+      <link>https://aipm.ac/vertical/law/legaltech/legal-search/</link>
+      <description>法律检索与知识库：用效力层级、时效、地域和权威文本约束检索，读完能把法律 RAG 的评测定义成引用正确、失效识别和争点覆盖，而不是流畅度。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>智慧司法</title>
+      <link>https://aipm.ac/vertical/law/legaltech/smart-justice/</link>
+      <description>智慧司法：覆盖网上立案、类案推送、辅助起草和公开，读完能把司法 AI 限制在辅助检索与事务处理，并避免把模型输出写成裁判理由。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>法律实务</title>
+      <link>https://aipm.ac/vertical/law/practice/</link>
+      <description>法律实务覆盖合同与尽调、诉讼与仲裁、知识产权、劳动与合规，按律师和法务的工作节点组织，读完能把截止日期、版本和签字页做成法律工作流。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>合同与尽调</title>
+      <link>https://aipm.ac/vertical/law/practice/contracts-and-dd/</link>
+      <description>合同与尽调：覆盖合同生命周期、条款库、红线、尽调清单和底稿，读完能把起草、审批、签署、履约和关闭做成状态机，并把 AI 放在检查与草稿环节。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>知识产权</title>
+      <link>https://aipm.ac/vertical/law/practice/intellectual-property/</link>
+      <description>知识产权：覆盖专利、商标、著作权、商业秘密和权属，读完能把申请、监测、侵权比对和开源合规写成可证据化的产品流程。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>劳动与合规</title>
+      <link>https://aipm.ac/vertical/law/practice/labor-and-compliance/</link>
+      <description>劳动与合规：覆盖劳动合同、工时、解除、竞业和合规管理体系，读完能把 HR 与企业合规产品中的时效、证据和员工权利写成不可省略的节点。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>诉讼与仲裁</title>
+      <link>https://aipm.ac/vertical/law/practice/litigation-and-arbitration/</link>
+      <description>诉讼与仲裁：覆盖管辖、证据、保全、庭审、执行和仲裁条款，读完能把案件管理系统的节点、时限和文书模板设计成法律工作流产品。</description>
+      <pubDate>Fri, 04 Sep 2026 14:23:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>资源清单</title>
+      <link>https://aipm.ac/case/resources/</link>
+      <description>AI 产品经理精选资源：官方文档、书单、软件工具与学习渠道。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>策略是什么</title>
+      <link>https://aipm.ac/case/strategy-pm/01-concepts/01-what-is-strategy/</link>
+      <description>策略是一种解决问题的手段：在某个场景里针对问题、为达到目标，按条件决定行动。本页说明策略与功能、算法的分工，如何从用户现象反推决策点，以及固定方案何时已经不够用。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>策略四要素</title>
+      <link>https://aipm.ac/case/strategy-pm/01-concepts/02-four-elements/</link>
+      <description>任何策略都可以拆成待解决问题、输入因素、计算逻辑和方案输出。本页用亮度调节和促销公式说明四要素如何互相校验，并给出可填写的策略卡片，缺一格就不能开发。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>策略如何诞生</title>
+      <link>https://aipm.ac/case/strategy-pm/01-concepts/03-how-strategy-emerges/</link>
+      <description>当固定、统一的方案盖不住差异化需求时，产品才需要策略。本页用硬件、功能和策略三层分工，说明缺的是载体、流程还是决策逻辑，以及如何按成本、收益和风险分阶段引入。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>发现问题</title>
+      <link>https://aipm.ac/case/strategy-pm/02-discovering-problems/</link>
+      <description>发现问题模块说明策略项目的原动力是问题：从反馈、监控、回归和调研四条途径走进问题层，并配套理想态、抽样和优先级，把难看的数字写成可验证、可排期的条目。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>发现问题的四条途径</title>
+      <link>https://aipm.ac/case/strategy-pm/02-discovering-problems/01-four-channels/</link>
+      <description>问题是产品优化的原动力。本页把结果层与问题层分开，说明反馈、监控、回归、调研四条途径如何配合，以及怎样把难看的数字写成可验证、可排期的问题。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>用户反馈处理</title>
+      <link>https://aipm.ac/case/strategy-pm/02-discovering-problems/02-user-feedback/</link>
+      <description>用户反馈处理按收集、清洗标注、形成需求、推动改进四步走。本页说明如何区分不是问题、已知问题和未知问题，以及反馈如何与监控交叉验证、警惕幸存者偏差。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>效果监控与策略监控</title>
+      <link>https://aipm.ac/case/strategy-pm/02-discovering-problems/03-monitoring/</link>
+      <description>成熟产品才适合系统监控：白盒看用户可感知的效果，黑盒看策略是否按预期运转。本页说明如何拆流程选指标、定波动区间与报警，以及监控发现异常后如何缩小范围。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>理想态</title>
+      <link>https://aipm.ac/case/strategy-pm/02-discovering-problems/04-ideal-state/</link>
+      <description>理想态是产品方案确实解决了用户问题，必须可衡量并服务当前阶段。本页区分简单产品的单一指标与复杂产品的多维证据，说明点击不能直接当成满足，以及理想态如何随能力进化。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>阶段性调研</title>
+      <link>https://aipm.ac/case/strategy-pm/02-discovering-problems/05-periodic-research/</link>
+      <description>阶段性调研看当前全貌，路径是定义理想态、拆未达情况、形成项目计划。本页说明何时启动调研、三步各交出什么，并用出行成交率和搜索满足度作短对照。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>抽样分析</title>
+      <link>https://aipm.ac/case/strategy-pm/02-discovering-problems/06-sampling/</link>
+      <description>抽样分析用有代表性的 Case 近似认识群体：先定目标再选对象，按六步抽样，用金字塔原理汇总问题。本页说明总体、时间窗口、样本量经验，以及覆盖和准确如何同时抽到。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>优先级与项目计划</title>
+      <link>https://aipm.ac/case/strategy-pm/02-discovering-problems/07-prioritization/</link>
+      <description>优先级按单位成本下的收益 IoI 排序，收益等于影响面乘以体验提升再乘以预期解决比例。本页说明 PM 调研与 RD 预研如何配合，以及红线、绝对收益和周期稳定性如何校正。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>需求与验证</title>
+      <link>https://aipm.ac/case/strategy-pm/03-spec-and-validation/</link>
+      <description>把已经看清的问题写成研发能实现的策略需求，再在开发中和上线后验证。本模块覆盖简单与复杂需求文档、开发评估、Diff 评估、效果回归和通用方法论，读完即可独立推进一个策略项目。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>简单策略需求文档</title>
+      <link>https://aipm.ac/case/strategy-pm/03-spec-and-validation/01-simple-prd/</link>
+      <description>简单策略需求文档写清输入、触发、规则、输出、边界、依据和监控。功能 PRD 写用户路径与页面，策略需求写面对什么条件系统应给出什么结果。本页用密码超时课例说明阈值如何从分布取得，并给出文档大纲。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>复杂策略需求文档</title>
+      <link>https://aipm.ac/case/strategy-pm/03-spec-and-validation/02-complex-prd/</link>
+      <description>复杂策略需求文档把目标空间、原则、特殊场景、Case 和验证标准交给研发，由算法探索具体实现。本页用屏幕亮度和拼车取消率课例说明如何把四要素写成可开发、可回归的 PRD。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>开发评估</title>
+      <link>https://aipm.ac/case/strategy-pm/03-spec-and-validation/03-dev-evaluation/</link>
+      <description>开发完成不等于可上线。策略评估先问个案判断对不对，再用召回率与准确率对照人工标注；接着问放入系统后体验有没有变好。本页给出多轮评估闭环、抽样方法和报告骨架。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>Diff 评估</title>
+      <link>https://aipm.ac/case/strategy-pm/03-spec-and-validation/04-diff-evaluation/</link>
+      <description>Diff 评估比较新旧策略在同一批输入上让用户最终看到的结果变了多少、这些变化是好是坏。本页讲清可感知影响面、GoodCase 与 BadCase 分布，以及如何据此决定当前版本能否上线。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>效果回归</title>
+      <link>https://aipm.ac/case/strategy-pm/03-spec-and-validation/05-effect-review/</link>
+      <description>效果回归用事先定义的核心、过程、观察三类指标，回答项目达标没有、还能优化什么、有没有引入新伤害。本页说明全流量同比与小流量 AB 的选用，并用搜索建议课例演示如何沿指标决策。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>策略通用方法论</title>
+      <link>https://aipm.ac/case/strategy-pm/03-spec-and-validation/06-methodology/</link>
+      <description>策略工作反复做同一件事：定义理想态、拆未达、给方案、验证。本页把需求、评估与回归收成一条循环，说明各环节粒度不同，并用推送、目的地短流程说明如何用简单规则起步。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>应用总览</title>
+      <link>https://aipm.ac/case/strategy-pm/04-application-map/</link>
+      <description>策略应用先落在核心业务、增长、风控、数据四张图上，核心再分成功能导向与业务导向。本页给出总图、判断顺序和跳转，读完按问题选后续模块，不必把三个应用模块都读完。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>四大业务方向</title>
+      <link>https://aipm.ac/case/strategy-pm/04-application-map/01-four-directions/</link>
+      <description>核心业务交付用户直接消费的价值，增长把用户和交易做大，风控避免伤害，数据给前三类提供可判断的信息。本页讲四个方向如何归类、如何协同，以及功能导向与业务导向的差别。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>功能导向核心业务</title>
+      <link>https://aipm.ac/case/strategy-pm/05-function-oriented/</link>
+      <description>功能导向策略服务单一用户或单一用户群，理想态相对明确，按需求理解、解决方案、资源支撑三模块迭代。本页说明何时用这套框架，以及搜索、推荐、目的地与路线如何共用同一结构。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>功能导向型策略框架</title>
+      <link>https://aipm.ac/case/strategy-pm/05-function-oriented/01-framework/</link>
+      <description>功能导向型策略先钉住单侧理想态，再用需求理解、解决方案、资源支撑三模块把规则写成可验证指标。本页给出准确率与召回率、指标树、资源质量与迭代闭环，并说明多边平台如何先拆单侧。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>搜索策略</title>
+      <link>https://aipm.ac/case/strategy-pm/05-function-oriented/02-search/</link>
+      <description>搜索策略的目标是降低完成搜索任务的成本。输入侧按确定性分三段前置帮助，结果侧做需求理解、多层排序和降低后续成本的展现。本页覆盖满足度评估、词库与抓取资源，以及建议与结果的职责分工。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>推荐策略</title>
+      <link>https://aipm.ac/case/strategy-pm/05-function-oriented/03-recommendation/</link>
+      <description>内容推荐要在用户未必说清想看什么时持续猜测兴趣。CTR 是用户与结果的组合分数，展现必须同时评估点击诱因与正文匹配。本页讲特征输入、规则到特征化排序、供给资源与问题分层定位。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>目的地与路线策略</title>
+      <link>https://aipm.ac/case/strategy-pm/05-function-oriented/04-destination-and-route/</link>
+      <description>目的地输入和公交线路都是工具型模块：先预测不确定的一侧，再按最低成本给出方案并解释依据。本页用功能导向三模块拆两例，并说明与搜索输入侧、出行匹配的分界。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>业务导向核心业务</title>
+      <link>https://aipm.ac/case/strategy-pm/06-business-oriented/</link>
+      <description>多个用户群的理想态会冲突时，先把每个角色按功能导向拆清，再在共同利益和各方边界之内求平台目标。本页说明业务导向框架的适用条件，以及定价与出行匹配两例如何对照阅读。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>业务导向型策略框架</title>
+      <link>https://aipm.ac/case/strategy-pm/06-business-oriented/01-framework/</link>
+      <description>业务导向型策略面对多方冲突的理想态，先给每个角色写清需求与边界，再在共同利益之内求阶段性平台目标。本页给出角色卡片、冲突矩阵、边界值约束和六步求解顺序。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>定价策略</title>
+      <link>https://aipm.ac/case/strategy-pm/06-business-oriented/02-pricing/</link>
+      <description>可成交价格夹在卖家成本和买家心理价位之间。阶段目标换成交率、销售额还是利润，最优价格就会变。本页把价格写成连接成交概率与双方利益的桥，并给出约束下的三类目标函数。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>出行匹配策略</title>
+      <link>https://aipm.ac/case/strategy-pm/06-business-oriented/03-ride-matching/</link>
+      <description>出行匹配先守住乘客等待和司机接驾边界，再追求成交。系统中心会从订单广播迁到司机拉单、订单推荐，直至平台全局指派。本页讲从 0 到 1 的边界与成交率，以及从 1 到 N 的决策中心迁移。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>增长、风控与数据</title>
+      <link>https://aipm.ac/case/strategy-pm/07-growth-risk-data/</link>
+      <description>增长用额外资源撬动超出自然趋势的增量，风控以最小成本避免伤害，数据把客观事实加工成能改变决策的标签。本页说明三篇如何共用工作法、为何增长与风控常成对出现，以及标签如何服务上层策略。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>增长策略</title>
+      <link>https://aipm.ac/case/strategy-pm/07-growth-risk-data/01-growth/</link>
+      <description>增长是用额外资源撬动超出自然趋势的结果，拆成触达、认知、转化，用分群找到刚刚够用的成本。本页用分享红包、外卖券和司机补贴说明评估看增量、留存与 LTV，领取次数只作过程指标。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>风控策略</title>
+      <link>https://aipm.ac/case/strategy-pm/07-growth-risk-data/02-risk-control/</link>
+      <description>风控以尽可能低的成本避免平台和用户受到不可接受的伤害。本页只讲产品思路：先分清正常、无害偏离和真正有害，再决定识别与分级处置，同时看误伤、体验和损失，不提供可操作的对抗步骤。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>数据策略</title>
+      <link>https://aipm.ac/case/strategy-pm/07-growth-risk-data/03-data/</link>
+      <description>数据服务上层策略，也被策略产生的新行为反向驱动。标签准不等于业务有效，能支撑决策的粒度才是好策略。本页区分基础数据与画像标签，给出需求到监控的流程，以及质量指标与业务效果两层验收。</description>
+      <pubDate>Fri, 04 Sep 2026 14:18:59 +0800</pubDate>
+    </item>
+    <item>
+      <title>Anthropic 技术产品经理：为什么最优秀的产品领导者正在为 2028 年布局</title>
+      <link>https://aipm.ac/case/podcasts/anthropic-pm-2028/</link>
+      <description>本文整理《跨国串门儿计划》ep649 对 Anthropic 技术产品经理 Dianne Penn 的访谈，围绕 Claude Code、Labs、eval、PRD 与 2028 年前瞻，提炼 AI 时代产品经理如何发现问题、亲手试用模型并对交付结果负责。</description>
+      <pubDate>Mon, 31 Aug 2026 01:32:13 +0800</pubDate>
+    </item>
+    <item>
+      <title>我不是真有面试天赋：手握 15 个 Offer 的求职面试复盘</title>
+      <link>https://aipm.ac/case/podcasts/interview-methods-15-offers/</link>
+      <description>整理播客《看我 72 变》关于海投练习、JD 定制、面试表达、反向面试与 Offer 选择的经验，并转化为产品经理可执行的求职准备与复盘方法。</description>
+      <pubDate>Mon, 31 Aug 2026 01:32:13 +0800</pubDate>
+    </item>
+    <item>
+      <title>入职之后简介</title>
+      <link>https://aipm.ac/job/after-entry/</link>
+      <description>入职之后专题：覆盖绩效目标与反馈、晋升证据与评审、转行与职业转换、裁员与劳动权益，帮助 AI 产品从业者建立工作方法、发展路径与风险意识，并提供可执行的检查清单和决策框架</description>
+      <pubDate>Sun, 30 Aug 2026 21:13:23 +0800</pubDate>
+    </item>
+    <item>
+      <title>晋升与职业发展</title>
+      <link>https://aipm.ac/job/after-entry/promotion/</link>
+      <description>晋升与职业发展指南：从确认职级标准、拆解目标职责、沉淀结果证据，到准备申报答辩与处理评审反馈，帮助 AI 产品从业者规划下一阶段的职责范围，并安排可复盘的行动步骤</description>
+      <pubDate>Sun, 30 Aug 2026 21:13:23 +0800</pubDate>
+    </item>
+    <item>
+      <title>格式手册</title>
+      <link>https://aipm.ac/intro/format/</link>
+      <description>站点 Markdown 写作规范：frontmatter、标题层级、文风、引用标注与图片链接</description>
+      <pubDate>Sun, 30 Aug 2026 15:53:05 +0800</pubDate>
+    </item>
+    <item>
+      <title>行政岗位与 JD 解读</title>
+      <link>https://aipm.ac/job/positions/administrative-roles/</link>
+      <description>行政岗位与 JD 解读：拆解行政专员、行政主管、行政经理、办公室主任等岗位的职责边界、能力要求、常见绩效指标、面试问题与求职避坑要点</description>
+      <pubDate>Sun, 30 Aug 2026 15:53:05 +0800</pubDate>
+    </item>
+    <item>
+      <title>绩效管理与考核</title>
+      <link>https://aipm.ac/job/positions/performance-management/</link>
+      <description>绩效管理与考核：从目标设定、过程辅导、证据沉淀、评审校准到反馈改进，拆解 KPI、OKR、奖金关系、PIP 与求职者识别考核规则的方法</description>
+      <pubDate>Sun, 30 Aug 2026 15:53:05 +0800</pubDate>
+    </item>
+    <item>
+      <title>投资基础</title>
+      <link>https://aipm.ac/business/10-securities-investment/01-investment-basics/</link>
+      <description>投资基础：三种投资领域、金融资产与实业资产、投资投机与赌博、投资三要素与风险、投资分析决策</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>证券投资工具</title>
+      <link>https://aipm.ac/business/10-securities-investment/02-securities-investment-instruments/</link>
+      <description>证券投资工具：工具分类、四大投资特性、风险收益匹配与股票、债券、证券投资基金、权证、存托凭证、另类投资</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>证券发行与上市制度</title>
+      <link>https://aipm.ac/business/10-securities-investment/03-securities-issuance-and-listing/</link>
+      <description>证券发行与上市制度：交易所起源、场外市场、多层次资本市场、注册制改革、发行承销、IPO 条件与退市</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>资产组合理论</title>
+      <link>https://aipm.ac/business/10-securities-investment/04-portfolio-theory/</link>
+      <description>资产组合理论：收益与风险度量、市场模型与 β 系数、效用函数、Markowitz 组合理论、CAL/CML/CAPM 与因子模型</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>债券估值与久期</title>
+      <link>https://aipm.ac/business/10-securities-investment/05-bond-valuation-and-duration/</link>
+      <description>债券估值与久期：债券价格规律、波动五原理、久期六大定理、免疫策略、到期收益率与债券交易策略</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>股票估值</title>
+      <link>https://aipm.ac/business/10-securities-investment/06-stock-valuation/</link>
+      <description>股票估值：DDM 族、自由现金流折现、市盈率与 PEG、市净率、EV/EBITDA、RNAV、实物期权与估值方法选配</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>宏观经济分析</title>
+      <link>https://aipm.ac/business/10-securities-investment/07-macroeconomic-analysis/</link>
+      <description>宏观经济分析：增长动能与长波周期、宏观指标三分法、货币供给与总供需平衡、中国增长模式与转型升级</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>行业与公司分析</title>
+      <link>https://aipm.ac/business/10-securities-investment/08-industry-and-company-analysis/</link>
+      <description>行业与公司分析：行业发展前景、行业周期与生命周期、技术进步、市场结构与以经营为核心的选股框架</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>技术分析</title>
+      <link>https://aipm.ac/business/10-securities-investment/09-technical-analysis/</link>
+      <description>技术分析：量价关系、相反判断理论、道氏理论、波浪理论、形态分析与阴阳线、趋势线与技术指标</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>投资策略与行为金融</title>
+      <link>https://aipm.ac/business/10-securities-investment/10-investment-strategies-and-behavioral-finance/</link>
+      <description>投资策略与行为金融：有效市场假说、有限理性挑战、投资决策要素与复利模型、主要投资策略、指数化组合与量化交易</description>
+      <pubDate>Sun, 30 Aug 2026 15:25:03 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际收支与国际收支平衡表</title>
+      <link>https://aipm.ac/business/09-international-finance/01-balance-of-payments/</link>
+      <description>国际收支的定义与三个解释维度，国际收支平衡表的账户分类、复式记账法与编制实例，差额分析与分析方法，不平衡的分类与影响</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际收支调节理论</title>
+      <link>https://aipm.ac/business/09-international-finance/02-balance-of-payments-adjustment-theories/</link>
+      <description>国际收支的自动调节机制与四类政策调节机制，弹性论、乘数论、吸收论、货币论、结构论的内容与四大理论比较</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>外汇与汇率</title>
+      <link>https://aipm.ac/business/09-international-finance/03-foreign-exchange-and-exchange-rates/</link>
+      <description>外汇的定义与特征、人民币可兑换性、汇率含义与三种标价法、九种汇率分类、汇率变动幅度度量与影响因素、汇率变动对经济的传导渠道</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>外汇市场与外汇交易</title>
+      <link>https://aipm.ac/business/09-international-finance/04-fx-markets-and-trading/</link>
+      <description>外汇市场的结构、特征与全球主要市场，即期外汇交易、交叉汇率与套汇，远期外汇交易、外汇期货、外汇期权与外汇风险管理</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>汇率决定理论</title>
+      <link>https://aipm.ac/business/09-international-finance/05-exchange-rate-determination/</link>
+      <description>金本位铸币平价与黄金输送点、国际收支说、购买力平价、利率平价与资产市场理论</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际储备与汇率制度</title>
+      <link>https://aipm.ac/business/09-international-finance/06-international-reserves-and-exchange-rate-regimes/</link>
+      <description>国际储备的定义、特点、构成与管理，中国储备现状，汇率制度概念与分类、固定与浮动之争、制度选择因素，外汇管制，人民币汇率制度与人民币国际化</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>开放经济下的宏观经济政策协调</title>
+      <link>https://aipm.ac/business/09-international-finance/07-open-economy-policy-coordination/</link>
+      <description>内外均衡与米德冲突、丁伯根法则、斯旺模型、蒙代尔-弗莱明模型与三元悖论</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际金融市场与国际资本流动</title>
+      <link>https://aipm.ac/business/09-international-finance/08-international-financial-markets-and-capital-flows/</link>
+      <description>国际金融市场的定义、识别与分类，国际货币市场、国际资本市场（外国债券与欧洲债券）、国际黄金市场，以及国际资本流动与外债管理</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际货币体系</title>
+      <link>https://aipm.ac/business/09-international-finance/09-international-monetary-system/</link>
+      <description>国际货币体系的定义、作用与分类，金本位制、布雷顿森林体系、牙买加体系的演进，欧洲货币一体化、美元化与东亚货币合作</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际金融机构与国际金融创新</title>
+      <link>https://aipm.ac/business/09-international-finance/10-international-financial-institutions-and-innovation/</link>
+      <description>国际金融机构体系（BIS、IMF、世界银行集团、FSB 与区域性机构）、IMF 的缺陷与改革，以及国际金融创新五大趋势与产品创新</description>
+      <pubDate>Sun, 30 Aug 2026 15:24:43 +0800</pubDate>
+    </item>
+    <item>
+      <title>中级财务会计学</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/</link>
+      <description>中级财务会计学课程：以对外报告为核心，从总论到财务报表讲授资产、负债、所有者权益、收入费用利润的确认计量与列报，理解会计准则与财务报告体系，为读懂企业财务报表打下基础。</description>
+      <pubDate>Sun, 30 Aug 2026 15:18:33 +0800</pubDate>
+    </item>
+    <item>
+      <title>工商管理简介</title>
+      <link>https://aipm.ac/management/</link>
+      <description>工商管理专题：从组织与决策、市场与消费者、战略与创新到项目与财务，整理 19 门课程的管理知识与 AI 产品实践连接。</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>战略管理</title>
+      <link>https://aipm.ac/management/10-strategy/</link>
+      <description>战略管理课程总览：从外部环境、行业结构与平台网络，到资源能力、公司层成长、国际化和战略执行，整理竞争优势、战略选择与 AI 产品经理的应用路径</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>创新管理</title>
+      <link>https://aipm.ac/management/11-innovation/</link>
+      <description>创新管理课程总览：从创意、技术与发明的区分，到创新流程、商业模式、开放合作、颠覆路径、创新战略与负责任创新，连接 AI 产品经理的机会判断与落地实践</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业模式设计与创新</title>
+      <link>https://aipm.ac/management/12-business-model/</link>
+      <description>商业模式设计与创新课程总览，围绕价值创造、价值传递与价值获取组织 BMC、JTBD、收入成本、平台治理和实验验证，帮助 AI 产品经理把用户工作、运营资源与单位经济连成可检验的商业闭环。</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>创业管理</title>
+      <link>https://aipm.ac/management/13-entrepreneurship/</link>
+      <description>创业管理课程总览，从不确定性与资源约束出发贯通机会识别、市场验证、效果逻辑、商业模式、融资、团队与路演，帮助 AI 产品经理把问题、用户、资源、证据和行动组织成可迭代的创业闭环。</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>设计思维</title>
+      <link>https://aipm.ac/management/14-design-thinking/</link>
+      <description>课程级梳理《设计思维（本）》从同理心研究、问题定义、构思、原型与测试，到低代码实施的完整流程，结合 AI 教育与校园数字服务项目，帮助产品经理把用户证据、价值主张和系统落地连接起来。</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>项目管理</title>
+      <link>https://aipm.ac/management/15-project-management/</link>
+      <description>项目管理课程总览：整合本科与研究生材料中的项目生命周期、范围、进度、资源、成本、质量、风险、团队与治理框架，并连接 AI 产品经理的项目实践，同时标明课堂案例、来源日期和字幕材料边界。</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>应用运筹学Ⅰ</title>
+      <link>https://aipm.ac/management/16-operations-research/</link>
+      <description>应用运筹学Ⅰ课程索引：从线性规划建模、单纯形法、对偶与敏感性分析，延伸到运输与网络、整数规划和分支定界、动态规划，并连接库存、排产、选址与 AI 产品决策实践。</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>IT 工程伦理和项目管理</title>
+      <link>https://aipm.ac/management/17-engineering-ethics/</link>
+      <description>工程伦理课程导航：从工程生命周期、风险安全与环境责任，到数据隐私、知识产权、算法治理与项目责任，建立面向公众福祉的 AI 产品设计、发布和项目决策框架。</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>财务管理</title>
+      <link>https://aipm.ac/management/18-financial-management/</link>
+      <description>财务管理课程导航：围绕投资、融资与营运资本三类决策，串联现金流、财务报表、货币时间价值、项目估值、风险报酬与存货管理，帮助 AI 产品经理把功能投入转化为可检验的价值判断。</description>
+      <pubDate>Sun, 30 Aug 2026 15:17:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>前资本主义经济制度</title>
+      <link>https://aipm.ac/business/07-political-economy/01-pre-capitalist-economic-systems/</link>
+      <description>前资本主义经济制度以历史唯物主义为方法展开——商鞅变法确立封建制，明朝资本主义萌芽因政治条件缺失而一生一灭，近代中国落入半殖民地半封建社会。</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>垄断资本主义与金融资本</title>
+      <link>https://aipm.ac/business/07-political-economy/02-monopoly-capitalism-and-finance-capital/</link>
+      <description>第二次工业革命推动自由竞争走向垄断，银行资本与工业资本融合为金融资本、金融寡头统治，生产力与生产关系的基本矛盾由此进入新的展开。</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>剩余价值理论</title>
+      <link>https://aipm.ac/business/07-political-economy/03-surplus-value-theory/</link>
+      <description>剩余价值理论是政治经济学的基石——货币转化为资本依靠劳动力成为商品，不变资本与可变资本的划分为剩余价值率奠基，绝对与相对两种生产方法及工资的本质由此展开。</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>重工业优先发展战略</title>
+      <link>https://aipm.ac/business/07-political-economy/05-heavy-industry-first-strategy/</link>
+      <description>1949-1978 年的重工业优先发展战略在目标函数与约束条件下理性展开，三位一体的制度安排、统购统销、户籍与农业合作化构成其内生结构，并留下复杂的历史遗产。</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>改革开放与乡村工业化</title>
+      <link>https://aipm.ac/business/07-political-economy/06-reform-and-opening-and-rural-industrialization/</link>
+      <description>改革开放以农业为起点，家庭联产承包解决种地激励后，乡镇企业异军突起形成温州等区域模式，淘宝村延续乡村工业化，三农问题、三权分置与新型农村集体经济构成乡村振兴主线。</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>经济转轨与国有企业</title>
+      <link>https://aipm.ac/business/07-political-economy/07-economic-transition-and-soes/</link>
+      <description>经济转轨是计划经济向市场经济的制度变迁，休克疗法与渐进双轨制两路之争、国企改革三步与政策性负担剥离、国有企业的经济角色与新型举国体制构成全篇主线。</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>人力资本与共同富裕</title>
+      <link>https://aipm.ac/business/07-political-economy/08-human-capital-and-common-prosperity/</link>
+      <description>共同富裕首先是一个收入分配问题，收入分配格局与劳动收入份额的诊断引入人力资本理论，教育制度变迁、生育政策与代际流动性共同决定机会均等的实现程度。</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>经济全球化与中国对外开放</title>
+      <link>https://aipm.ac/business/07-political-economy/09-globalization-and-china-opening-up/</link>
+      <description>百年未有之大变局下，经济全球化沿丝绸之路到大航海的历史展开，海权论与陆权论、三大表现与国际经济秩序、国际经济学思想演化构成理解主线，区域化、逆全球化与中国对外开放收束全篇。</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>简单线性回归</title>
+      <link>https://aipm.ac/business/08-econometrics/01-simple-linear-regression/</link>
+      <description>简单线性回归的函数关系与统计关系、总体与样本回归函数、六条经典假定、OLS 估计与性质、拟合优度、t 检验、置信区间与预测</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>多元线性回归</title>
+      <link>https://aipm.ac/business/08-econometrics/02-multiple-linear-regression/</link>
+      <description>多元线性回归的模型形式与基本假设、OLS 与矩估计与极大似然估计、拟合优度与模型选择、t 检验与 F 联合检验、邹至庄稳定性检验、函数形式</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>多重共线性与异方差</title>
+      <link>https://aipm.ac/business/08-econometrics/04-multicollinearity-and-heteroskedasticity/</link>
+      <description>多重共线性的概念、后果、检验与处理，异方差的定义、产生情境、对 OLS 的影响、BP 与 White 检验、WLS 与稳健标准误</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>内生性与工具变量</title>
+      <link>https://aipm.ac/business/08-econometrics/05-endogeneity-and-instrumental-variables/</link>
+      <description>内生性的定义与三大来源、OLS 有偏且不一致的后果、工具变量 IV 估计、两阶段最小二乘、Hausman 检验与过度识别约束检验</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>时间序列平稳性</title>
+      <link>https://aipm.ac/business/08-econometrics/07-time-series-stationarity/</link>
+      <description>时间序列数据的平稳三条件与弱相关、白噪声、随机游走与 AR(1)、伪回归、ACF 判断、DF 与 ADF 单位根检验、差分平稳与趋势平稳、单整</description>
+      <pubDate>Sun, 30 Aug 2026 15:16:49 +0800</pubDate>
+    </item>
+    <item>
+      <title>管理研究方法</title>
+      <link>https://aipm.ac/management/01-management-research/</link>
+      <description>管理研究方法课程页：从科学研究与科学哲学出发，串联研究问题、理论与假设、构念与测量、问卷与抽样、实验与因果推断、定性与二手数据、文本分析和研究报告，帮助把管理现象转化为可检验、可复现的研究设计。</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>管理统计</title>
+      <link>https://aipm.ac/management/02-management-statistics/</link>
+      <description>管理统计课程页：从总体、样本与抽样出发，覆盖描述性统计、图表表达、概率分布、抽样分布、参数估计、假设检验、T 检验、方差分析、相关与回归，强调变量类型、数据质量、软件输出和统计结论的解释边界。</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>管理决策</title>
+      <link>https://aipm.ac/management/03-management-decision/</link>
+      <description>管理决策课程总览：从有限理性、启发式与认知偏差出发，系统整理选择陷阱、风险决策、前景理论、群体判断和决策工具，并转化为 AI 产品经理的评审、实验与治理方法</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>组织行为学</title>
+      <link>https://aipm.ac/management/04-organizational-behavior/</link>
+      <description>组织行为学课程页：从组织系统、个体差异与知觉，到压力、动机、团队、冲突和组织干预，整理课堂模型并转化为 AI 与产品团队的诊断、设计和协作方法。</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>管理沟通</title>
+      <link>https://aipm.ac/management/05-management-communication/</link>
+      <description>管理沟通课程页：从编码、解码、渠道与反馈，到受众分析、可信度、倾听、说服、汇报、冲突修复和跨文化表达，服务 AI 产品与组织协作实践方法。</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>市场营销学</title>
+      <link>https://aipm.ac/management/06-marketing/</link>
+      <description>市场营销学课程总览：从需要、需求与顾客价值出发，建立环境、竞争、STP、产品、价格、渠道与整合沟通的分析框架，并将营销方法转译为 AI 与产品管理中的洞察、定位和验证行动。</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>消费者行为</title>
+      <link>https://aipm.ac/management/07-consumer-behavior/</link>
+      <description>消费者行为课程总览：以有限资源交换与顾客价值为起点，串联身份、需要与动机、注意与感知、信息搜索、记忆、决策、购买后评价、忠诚及社会文化因素，服务于 AI 与产品经理的用户洞察和体验设计。</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>消费者信息处理与决策</title>
+      <link>https://aipm.ac/management/08-consumer-information-decision/</link>
+      <description>消费者信息处理与决策课程总览：从启动、注意、感知、心理表象和记忆，到情绪、风险、社会信息与选择，建立消费者如何加工线索并作出判断的研究与产品设计框架。</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>消费者神经科学</title>
+      <link>https://aipm.ac/management/09-consumer-neuroscience/</link>
+      <description>消费者神经科学课程总览：以生物约束为起点，连接脑区与神经测量、注意、身份、自我参照、奖赏预测误差、痛苦、共情、荷尔蒙、品牌联结与神经伦理，并转化为 AI 与产品研究的可验证方法。</description>
+      <pubDate>Sun, 30 Aug 2026 15:15:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>前沿金融实务专题</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/</link>
+      <description>前沿金融实务专题课程：业界嘉宾讲座课，由财通证券、上交所、浙江证监局等支持，覆盖公募基金、券商业务、交易所机制、一级市场、大宗商品与投资职业发展等实务主题。</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>前沿金融实务专题课程导论</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/00-intro/</link>
+      <description>前沿金融实务专题导论：课程定位、系列主题概览与文章体系</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>公募基金行业的改革与发展</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/01-mutual-fund-industry-reform/</link>
+      <description>公募基金行业从 2006 年不足 9000 亿元增至 2024 年底 32.3 万亿元；本讲梳理行业定义与商业模式、规模演进与公司格局、固收与货币基金的增长逻辑、权益类产品谱系与主动权益业绩实证</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>券商业务全景</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/02-securities-firm-business-overview/</link>
+      <description>以财通证券为样本的券商业务全景：全牌照券商的集团架构、四大主营业务、2024-2025 年行业趋势、投行从通道型向产业投行转型，以及研究所与财富管理业务</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>交易所与交易机制</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/03-exchanges-and-trading-mechanisms/</link>
+      <description>交易所与交易机制：上交所 1990 年成立与发行制度从审批制到注册制的演进、四大板块定位与纳斯达克退市生态、集中撮合与集合竞价等交易机制、价格稳定安排与异常交易行为监管</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>一级市场股权投资</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/04-primary-market-equity-investing/</link>
+      <description>一级市场股权投资实务：行业历史沿革与 2025 年市场数据、投资机构类型与投资逻辑、项目开发渠道与尽职调查框架</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>投资银行业务流程</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/05-investment-banking-process/</link>
+      <description>投资银行业务流程：投行角色与全生命周期服务、多层次资本市场结构与板块上市标准、IPO 业务五阶段与审核流程、市场周期与企业上市权衡</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>北京证券交易所业务</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/06-beijing-stock-exchange/</link>
+      <description>北京证券交易所业务实务：新国九条与 3·15 新政、深改 19 条制度安排、四大板块多维对比、上市全流程与审核核心关注事项</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>大宗商品期货实务</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/07-commodity-futures-practice/</link>
+      <description>大宗商品期货实务：商品交易行业生态与定价权、期货基础概念（主力合约、基差、期限结构）、小船理论研究框架与全球宏观主线</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>公募基金投资方法</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/08-mutual-fund-investing/</link>
+      <description>公募基金投资方法：巴菲特世纪赌局与胜率思维、指数编制方法、按含权量的基金分类、货币与固收+基金、股票型基金与 ETF 套利、QDII/FOF/黄金配置、量化投资与基金评价</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>投资入门与职业发展</title>
+      <link>https://aipm.ac/business/19-frontier-finance-practice/09-investment-career-guide/</link>
+      <description>投资入门第一课与金融职业发展：炒作与诈骗案例、合理收益预期、遛狗理论、宏观中观微观分析框架、资产配置观与券商求职建议</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:35 +0800</pubDate>
+    </item>
+    <item>
+      <title>预算约束与消费者偏好</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/01-budget-constraints-and-preferences/</link>
+      <description>预算约束与消费者偏好：预算线、偏好公理、无差异曲线、良好性状偏好与边际替代率</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>效用函数与消费者最优选择</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/02-utility-functions-and-optimal-choice/</link>
+      <description>效用函数与消费者最优选择：序数效用、常见效用函数、边际效用、最优选择条件与需求函数</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>需求变动与显示偏好</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/03-demand-and-revealed-preference/</link>
+      <description>需求变动与显示偏好：收入与价格变动对需求的影响、直接与间接显示偏好、WARP 与 SARP</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>斯勒茨基方程与禀赋模型</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/04-slutsky-equation-and-endowment-model/</link>
+      <description>斯勒茨基方程与禀赋模型：替代效应与收入效应分解、变化率形式、希克斯替代效应、修正斯勒茨基方程与劳动供给</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>生产者理论</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/07-producer-theory/</link>
+      <description>生产者理论：生产技术、等产量线、边际产量与技术替代率、规模报酬、利润最大化、成本最小化与成本曲线</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>完全竞争市场</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/08-perfectly-competitive-markets/</link>
+      <description>完全竞争市场：厂商供给决策、行业供给、短期与长期均衡、零利润与经济租金</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>垄断与价格歧视</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/09-monopoly-and-price-discrimination/</link>
+      <description>垄断与价格歧视：垄断定价、加成定价、税收与效率、一级/二级/三级价格歧视、捆绑销售与两部收费制</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>寡头与垄断竞争</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/10-oligopoly-and-monopolistic-competition/</link>
+      <description>寡头与垄断竞争：垄断竞争与产品差异化、Stackelberg、价格领导、古诺、伯特兰与卡特尔</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>一般均衡与福利</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/11-general-equilibrium-and-welfare/</link>
+      <description>一般均衡与福利：买方垄断、双重加成定价、交换与生产的一般均衡、福利经济学基本定理与社会福利函数</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>资本金与巴塞尔协议</title>
+      <link>https://aipm.ac/business/06-commercial-banking/03-capital-and-basel-accords/</link>
+      <description>银行资本金的概念、构成、功能与补充工具，资本适宜度指标演变，巴塞尔协议 I/II/III 与资本充足率计算，我国资本监管</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行资产业务与贷款管理</title>
+      <link>https://aipm.ac/business/06-commercial-banking/05-asset-operations-and-loan-management/</link>
+      <description>现金资产与准备层次、贷款种类六维度划分、贷款五级分类、贷款政策与审贷分离、贷款定价四方法与 LPR 机制、不良贷款控制与处理</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行信用分析与担保</title>
+      <link>https://aipm.ac/business/06-commercial-banking/06-credit-analysis-and-guarantees/</link>
+      <description>信用分析中的 5C/5P/5W 方法、财务报表分析、抵押质押保证担保分析、信用证备用信用证等担保工具与非财务分析</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行中间业务与表外业务</title>
+      <link>https://aipm.ac/business/06-commercial-banking/07-intermediary-and-off-balance-sheet-business/</link>
+      <description>中间业务的涵义、发展原因、分类与特征，租赁、结算、代理融通、信用卡、财富管理等业务，表外业务四大类别与衍生工具风险管理</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行国际业务与离岸金融</title>
+      <link>https://aipm.ac/business/06-commercial-banking/08-international-and-offshore-finance/</link>
+      <description>商业银行国际结算、外汇买卖、贸易融资、国际借贷与离岸金融三类市场</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行资产负债管理</title>
+      <link>https://aipm.ac/business/06-commercial-banking/09-asset-liability-management/</link>
+      <description>资产负债管理理论演进、五大管理方法、利率敏感性缺口管理与持续期缺口管理、我国资产负债比例管理指标</description>
+      <pubDate>Sun, 30 Aug 2026 15:14:09 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融工程学</title>
+      <link>https://aipm.ac/business/18-financial-engineering/</link>
+      <description>金融工程学课程：按“市场结构—工具—定价—策略—创新”组织，覆盖远期、期货、互换与期权等衍生工具，及 BSM 定价、数值方法与结构性产品，理解金融创新与风险管理。</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融工程学课程导论</title>
+      <link>https://aipm.ac/business/18-financial-engineering/00-intro/</link>
+      <description>金融工程学课程导论：学科定义与形成、衍生产品本质与三大功能、基本工具与两大市场、国际与国内衍生品市场发展史</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>衍生品基础与市场结构</title>
+      <link>https://aipm.ac/business/18-financial-engineering/01-derivatives-basics-and-market-structure/</link>
+      <description>衍生品基础与市场结构：交易所与场外市场、四大工具类别、场外监管与系统性金融风险、投资者类型、金融风险与衍生品定价基础</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>远期与期货</title>
+      <link>https://aipm.ac/business/18-financial-engineering/02-forwards-and-futures/</link>
+      <description>远期与期货：远期合约盈亏、远期利率协议、远期外汇协议、远期股票合约、利率基础、期货标准化条款、保证金制度、未平仓合约数、期货品种全景与 327 国债期货事件</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>互换</title>
+      <link>https://aipm.ac/business/18-financial-engineering/03-swaps/</link>
+      <description>互换：定义与种类、利率互换机制与浮动利率基准、利率互换三大作用、货币互换与比较优势、总收益互换与信用违约互换、中国信用风险缓释工具、互换的运用与国际主协议</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>期权的回报与价格分析</title>
+      <link>https://aipm.ac/business/18-financial-engineering/04-option-payoffs-and-pricing/</link>
+      <description>期权的回报与价格分析：四个基本头寸的回报与盈亏、内在价值与时间价值、六个价格影响因素、美式期权提前执行、价格上下限与看涨看跌平价关系</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>期权定价：布莱克-舒尔斯-默顿模型</title>
+      <link>https://aipm.ac/business/18-financial-engineering/05-black-scholes-merton-model/</link>
+      <description>期权定价：布莱克-舒尔斯-默顿模型——随机过程、标准布朗运动、伊藤引理、几何布朗运动、BSM 微分方程、风险中性定价、波动率与 VIX</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>期权定价数值方法</title>
+      <link>https://aipm.ac/business/18-financial-engineering/06-option-pricing-numerical-methods/</link>
+      <description>期权定价数值方法：二叉树、蒙特卡洛模拟、有限差分方法及 CEV、随机波动率、跳扩散等模型扩展</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>期权交易策略</title>
+      <link>https://aipm.ac/business/18-financial-engineering/07-option-trading-strategies/</link>
+      <description>期权交易策略：单期权头寸、资产与期权组合、垂直/水平/对角差价组合、跨式/勒式/条式/带式混合期权、静态与动态套期保值、银行产品与风险案例</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>奇异期权与结构性产品</title>
+      <link>https://aipm.ac/business/18-financial-engineering/08-exotic-options-and-structured-products/</link>
+      <description>奇异期权与结构性产品：期权希腊字母风险管理、无风险套利、场内权益期权市场、场外结构性产品（雪球、Autocall 家族、安全气囊）</description>
+      <pubDate>Sun, 30 Aug 2026 15:13:21 +0800</pubDate>
+    </item>
+    <item>
+      <title>固定收益证券分析和模型</title>
+      <link>https://aipm.ac/business/17-fixed-income/</link>
+      <description>固定收益证券分析与模型课程：从无套利原理与贴现因子出发，覆盖债券定价、久期与凸性、远期与互换、期货与期权、二叉树与连续时间利率模型，并落到中国固定收益市场。</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>固定收益证券课程导论</title>
+      <link>https://aipm.ac/business/17-fixed-income/00-intro/</link>
+      <description>固定收益证券在金融学中的定位、无套利原则与现代金融学发展简史</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>贴现因子、利率与期限结构</title>
+      <link>https://aipm.ac/business/17-fixed-income/01-discount-factors-and-term-structure/</link>
+      <description>贴现因子、利率与复利频率、债券定价、报价惯例、期限结构与预期假说、债券回报可预测性</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>利率风险管理：久期与免疫</title>
+      <link>https://aipm.ac/business/17-fixed-income/02-duration-and-immunization/</link>
+      <description>久期定义与计算、美元久期、久期与 VaR、现金流匹配与免疫策略、资产负债管理</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>利率风险管理：凸性</title>
+      <link>https://aipm.ac/business/17-fixed-income/03-convexity/</link>
+      <description>凸性定义与计算、正凸性、久期与凸性对冲、凸性交易、斜率与曲率、利率因子模型</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>远期与利率互换</title>
+      <link>https://aipm.ac/business/17-fixed-income/04-forward-rates-and-interest-rate-swaps/</link>
+      <description>远期利率与远期贴现因子、远期利率协议、远期合约、利率互换的对冲构造与定价</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>利率期货与期权</title>
+      <link>https://aipm.ac/business/17-fixed-income/05-interest-rate-futures-and-options/</link>
+      <description>利率期货的标准化与盯市、欧洲美元期货、期货与远期比较、期权作为保险、collar 与看涨看跌平价</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>二叉树框架与风险中性定价</title>
+      <link>https://aipm.ac/business/17-fixed-income/06-binomial-tree-and-risk-neutral-pricing/</link>
+      <description>二叉树框架下利率衍生品定价的三种等价方法、多步二叉树、动态复制与期限结构匹配</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>利率树模型：Ho-Lee 与 BDT</title>
+      <link>https://aipm.ac/business/17-fixed-income/07-rate-tree-models-ho-lee-and-bdt/</link>
+      <description>Ho-Lee 模型与 BDT 模型的构造与比较、结构性债券、caps/floors、互换与互换期权定价、隐含波动率与期货定价</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>连续时间利率模型与中国市场</title>
+      <link>https://aipm.ac/business/17-fixed-income/08-continuous-time-rate-models-and-china/</link>
+      <description>布朗运动、微分方程与随机过程、伊藤引理、无漂移 Ho-Lee 债券定价与中国固定收益市场专题</description>
+      <pubDate>Sun, 30 Aug 2026 15:11:38 +0800</pubDate>
+    </item>
+    <item>
+      <title>国民收入核算与基本指标</title>
+      <link>https://aipm.ac/business/04-macroeconomics/01-national-income-accounting/</link>
+      <description>GDP 的定义与三种核算方法，价格水平与失业的衡量，以及 GDP、CPI、失业率等基本指标的局限与补充</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>收入-支出模型</title>
+      <link>https://aipm.ac/business/04-macroeconomics/02-income-expenditure-model/</link>
+      <description>均衡国民收入决定的收入-支出模型，消费、储蓄与投资的决定，三部门四部门引入与乘数机制</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>IS-LM 模型</title>
+      <link>https://aipm.ac/business/04-macroeconomics/03-is-lm-model/</link>
+      <description>IS 曲线与 LM 曲线的含义、推导、斜率与移动，产品市场与货币市场的一般均衡及其政策含义</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>AD-AS 模型</title>
+      <link>https://aipm.ac/business/04-macroeconomics/04-ad-as-model/</link>
+      <description>总需求曲线与总供给曲线的推导与移动，AD-AS 模型对财政、货币、供给冲击的比较静态分析，凯恩斯陷阱、货币中性、滞胀与供给侧改革</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>失业与奥肯定律</title>
+      <link>https://aipm.ac/business/04-macroeconomics/05-unemployment-and-okun-law/</link>
+      <description>失业的原因与四派理论解释，失业的影响与奥肯定律，经济周期的定义、阶段、类型与理论谱系</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>通货膨胀与菲利普斯曲线</title>
+      <link>https://aipm.ac/business/04-macroeconomics/06-inflation-and-phillips-curve/</link>
+      <description>通货膨胀的类型、成因与货币数量论解释，通货膨胀的惯性与社会成本、收入分配与产出效应，菲利普斯曲线与预期的作用，通货紧缩</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>开放经济与蒙代尔-弗莱明模型</title>
+      <link>https://aipm.ac/business/04-macroeconomics/07-open-economy-and-mundell-fleming/</link>
+      <description>国际收支、汇率与汇率制度、BP 曲线，蒙代尔-弗莱明模型在固定与浮动汇率制下的政策效果，不可能三角</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>宏观经济政策</title>
+      <link>https://aipm.ac/business/04-macroeconomics/08-macroeconomic-policy/</link>
+      <description>宏观经济政策的目标体系与米德冲突，财政政策的挤出与挤进效应，货币政策三大工具与货币乘数，相机抉择与规则之争及政策局限性与协调</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>经济增长</title>
+      <link>https://aipm.ac/business/04-macroeconomics/09-economic-growth/</link>
+      <description>经济增长的定义、度量与国别事实，哈罗德-多马模型与索洛模型，资本黄金律、内生增长理论、增长核算与增长政策</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>财务报表分析与财务模型</title>
+      <link>https://aipm.ac/business/05-corporate-finance/02-financial-statement-analysis-and-modeling/</link>
+      <description>财务报表分析与财务模型：财务报表与现金流量、共同比报表、五类财务比率、杜邦恒等式、销售百分比法与内部/可持续增长率</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>货币时间价值</title>
+      <link>https://aipm.ac/business/05-corporate-finance/03-time-value-of-money/</link>
+      <description>货币时间价值：终值与现值、单利与复利、APR/EAR 与连续复利、多期现金流、永续年金与年金、贷款分期偿还</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>项目评估方法</title>
+      <link>https://aipm.ac/business/05-corporate-finance/04-project-evaluation-methods/</link>
+      <description>项目评估方法：净现值、回收期、折现回收期、内部收益率、盈利指数五种方法及三大失灵场景</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>投资决策与自由现金流</title>
+      <link>https://aipm.ac/business/05-corporate-finance/05-investment-decisions-and-free-cash-flow/</link>
+      <description>投资决策与自由现金流：增量现金流量原则、自由现金流三组件、折旧税盾与税后残值、约当年均成本</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>风险分析与实物期权</title>
+      <link>https://aipm.ac/business/05-corporate-finance/06-risk-analysis-and-real-options/</link>
+      <description>风险分析与实物期权：场景分析、敏感性分析、模拟、盈亏平衡分析、实物期权与决策树</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>风险、收益与资本资产定价</title>
+      <link>https://aipm.ac/business/05-corporate-finance/09-risk-return-and-capm/</link>
+      <description>风险、收益与资本资产定价：资产组合理论、风险与收益的量化关系、CAPM 与贝塔系数</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>资本成本与长期融资</title>
+      <link>https://aipm.ac/business/05-corporate-finance/10-cost-of-capital-and-long-term-financing/</link>
+      <description>资本成本与长期融资：WACC、发行成本、普通股投票权与同股不同权、长期融资工具</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>资本结构</title>
+      <link>https://aipm.ac/business/05-corporate-finance/11-capital-structure/</link>
+      <description>资本结构：财务杠杆、MM 理论、权衡理论、代理成本与信号理论、优序融资理论与杠杆项目估值三法</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>股利政策</title>
+      <link>https://aipm.ac/business/05-corporate-finance/12-dividend-policy/</link>
+      <description>股利政策：股利支付率、股利形式、现金分红四个关键日期、除息日股价行为与红利政策重要性之争</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融学论文写作</title>
+      <link>https://aipm.ac/business/16-finance-writing/</link>
+      <description>金融学论文写作课程：以合理性、一致性为标准，按论文九步功法组织，覆盖选题、文献、基本事实、理论机制、面板数据实证、稳健性与内生性、结构与格式，并给研究方向地图。</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融学论文写作课程导论</title>
+      <link>https://aipm.ac/business/16-finance-writing/00-intro/</link>
+      <description>金融学实证论文写作的方法论总纲：论文写作九步功法、大期刊文章三大特点、好题目如何产生与合理性一致性两条评判标准</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>选题与文献综述</title>
+      <link>https://aipm.ac/business/16-finance-writing/01-topic-selection-and-literature-review/</link>
+      <description>选题与文献综述的方法论：讲好中国故事、中国特色金融体系四个要点、找文献读文献的路径、文献综述写作规范与题目修改实例</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>找基本事实</title>
+      <link>https://aipm.ac/business/16-finance-writing/02-finding-basic-facts/</link>
+      <description>论文写作第三步找基本事实：先事实后回归、回归是装饰，三种呈现方式，批判案例与风险收益不对称事实，三个注重、三个事实、三个维度的方法论</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>写理论机制</title>
+      <link>https://aipm.ac/business/16-finance-writing/03-writing-theoretical-mechanisms/</link>
+      <description>论文写作第五步写理论机制：回答 X 为什么影响 Y，数理模型与逻辑演进两种写法，机制分析禁用中介调节变量、机制变量须为连续变量</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>实证方法：面板数据与 Stata</title>
+      <link>https://aipm.ac/business/16-finance-writing/04-empirical-methods-panel-data-and-stata/</link>
+      <description>面板数据实证六步流程：数据收集、转面板、缩尾、描述统计、相关系数矩阵、回归，含 winsorize、固定效应、聚类标准误、控制变量、交互项与经济意义</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>稳健性检验与内生性</title>
+      <link>https://aipm.ac/business/16-finance-writing/05-robustness-checks-and-endogeneity/</link>
+      <description>稳健性检验与内生性处理：稳健性的三点判定、内生性的三类来源、工具变量与 2SLS 的四个条件，案例为 Jayaraman &amp; Milbourn 2012 与 Mian &amp; Sufi 2011</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>论文结构与格式规范</title>
+      <link>https://aipm.ac/business/16-finance-writing/06-paper-structure-and-format/</link>
+      <description>论文的结构与格式：结论突出意义、引言吸引眼球、摘要简明扼要、格式规范与发表路径，附期末论文写作红线</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>数字金融研究专题</title>
+      <link>https://aipm.ac/business/16-finance-writing/07-digital-finance-research/</link>
+      <description>数字金融研究专题：数字金融、金融科技与数字化转型的概念边界，DeFi、稳定币、RWA 代币化的运行机制与四个可研究方向</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>宏观金融研究专题</title>
+      <link>https://aipm.ac/business/16-finance-writing/08-macro-finance-research/</link>
+      <description>宏观金融研究专题：宏观经济金融运行机制、地方政府投融资运行机制、资产负债表经济学与五个可研究方向</description>
+      <pubDate>Sun, 30 Aug 2026 15:10:01 +0800</pubDate>
+    </item>
+    <item>
+      <title>量化投资</title>
+      <link>https://aipm.ac/business/15-quantitative-investing/</link>
+      <description>量化投资课程：以因子投资为骨架，覆盖多因子选股、风险模型、另类数据与大模型应用，从 CAPM 实证困境到 Fama-French 因子模型，掌握量化投资全流程。</description>
+      <pubDate>Sun, 30 Aug 2026 15:06:54 +0800</pubDate>
+    </item>
+    <item>
+      <title>量化投资课程导论</title>
+      <link>https://aipm.ac/business/15-quantitative-investing/00-intro/</link>
+      <description>量化投资的定义与三要素、主动投资与量化投资对比、CAPM 的因子视角与横截面量化选股、指数化投资</description>
+      <pubDate>Sun, 30 Aug 2026 15:06:54 +0800</pubDate>
+    </item>
+    <item>
+      <title>因子投资理论基础</title>
+      <link>https://aipm.ac/business/15-quantitative-investing/01-factor-investing-foundations/</link>
+      <description>CAPM 的实证困境、规模效应与市值因子、APT 套利定价理论、单因子模型</description>
+      <pubDate>Sun, 30 Aug 2026 15:06:54 +0800</pubDate>
+    </item>
+    <item>
+      <title>多因子模型与因子收益度量</title>
+      <link>https://aipm.ac/business/15-quantitative-investing/02-multi-factor-models-and-factor-returns/</link>
+      <description>因子收益的度量框架、单变量与双变量投资组合分析、Fama-French 三因子模型、Fama-MacBeth 回归与因子模型的应用</description>
+      <pubDate>Sun, 30 Aug 2026 15:06:54 +0800</pubDate>
+    </item>
+    <item>
+      <title>多因子选股实践</title>
+      <link>https://aipm.ac/business/15-quantitative-investing/03-multi-factor-stock-selection/</link>
+      <description>工业级多因子选股流水线——收益/风险/优化三模型、因子库构建、因子预处理与检验、大类因子合成、机器学习收益模型、组合优化与 PEAD 效应</description>
+      <pubDate>Sun, 30 Aug 2026 15:06:54 +0800</pubDate>
+    </item>
+    <item>
+      <title>风险模型</title>
+      <link>https://aipm.ac/business/15-quantitative-investing/04-risk-models/</link>
+      <description>风险的定义与估计难题、Barra 结构化风险模型、风险分解、CNE5 十大风格因子、因子评价与建模流程</description>
+      <pubDate>Sun, 30 Aug 2026 15:06:54 +0800</pubDate>
+    </item>
+    <item>
+      <title>另类数据与事件驱动</title>
+      <link>https://aipm.ac/business/15-quantitative-investing/05-alternative-data-and-event-driven/</link>
+      <description>高频盘口数据与价量因子、因子有效性度量、股吧冷门股效应、事件驱动框架、专利等另类数据与科技关联因子</description>
+      <pubDate>Sun, 30 Aug 2026 15:06:54 +0800</pubDate>
+    </item>
+    <item>
+      <title>大模型在量化投资中的应用</title>
+      <link>https://aipm.ac/business/15-quantitative-investing/06-llms-in-quantitative-investing/</link>
+      <description>语言模型演进与文本因子、GPT 因子工厂、RAG 研报复现、LoRA 微调、AI 工具链、大模型量化研究应用与强化学习因子挖掘</description>
+      <pubDate>Sun, 30 Aug 2026 15:06:54 +0800</pubDate>
+    </item>
+    <item>
+      <title>会计确认与计量基础</title>
+      <link>https://aipm.ac/business/02-accounting/01-accounting-recognition-and-measurement/</link>
+      <description>收付实现制与权责发生制的确认基础，历史成本、重置成本、可变现净值、公允价值四种计量属性及其适用范围</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>会计要素与复式记账</title>
+      <link>https://aipm.ac/business/02-accounting/02-accounting-elements-and-double-entry/</link>
+      <description>六大会计要素、资产负债表结构、所有者权益细分、收入费用与利润、报表勾稽、会计科目与账户及借贷记账法</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>会计循环</title>
+      <link>https://aipm.ac/business/02-accounting/03-accounting-cycle/</link>
+      <description>会计循环中的会计凭证、会计分录、账簿登记、试算平衡与错账更正三种方法</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>货币资金与交易性金融资产</title>
+      <link>https://aipm.ac/business/02-accounting/04-cash-and-trading-financial-assets/</link>
+      <description>货币资金的三个账户与管理制度，银行存款结算方式与余额调节表，以及交易性金融资产取得、持有、期末计量与出售的全流程核算</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>应收款项与坏账</title>
+      <link>https://aipm.ac/business/02-accounting/05-receivables-and-bad-debts/</link>
+      <description>增值税含税收入确认、应收账款初始计量、坏账的直接转销法与备抵法三种计提、应收票据三步处理与贴现</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>存货</title>
+      <link>https://aipm.ac/business/02-accounting/06-inventory/</link>
+      <description>存货的取得计量、数量确定、发出计价与期末计量，包括盘盈盘亏处理与成本与可变现净值孰低的跌价准备</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>固定资产</title>
+      <link>https://aipm.ac/business/02-accounting/07-fixed-assets/</link>
+      <description>固定资产的取得、折旧、更新改造与处置清理全流程会计处理，以及各环节的利润操纵视角</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>负债与所有者权益</title>
+      <link>https://aipm.ac/business/02-accounting/08-liabilities-and-equity/</link>
+      <description>长期借款与应付债券的确认计量与偿还、溢价折价发行与实际利率法摊销，以及所有者权益的构成与核算、亏损弥补</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>收入、费用与利润</title>
+      <link>https://aipm.ac/business/02-accounting/09-revenue-expenses-and-profit/</link>
+      <description>收入的三种特殊情形、费用与成本核算、利润三概念与五组±损益科目、本年利润结转与利润分配、利润表与资产负债表编制</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:55 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融计量模型</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/</link>
+      <description>金融计量模型课程：金融与宏观领域的时间序列计量，从一元时间序列 ARMA 到波动率建模、趋势与单位根、多元时间序列 VAR 与协整，掌握金融数据实证分析全流程。</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融计量模型课程导论</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/00-intro/</link>
+      <description>时间序列的定义与时序图、对数回报与结构变化、偏度峰度与厚尾分布、白噪声与 MA/AR/ARMA 模型入门</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>平稳性与 ARMA 模型</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/01-stationarity-and-arma-models/</link>
+      <description>时间序列大数定律与弱平稳三条件、MA/AR/ARMA 模型的平稳性条件、ACF 与 Yule-Walker 方程、PACF 的定义与性质</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>ARMA 模型识别、估计与检验</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/02-arma-identification-estimation-and-testing/</link>
+      <description>样本 ACF/PACF 的估计与假设检验、Q 检验与残差模型诊断、ARMA 建模三步法、AIC/BIC 模型选择、极大似然估计与可逆性、过拟合与公因子问题</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>ARMA 模型预测</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/03-arma-forecasting/</link>
+      <description>均方误差损失下的最优预测与条件期望、MA(1) 与 AR(1) 的预测、预测误差与置信区间、伪样本外预测评估、预测精度度量与 Diebold-Mariano 检验</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>波动率建模：ARCH 与 GARCH</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/04-volatility-modeling-arch-and-garch/</link>
+      <description>波动率聚集与条件异方差、GARCH(1,1) 模型设定与平稳性条件、ARCH 效应检验（Ljung-Box 与 Engle LM 检验）、QMLE 估计、模型诊断与波动率预测</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>趋势、单位根与 ARIMA</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/05-trends-unit-roots-and-arima/</link>
+      <description>确定性趋势与随机趋势、趋势平稳/随机游走/带漂移随机游走模型、单位根与 I(d) 单整、DF/ADF 单位根检验与 ARIMA 建模</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>向量自回归模型</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/06-vector-autoregression/</link>
+      <description>多元弱平稳与互相关矩阵、结构式与简化式 VAR、内生性与识别问题、Cholesky 分解、估计与预测、方差分解、脉冲响应与格兰杰因果检验</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>协整与误差修正模型</title>
+      <link>https://aipm.ac/business/14-financial-econometrics/07-cointegration-and-error-correction/</link>
+      <description>长期均衡与协整定义、协整向量标准化与多重协整、协整与伪回归辨析、共同随机趋势、协整检验路径、含单位根 VAR(1) 的误差修正模型</description>
+      <pubDate>Sun, 30 Aug 2026 15:05:46 +0800</pubDate>
+    </item>
+    <item>
+      <title>随机过程</title>
+      <link>https://aipm.ac/business/13-stochastic-processes/</link>
+      <description>随机过程课程：面向金融学背景的数学方法课，讲授 Poisson 过程、马尔可夫链、分支过程、平稳过程遍历性与布朗运动，为股价建模、期权定价与破产概率提供随机分析基础。</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:52 +0800</pubDate>
+    </item>
+    <item>
+      <title>货币的起源与形态</title>
+      <link>https://aipm.ac/business/01-finance/01-origins-and-forms-of-money/</link>
+      <description>货币的起源与形态演变：物物交换的困难、实物货币到信用货币的演进、数字货币与稳定币、比特币是否为货币</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>货币的职能</title>
+      <link>https://aipm.ac/business/01-finance/02-functions-of-money/</link>
+      <description>货币的五大职能及其对货币本身的要求，人民币国际化的四个层面</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>货币制度</title>
+      <link>https://aipm.ac/business/01-finance/03-monetary-systems/</link>
+      <description>货币制度的概念与演变：银本位、金银复本位、金本位、不兑现信用货币制度，以及货币局制度、美元化与区域货币一体化</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>货币的层次划分与人民币制度</title>
+      <link>https://aipm.ac/business/01-finance/04-monetary-aggregates-and-rmb-system/</link>
+      <description>货币的层次划分：流动性与 M0/M1/M2、准货币、货币流动性比率，以及我国人民币制度的基本内容</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>消费信用与金融风险</title>
+      <link>https://aipm.ac/business/01-finance/06-consumer-credit-and-financial-risk/</link>
+      <description>消费信用的形式、理论基础与弊端，美国次贷危机，居民杠杆率，民间金融诈骗与庞氏骗局</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>信用工具：票据</title>
+      <link>https://aipm.ac/business/01-finance/07-credit-instruments-bills/</link>
+      <description>信用工具的四性与分类，票据的概念与行为，汇票、本票、支票三大票据与贴现</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融机构体系</title>
+      <link>https://aipm.ac/business/01-finance/10-financial-institution-system/</link>
+      <description>金融机构体系的形成与构成，中央银行（产生原因、各国制度比较、独立性），我国的金融机构体系</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行</title>
+      <link>https://aipm.ac/business/01-finance/11-commercial-banks/</link>
+      <description>商业银行的性质与四大职能，信用创造过程与存款乘数、货币乘数，立法与六大管理措施，四块业务与三性经营原则</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融市场</title>
+      <link>https://aipm.ac/business/01-finance/12-financial-markets/</link>
+      <description>金融市场的概念、特征与分类，金融衍生工具四大类，证券的价格与收益（债券定价、收益率指标、股票价格指数）</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>货币政策</title>
+      <link>https://aipm.ac/business/01-finance/14-monetary-policy/</link>
+      <description>货币政策的基本框架：最终目标与目标间的矛盾，一般性与选择性政策工具、非常规工具，传导过程与中间目标，时滞</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>随机过程课程导论</title>
+      <link>https://aipm.ac/business/13-stochastic-processes/00-intro/</link>
+      <description>随机过程课程导论：从概率论公理化体系到随机过程的基本概念、数字特征、有限维分布与分类</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:33 +0800</pubDate>
+    </item>
+    <item>
+      <title>Poisson 过程</title>
+      <link>https://aipm.ac/business/13-stochastic-processes/01-poisson-process/</link>
+      <description>Poisson 过程的定义、数字特征、到达时刻与间隔时间分布、条件分布、合并分解、复合泊松过程、非齐次泊松过程与多维泊松点过程</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:33 +0800</pubDate>
+    </item>
+    <item>
+      <title>马尔可夫链</title>
+      <link>https://aipm.ac/business/13-stochastic-processes/02-markov-chains/</link>
+      <description>马尔可夫链的定义、状态分类、极限性质、极限分布与平稳分布、可逆马尔可夫链与详细平衡方程</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:33 +0800</pubDate>
+    </item>
+    <item>
+      <title>分支过程</title>
+      <link>https://aipm.ac/business/13-stochastic-processes/03-branching-processes/</link>
+      <description>分支过程的历史背景、数学模型、概率生成函数方法、均值方差与最终灭绝概率</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:33 +0800</pubDate>
+    </item>
+    <item>
+      <title>平稳过程与遍历性</title>
+      <link>https://aipm.ac/business/13-stochastic-processes/04-stationary-processes-and-ergodicity/</link>
+      <description>平稳过程的遍历性：均值遍历性的定义、判别定理、连续时间遍历定理、渐近独立与两类遍历定理</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:33 +0800</pubDate>
+    </item>
+    <item>
+      <title>布朗运动</title>
+      <link>https://aipm.ac/business/13-stochastic-processes/05-brownian-motion/</link>
+      <description>布朗运动的历史背景、数学定义、数字特征、有限维分布、样本轨道性质、派生过程与最大值、首中时理论</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:33 +0800</pubDate>
+    </item>
+    <item>
+      <title>MCMC 与随机模拟</title>
+      <link>https://aipm.ac/business/13-stochastic-processes/06-mcmc-and-stochastic-simulation/</link>
+      <description>蒙特卡罗方法、Metropolis-Hastings 算法、Kolmogorov 环路准则与股票价格首达时、破产概率、排队系统应用</description>
+      <pubDate>Sun, 30 Aug 2026 15:04:33 +0800</pubDate>
+    </item>
+    <item>
+      <title>中级宏观经济学</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/</link>
+      <description>以微观基础与一般均衡为核心方法、以动态最优化为技术主线的中级宏观经济学</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>中级宏观经济学课程导论</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/00-intro/</link>
+      <description>现代宏观经济学的分析方法：模型化、微观基础与一般均衡，以及本课定位</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>代表性行为人模型</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/01-representative-agent-model/</link>
+      <description>一期代表性行为人模型：消费者与企业最优化、竞争均衡、瓦尔拉斯定理、福利经济学定理与政府行为</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>两期动态模型与欧拉方程</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/02-two-period-model-and-euler-equation/</link>
+      <description>两期动态模型的三个版本、一般均衡与计划最优、三期模型与欧拉方程</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>动态规划</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/03-dynamic-programming/</link>
+      <description>状态变量、政策函数、值函数、包络定理、贝尔曼方程、逆向归纳求解与吃蛋糕问题</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>无限期动态模型</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/04-infinite-horizon-dynamic-models/</link>
+      <description>无限期社会计划者解、贝尔曼方程与猜解法、欧拉方程、相位图与竞争均衡</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>真实经济周期模型</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/05-real-business-cycle-model/</link>
+      <description>RBC 模型的去趋势与滤波、经济周期典型事实、平衡增长路径、参数校准、对数线性化求解与模型评价</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>代际交叠模型</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/06-overlapping-generations-model/</link>
+      <description>OLG 模型的决策环境、消费者与企业最优化、竞争均衡与稳态、动态无效率、政府债务与养老保险、人口老龄化效应</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>Diamond-Dybvig 银行模型</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/07-diamond-dybvig-bank-model/</link>
+      <description>Diamond-Dybvig 银行模型：最优存款契约、流动性转换、银行挤兑与存款保险政策</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>数学方法专题</title>
+      <link>https://aipm.ac/business/12-intermediate-macroeconomics/08-mathematical-methods/</link>
+      <description>函数空间、向量空间、度量空间、赋范向量空间与巴拿赫空间、压缩映射定理与 Blackwell 充分条件</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:48 +0800</pubDate>
+    </item>
+    <item>
+      <title>内推机制</title>
+      <link>https://aipm.ac/job/referral/</link>
+      <description>内推机制全解：内推的价值与局限、找内推人的渠道与话术、内推 etiquette 与流程，含 AI PM 作品集加分点</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>简历与作品集</title>
+      <link>https://aipm.ac/job/resume-portfolio/</link>
+      <description>AI 产品经理简历与作品集准备指南：模块结构、量化方法、作品集形态、示例与准备节奏</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>踩坑教训</title>
+      <link>https://aipm.ac/job/insights/lessons/</link>
+      <description>踩坑教训：选错方向、成本模型不清、依赖幻觉、过度承诺四类坑与避开方法</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>心态感悟</title>
+      <link>https://aipm.ac/job/insights/mindset/</link>
+      <description>心态感悟：应对焦虑、同龄人比较、技能过时与内卷的心态经营思路</description>
+      <pubDate>Sun, 30 Aug 2026 15:02:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>中级财务会计学课程导论</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/00-intro/</link>
+      <description>中级财务会计学课程定位，AI 时代会计的存在理由、信任机制与问责功能，财务会计基本框架</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>存货</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/01-inventory/</link>
+      <description>存货的定义与所有权判定、分类、初始计量实际成本原则、计划成本法、委托加工物资、成本与可变现净值孰低与跌价准备</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>应收款项</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/02-receivables/</link>
+      <description>应收票据的计量与贴现、应收账款的折扣与坏账准备、保理融资、其他应收款与列报披露</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融工具：债务工具</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/03-financial-instruments-debt/</link>
+      <description>债权投资摊余成本计量、实际利率法摊销、提前赎回、预期信用损失减值与其他债权投资 FVOCI 核算</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融工具：权益工具与交易性金融资产</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/04-financial-instruments-equity-and-trading/</link>
+      <description>金融工具分类与计量政策、其他权益工具投资、交易性金融资产核算，权益工具 FVTPL 与 FVTOCI 的对比</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>长期股权投资</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/05-long-term-equity-investments/</link>
+      <description>长期股权投资的初始计量（同一/非同一控制、重大影响）、成本法与权益法后续计量、减值、处置与披露</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>固定资产</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/06-fixed-assets/</link>
+      <description>固定资产的初始计量（外购、分期付款、自行建造）、折旧四种方法、后续支出资本化与费用化、减值与处置</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>无形资产与投资性房地产</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/07-intangibles-and-investment-property/</link>
+      <description>无形资产的定义、初始与后续计量、研发支出资本化，投资性房地产的范围、两种计量模式与转换处置</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>流动负债</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/08-current-liabilities/</link>
+      <description>职工薪酬四分类、短期薪酬核算与代扣代缴、带薪缺勤、非货币性福利，应交增值税与消费税</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>非流动负债</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/09-non-current-liabilities/</link>
+      <description>长期借款与应付债券的核算、可转换债券的拆分与转股、借款费用资本化的条件与计量</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>或有事项与预计负债</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/10-contingencies-and-provisions/</link>
+      <description>或有事项的特征、或有负债与或有资产、预计负债的确认与计量、弃置义务与亏损合同</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>所有者权益</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/11-owners-equity/</link>
+      <description>实收资本增减变动、其他权益工具与资本公积、股份支付、其他综合收益、留存收益与利润分配</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>收入确认与所得税会计</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/12-revenue-recognition-and-income-tax/</link>
+      <description>收入五步法确认模型、附退货、售后回购与分期收款等特殊销售、费用与利润构成、所得税会计资产负债表债务法与递延所得税</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>财务报表</title>
+      <link>https://aipm.ac/business/11-intermediate-financial-accounting/13-financial-statements/</link>
+      <description>资产负债表填列、利润表与每股收益、现金流量表直接法与间接法、附注披露与盈余管理案例</description>
+      <pubDate>Sun, 30 Aug 2026 15:01:06 +0800</pubDate>
+    </item>
+    <item>
+      <title>面试复盘方法论</title>
+      <link>https://aipm.ac/job/interviews/review-methodology/</link>
+      <description>面试复盘方法论：面经记录模板、复盘改进闭环与个人题库积累</description>
+      <pubDate>Sun, 30 Aug 2026 14:59:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>社招面经</title>
+      <link>https://aipm.ac/job/interviews/social-interviews/</link>
+      <description>社招面经：看机会时机、简历与讲项目方法、背调与离职交接注意</description>
+      <pubDate>Sun, 30 Aug 2026 14:59:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI Infra 相关岗位</title>
+      <link>https://aipm.ac/job/positions/ai-infra/</link>
+      <description>AI Infra 岗位解读：MLOps、推理优化、GPU 集群等职责、JD 关键词与 PM 协作要点</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 训练相关岗位</title>
+      <link>https://aipm.ac/job/positions/ai-trainer/</link>
+      <description>AI 训练岗位解读：训练师、RLHF 偏好训练、对齐训练职责细分与 PM 协作</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>算法工程师</title>
+      <link>https://aipm.ac/job/positions/algorithm-engineer/</link>
+      <description>算法工程师（LLM/NLP/多模态）岗位解读：方向细分、JD 关键词与 PM 协作分工</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>高管岗位与公司管理黑话</title>
+      <link>https://aipm.ac/job/positions/cxo-roles/</link>
+      <description>高管岗位与公司管理黑话：C-suite 缩写、职级体系、融资期权与向上汇报</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>数据、评测与训练类岗位</title>
+      <link>https://aipm.ac/job/positions/data-ai-trainer/</link>
+      <description>数据、评测与训练类岗位：数据标注、评测工程师、训练师与数据科学职责及 JD</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>设计师</title>
+      <link>https://aipm.ac/job/positions/designer/</link>
+      <description>设计师岗位解读：UI/UX/交互/视觉细分、AI 产品设计工作与 PM 协作流程</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>FDE（前沿部署工程师）</title>
+      <link>https://aipm.ac/job/positions/fde/</link>
+      <description>FDE 前沿部署工程师解读：驻场交付、客户需求回流、与 PM 的部署边界协作</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>硬件相关岗位</title>
+      <link>https://aipm.ac/job/positions/hardware-pm/</link>
+      <description>硬件相关岗位解读：硬件 PM、嵌入式、AIoT、机器人职责与软硬一体协作</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>大模型应用工程师</title>
+      <link>https://aipm.ac/job/positions/llm-app-engineer/</link>
+      <description>大模型应用与 Agent 工程师解读：应用开发、Agent 编排、JD 关键词与发展路径</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>提示词工程师</title>
+      <link>https://aipm.ac/job/positions/prompt-engineer/</link>
+      <description>提示词工程师现实定位：独立岗极少，提示词是通用技能，绑定主业与评测能力</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>研发工程师</title>
+      <link>https://aipm.ac/job/positions/rd-engineer/</link>
+      <description>研发工程师岗位解读：前端/后端/客户端 AI 研发栈与 PM 的 PRD 交接协作</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>测试工程师</title>
+      <link>https://aipm.ac/job/positions/test-engineer/</link>
+      <description>测试工程师岗位解读：功能/自动化/性能/AI 测试与 PM 定义验收协作</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:56 +0800</pubDate>
+    </item>
+    <item>
+      <title>案例分析简介</title>
+      <link>https://aipm.ac/practice/case-analysis/</link>
+      <description>案例分析栏目：用产品拆解框架把真实 AI 产品还原成决策过程，覆盖定位、任务与场景、技术方案、交互与体验、商业与成败归因，附已收录拆解索引；拆解框架与实战栏目六问相衔接。</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:20 +0800</pubDate>
+    </item>
+    <item>
+      <title>ChatGPT 拆解</title>
+      <link>https://aipm.ac/practice/case-analysis/chatgpt/</link>
+      <description>ChatGPT 产品拆解全文：定位、能力迭代、交互、商业与竞争格局。</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:20 +0800</pubDate>
+    </item>
+    <item>
+      <title>Claude 拆解</title>
+      <link>https://aipm.ac/practice/case-analysis/claude/</link>
+      <description>Claude 产品拆解全文：定位、能力迭代、交互、商业与竞争格局。</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:20 +0800</pubDate>
+    </item>
+    <item>
+      <title>Cursor 拆解</title>
+      <link>https://aipm.ac/practice/case-analysis/cursor/</link>
+      <description>Cursor 产品拆解全文：定位、能力迭代、交互体验、商业模式、竞争格局与成败归因。</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:20 +0800</pubDate>
+    </item>
+    <item>
+      <title>豆包拆解</title>
+      <link>https://aipm.ac/practice/case-analysis/doubao/</link>
+      <description>豆包产品拆解全文：定位、能力、交互、商业与竞争格局。</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:20 +0800</pubDate>
+    </item>
+    <item>
+      <title>Notion AI 拆解</title>
+      <link>https://aipm.ac/practice/case-analysis/notion-ai/</link>
+      <description>Notion AI 产品拆解全文：应用层 AI 典型——老产品加 AI 的定位、能力迭代、交互、商业与竞争格局。</description>
+      <pubDate>Sun, 30 Aug 2026 14:57:20 +0800</pubDate>
+    </item>
+    <item>
+      <title>原型与设计工具</title>
+      <link>https://aipm.ac/tools/design-tools/</link>
+      <description>原型与设计工具链选型：白板、原型、视觉设计、交付、设计系统与 AI 生成。</description>
+      <pubDate>Sun, 30 Aug 2026 14:56:50 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 编程工具</title>
+      <link>https://aipm.ac/practice/ai-coding-tools/</link>
+      <description>从代码补全到端到端 Agent 编码，拆解 AI 编程工具的能力阶梯、核心机制、选型维度与对 AI PM 的意义。</description>
+      <pubDate>Sun, 30 Aug 2026 14:56:04 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI 搜索</title>
+      <link>https://aipm.ac/practice/ai-search/</link>
+      <description>AI 搜索产品（Perplexity 类）从检索到生成式答案的产品形态：形态定位、检索底座、引用与证据、检索到生成的管线、商业模式与落地挑战。</description>
+      <pubDate>Sun, 30 Aug 2026 14:56:04 +0800</pubDate>
+    </item>
+    <item>
+      <title>出海与合规</title>
+      <link>https://aipm.ac/practice/compliance/</link>
+      <description>AI 产品合规红线：数据隐私、内容安全、算法备案、版权四类约束与出海市场矩阵。</description>
+      <pubDate>Sun, 30 Aug 2026 14:56:04 +0800</pubDate>
+    </item>
+    <item>
+      <title>内容安全与护栏</title>
+      <link>https://aipm.ac/practice/content-safety/</link>
+      <description>内容安全机制产品落地：输入输出风险面、多层防线、拦截指标与红线样本回填。</description>
+      <pubDate>Sun, 30 Aug 2026 14:56:04 +0800</pubDate>
+    </item>
+    <item>
+      <title>数据隐私与用户控制</title>
+      <link>https://aipm.ac/practice/data-privacy/</link>
+      <description>AI 产品隐私机制落地：数据地图、脱敏、保留期、用户删除权控制与事件响应。</description>
+      <pubDate>Sun, 30 Aug 2026 14:56:04 +0800</pubDate>
+    </item>
+    <item>
+      <title>如何参与</title>
+      <link>https://aipm.ac/intro/htc/</link>
+      <description>如何参与贡献：编写修改文章、反馈问题、贡献流程与编写规范</description>
+      <pubDate>Sun, 30 Aug 2026 14:56:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>F.A.Q.</title>
+      <link>https://aipm.ac/intro/faq/</link>
+      <description>站点常见问题：新手学习路线、内容收费与转载协议、贡献与纠错方式</description>
+      <pubDate>Sun, 30 Aug 2026 14:55:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>AI-PM 不是什么</title>
+      <link>https://aipm.ac/intro/what-ai-pm-is-not/</link>
+      <description>AI-PM 站点边界：非技术教程、非新闻站、非营销号，聚焦可落地产品实践</description>
+      <pubDate>Sun, 30 Aug 2026 14:55:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>读书笔记索引</title>
+      <link>https://aipm.ac/case/books/</link>
+      <description>本站原创读书笔记系列：俞军方法论、PM 2.0、启示录、精益创业四篇精读。</description>
+      <pubDate>Sun, 30 Aug 2026 14:55:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>启示录（INSPIRED）</title>
+      <link>https://aipm.ac/case/books/inspired/</link>
+      <description>《启示录》精读笔记：赋权产品团队与发现、交付的连续循环。</description>
+      <pubDate>Sun, 30 Aug 2026 14:55:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>精益创业（The Lean Startup）</title>
+      <link>https://aipm.ac/case/books/lean-startup/</link>
+      <description>《精益创业》精读笔记：构建-测量-学习循环与三大增长引擎。</description>
+      <pubDate>Sun, 30 Aug 2026 14:55:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>人人都是产品经理 2.0</title>
+      <link>https://aipm.ac/case/books/pm-2-0/</link>
+      <description>《人人都是产品经理 2.0》精读笔记：从需求出发串起产品全生命周期。</description>
+      <pubDate>Sun, 30 Aug 2026 14:55:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>俞军产品方法论</title>
+      <link>https://aipm.ac/case/books/yujun-product-methodology/</link>
+      <description>《俞军产品方法论》精读笔记：产品即交易，引入经济学与心理学。</description>
+      <pubDate>Sun, 30 Aug 2026 14:55:10 +0800</pubDate>
+    </item>
+    <item>
+      <title>Agent 工具与 MCP 产品化</title>
+      <link>https://aipm.ac/practice/agent-tools/</link>
+      <description>Agent 工具层产品设计：ACI 工具界面、工具集最小化与权限、失败兜底、MCP 生态与安全。</description>
+      <pubDate>Sun, 30 Aug 2026 14:53:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>Copilot 产品</title>
+      <link>https://aipm.ac/practice/copilot/</link>
+      <description>Copilot 形态产品设计：嵌入既有工作流、上下文感知、建议及时性与用户信任。</description>
+      <pubDate>Sun, 30 Aug 2026 14:53:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>多 Agent 与人机协作</title>
+      <link>https://aipm.ac/practice/multi-agent/</link>
+      <description>多 Agent 产品决策：单 vs 多算账、编排模式、上下文隔离、成本控制与人机协作。</description>
+      <pubDate>Sun, 30 Aug 2026 14:53:57 +0800</pubDate>
+    </item>
+    <item>
+      <title>知识库问答</title>
+      <link>https://aipm.ac/practice/kb-qa/</link>
+      <description>知识库问答产品设计：场景画像、知识治理、引用可信、权限过滤与评估。</description>
+      <pubDate>Sun, 30 Aug 2026 14:53:23 +0800</pubDate>
+    </item>
+    <item>
+      <title>RAG 产品化实战</title>
+      <link>https://aipm.ac/practice/rag-practice/</link>
+      <description>RAG 产品化路线：从 demo 到可信知识库的索引运营、检索质量工程、失败兜底与成本性能。</description>
+      <pubDate>Sun, 30 Aug 2026 14:53:23 +0800</pubDate>
+    </item>
+    <item>
+      <title>工作流自动化</title>
+      <link>https://aipm.ac/practice/workflow/</link>
+      <description>工作流自动化产品设计：固定步骤编排、确定性可审计、适用场景与选型判断。</description>
+      <pubDate>Sun, 30 Aug 2026 14:53:23 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融学</title>
+      <link>https://aipm.ac/business/01-finance/</link>
+      <description>金融学课程导论页：覆盖货币制度、信用工具、利息与利率、金融机构体系、金融市场与货币政策六大板块，从货币起源到货币政策传导，帮助建立货币银行学完整知识框架。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>金融学课程导论</title>
+      <link>https://aipm.ac/business/01-finance/00-intro/</link>
+      <description>金融学课程导论：学科定位、金融学的两种理解、课程八大内容板块与参考教材</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>信用与信用形式</title>
+      <link>https://aipm.ac/business/01-finance/05-credit-and-credit-forms/</link>
+      <description>信用的概念与五要素，商业信用、银行信用、国家信用、国际信用与民间信用五种主要形式</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>信用工具：债券与股票</title>
+      <link>https://aipm.ac/business/01-finance/08-credit-instruments-bonds-and-stocks/</link>
+      <description>债券的定义与三种分类角度、特殊债券品种，股票的特点与分类，债券与股票的比较</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>利息与利息率</title>
+      <link>https://aipm.ac/business/01-finance/09-interest-and-interest-rates/</link>
+      <description>利率的概念与种类、利息的三种计息方式与衍生计算，利率水平的决定因素，利率的风险结构与期限结构，利率对经济的影响</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>证券投资与市场构成</title>
+      <link>https://aipm.ac/business/01-finance/13-securities-investment-and-market-structure/</link>
+      <description>股票的内在价值与收益率指标，投资风险的定量分析（方差法与β系数），证券组合理论，货币市场与资本市场的构成</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>会计学</title>
+      <link>https://aipm.ac/business/02-accounting/</link>
+      <description>会计学课程导航：从会计基础、资产核算到负债权益与损益，讲授企业经济活动的确认、计量、记录与报告，理解会计要素与复式记账、会计循环与财务报表编制。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>会计学课程导论</title>
+      <link>https://aipm.ac/business/02-accounting/00-intro/</link>
+      <description>会计的定义与作用、财务会计与管理会计、四大基本假设、会计规范体系、八项信息质量要求与会计的信任机制</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>中级微观经济学</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/</link>
+      <description>中级微观经济学课程：以范里安《中级微观经济学：现代观点》为框架，从预算约束、偏好与效用到生产者决策、市场结构与一般均衡，构建完整微观经济分析体系。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>中级微观经济学课程导论</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/00-intro/</link>
+      <description>中级微观经济学导论：经济模型、市场均衡、配置方式与帕累托效率</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>跨期选择与消费者福利</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/05-intertemporal-choice-and-consumer-welfare/</link>
+      <description>跨期选择与消费者福利：实际利率与现值、债券估价、消费者剩余、补偿变化与等价变化、生产者剩余</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>市场需求与弹性</title>
+      <link>https://aipm.ac/business/03-intermediate-microeconomics/06-market-demand-and-elasticity/</link>
+      <description>市场需求与弹性：市场需求加总、需求价格弹性、收入弹性、弹性与边际收益、市场均衡与税收</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>宏观经济学</title>
+      <link>https://aipm.ac/business/04-macroeconomics/</link>
+      <description>宏观经济学课程导航：从国民收入核算出发，经收入-支出模型、IS-LM 模型、AD-AS 模型层层推进，覆盖失业、通胀、开放经济、宏观政策与经济增长，理解国民经济总量运行。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>宏观经济学课程导论</title>
+      <link>https://aipm.ac/business/04-macroeconomics/00-intro/</link>
+      <description>宏观经济学的研究对象与学科定位，从凯恩斯《通论》到现代宏观经济学的师承发展脉络</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>公司金融</title>
+      <link>https://aipm.ac/business/05-corporate-finance/</link>
+      <description>公司金融课程：站在公司角度回答投资决策、融资决策与股利政策三大核心问题，覆盖估值方法、风险定价、资本结构与派息决策，掌握公司价值创造与资本运作的完整分析框架。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>公司治理</title>
+      <link>https://aipm.ac/business/05-corporate-finance/01-corporate-governance/</link>
+      <description>公司治理：委托代理问题、三类代理问题、四类治理机制与国美、康美药业案例</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>债券估值</title>
+      <link>https://aipm.ac/business/05-corporate-finance/07-bond-valuation/</link>
+      <description>债券估值：现金流贴现、到期收益率、利率风险与信用风险、特殊债券与违约案例</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>股票估值</title>
+      <link>https://aipm.ac/business/05-corporate-finance/08-stock-valuation/</link>
+      <description>股票估值：股利贴现模型三种情形、增长率与折现率估计、NPVGO 与市盈率</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行经营与管理</title>
+      <link>https://aipm.ac/business/06-commercial-banking/</link>
+      <description>商业银行经营与管理课程：以我国商业银行为对象，覆盖资本管理、负债与资产业务、中间与表外业务、国际业务与资产负债管理，理解银行经营全貌与巴塞尔协议资本监管。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行经营与管理课程导论</title>
+      <link>https://aipm.ac/business/06-commercial-banking/00-intro/</link>
+      <description>商业银行经营与管理课程十章体系与考核方式，中国商业银行改革在股权多元化、重组上市、公司治理与经营转型等维度的基本状况</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行的地位与类型</title>
+      <link>https://aipm.ac/business/06-commercial-banking/01-role-and-types-of-commercial-banks/</link>
+      <description>商业银行在金融体系中的核心地位、行业资产负债数据与商业银行的类型划分</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行的组织结构与经营原则</title>
+      <link>https://aipm.ac/business/06-commercial-banking/02-organization-and-operating-principles/</link>
+      <description>商业银行分业与混业经营、内部组织结构四大系统、三性经营原则与央行流动性工具</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>商业银行负债业务</title>
+      <link>https://aipm.ac/business/06-commercial-banking/04-liability-operations/</link>
+      <description>商业银行负债的构成、存款种类与创新、存款定价与稳定性管理、借入负债与金融债券</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>政治经济学</title>
+      <link>https://aipm.ac/business/07-political-economy/</link>
+      <description>政治经济学课程：以历史唯物主义为方法，从商品价值与剩余价值出发，贯通前资本主义制度、垄断资本主义、新中国工业化、改革开放与共同富裕，解释中国现代化道路。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>政治经济学课程导论</title>
+      <link>https://aipm.ac/business/07-political-economy/00-intro/</link>
+      <description>政治经济学以物质资料生产为出发点，从社会关系的&quot;公&quot;维度与主流经济学的个体最优化出发点分道而行，并由生产力决定生产关系、商品价值与货币体系构成理论基石。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>中国经济的历史兴衰</title>
+      <link>https://aipm.ac/business/07-political-economy/04-rise-and-fall-of-chinese-economy/</link>
+      <description>工业革命前中国长期领先世界，其制度基础是大一统、郡县制、科举与乡土社会；李约瑟之谜的四种解释与废科举后的基层劣绅化，共同刻画近代国家命运的转折。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>计量经济学</title>
+      <link>https://aipm.ac/business/08-econometrics/</link>
+      <description>计量经济学课程导航：用样本数据把经济理论转化为可检验、可预测、可评价的实证结论，覆盖建模基础、经典回归模型、假设违背与时间序列，掌握 Stata 实证操作。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>计量经济学课程导论</title>
+      <link>https://aipm.ac/business/08-econometrics/00-intro/</link>
+      <description>计量经济学的定义、发展简史与学科体系、建模五步骤、数据类型与质量、参数估计与模型检验</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>虚拟变量与非线性回归</title>
+      <link>https://aipm.ac/business/08-econometrics/03-dummy-variables-and-nonlinear-regression/</link>
+      <description>含交叉项模型的偏效应、可线性化的非线性回归、柯布-道格拉斯生产函数估计与规模报酬检验、虚拟变量的加法乘法混合引入与陷阱</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>模型设定偏误</title>
+      <link>https://aipm.ac/business/08-econometrics/06-model-specification-bias/</link>
+      <description>遗漏相关变量、多选无关变量与错误函数形式三类设定偏误的后果与检验，残差分析与 Ramsey RESET 检验</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>Stata 与 EViews 操作入门</title>
+      <link>https://aipm.ac/business/08-econometrics/08-stata-and-eviews-intro/</link>
+      <description>Stata 的界面窗口、三类文件与常用命令，以 auto.dta 为例的建模流程，EViews 的方程估计与检验操作</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>因果推断与实验</title>
+      <link>https://aipm.ac/business/08-econometrics/09-causal-inference-and-experiments/</link>
+      <description>相关与因果的区别、潜在结果框架、随机对照实验 RCT、工具变量回顾、双重差分 DID 与平行趋势、断点回归 RDD 与带宽、对 AI 产品经理的 A/B 测试接口</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际金融学</title>
+      <link>https://aipm.ac/business/09-international-finance/</link>
+      <description>国际金融学课程：研究货币与资本跨国流动及其政策问题，覆盖国际收支、外汇与汇率、国际金融市场、国际货币体系与国际金融机构，回答开放经济内外均衡命题。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>国际金融学课程导论</title>
+      <link>https://aipm.ac/business/09-international-finance/00-intro/</link>
+      <description>国际金融学导论：从身边的货币兑换现象出发，梳理国际金融机构、2025 年重大事件、学科形成发展的四个阶段与课程体系</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>证券投资学</title>
+      <link>https://aipm.ac/business/10-securities-investment/</link>
+      <description>证券投资学课程：从投资工具、市场结构到资产定价、组合理论、技术分析与行为金融，围绕“好生意、好公司、好价格”建立科学投资理念与分析方法，为证券投资实践提供完整方法论。</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+    <item>
+      <title>证券投资学课程导论</title>
+      <link>https://aipm.ac/business/10-securities-investment/00-intro/</link>
+      <description>证券投资学课程框架：金融核心职能、科学投资理念与&quot;好生意、好公司、好价格&quot;分析体系</description>
+      <pubDate>Thu, 27 Aug 2026 13:39:47 +0800</pubDate>
+    </item>
+  </channel>
+</rss>
