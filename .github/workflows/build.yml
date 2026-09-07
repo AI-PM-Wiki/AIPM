@@ -38,6 +38,8 @@ jobs:
         run: uv sync --frozen
       - name: Check nav vs docs consistency
         run: uv run python scripts/check-nav.py
+      - name: Check in-repo Markdown links
+        run: uv run python scripts/check-doc-links.py
       - name: Cache Node.js dependencies
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         id: cache-node

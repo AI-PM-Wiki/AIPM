@@ -22,5 +22,7 @@
 
 - `check-characters.py` 扫描 Markdown 文件中的异常非可见字符，以及可替换为对应 CJK 字符的部首
   （和笔画字符）；字符数据见同目录 `char-map.json`。为仓库门禁之一。
+- `check-doc-links.py` 扫描 `docs/**/*.md` 的站内 Markdown/HTML 链接与标题锚点（外链跳过，
+  与 CI htmltest 的 `skip_external` 一致）。实现见 `doc_links.py`。为仓库门禁之一。
 - `gen-favicon.py` 生成站点 favicon（用法见文件头部注释）
 - `utils/find_jk.py` 遗留小工具：查找源文件中非中文码位的汉字字符

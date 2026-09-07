@@ -7,6 +7,7 @@ on:
     paths:
       - scripts/**
       - hooks/**
+      - test/**
       - .remarkrc
       - package.json
       - yarn.lock
@@ -55,7 +56,7 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --group dev
       - name: Check Python Syntax
-        run: python -m py_compile hooks/*.py scripts/check-characters.py
+        run: python -m py_compile hooks/*.py scripts/check-characters.py scripts/doc_links.py
       - name: Run All Python Unit Tests
         run: |
           uv run python3 -m unittest

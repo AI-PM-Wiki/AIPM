@@ -58,6 +58,7 @@ uv run mkdocs --help
 -   `git diff --check`：空白错误检查
 -   `uv run mkdocs build -q`：站点构建
 -   `python3 scripts/check-characters.py`：字符规范检查
+-   `uv run python scripts/check-doc-links.py`：站内 Markdown/HTML 链接与标题锚点
 -   `bash scripts/check-upstream-remnants.sh`：上游残留检查
 
 * * *
