@@ -43,12 +43,6 @@
     "remark-math-space",
     "remark-lint-final-newline",
     "remark-tabbed",
-    "remark-lint-no-tabs",
-    [
-      "remark-clang-format",
-      {
-        "math": false
-      }
-    ]
+    "remark-lint-no-tabs"
   ]
 }
