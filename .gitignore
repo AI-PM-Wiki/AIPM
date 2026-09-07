@@ -10,7 +10,9 @@ site/
 node_modules/
 *.pyc
 /meta/
+/.agents/
 /.claude/
+/.Codex/
 /CLAUDE.md
 /CLAUDE.local.md
 /.clang-format
