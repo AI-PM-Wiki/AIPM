@@ -475,8 +475,6 @@
   let mode = "dock";        // dock | overlay | sheet
   let open = false;         // 面板是否打开(与停靠点解耦:关闭不清会话)
   let snap = "peek";        // 抽屉停靠点(仅 sheet 形态有效)
-  let drag = null;          // 拖拽会话
-  let suppressClick = false;// 拖拽结束后的那次 click 不当成"点击切换停靠点"
 
   const scrollbarWidth = () => {
     const w = window.innerWidth - document.documentElement.clientWidth;
@@ -605,11 +603,6 @@
     track("assistant_panel_mode_change", env());
   };
 
-  const stepSnap = (from, dir) => {
-    const i = ORDER.indexOf(from);
-    return ORDER[Math.min(Math.max(i + dir, 0), ORDER.length - 1)];
-  };
-
   /* 视口变化:重算形态与三段高度;跨断点时保持打开状态(会话不清空) */
   const applyMode = () => {
     const next = computeMode();
@@ -703,121 +696,36 @@
   /* ================================================================
      抽屉拖拽(pointer events:触摸 / 鼠标 / 触控笔通吃)
      ================================================================ */
-  const snapHeights = () => metrics();
+  /* 拖拽与吸附交给 panel-shared.js:批注面板用同一套手势、阈值与吸附曲线,
+     免得两份实现各改各的、手感逐渐分叉。几何仍由这边算 —— 助手的 peek
+     高度取决于输入条实测高度,共享件只吃 getMetrics() 回调。
 
-  const velocity = (samples) => {
-    if (samples.length < 2) return 0;
-    const last = samples[samples.length - 1];
-    const recent = samples.filter((s) => last.t - s.t <= 120);
-    const a = recent[0] || samples[0];
-    const dt = last.t - a.t;
-    if (dt <= 0) return 0;
-    return (a.y - last.y) / dt;                       // 上滑(指针 y 变小)为正
-  };
-
-  const nearestSnap = (h) => {
-    const s = snapHeights();
-    let best = "peek";
-    let bd = Infinity;
-    for (const k of ORDER) {
-      const d = Math.abs(s[k] - h);
-      if (d < bd) { bd = d; best = k; }
-    }
-    return best;
-  };
-
-  /* 可拖拽区域:手柄任意位置 + 头部空白(避开头部按钮) */
-  const inDragZone = (t) => {
-    if (!t || !t.closest) return false;
-    if (t.closest(".aipm-chat__grip")) return true;
-    return !!t.closest(".aipm-chat__head") && !t.closest("button");
-  };
-
-  const onDragDown = (e) => {
-    if (mode !== "sheet" || !open || drag) return;
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    if (!inDragZone(e.target)) return;
-    const rect = panel.getBoundingClientRect();
-    panel.classList.remove("is-compact");
-    drag = {
-      id: e.pointerId,
-      y0: e.clientY,
-      h0: rect.height,
-      h: rect.height,                   // 跟手高度(松手判定用它,免得再强制布局)
-      from: snap,
-      moved: false,
-      samples: [{ y: e.clientY, t: e.timeStamp }],
-    };
-  };
-
-  const onDragMove = (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const dy = drag.y0 - e.clientY;                   // 上滑为正
-    if (!drag.moved) {
-      if (Math.abs(dy) < 4) return;
-      drag.moved = true;
-      panel.classList.add("is-dragging");
-      try { panel.setPointerCapture(e.pointerId); } catch (err) { /* 静默 */ }
-    }
-    e.preventDefault();
-    const s = snapHeights();
-    const h = Math.min(Math.max(drag.h0 + dy, SHEET_MIN_H), s.expanded);
-    drag.h = h;
-    panel.style.height = h + "px";
-    panel.style.minHeight = h + "px";     // 跟手期间压掉 CSS 的 peek 保底,免得缩不下去
-    /* 拖到半开以下就往页面优先态走:淡出消息区(那边本来就不显示历史),
-       免得半截文字被硬切 */
-    const compact = h < (s.peek + s.half) / 2;
-    if (compact !== drag.compact) {
-      drag.compact = compact;
-      panel.classList.toggle("is-compact", compact);
-    }
-    drag.samples.push({ y: e.clientY, t: e.timeStamp });
-    if (drag.samples.length > 8) drag.samples.shift();
-  };
-
-  const onDragUp = (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const d = drag;
-    drag = null;
-    try { panel.releasePointerCapture(e.pointerId); } catch (err) { /* 静默 */ }
-    panel.classList.remove("is-compact");
-    if (!d.moved) { panel.classList.remove("is-dragging"); return; }  // 未移动 = 点击
-    const h = d.h;                                    // 跟手高度,不再强制布局测量
-    const s = snapHeights();
-    const v = velocity(d.samples);
-    suppressClick = true;                             // 拖完松手别触发"点击切换停靠点"
-    setTimeout(() => { suppressClick = false; }, 350);
-    /* 关闭:下拉到 peek 的 CLOSE_RATIO 以下(任意一段都算"拖过页面优先态"),
-       或在第一段快速下滑。从第二/三段一路下拉也能直接关掉,不必先停在第一段 */
-    if (h < s.peek * CLOSE_RATIO || (d.from === "peek" && v < -SWIPE_V)) {
-      /* 关闭走位移过渡:先摘 is-dragging 让过渡生效,高度保持跟手值,
-         等滑下去之后再交回 CSS(否则 peek 保底高度会在下滑途中把面板顶高) */
-      panel.classList.remove("is-dragging");
-      panel.classList.add("is-compact");
-      markSnapping();
-      closePanel("drag");
-      setTimeout(clearDragHeight, SNAP_MS + 90);
-      return;
-    }
-    const next = Math.abs(v) > SWIPE_V ? stepSnap(d.from, v > 0 ? 1 : -1) : nearestSnap(h);
-    setSnap(next, true);
-  };
-
-  panel.addEventListener("pointerdown", onDragDown);
-  panel.addEventListener("pointermove", onDragMove, { passive: false });
-  panel.addEventListener("pointerup", onDragUp);
-  panel.addEventListener("pointercancel", onDragUp);
-
-  /* 点手柄 / 点头部空白 = 切到下一个停靠点(第三段回退到第二段) */
-  panel.addEventListener("click", (e) => {
-    if (mode !== "sheet" || !open || suppressClick) return;
-    const btn = e.target.closest("button");
-    const isGrip = !!e.target.closest(".aipm-chat__grip");
-    const isHeadGap = !!e.target.closest(".aipm-chat__head") && !btn;
-    if (!isGrip && !isHeadGap) return;
-    setSnap(snap === "expanded" ? "half" : stepSnap(snap, 1));
-  });
+     共享件里的 inDragZone 规则与原实现一致:手柄任意位置可拖;头部空白可拖,
+     但头部按钮上不拖(按钮要能点)。 */
+  const SHARED = window.__aipmPanels || null;
+  if (SHARED === null) {
+    /* mkdocs.yml 的 extra_javascript 里 panel-shared.js 必须排在本文件之前 */
+    console.error("[aipm-chat] panel-shared.js 未加载:抽屉拖拽与面板互斥不可用");
+  } else {
+    SHARED.attachSheetDrag({
+      panel: panel,
+      gripSelector: ".aipm-chat__grip",
+      headSelector: ".aipm-chat__head",
+      order: ORDER,
+      snapMs: SNAP_MS,
+      minHeight: SHEET_MIN_H,
+      closeRatio: CLOSE_RATIO,
+      swipeV: SWIPE_V,
+      isActive: () => mode === "sheet" && open,
+      getMetrics: () => metrics(),
+      getSnap: () => snap,
+      setSnap: (next, afterDrag) => setSnap(next, afterDrag),
+      onCompactChange: (compact) => panel.classList.toggle("is-compact", compact),
+      markSnapping: markSnapping,
+      clearDragHeight: clearDragHeight,
+      onClose: (via) => closePanel(via)
+    });
+  }
 
   /* ================================================================
      复制 / 重新生成(气泡下方常驻操作行)
@@ -1176,7 +1084,12 @@
   /* ================================================================
      交互(打开 / 关闭 / Escape / 焦点环)
      ================================================================ */
-  els.fab.addEventListener("click", openPanel);
+  els.fab.addEventListener("click", () => {
+    /* 走注册表而不是直接 openPanel:批注面板开着时点 FAB 是「切到助手」,
+       两个面板占同一块屏幕区域,不能同时存在 */
+    if (SHARED) SHARED.claim("chat");
+    else openPanel();
+  });
   els.close.addEventListener("click", closePanel);
   els.scrim.addEventListener("click", () => {
     track("assistant_drawer_backdrop_close", env());
@@ -1270,4 +1183,14 @@
   }
   updateSendState();
   applyMode();
+
+  /* 登记到互斥注册表:批注面板打开时会调用 claim("annotation"),
+     由注册表先 close("chat") 再开自己 —— 两个方向共用同一个动作。 */
+  if (SHARED) {
+    SHARED.register("chat", {
+      open: openPanel,
+      close: closePanel,
+      isOpen: () => open
+    });
+  }
 })();
