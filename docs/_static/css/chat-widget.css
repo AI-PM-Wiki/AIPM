@@ -319,6 +319,11 @@ html.aipm-chat-mode--sheet .aipm-chat__head {
    这两段要给页面留空间,输入框换成单行窄条:[输入……][附件][发送],
    两个图标按钮都靠右;第三段(近全屏)仍是原来的卡片式输入区。
    页面优先态只露手柄 + 标题 + 输入条,不展示历史消息(消息区被隐藏)。
+
+   量具类 .is-peek-measure:JS 实测页面优先态高度时临时挂上,借走 peek 的那几条
+   几何规则(手柄/头部收紧、输入条换成单行窄条),量完即摘。**只并几何,不并面板
+   高度与消息区显隐** —— 测量绝不能把面板真的切到 peek 停靠点(见 chat-widget.js
+   的 refreshPeek() 与 issue #73)。
    ---------------------------------------------------------------------------- */
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__msgs {
   display: none;
@@ -328,15 +333,18 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__clear {
   display: none;
 }
 /* 页面优先态垂直空间金贵:手柄与头部收紧,把高度留给输入条 */
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__grip {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__grip,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__grip {
   height: 1rem;
 }
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__head {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__head,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__head {
   padding-top: .3rem;
   padding-bottom: .3rem;
 }
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer,
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__composer {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;             /* 单行:附件/发送与输入框垂直居中 */
@@ -346,7 +354,8 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer {
   border-radius: 1.4rem;
 }
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__input,
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__input {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__input,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__input {
   flex: 1;
   min-width: 0;
   min-height: 2.4rem;
@@ -356,12 +365,14 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__input {
 }
 /* 输入框换行后按钮改为贴住最后一行(居中会让两个按钮悬在长输入的中段) */
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer.is-multiline,
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer.is-multiline {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer.is-multiline,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__composer.is-multiline {
   align-items: flex-end;
 }
 /* 输入条右侧:回形针 + 圆形发送(都靠右,紧挨着) */
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__inputrow,
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__inputrow {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__inputrow,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__inputrow {
   flex: none;
   gap: .1rem;
   padding: 0;
@@ -370,13 +381,16 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__inputrow {
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__attach,
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__attach,
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__send,
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__send {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__send,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__attach,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__send {
   width: 2rem;
   height: 2rem;
 }
 /* 待发送附件 chips:窄条里换行到输入框上方 */
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__attachbar,
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__attachbar {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__attachbar,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__attachbar {
   order: -1;
   width: 100%;
   padding: .55rem .6rem .15rem;

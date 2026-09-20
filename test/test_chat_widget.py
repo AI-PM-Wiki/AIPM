@@ -150,6 +150,44 @@ class TestChatWidgetStyles(unittest.TestCase):
         self.assertIn('classList.toggle("is-multiline"', self.js)
         self.assertIn('el.style.minHeight = "0";', self.js)
 
+    def test_peek_measure_never_fakes_the_snap_state(self):
+        """实测页面优先态高度时不得改写 data-snap(issue #73)。
+
+        曾经的量具是把面板真的切到 `data-snap="peek"` 再切回来:测得准,却会在吸附
+        动画中途把面板高度改写成 peek、把消息区 display:none —— 消息滚动层被拆掉
+        重建,下一帧整片重栅格。二段/三段互切时输入条正好换形(单行窄条 ↔ 卡片),
+        触发 composer 的 ResizeObserver 回调,这个窗口必然落在吸附动画里,消息区
+        就闪一片。量具类 .is-peek-measure 只借 peek 的几何,与停靠点状态解耦。
+        """
+        # 不改写停靠点状态(只此一处曾写过字面量 "peek")
+        self.assertNotIn('setAttribute("data-snap", "peek")', self.js)
+        self.assertIn('classList.add("is-peek-measure")', self.js)
+        self.assertIn('classList.remove("is-peek-measure")', self.js)
+        # 量具自身引起的尺寸变化不再回头重测(免 ResizeObserver 回环)
+        self.assertRegex(self.js, r"if \(measuringPeek\) return;")
+
+        # 量具只并 peek 的那几条几何规则:手柄 / 头部 / 输入条
+        for sel in (
+            ".aipm-chat__grip",
+            ".aipm-chat__head",
+            ".aipm-chat__composer",
+            ".aipm-chat__input",
+            ".aipm-chat__inputrow",
+            ".aipm-chat__attachbar",
+        ):
+            with self.subTest(sel=sel):
+                self.assertIn(f".aipm-chat.is-peek-measure {sel} {{", self.css)
+
+        # 面板高度与消息区显隐仍是 peek 停靠点专属,量具碰不到这两条
+        peek_height_rule = re.search(
+            r'html\.aipm-chat-mode--sheet \.aipm-chat\[data-snap="peek"\] \{(.*?)\}',
+            self.css,
+            re.S,
+        ).group(1)
+        self.assertNotIn("is-peek-measure", peek_height_rule)
+        self.assertNotIn("is-peek-measure .aipm-chat__msgs", self.css)
+        self.assertNotIn("is-peek-measure .aipm-chat__clear", self.css)
+
     def test_dragging_soft_hides_the_message_list(self):
         """拖拽/吸附期间消息区上缘渐隐,拖到半开以下整体淡出 —— 半行文字不再被硬切"""
         self.assertIn(".aipm-chat.is-dragging .aipm-chat__msgs,", self.css)
