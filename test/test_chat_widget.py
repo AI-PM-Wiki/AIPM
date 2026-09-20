@@ -78,6 +78,29 @@ class TestChatWidgetStyles(unittest.TestCase):
         self.assertGreaterEqual(gap, 12)
         self.assertLessEqual(gap, 24)
 
+    def test_peek_shows_input_but_no_history(self):
+        # 页面优先态:只露手柄 + 标题 + 输入条,消息区被隐藏
+        self.assertIn(
+            'html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__msgs {',
+            self.css,
+        )
+        self.assertNotIn("aipm-chat__peek-text", self.js)   # 旧的「最近一句」速览条已移除
+
+    def test_first_two_snaps_use_compact_single_row_composer(self):
+        for snap in ("peek", "half"):
+            with self.subTest(snap=snap):
+                self.assertIn(
+                    f'html.aipm-chat-mode--sheet .aipm-chat[data-snap="{snap}"] .aipm-chat__composer',
+                    self.css,
+                )
+        self.assertIn("flex-direction: row;", self.css)
+        # 附件与发送按钮都推到输入框右侧
+        self.assertIn("justify-content: flex-end;", self.css)
+
+    def test_mobile_send_from_peek_raises_sheet(self):
+        self.assertIn("const raiseForSend", self.js)
+        self.assertIn('snap === "peek") setSnap("half")', self.js)
+
     def test_snap_heights_are_offered_as_css_vars(self):
         for var in (
             "--aipm-chat-sheet-peek",

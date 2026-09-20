@@ -6,9 +6,11 @@
     (页头 + 左侧 nav + 正文 + TOC)整体保留并收窄 —— 页面与面板是两个独立的
     布局区域、两个独立滚动容器;TOC 不再被替换或隐藏
   - 平板浮层(768–1199px):面板浮在页面之上 + 遮罩(页面不收窄,不被完全覆盖)
-  - 移动抽屉(<768px):三段式底部抽屉,停靠点 peek(页面优先,18–25vh)/
-    half(半开,45–60vh)/ expanded(近全屏,顶部留 --aipm-chat-top-gap 间隙);
-    拖拽吸附、点手柄/头部切换、遮罩点击、系统返回、软键盘适配
+  - 移动抽屉(<768px):三段式底部抽屉,停靠点 peek(页面优先,约 22vh)/
+    half(半开,55vh)/ expanded(近全屏,顶部留 --aipm-chat-top-gap 间隙);
+    拖拽吸附、点手柄/头部切换、遮罩点击、系统返回、软键盘适配。
+    peek 只露手柄 + 标题 + 输入条(不展示历史消息);peek 与 half 的输入框是
+    单行窄条 [输入……][附件][发送](两个按钮都靠右),第三段仍是卡片式输入区
 
   工程契约:
   - FAB / 遮罩 / 面板都 append 到 document.body 顶层(与 [data-md-toggle] 复选框
@@ -26,6 +28,7 @@
   - 与后端契约:POST {message, history} → text/event-stream,帧事件
     ready / sources / delta / done / error;预校验失败返回纯 JSON(400/403/
     413/429/503),映射中文提示(429 附 Retry-After 重试时间)
+  - 从 peek 直接发问会自动升到 half(否则回答落在面板可视区之外看不见)
   - 消息操作:每条 AI 回答气泡下方提供常驻「复制」「重新生成」(不随
     hover 显隐);重新生成截断该轮之后的历史并重发其上方那条用户消息
   - 附件:输入卡片内回形针按钮选择文件(也可拖拽进卡片),发送时以
@@ -141,11 +144,6 @@
         CLOSE_ICON +
       "</button>" +
     "</header>" +
-    /* 页面优先态速览条(仅 peek 显示:状态点 + 最近一句/流式状态) */
-    '<button type="button" class="aipm-chat__peek" data-streaming="false" aria-label="展开助手面板">' +
-      '<span class="aipm-chat__peek-dot"></span>' +
-      '<span class="aipm-chat__peek-text"></span>' +
-    "</button>" +
     '<div class="aipm-chat__msgs" role="log" aria-live="polite"></div>' +
     '<form class="aipm-chat__composer">' +
       '<div class="aipm-chat__attachbar" hidden></div>' +
@@ -171,8 +169,6 @@
   els.attach = panel.querySelector(".aipm-chat__attach");
   els.file = panel.querySelector(".aipm-chat__file");
   els.grip = panel.querySelector(".aipm-chat__grip");
-  els.peek = panel.querySelector(".aipm-chat__peek");
-  els.peekText = panel.querySelector(".aipm-chat__peek-text");
 
   /* ================================================================
      Markdown-lite(先 escapeHtml 再转义,防 XSS;系统提示词已约束
@@ -450,26 +446,7 @@
     return t;
   };
 
-  /* ================================================================
-     页面优先态速览条(peek):流式状态 / 最近一句 / 默认引导
-     ================================================================ */
-  const updatePeek = () => {
-    let text;
-    if (streaming) {
-      text = "正在生成回答…";
-    } else {
-      const last = history[history.length - 1];
-      if (last) {
-        const one = last.content.replace(/\s+/g, " ").trim();
-        text = (last.role === "user" ? "我:" : "助手:") + (one.length > 42 ? one.slice(0, 42) + "…" : one);
-      } else {
-        text = "问我站内文档的任何问题";
-      }
-    }
-    els.peekText.textContent = text;
-    els.peek.setAttribute("data-streaming", streaming ? "true" : "false");
-  };
-
+  els.grip = panel.querySelector(".aipm-chat__grip");
   /* ================================================================
      埋点(自建 umami,见 _static/js/umami.js)
      只报设备/形态/停靠点/页面路径/耗时/是否错误 —— 不报用户输入与回答正文
@@ -564,7 +541,6 @@
     void panel.offsetHeight;              // 先落一帧,保证 inline 高度到目标高度的过渡可见
     panel.style.height = "";
     syncChrome();
-    updatePeek();
     track("assistant_panel_mode_change", env());
   };
 
@@ -583,7 +559,6 @@
     else panel.removeAttribute("data-snap");
     applyMetrics();
     syncChrome();
-    updatePeek();
   };
 
   /* ================================================================
@@ -731,12 +706,14 @@
     drag = null;
     try { panel.releasePointerCapture(e.pointerId); } catch (err) { /* 静默 */ }
     if (!d.moved) return;                             // 未移动 = 点击,交给 click 分支
-    panel.classList.remove("is-dragging");
-    suppressClick = true;                             // 拖完松手别触发"点击切换停靠点"
-    setTimeout(() => { suppressClick = false; }, 350);
+    /* 先量高度再摘 is-dragging:摘掉后 peek 的 min-height(手柄+标题+输入条)
+       会立刻把高度顶回去,关闭阈值就永远够不着 */
     const h = panel.getBoundingClientRect().height;
     const s = snapHeights();
     const v = velocity(d.samples);
+    panel.classList.remove("is-dragging");
+    suppressClick = true;                             // 拖完松手别触发"点击切换停靠点"
+    setTimeout(() => { suppressClick = false; }, 350);
     /* 第一段继续下拉(或快速下滑)超过关闭阈值 → 关闭 */
     if (d.from === "peek" && (v < -SWIPE_V || h < s.peek * CLOSE_RATIO)) { closePanel(); return; }
     const next = Math.abs(v) > SWIPE_V ? stepSnap(d.from, v > 0 ? 1 : -1) : nearestSnap(h);
@@ -748,14 +725,13 @@
   panel.addEventListener("pointerup", onDragUp);
   panel.addEventListener("pointercancel", onDragUp);
 
-  /* 点手柄 / 点头部空白 / 点速览条 = 切到下一个停靠点(第三段回退到第二段) */
+  /* 点手柄 / 点头部空白 = 切到下一个停靠点(第三段回退到第二段) */
   panel.addEventListener("click", (e) => {
     if (mode !== "sheet" || !open || suppressClick) return;
     const btn = e.target.closest("button");
     const isGrip = !!e.target.closest(".aipm-chat__grip");
-    const isPeek = !!e.target.closest(".aipm-chat__peek");
     const isHeadGap = !!e.target.closest(".aipm-chat__head") && !btn;
-    if (!isGrip && !isPeek && !isHeadGap) return;
+    if (!isGrip && !isHeadGap) return;
     setSnap(snap === "expanded" ? "half" : stepSnap(snap, 1));
   });
 
@@ -833,7 +809,6 @@
     els.send.setAttribute("aria-label", on ? "停止生成" : "发送");
     els.send.innerHTML = on ? STOP_ICON : SEND_ICON;
     els.send.disabled = false;
-    updatePeek();
   };
 
   /* 一轮问答:用户消息已入 history(由 postUser / regenerate 负责),
@@ -966,6 +941,11 @@
     }
   };
 
+  /* 从页面优先态(peek)直接发问:自动升到半开,否则回答在面板外不可见 */
+  const raiseForSend = () => {
+    if (mode === "sheet" && open && snap === "peek") setSnap("half");
+  };
+
   /* 用户消息入 history + 渲染气泡(附件以 [附件] 文本附注进消息体) */
   const postUser = (text, files) => {
     let sent = text;
@@ -977,7 +957,7 @@
     const wrap = addUserBubble(text, files);
     wrap.setAttribute("data-hidx", history.length - 1);
     persist();
-    updatePeek();
+    raiseForSend();
     runTurn(sent);
   };
 
@@ -1122,7 +1102,6 @@
     els.msgs.textContent = "";
     addDisclaimer();
     ensureEmpty();
-    updatePeek();
   });
 
   els.composer.addEventListener("submit", (e) => {

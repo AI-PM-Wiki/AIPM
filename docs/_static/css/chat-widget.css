@@ -190,6 +190,8 @@ html.aipm-chat-mode--sheet.aipm-chat-open .aipm-chat {
 }
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] {
   height: var(--aipm-chat-sheet-peek);
+  /* 输入条长高时页面优先态跟着长(不裁掉标题),内容矮时仍是 22vh */
+  min-height: fit-content;
 }
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] {
   height: var(--aipm-chat-sheet-half);
@@ -197,9 +199,10 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] {
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="expanded"] {
   height: var(--aipm-chat-sheet-expanded);
 }
-/* 拖拽中:高度跟手,关掉吸附动画 */
+/* 拖拽中:高度跟手,关掉吸附动画,也不受 peek 的 fit-content 下限约束 */
 .aipm-chat.is-dragging {
   transition: none !important;
+  min-height: 0 !important;
 }
 /* 抽屉内滚动交给消息区/输入区,避免拖拽时整页跟着动 */
 html.aipm-chat-mode--sheet .aipm-chat__msgs {
@@ -296,51 +299,63 @@ html.aipm-chat-mode--sheet .aipm-chat__head {
 }
 
 /* ----------------------------------------------------------------------------
-   6. 页面优先态速览条(仅抽屉 peek:露手柄 + 标题 + 状态/最近一句)
+   6. 抽屉前两段的紧凑输入条(页面优先态 / 半开态)
+
+   这两段要给页面留空间,输入框换成单行窄条:[输入……][附件][发送],
+   两个图标按钮都靠右;第三段(近全屏)仍是原来的卡片式输入区。
+   页面优先态只露手柄 + 标题 + 输入条,不展示历史消息(消息区被隐藏)。
    ---------------------------------------------------------------------------- */
-.aipm-chat__peek {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__msgs {
   display: none;
-  flex: none;
-  align-items: center;
-  gap: .5rem;
-  width: 100%;
-  padding: .1rem 1rem .8rem;
-  border: 0;
-  background: transparent;
-  color: var(--md-default-fg-color--light);
-  font-family: inherit;
-  font-size: .75rem;
-  text-align: left;
-  cursor: pointer;
 }
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__peek {
-  display: flex;
-  margin-top: auto;                /* 状态条贴住抽屉底缘,不因 peek 高留空带 */
+/* 页面优先态垂直空间金贵:手柄与头部收紧,把高度留给输入条 */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__grip {
+  height: 1rem;
 }
-.aipm-chat__peek-dot {
-  flex: none;
-  width: .45rem;
-  height: .45rem;
-  border-radius: 50%;
-  background: var(--md-accent-fg-color);
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__head {
+  padding-top: .3rem;
+  padding-bottom: .3rem;
 }
-.aipm-chat__peek[data-streaming="true"] .aipm-chat__peek-dot {
-  animation: aipm-chat-pulse 1.1s ease-in-out infinite;
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;           /* 多行输入时长高,按钮始终贴住最后一行 */
+  margin: .3rem .75rem max(.5rem, env(safe-area-inset-bottom));
+  margin-top: auto;                /* 页面优先态输入条贴住抽屉底缘 */
+  padding: .2rem .3rem .2rem .2rem;
+  border-radius: 1.4rem;
 }
-@keyframes aipm-chat-pulse {
-  0%, 100% { opacity: .3; }
-  50%      { opacity: 1; }
-}
-.aipm-chat__peek-text {
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__input,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__input {
+  flex: 1;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  min-height: 2.4rem;
+  max-height: 6rem;
+  padding: .55rem .3rem .55rem .85rem;
+  line-height: 1.4;
 }
-/* peek 不展示完整对话与输入区(PRD:页面优先,不遮挡页面) */
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__msgs,
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer {
-  display: none;
+/* 输入条右侧:回形针 + 圆形发送(都靠右,紧挨着) */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__inputrow,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__inputrow {
+  flex: none;
+  gap: .1rem;
+  padding: 0;
+  justify-content: flex-end;
+}
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__attach,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__attach,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__send,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__send {
+  width: 2rem;
+  height: 2rem;
+}
+/* 待发送附件 chips:窄条里换行到输入框上方 */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__attachbar,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__attachbar {
+  order: -1;
+  width: 100%;
+  padding: .55rem .6rem .15rem;
 }
 
 /* ----------------------------------------------------------------------------
