@@ -23,6 +23,9 @@
     交给 CSS(margin-right / 三段高度变量),JS 不做逐帧测量对齐
   - 三段高度由 metrics() 依 window.innerHeight / visualViewport 写入
     --aipm-chat-sheet-*;软键盘抬起时 near-full 高度随可视区收缩,输入框不被遮挡
+  - peek 高度按内容实测(量具类 .is-peek-measure 只借 peek 的几何):测高期间
+    不改写 data-snap、不动面板高度与消息区显隐 —— 量具绝不能把面板真的切到某个
+    停靠点,否则吸附动画中途会把消息滚动层拆掉重建(issue #73)
   - 移动/浮层的系统返回:打开时 pushState 一条自家记录,返回键按
     expanded→half→peek→关闭 逐级回退(回退后补回记录,始终保持一条);
     从 UI 关闭时仅在自家记录仍是栈顶时 history.back(),避免连带退掉用户点开的文档页
@@ -482,19 +485,29 @@
 
   /* peek 高度:手柄 + 标题 + 输入条 + 输入条底边距 + 顶边描边 —— 贴合内容,不留空白。
      CSS 不能对 fit-content 做高度过渡(吸附会瞬跳),所以实测成长度写进 CSS 变量。
-     只在打开/尺寸变化/输入条高度变化时实测(缓存),拖拽每帧只读缓存 */
+     只在打开/尺寸变化/输入条高度变化时实测(缓存),拖拽每帧只读缓存。
+
+     量具类 .is-peek-measure 只借 peek 的**几何**(手柄/头部收紧、输入条换成单行窄条)。
+     实测量具曾经是把面板真的切到 data-snap="peek" 再切回来 —— 那样测得准,却会在
+     吸附动画中途把面板高度改写成 peek 并把消息区 display:none:消息滚动层被拆掉重建,
+     下一帧要整片重栅格。二段/三段互切时输入条正好换形,触发 composer 的 ResizeObserver
+     回调,这个窗口必然落在吸附动画里,消息区就闪一片(issue #73)。量具只并几何、不碰
+     面板高度与消息区显隐,测量就与停靠点状态完全解耦了。 */
   let peekH = SHEET_PEEK_MIN;
+  let measuringPeek = false;
   const refreshPeek = () => {
     /* els 在初始化早期(首次 applyMetrics)还没建好,先退回保底值 */
     if (mode !== "sheet" || !els.grip || !els.head || !els.composer) { peekH = SHEET_PEEK_MIN; return; }
-    const prev = panel.getAttribute("data-snap");
-    if (prev !== "peek") panel.setAttribute("data-snap", "peek");
+    if (measuringPeek) return;        // 量具自身引起的尺寸变化不再回头重测(免 ResizeObserver 回环)
+    measuringPeek = true;
+    panel.classList.add("is-peek-measure");
     const c = els.composer;
     /* 只算底边距:peek 里输入条的 margin-top 是 auto,取到的是"剩余空间"
        (会把空余算成内容,越量越高),按 fit-content 语义它应该当 0 */
     const mb = parseFloat(getComputedStyle(c).marginBottom) || 0;
     const h = els.grip.offsetHeight + els.head.offsetHeight + c.offsetHeight + mb + 1;
-    if (prev !== "peek") panel.setAttribute("data-snap", prev || "peek");
+    panel.classList.remove("is-peek-measure");
+    measuringPeek = false;
     const cap = Math.round((window.innerHeight || 800) * SHEET_PEEK_MAX_VH);
     peekH = Math.max(SHEET_PEEK_MIN, Math.min(Math.round(h), cap));
   };
@@ -659,7 +672,7 @@
     openedAtMs = Date.now();
     clearDragHeight();
     clearTimeout(snapTimer);
-    panel.classList.remove("is-compact", "is-snapping");
+    panel.classList.remove("is-compact", "is-snapping", "is-peek-measure");
     if (mode === "sheet") snap = "peek";              // 首次打开默认页面优先态
     applyMetrics();
     syncChrome();
