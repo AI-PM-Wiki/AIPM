@@ -24,7 +24,7 @@ jobs:
         run: |
           set -euo pipefail
           changed=0
-          for sm in agent-server mkdocs-material; do
+          for sm in agent-server annotation-server mkdocs-material; do
             url=$(git config -f .gitmodules --get "submodule.$sm.url")
             branch=$(git config -f .gitmodules --get "submodule.$sm.branch")
             remote_head=$(git ls-remote "$url" "refs/heads/$branch" | awk '{print $1}')
