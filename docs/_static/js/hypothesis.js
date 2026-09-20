@@ -13,7 +13,9 @@
  *    extra.css 5.7）；
  * 2. 侧栏展开时保留面板左缘的控制条 —— 它是唯一的收起入口，同时把按钮配色换成
  *    站点主题变量，去掉官方写死的白块与阴影；
- * 3. 本脚本同时保存官方客户端动态注入的样式资源，在 instant 导航后恢复高亮样式。
+ * 3. 面板本体是站内自托管的 app.html（见 hypothesis-config.js），与本站同源，
+ *    这里把站点 token 与当前配色方案写进它的文档，供 theme.css 取用；
+ * 4. 本脚本同时保存官方客户端动态注入的样式资源，在 instant 导航后恢复高亮样式。
  */
 (function () {
   "use strict";
@@ -52,6 +54,19 @@
     "  }",
     "}"
   ].join("\n");
+  // 下发给面板文档的站点 token：面板样式表只引用这些变量，值以 extra.css 为准，
+  // 因此站点改色板时面板自动跟随，不需要在 theme.css 里重复一遍色值。
+  var SIDEBAR_TOKENS = [
+    "--md-default-bg-color",
+    "--md-text-font",
+    "--md-code-font",
+    "--pm-ink",
+    "--pm-muted",
+    "--pm-faint",
+    "--pm-line",
+    "--pm-accent",
+    "--pm-accent-soft"
+  ];
   var CONTROLLED_ID = "sidebar-container";
   var ENTRY_CLASS = "aipm-hypothesis-entry";
   var ENTRY_LABEL = "页面批注（Hypothesis）";
@@ -74,6 +89,8 @@
       sidebarRootObserver: null,
       sidebarStyleScheduled: false,
       entryScheduled: false,
+      sidebarFrame: null,
+      themeObserver: null,
       subscribed: false
     };
     window[STATE_KEY] = state;
@@ -201,6 +218,8 @@
     }
     state.sidebarRoot = root;
     state.sidebarRootObserver = null;
+    // iframe 可能晚于 shadow root 出现，这里与 scheduleSidebarStyle 双保险。
+    observeSidebarFrame();
     if (typeof MutationObserver !== "undefined") {
       state.sidebarRootObserver = new MutationObserver(function (mutations) {
         var removedStyle = mutations.some(function (mutation) {
@@ -283,6 +302,79 @@
     });
   }
 
+  function currentScheme() {
+    return document.body &&
+      document.body.getAttribute("data-md-color-scheme") === "slate"
+      ? "slate"
+      : "default";
+  }
+
+  function vendorSidebarFrame() {
+    var root = vendorSidebarRoot();
+    if (!root) {
+      return null;
+    }
+    return (
+      root.querySelector("iframe.sidebar-frame") || root.querySelector("iframe")
+    );
+  }
+
+  function syncSidebarTheme() {
+    var frame = vendorSidebarFrame();
+    var doc = null;
+    try {
+      // 面板由本站自托管（hypothesis-config.js 把 sidebarAppUrl 指到站内），
+      // 因此同源可读；若配置没生效（iframe 仍在官方域名）会取到 null，直接跳过。
+      doc = frame && frame.contentDocument;
+    } catch (error) {
+      doc = null;
+    }
+    if (!doc || !doc.documentElement) {
+      return;
+    }
+    // 站点色板挂在 <body> 的 data-md-color-scheme 上（Material 把属性写在 body），
+    // 从 documentElement 读会永远拿到亮色一份，所以这里读 body。
+    var host = getComputedStyle(document.body || document.documentElement);
+    SIDEBAR_TOKENS.forEach(function (name) {
+      var value = host.getPropertyValue(name);
+      if (value) {
+        doc.documentElement.style.setProperty(name, value.trim());
+      }
+    });
+    // theme.css 用这个属性切亮/暗两套底色。
+    doc.documentElement.setAttribute("data-md-color-scheme", currentScheme());
+  }
+
+  function observeSidebarFrame() {
+    var frame = vendorSidebarFrame();
+    if (!frame || frame === state.sidebarFrame) {
+      return;
+    }
+    state.sidebarFrame = frame;
+    // iframe 首次 load 时其文档才真正就绪，此时再下发一次；
+    // 首帧用 app.html 里的 ?scheme= 参数定色，避免亮/暗闪一下。
+    frame.addEventListener("load", syncSidebarTheme);
+    syncSidebarTheme();
+  }
+
+  function observeTheme() {
+    if (
+      typeof MutationObserver === "undefined" ||
+      !document.body ||
+      state.themeObserver
+    ) {
+      return;
+    }
+    // 顶栏调色板切换会改 body 上的 data-md-color-scheme，跟着同步给面板。
+    state.themeObserver = new MutationObserver(function () {
+      syncSidebarTheme();
+    });
+    state.themeObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-md-color-scheme"]
+    });
+  }
+
   function syncEntryState() {
     var entry = document.querySelector("." + ENTRY_CLASS);
     var toggle = vendorToggle();
@@ -336,8 +428,10 @@
   rememberVendorAssets();
   observeNavigationDom();
   observeSidebarDom();
+  observeTheme();
   installEntry();
   scheduleSidebarStyle();
+  observeSidebarFrame();
 
   if (!state.subscribed && typeof document$ !== "undefined") {
     state.subscribed = true;
@@ -348,6 +442,7 @@
       scheduleSidebarStyle();
       scheduleEntry();
       syncEntryState();
+      observeSidebarFrame();
     });
   }
 })();
