@@ -50,6 +50,19 @@ class TestChatWidgetStyles(unittest.TestCase):
             self.assertNotIn("md-sidebar--secondary", src)
             self.assertNotIn("md-nav--secondary", src)
 
+    def test_panel_divider_matches_header_hairline(self):
+        """桌面端面板左缘的竖线与页头交界发丝线用同一个颜色令牌(--pm-line)"""
+        self.assertIn(
+            "border-left: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));",
+            self.css,
+        )
+
+    def test_tabs_bottom_border_is_removed(self):
+        """主题给 .md-tabs 的 1px 下边框与注入的发丝线叠成粗线,extra.css 里去掉"""
+        extra = (ROOT / "docs" / "_static" / "css" / "extra.css").read_text(encoding="utf-8")
+        self.assertIn("[data-md-color-primary] .md-tabs {", extra)
+        self.assertIn("border-bottom: 0;", extra)
+
     def test_panel_width_within_prd_range(self):
         m = re.search(r"--aipm-chat-w:\s*clamp\(([^)]+)\)", self.css)
         self.assertIsNotNone(m)

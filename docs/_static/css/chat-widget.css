@@ -126,8 +126,10 @@ html.aipm-chat-locked {
   font-size: .8125rem;
   line-height: 1.55;
   background: var(--md-default-bg-color);
-  /* 与主题分栏一致的分隔方式:仅一条发丝线,不用投影(投影会像浮层) */
-  border-left: 1px solid var(--md-default-fg-color--lightest);
+  /* 与页头交界发丝线(extra.css 的 --pm-line / .md-header__line)同一颜色令牌:
+     两条都是 1px 实线,亮色 rgba(0,0,0,.12)、暗色 rgba(255,255,255,.12);
+     不用投影(投影会像浮层) */
+  border-left: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
   /* 关闭态:整体移出视口右侧并挂起(visibility 挂起后不可聚焦、不进无障碍树) */
   visibility: hidden;
   transform: translateX(100%);
