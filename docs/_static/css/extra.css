@@ -353,7 +353,7 @@
     height: 100dvh;
   }
 
-  [data-md-toggle="search"]:checked ~ .md-container .aipm-chat {
+  [data-md-toggle="search"]:checked ~ .aipm-chat {
     visibility: hidden !important;
     pointer-events: none;
   }

@@ -38,7 +38,7 @@ class MobileSearchRegressionTests(unittest.TestCase):
         self.assertRegex(
             self.stylesheet,
             re.compile(
-                r"\[data-md-toggle=\"search\"\]:checked\s*~\s*\.md-container\s+\.aipm-chat\s*"
+                r"\[data-md-toggle=\"search\"\]:checked\s*~\s*\.aipm-chat\s*"
                 r"\{[^}]*visibility:\s*hidden",
                 re.DOTALL,
             ),
