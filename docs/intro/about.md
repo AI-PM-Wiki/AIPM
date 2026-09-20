@@ -67,7 +67,7 @@ AI 领域的变化速度不同。本站按两类内容维护：
     评论区由 [giscus](https://giscus.app/zh-CN) 驱动，利用 [Discussions](https://github.com/AI-PM-Wiki/AIPM/discussions) 实现。
 
 ???+ note "网页批注"
-    页面批注和文字高亮由 [Hypothesis](https://web.hypothes.is/) 提供，本项目不保存 Hypothesis 批注，也不提供本站批注账号。
+    页面批注和文字高亮由 [Hypothesis](https://web.hypothes.is/) 提供，入口在页面右上角（搜索框与 GitHub 图标右侧）。本项目不保存 Hypothesis 批注，也不提供本站批注账号。
 
     使用批注功能时，页面 URL、选中文本、批注内容和必要的请求信息可能发送到 Hypothesis 相关服务；登录方式、可见范围、保存期限和具体数据处理以其官方说明为准。
 
