@@ -337,7 +337,7 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer,
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer {
   flex-direction: row;
   flex-wrap: wrap;
-  align-items: flex-end;           /* 多行输入时长高,按钮始终贴住最后一行 */
+  align-items: center;             /* 单行:附件/发送与输入框垂直居中 */
   margin: .3rem .75rem max(.5rem, env(safe-area-inset-bottom));
   margin-top: auto;                /* 页面优先态输入条贴住抽屉底缘 */
   padding: .2rem .3rem .2rem .2rem;
@@ -351,6 +351,11 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__input {
   max-height: 6rem;
   padding: .55rem .3rem .55rem .85rem;
   line-height: 1.4;
+}
+/* 输入框换行后按钮改为贴住最后一行(居中会让两个按钮悬在长输入的中段) */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer.is-multiline,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer.is-multiline {
+  align-items: flex-end;
 }
 /* 输入条右侧:回形针 + 圆形发送(都靠右,紧挨着) */
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__inputrow,

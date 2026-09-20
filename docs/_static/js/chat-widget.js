@@ -665,6 +665,7 @@
     syncChrome();
     if (mode === "sheet") {
       setSnap(snap);
+      autosize();                                     // 宽度变了,重算是否换行
       pushHistory();
       panel.focus({ preventScroll: true });           // 抽屉不自动弹键盘,焦点给面板
     } else {
@@ -1145,6 +1146,7 @@
   const onViewportChange = () => {
     applyMode();
     syncKeyboard();
+    autosize();                                     // 视口/断点变了,输入条换行状态可能变
   };
   /* 输入条高度会随多行输入 / 附件 chips 变化,peek 高度要跟着重算 */
   if (window.ResizeObserver) {
@@ -1184,10 +1186,19 @@
     else submit();
   });
 
-  /* 输入框自适应高度(高度上限交给 CSS max-height,超出内部滚动) */
+  /* 输入框自适应高度(高度上限交给 CSS max-height,超出内部滚动)。
+     顺带标出"已换行":前两段的输入条靠它决定按钮是垂直居中还是贴最后一行 */
   const autosize = () => {
-    els.input.style.height = "auto";
-    els.input.style.height = els.input.scrollHeight + "px";
+    const el = els.input;
+    const min = el.style.minHeight;
+    el.style.minHeight = "0";           // 先压掉 CSS 的 min-height,量到的才是内容真高
+    el.style.height = "auto";
+    const h = el.scrollHeight;
+    el.style.minHeight = min;
+    el.style.height = h + "px";
+    const cs = getComputedStyle(el);
+    const oneLine = parseFloat(cs.lineHeight) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    els.composer.classList.toggle("is-multiline", h > oneLine + 1);
   };
   els.input.addEventListener("input", () => {
     autosize();

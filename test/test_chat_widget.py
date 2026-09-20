@@ -121,6 +121,22 @@ class TestChatWidgetStyles(unittest.TestCase):
         # 附件与发送按钮都推到输入框右侧
         self.assertIn("justify-content: flex-end;", self.css)
 
+    def test_compact_composer_buttons_are_vertically_centered(self):
+        """前两段的 [输入……][附件][发送] 单行时三个元素垂直居中对齐;
+        输入框换行后按钮改贴最后一行(居中会让按钮悬在长输入中段)。"""
+        composer_rule = re.search(
+            r'html\.aipm-chat-mode--sheet \.aipm-chat\[data-snap="peek"\] \.aipm-chat__composer,'
+            r'.*?\{(.*?)\}',
+            self.css,
+            re.S,
+        ).group(1)
+        self.assertIn("align-items: center;", composer_rule)
+        self.assertNotIn("align-items: flex-end;", composer_rule)
+        self.assertIn('.aipm-chat__composer.is-multiline {', self.css)
+        # JS 依据输入框是否换行切换该类(空输入框不能误判:要先压掉 min-height 再量内容高)
+        self.assertIn('classList.toggle("is-multiline"', self.js)
+        self.assertIn('el.style.minHeight = "0";', self.js)
+
     def test_dragging_soft_hides_the_message_list(self):
         """拖拽/吸附期间消息区上缘渐隐,拖到半开以下整体淡出 —— 半行文字不再被硬切"""
         self.assertIn(".aipm-chat.is-dragging .aipm-chat__msgs,", self.css)

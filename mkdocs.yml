@@ -789,7 +789,7 @@ extra:
   # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
   chat_agent:
     enabled: true
-    version: 16
+    version: 17
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   # 大陆站点勿用 Google Analytics(GA 在大陆不可直连),建议自建 umami。
   #   provider: umami
