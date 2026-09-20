@@ -440,6 +440,38 @@
   background-color: #0B0C0F;
 }
 
+/* 5.7 Hypothesis 批注入口(issue #67;按钮由 hypothesis.js 注入到 .md-header 末尾)
+
+   官方客户端自带一条贴在视口右缘的竖排控制条,侧栏收起时也常驻,既压住页头又
+   与站点图标风格不一致。现在侧栏收起时整条隐藏(见 hypothesis.js),入口改由
+   这个按钮承担:沿用顶栏图标按钮的类(.md-header__button.md-icon —— 24px 线性
+   图标、currentcolor 填充、hover 用 5.1 的 accent 底色),只接管定位,贴着浏览器
+   右边缘放在页头高度内。页头内容让出按钮宽度,搜索框与 GitHub 图标不会钻到它下面。 */
+.md-header__inner {
+  padding-inline-end: 2.4rem;
+}
+
+.md-header .md-header__button.aipm-hypothesis-entry {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  margin: 0;
+  padding: 0;
+  border-radius: .4rem 0 0 .4rem;
+}
+
+/* 移动端搜索铺满全屏,搜索结果之上不能浮着批注入口 */
+@media screen and (max-width: 59.984375em) {
+  [data-md-toggle="search"]:checked ~ .md-header .aipm-hypothesis-entry {
+    display: none;
+  }
+}
+
 /* ----------------------------------------------------------------------------
    6. 内容区
    ---------------------------------------------------------------------------- */
