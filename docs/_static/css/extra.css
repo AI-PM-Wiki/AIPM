@@ -449,18 +449,24 @@
   background-color: #0B0C0F;
 }
 
-/* 5.7 Hypothesis 批注入口(issue #67;按钮由 hypothesis.js 注入到 .md-header 末尾)
+/* 5.7 批注入口 + 多色高亮色板(issue #67 的位置与样式,行为改为切换自建批注面板)
 
-   官方客户端自带一条贴在视口右缘的竖排控制条,侧栏收起时也常驻,既压住页头又
-   与站点图标风格不一致。现在侧栏收起时整条隐藏(见 hypothesis.js),入口改由
-   这个按钮承担:沿用顶栏图标按钮的类(.md-header__button.md-icon —— 24px 线性
-   图标、currentcolor 填充、hover 用 5.1 的 accent 底色),只接管定位,贴着浏览器
-   右边缘放在页头高度内。页头内容让出按钮宽度,搜索框与 GitHub 图标不会钻到它下面。 */
+   入口按钮由 annotation.js 注入到 .md-header 末尾:沿用顶栏图标按钮的类
+   (.md-header__button.md-icon —— 24px 线性图标、currentcolor 填充、hover 用 5.1 的
+   accent 底色),只接管定位,贴着浏览器右边缘放在页头高度内。页头内容让出按钮宽度,
+   搜索框与 GitHub 图标不会钻到它下面。
+
+   色板放在这里(而不是 annotation.css)有两个理由:一是 <mark> 的底色与面板里的
+   色点、色板按钮引用的是同一组值,放一处才不会两边走样;二是这组变量是站点级的
+   视觉 token,批注功能开关(extra.annotation.enabled)不影响它。
+
+   每色亮/暗各一套。高亮用**半透明底 + 彩色下划线**,正文颜色一律 inherit ——
+   这样暗色模式下正文对比度不被底色拉低(<mark> 的规则在 annotation.css 里)。 */
 .md-header__inner {
   padding-inline-end: 2.4rem;
 }
 
-.md-header .md-header__button.aipm-hypothesis-entry {
+.md-header .md-header__button.aipm-anno-entry {
   position: absolute;
   top: 0;
   right: 0;
@@ -476,9 +482,35 @@
 
 /* 移动端搜索铺满全屏,搜索结果之上不能浮着批注入口 */
 @media screen and (max-width: 59.984375em) {
-  [data-md-toggle="search"]:checked ~ .md-header .aipm-hypothesis-entry {
+  [data-md-toggle="search"]:checked ~ .md-header .aipm-anno-entry {
     display: none;
   }
+}
+
+:root {
+  --aipm-anno-yellow: #e2ae00;
+  --aipm-anno-yellow-bg: rgba(242, 194, 0, .24);
+  --aipm-anno-green: #2f9e4f;
+  --aipm-anno-green-bg: rgba(52, 168, 83, .20);
+  --aipm-anno-blue: #3b7dd8;
+  --aipm-anno-blue-bg: rgba(66, 133, 244, .18);
+  --aipm-anno-pink: #d94a84;
+  --aipm-anno-pink-bg: rgba(233, 79, 138, .18);
+  --aipm-anno-purple: #8b4fc4;
+  --aipm-anno-purple-bg: rgba(155, 89, 208, .18);
+}
+
+[data-md-color-scheme="slate"] {
+  --aipm-anno-yellow: #f0cb47;
+  --aipm-anno-yellow-bg: rgba(240, 203, 71, .26);
+  --aipm-anno-green: #56cf78;
+  --aipm-anno-green-bg: rgba(86, 207, 120, .22);
+  --aipm-anno-blue: #7aa9f7;
+  --aipm-anno-blue-bg: rgba(122, 169, 247, .22);
+  --aipm-anno-pink: #ff86b3;
+  --aipm-anno-pink-bg: rgba(255, 134, 179, .22);
+  --aipm-anno-purple: #bd93e8;
+  --aipm-anno-purple-bg: rgba(189, 147, 232, .22);
 }
 
 /* ----------------------------------------------------------------------------

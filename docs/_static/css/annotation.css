@@ -1,0 +1,707 @@
+/* ============================================================================
+   AI-PM 批注面板(annotation.css,2026-09-20)
+
+   与 AI 助手面板(chat-widget.css)是同一套视觉语言,也只在这三件事上写新规则:
+     - 面板骨架(位置/尺寸/发丝线/动效):**宽度、时长、缓动、滚动条让位全部
+       直接复用 --aipm-chat-* 那组 token**,不复制一份常量。chat-widget.css 没加载
+       (关掉问答助手)时用同等默认值兜底,面板几何不变;
+     - 面板内部(列表 / 输入区 / 色板 / 建议条);
+     - 正文里的多色 <mark>。
+
+   只有一条几何规则是「重复」的:桌面停靠时收窄页面。助手那条写在
+   chat-widget.css 里、条件是 html.aipm-chat-mode--dock.aipm-chat-open;批注这条
+   写在这里、条件是 html.aipm-anno-mode--dock.aipm-anno-open —— 两条互不干扰,
+   切换时一个 class 摘掉、另一个加上,发生在同一个同步任务里,浏览器只画一帧,
+   页面宽度不跳。
+
+   层级:遮罩 65 < 面板 70;选中工具条 80(要浮在面板之上)。
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   0. token(能共用就别名,不重抄数值)
+   ---------------------------------------------------------------------------- */
+:root {
+  /* 面板宽:与助手同一值 —— 两个面板占同一块屏幕区域,切换时宽度必须一样 */
+  --aipm-anno-w: var(--aipm-chat-w, clamp(20rem, 28vw, 26.25rem));
+  --aipm-anno-dur: var(--aipm-chat-dur, .24s);
+  --aipm-anno-ease: var(--aipm-chat-ease, cubic-bezier(.4, 0, .2, 1));
+  --aipm-anno-sbw: 0px;
+  --aipm-anno-top-gap: var(--aipm-chat-top-gap, 1rem);
+  --aipm-anno-sheet-peek: 9.25rem;
+  --aipm-anno-sheet-half: 55vh;
+  --aipm-anno-sheet-expanded: calc(100dvh - var(--aipm-anno-top-gap));
+  /* 与页头/助手面板同一条发丝线颜色令牌 */
+  --aipm-anno-line: var(--pm-line, var(--md-default-fg-color--lightest));
+}
+
+/* ----------------------------------------------------------------------------
+   1. 多色高亮的色值
+   实际数值定义在 extra.css 的 5.7 段(与批注入口按钮同处):那里是站点级 token,
+   不随批注功能开关变化;<mark> 的底色、面板里的色点与色板按钮引用同一组值。
+   ---------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------------
+   2. 遮罩(与助手同款:浮层 / 抽屉半开、近全屏显示;peek 与桌面停靠不显示)
+   ---------------------------------------------------------------------------- */
+.aipm-anno__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0);
+  transition: opacity var(--aipm-anno-dur) var(--aipm-anno-ease),
+              background-color var(--aipm-anno-dur) var(--aipm-anno-ease);
+}
+.aipm-anno__scrim[data-level="half"] {
+  opacity: 1;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, .2);
+}
+.aipm-anno__scrim[data-level="full"] {
+  opacity: 1;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, .4);
+}
+html.aipm-anno-locked {
+  overflow: hidden;
+}
+
+/* ----------------------------------------------------------------------------
+   3. 面板骨架
+   ---------------------------------------------------------------------------- */
+.aipm-anno {
+  position: fixed;
+  top: 0;
+  right: var(--aipm-anno-sbw);
+  bottom: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  width: var(--aipm-anno-w);
+  color: var(--md-default-fg-color);
+  font-family: var(--md-text-font-family, var(--md-text-font, system-ui, sans-serif));
+  font-size: .8125rem;
+  line-height: 1.55;
+  background: var(--md-default-bg-color);
+  border-left: 1px solid var(--aipm-anno-line);
+  visibility: hidden;
+  transform: translateX(100%);
+  transition: transform var(--aipm-anno-dur) var(--aipm-anno-ease),
+              visibility 0s linear var(--aipm-anno-dur);
+}
+html.aipm-anno-open .aipm-anno {
+  visibility: visible;
+  transform: none;
+  transition: transform var(--aipm-anno-dur) var(--aipm-anno-ease), visibility 0s;
+}
+
+/* 3.1 桌面停靠:页面整体收窄,让出的宽度与助手完全一致(切换不跳变) */
+@media screen and (min-width: 75em) {
+  .md-header,
+  .md-container {
+    transition: margin-right var(--aipm-anno-dur) var(--aipm-anno-ease);
+  }
+  html.aipm-anno-mode--dock.aipm-anno-open .md-header,
+  html.aipm-anno-mode--dock.aipm-anno-open .md-container {
+    margin-right: calc(var(--aipm-anno-w) + var(--aipm-anno-sbw));
+  }
+}
+
+/* 3.1.1 停靠时给 FAB「询问助手」让位(issue #71 §3)
+   批注面板开着时,FAB 就是**切回 AI 面板的入口** —— 它必须看得见、点得到。
+   但面板是 fixed、z-index 70、占满右侧整条,而 FAB 固定在右下角(z-index 60),
+   不处理就被整个盖住,入口等于不存在。让位用同一组 token:左移到面板左侧,
+   并跟上与面板相同的时长/缓动,切换时才不会一个在滑、一个在跳。 */
+@media screen and (min-width: 75em) {
+  html.aipm-anno-mode--dock.aipm-anno-open .aipm-chat__fab {
+    right: calc(var(--aipm-anno-sbw) + var(--aipm-anno-w) + 1.25rem);
+    transition: right var(--aipm-anno-dur) var(--aipm-anno-ease),
+                transform .16s ease, opacity .16s ease, box-shadow .16s ease;
+  }
+}
+
+/* 移动抽屉:peek 态只占底部一条,FAB 抬到抽屉上方;半开/全开有遮罩、用户正在
+   抽屉里操作,不需要这个入口(被盖住即不可达,与不做处理的视觉结果一致)。 */
+html.aipm-anno-mode--sheet.aipm-anno-open .aipm-chat__fab {
+  bottom: calc(var(--aipm-anno-sheet-peek) + 1.25rem);
+  transition: bottom var(--aipm-anno-dur) var(--aipm-anno-ease),
+              transform .16s ease, opacity .16s ease, box-shadow .16s ease;
+}
+
+/* 3.2 平板浮层 */
+html.aipm-anno-mode--overlay .aipm-anno {
+  width: min(26.25rem, 82vw);
+  border-left: 0;
+  box-shadow: -0.2rem 0 1.2rem rgba(0, 0, 0, .18);
+}
+
+/* 3.3 移动抽屉 */
+html.aipm-anno-mode--sheet .aipm-anno {
+  top: auto;
+  right: 0;
+  left: 0;
+  width: auto;
+  overflow: hidden;
+  height: var(--aipm-anno-sheet-peek);
+  border-left: 0;
+  border-top: 1px solid var(--aipm-anno-line);
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 -0.2rem 1.4rem rgba(0, 0, 0, .22);
+  transform: translateY(100%);
+  transition: transform var(--aipm-anno-dur) var(--aipm-anno-ease),
+              height var(--aipm-anno-dur) var(--aipm-anno-ease),
+              visibility 0s linear var(--aipm-anno-dur);
+}
+html.aipm-anno-mode--sheet.aipm-anno-open .aipm-anno {
+  transform: none;
+  transition: transform var(--aipm-anno-dur) var(--aipm-anno-ease),
+              height var(--aipm-anno-dur) var(--aipm-anno-ease),
+              visibility 0s;
+}
+html.aipm-anno-mode--sheet .aipm-anno[data-snap="peek"] {
+  height: var(--aipm-anno-sheet-peek);
+}
+html.aipm-anno-mode--sheet .aipm-anno[data-snap="half"] {
+  height: var(--aipm-anno-sheet-half);
+}
+html.aipm-anno-mode--sheet .aipm-anno[data-snap="expanded"] {
+  height: var(--aipm-anno-sheet-expanded);
+}
+.aipm-anno.is-dragging {
+  transition: none !important;
+  min-height: 0 !important;
+}
+.aipm-anno.is-dragging .aipm-anno__list,
+.aipm-anno.is-snapping .aipm-anno__list {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
+          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
+}
+.aipm-anno.is-compact .aipm-anno__list,
+.aipm-anno.is-compact .aipm-anno__smartbar {
+  opacity: 0;
+  transition: opacity .12s linear;
+}
+html.aipm-anno-mode--sheet .aipm-anno__list {
+  overscroll-behavior: contain;
+}
+
+/* ----------------------------------------------------------------------------
+   4. 手柄与头部
+   ---------------------------------------------------------------------------- */
+.aipm-anno__grip {
+  display: none;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+html.aipm-anno-mode--sheet .aipm-anno__grip {
+  display: flex;
+}
+.aipm-anno__grip:active {
+  cursor: grabbing;
+}
+.aipm-anno__grip-bar {
+  width: 2.25rem;
+  height: .25rem;
+  border-radius: 999px;
+  background: var(--md-default-fg-color--lighter);
+  transition: background-color .12s ease;
+}
+.aipm-anno__grip:hover .aipm-anno__grip-bar {
+  background: var(--md-default-fg-color--light);
+}
+
+.aipm-anno__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: .4rem;
+  height: 2.5rem;
+  padding: 0 .5rem 0 .9rem;
+  border-bottom: 1px solid var(--aipm-anno-line);
+  cursor: default;
+}
+html.aipm-anno-mode--sheet .aipm-anno__head {
+  cursor: pointer;
+}
+.aipm-anno__head-icon {
+  display: inline-flex;
+  flex: none;
+}
+.aipm-anno__head-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: var(--md-accent-fg-color);
+}
+.aipm-anno__title {
+  font-weight: 600;
+  font-size: .8125rem;
+}
+.aipm-anno__count {
+  min-width: 1.2rem;
+  padding: 0 .32rem;
+  border-radius: 999px;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-default-fg-color--lightest);
+  font-size: .6875rem;
+  text-align: center;
+}
+.aipm-anno__head .aipm-anno__iconbtn {
+  margin-left: auto;
+}
+.aipm-anno__iconbtn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: .3rem;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+.aipm-anno__iconbtn + .aipm-anno__iconbtn {
+  margin-left: 0;
+}
+.aipm-anno__iconbtn:hover {
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__iconbtn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.aipm-anno__iconbtn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: currentColor;
+}
+
+/* ----------------------------------------------------------------------------
+   5. 列表
+   ---------------------------------------------------------------------------- */
+.aipm-anno__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: .5rem .75rem 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.aipm-anno__empty {
+  margin: 1.5rem .25rem;
+  color: var(--md-default-fg-color--light);
+  font-size: .75rem;
+  line-height: 1.7;
+}
+.aipm-anno__group {
+  margin: 1rem 0 .4rem;
+  color: var(--md-default-fg-color--light);
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.aipm-anno__group.is-orphan {
+  color: var(--aipm-anno-pink);
+}
+.aipm-anno__item {
+  margin-bottom: .5rem;
+  padding: .55rem .6rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-left: 3px solid var(--md-default-fg-color--lightest);
+  border-radius: .3rem;
+  background: var(--md-code-bg-color);
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.aipm-anno__item[data-color="yellow"] { border-left-color: var(--aipm-anno-yellow); }
+.aipm-anno__item[data-color="green"]  { border-left-color: var(--aipm-anno-green); }
+.aipm-anno__item[data-color="blue"]   { border-left-color: var(--aipm-anno-blue); }
+.aipm-anno__item[data-color="pink"]   { border-left-color: var(--aipm-anno-pink); }
+.aipm-anno__item[data-color="purple"] { border-left-color: var(--aipm-anno-purple); }
+.aipm-anno__item.is-flash {
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__item-top {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-bottom: .25rem;
+}
+.aipm-anno__dot {
+  flex: none;
+  width: .6rem;
+  height: .6rem;
+  border-radius: 999px;
+  background: var(--aipm-anno-yellow);
+}
+.aipm-anno__dot[data-color="yellow"] { background: var(--aipm-anno-yellow); }
+.aipm-anno__dot[data-color="green"]  { background: var(--aipm-anno-green); }
+.aipm-anno__dot[data-color="blue"]   { background: var(--aipm-anno-blue); }
+.aipm-anno__dot[data-color="pink"]   { background: var(--aipm-anno-pink); }
+.aipm-anno__dot[data-color="purple"] { background: var(--aipm-anno-purple); }
+.aipm-anno__meta {
+  color: var(--md-default-fg-color--light);
+  font-size: .6875rem;
+}
+.aipm-anno__meta[data-vis="is-private"] {
+  color: var(--aipm-anno-blue);
+}
+.aipm-anno__meta[data-vis="is-local"] {
+  color: var(--aipm-anno-purple);
+}
+.aipm-anno__spacer {
+  flex: 1 1 auto;
+}
+.aipm-anno__badge {
+  padding: 0 .3rem;
+  border-radius: .2rem;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-default-fg-color--lightest);
+  font-size: .625rem;
+  white-space: nowrap;
+}
+.aipm-anno__item-quote {
+  margin: .2rem 0 .35rem;
+  padding: 0 0 0 .5rem;
+  border-left: 2px solid var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color--light);
+  font-size: .75rem;
+  font-style: normal;
+}
+.aipm-anno__item-body {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.aipm-anno__replies {
+  margin-top: .35rem;
+  padding-left: .5rem;
+  border-left: 2px solid var(--md-default-fg-color--lightest);
+}
+.aipm-anno__reply {
+  margin: .15rem 0;
+  font-size: .75rem;
+}
+.aipm-anno__item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .1rem .7rem;
+  margin-top: .4rem;
+}
+.aipm-anno__link {
+  padding: 0;
+  border: 0;
+  color: var(--md-typeset-a-color, var(--md-accent-fg-color));
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  cursor: pointer;
+}
+.aipm-anno__link:hover {
+  text-decoration: underline;
+}
+.aipm-anno__link[data-action="delete"]:hover {
+  color: var(--aipm-anno-pink);
+}
+
+/* ----------------------------------------------------------------------------
+   6. 智能高亮
+   ---------------------------------------------------------------------------- */
+.aipm-anno__smartbar {
+  flex: none;
+  max-height: 45%;
+  padding: .5rem .75rem;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--aipm-anno-line);
+  background: var(--md-code-bg-color);
+  font-size: .75rem;
+}
+.aipm-anno__smartbar[data-kind="warn"] {
+  color: var(--aipm-anno-pink);
+}
+.aipm-anno__smartbar[data-kind="busy"] {
+  color: var(--md-default-fg-color--light);
+}
+.aipm-anno__smart-head {
+  margin-bottom: .35rem;
+  color: var(--md-default-fg-color--light);
+  font-size: .6875rem;
+}
+.aipm-anno__smart-list {
+  margin: .35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.aipm-anno__smart-item {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .25rem 0;
+  border-top: 1px solid var(--aipm-anno-line);
+}
+.aipm-anno__smart-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.aipm-anno__smart-none {
+  margin: .35rem 0 0;
+  color: var(--md-default-fg-color--light);
+  font-size: .6875rem;
+}
+
+/* ----------------------------------------------------------------------------
+   7. 输入区
+   ---------------------------------------------------------------------------- */
+.aipm-anno__composer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding: .6rem .75rem;
+  margin-bottom: 0;
+  border-top: 1px solid var(--aipm-anno-line);
+}
+.aipm-anno__quote {
+  padding: .25rem .45rem;
+  border-left: 2px solid var(--aipm-anno-yellow);
+  color: var(--md-default-fg-color--light);
+  font-size: .6875rem;
+  max-height: 3.2rem;
+  overflow: hidden;
+}
+.aipm-anno__swatches {
+  display: flex;
+  gap: .3rem;
+}
+.aipm-anno__swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+.aipm-anno__swatch:hover {
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__swatch.is-active {
+  border-color: var(--md-default-fg-color--light);
+}
+.aipm-anno__swatch-dot {
+  width: .85rem;
+  height: .85rem;
+  border-radius: 999px;
+  background: var(--aipm-anno-yellow);
+}
+.aipm-anno__swatch-dot[data-color="yellow"] { background: var(--aipm-anno-yellow); }
+.aipm-anno__swatch-dot[data-color="green"]  { background: var(--aipm-anno-green); }
+.aipm-anno__swatch-dot[data-color="blue"]   { background: var(--aipm-anno-blue); }
+.aipm-anno__swatch-dot[data-color="pink"]   { background: var(--aipm-anno-pink); }
+.aipm-anno__swatch-dot[data-color="purple"] { background: var(--aipm-anno-purple); }
+
+.aipm-anno__vis {
+  display: flex;
+  gap: .25rem;
+}
+.aipm-anno__vis button {
+  flex: 1 1 0;
+  padding: .22rem .3rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .25rem;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background-color .15s ease;
+}
+.aipm-anno__vis button:hover {
+  color: var(--md-default-fg-color);
+}
+.aipm-anno__vis button.is-active {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
+.aipm-anno__input {
+  width: 100%;
+  min-height: 2.6rem;
+  max-height: 8rem;
+  padding: .45rem .5rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .3rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  font-family: inherit;
+  font-size: .8125rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.aipm-anno__input:focus {
+  border-color: var(--md-accent-fg-color);
+  outline: none;
+}
+.aipm-anno__hint {
+  color: var(--md-default-fg-color--light);
+  font-size: .6875rem;
+  line-height: 1.5;
+}
+.aipm-anno__actions {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.aipm-anno__user {
+  color: var(--md-default-fg-color--light);
+  font-size: .6875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aipm-anno__actions .aipm-anno__cancel,
+.aipm-anno__actions .aipm-anno__save,
+.aipm-anno__actions .aipm-anno__login,
+.aipm-anno__actions .aipm-anno__logout {
+  padding: .3rem .7rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .3rem;
+  color: var(--md-default-fg-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: .75rem;
+  cursor: pointer;
+}
+.aipm-anno__actions .aipm-anno__login,
+.aipm-anno__actions .aipm-anno__save {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
+.aipm-anno__actions .aipm-anno__save {
+  margin-left: auto;
+}
+.aipm-anno__actions .aipm-anno__save:disabled {
+  opacity: .6;
+  cursor: progress;
+}
+
+/* ----------------------------------------------------------------------------
+   8. 选中工具条(浮在正文上,层级高于面板)
+   ---------------------------------------------------------------------------- */
+.aipm-anno__toolbar {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: .15rem;
+  padding: .2rem .3rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: 999px;
+  background: var(--md-default-bg-color);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .22);
+}
+.aipm-anno__toolbar[hidden] {
+  display: none;
+}
+.aipm-anno__toolbar .aipm-anno__swatch {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.aipm-anno__tb-annotate,
+.aipm-anno__tb-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .15rem .45rem;
+  border: 0;
+  border-radius: 999px;
+  color: var(--md-default-fg-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  cursor: pointer;
+}
+.aipm-anno__tb-annotate {
+  margin-left: .2rem;
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
+.aipm-anno__tb-annotate svg,
+.aipm-anno__tb-cancel svg {
+  width: .85rem;
+  height: .85rem;
+  fill: currentColor;
+}
+
+/* ----------------------------------------------------------------------------
+   9. 正文里的高亮
+   文字颜色一律 inherit(见文件头):对比度不被底色改变。
+   ---------------------------------------------------------------------------- */
+.aipm-anno-mark {
+  padding: 0;
+  color: inherit;
+  background: var(--aipm-anno-yellow-bg);
+  border-bottom: 2px solid var(--aipm-anno-yellow);
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.aipm-anno-mark[data-color="yellow"] {
+  background: var(--aipm-anno-yellow-bg);
+  border-bottom-color: var(--aipm-anno-yellow);
+}
+.aipm-anno-mark[data-color="green"] {
+  background: var(--aipm-anno-green-bg);
+  border-bottom-color: var(--aipm-anno-green);
+}
+.aipm-anno-mark[data-color="blue"] {
+  background: var(--aipm-anno-blue-bg);
+  border-bottom-color: var(--aipm-anno-blue);
+}
+.aipm-anno-mark[data-color="pink"] {
+  background: var(--aipm-anno-pink-bg);
+  border-bottom-color: var(--aipm-anno-pink);
+}
+.aipm-anno-mark[data-color="purple"] {
+  background: var(--aipm-anno-purple-bg);
+  border-bottom-color: var(--aipm-anno-purple);
+}
+.aipm-anno-mark:hover {
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno-mark:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
+}
+
+/* ----------------------------------------------------------------------------
+   10. 动效偏好
+   ---------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .aipm-anno,
+  .aipm-anno__scrim {
+    transition-duration: 0s !important;
+  }
+  .aipm-anno__item.is-flash {
+    background: var(--md-code-bg-color);
+  }
+}
