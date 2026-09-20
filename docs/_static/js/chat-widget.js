@@ -6,11 +6,12 @@
     (页头 + 左侧 nav + 正文 + TOC)整体保留并收窄 —— 页面与面板是两个独立的
     布局区域、两个独立滚动容器;TOC 不再被替换或隐藏
   - 平板浮层(768–1199px):面板浮在页面之上 + 遮罩(页面不收窄,不被完全覆盖)
-  - 移动抽屉(<768px):三段式底部抽屉,停靠点 peek(页面优先,约 22vh)/
+  - 移动抽屉(<768px):三段式底部抽屉,停靠点 peek(页面优先,高度贴合
+    手柄+标题+输入条,约 140px)/
     half(半开,55vh)/ expanded(近全屏,顶部留 --aipm-chat-top-gap 间隙);
     拖拽吸附、点手柄/头部切换、遮罩点击、系统返回、软键盘适配。
-    peek 只露手柄 + 标题 + 输入条(不展示历史消息);peek 与 half 的输入框是
-    单行窄条 [输入……][附件][发送](两个按钮都靠右),第三段仍是卡片式输入区
+    peek 只露手柄 + 标题 + 输入条(不展示历史消息、不显示清屏);peek 与 half 的
+    输入框是单行窄条 [输入……][附件][发送](两个按钮都靠右),第三段仍是卡片式输入区
 
   工程契约:
   - FAB / 遮罩 / 面板都 append 到 document.body 顶层(与 [data-md-toggle] 复选框
@@ -63,11 +64,13 @@
   const MQ_DOCK = window.matchMedia("(min-width: 75em)");
   const MQ_SHEET = window.matchMedia("(max-width: 47.9875em)");
 
-  /* 三段停靠点(PRD:peek 18–25vh / half 45–60vh / expanded 视口高 - 顶部间隙) */
-  const SHEET_PEEK_VH = 0.22;
+  /* 三段停靠点:peek 贴合内容(手柄+标题+输入条,保底 SHEET_PEEK_MIN)、
+     half 55vh、expanded 视口高 - 顶部间隙(PRD:45–60vh / 12–24px 顶部间隙) */
   const SHEET_HALF_VH = 0.55;
-  const SHEET_PEEK_MIN = 136;          // 极矮视口下的 peek 保底高度(手柄+头部+速览条约 124px)
+  const SHEET_PEEK_MIN = 136;          // peek 保底高度:内容(约 134px)不足时用它
+  const SHEET_PEEK_MAX_VH = 0.45;      // peek 上限:附件/多行输入撑高也不超过 45vh(仍低于 half)
   const SHEET_TOP_GAP = 16;            // 近全屏态顶部保留的页面间隙(12–24px)
+  const SNAP_MS = 240;                 // 与 CSS --aipm-chat-dur 一致
   const SWIPE_V = 0.45;                // px/ms:快速滑动阈值,超过则直接跳相邻停靠点
   const CLOSE_RATIO = 0.6;             // 下拉到 peek 的该比例以下即关闭
   const SHEET_MIN_H = 56;              // 拖拽下限(再往下就是关闭)
@@ -160,6 +163,7 @@
   els.scrim = scrim;
   els.panel = panel;
   els.msgs = panel.querySelector(".aipm-chat__msgs");
+  els.head = panel.querySelector(".aipm-chat__head");
   els.composer = panel.querySelector(".aipm-chat__composer");
   els.attachbar = panel.querySelector(".aipm-chat__attachbar");
   els.input = panel.querySelector(".aipm-chat__input");
@@ -476,19 +480,39 @@
     return w > 0 ? Math.round(w) : 0;
   };
 
+  /* peek 高度:手柄 + 标题 + 输入条 + 输入条底边距 + 顶边描边 —— 贴合内容,不留空白。
+     CSS 不能对 fit-content 做高度过渡(吸附会瞬跳),所以实测成长度写进 CSS 变量。
+     只在打开/尺寸变化/输入条高度变化时实测(缓存),拖拽每帧只读缓存 */
+  let peekH = SHEET_PEEK_MIN;
+  const refreshPeek = () => {
+    /* els 在初始化早期(首次 applyMetrics)还没建好,先退回保底值 */
+    if (mode !== "sheet" || !els.grip || !els.head || !els.composer) { peekH = SHEET_PEEK_MIN; return; }
+    const prev = panel.getAttribute("data-snap");
+    if (prev !== "peek") panel.setAttribute("data-snap", "peek");
+    const c = els.composer;
+    /* 只算底边距:peek 里输入条的 margin-top 是 auto,取到的是"剩余空间"
+       (会把空余算成内容,越量越高),按 fit-content 语义它应该当 0 */
+    const mb = parseFloat(getComputedStyle(c).marginBottom) || 0;
+    const h = els.grip.offsetHeight + els.head.offsetHeight + c.offsetHeight + mb + 1;
+    if (prev !== "peek") panel.setAttribute("data-snap", prev || "peek");
+    const cap = Math.round((window.innerHeight || 800) * SHEET_PEEK_MAX_VH);
+    peekH = Math.max(SHEET_PEEK_MIN, Math.min(Math.round(h), cap));
+  };
+
   /* 三段高度:视口高与可视区高(软键盘弹出时 visualViewport 更小) */
   const metrics = () => {
     const vh = window.innerHeight || document.documentElement.clientHeight;
     const vv = window.visualViewport;
     const visible = vv ? Math.round(vv.height) : vh;
     return {
-      peek: Math.max(SHEET_PEEK_MIN, Math.round(vh * SHEET_PEEK_VH)),
+      peek: peekH,
       half: Math.max(SHEET_PEEK_MIN, Math.round(vh * SHEET_HALF_VH)),
       expanded: Math.max(SHEET_PEEK_MIN, visible - SHEET_TOP_GAP),
     };
   };
 
   const applyMetrics = () => {
+    refreshPeek();
     const m = metrics();
     const st = document.documentElement.style;
     st.setProperty("--aipm-chat-sheet-peek", m.peek + "px");
@@ -533,14 +557,38 @@
     syncRole();
   };
 
-  /* 切停靠点:清掉拖拽期间写的 inline 高度,让 CSS 的三段高度接管并吸附 */
-  const setSnap = (next) => {
+  /* 切停靠点:把高度交回 CSS,由三段高度接管并吸附。
+     拖拽刚松手时(afterDrag)推迟一帧再交回 —— 先让"跟手高度"这一帧渲染出来,
+     浏览器才有正确的过渡起点;顺带免掉强制同步布局(void offsetHeight 实测要 20ms+,
+     正是"卡一下再吸附"的来源)*/
+  const clearDragHeight = () => {
+    panel.style.minHeight = "";
+    panel.classList.remove("is-dragging");
+    panel.style.height = "";
+  };
+
+  /* 吸附动画期间打标:消息区上缘渐隐,免得半截文字被硬切(见 CSS .is-snapping) */
+  let snapTimer = 0;
+  const markSnapping = () => {
+    clearTimeout(snapTimer);
+    panel.classList.add("is-snapping");
+    snapTimer = setTimeout(() => panel.classList.remove("is-snapping"), SNAP_MS + 90);
+  };
+
+  const setSnap = (next, afterDrag) => {
     if (ORDER.indexOf(next) === -1) return;
     snap = next;
     panel.setAttribute("data-snap", next);
-    void panel.offsetHeight;              // 先落一帧,保证 inline 高度到目标高度的过渡可见
-    panel.style.height = "";
     syncChrome();
+    if (afterDrag) {
+      requestAnimationFrame(() => {
+        clearDragHeight();
+        markSnapping();
+        if (next !== "peek") panel.classList.remove("is-compact");
+      });
+    } else {
+      clearDragHeight();
+    }
     track("assistant_panel_mode_change", env());
   };
 
@@ -609,6 +657,9 @@
     open = true;
     openedAt = here();
     openedAtMs = Date.now();
+    clearDragHeight();
+    clearTimeout(snapTimer);
+    panel.classList.remove("is-compact", "is-snapping");
     if (mode === "sheet") snap = "peek";              // 首次打开默认页面优先态
     applyMetrics();
     syncChrome();
@@ -626,7 +677,6 @@
   const closePanel = (via) => {
     if (!open) return;
     open = false;
-    panel.style.height = "";
     syncChrome();
     releaseHistory();
     els.fab.focus();
@@ -673,10 +723,13 @@
     if (mode !== "sheet" || !open || drag) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (!inDragZone(e.target)) return;
+    const rect = panel.getBoundingClientRect();
+    panel.classList.remove("is-compact");
     drag = {
       id: e.pointerId,
       y0: e.clientY,
-      h0: panel.getBoundingClientRect().height,
+      h0: rect.height,
+      h: rect.height,                   // 跟手高度(松手判定用它,免得再强制布局)
       from: snap,
       moved: false,
       samples: [{ y: e.clientY, t: e.timeStamp }],
@@ -695,7 +748,16 @@
     e.preventDefault();
     const s = snapHeights();
     const h = Math.min(Math.max(drag.h0 + dy, SHEET_MIN_H), s.expanded);
+    drag.h = h;
     panel.style.height = h + "px";
+    panel.style.minHeight = h + "px";     // 跟手期间压掉 CSS 的 peek 保底,免得缩不下去
+    /* 拖到半开以下就往页面优先态走:淡出消息区(那边本来就不显示历史),
+       免得半截文字被硬切 */
+    const compact = h < (s.peek + s.half) / 2;
+    if (compact !== drag.compact) {
+      drag.compact = compact;
+      panel.classList.toggle("is-compact", compact);
+    }
     drag.samples.push({ y: e.clientY, t: e.timeStamp });
     if (drag.samples.length > 8) drag.samples.shift();
   };
@@ -705,19 +767,27 @@
     const d = drag;
     drag = null;
     try { panel.releasePointerCapture(e.pointerId); } catch (err) { /* 静默 */ }
-    if (!d.moved) return;                             // 未移动 = 点击,交给 click 分支
-    /* 先量高度再摘 is-dragging:摘掉后 peek 的 min-height(手柄+标题+输入条)
-       会立刻把高度顶回去,关闭阈值就永远够不着 */
-    const h = panel.getBoundingClientRect().height;
+    panel.classList.remove("is-compact");
+    if (!d.moved) { panel.classList.remove("is-dragging"); return; }  // 未移动 = 点击
+    const h = d.h;                                    // 跟手高度,不再强制布局测量
     const s = snapHeights();
     const v = velocity(d.samples);
-    panel.classList.remove("is-dragging");
     suppressClick = true;                             // 拖完松手别触发"点击切换停靠点"
     setTimeout(() => { suppressClick = false; }, 350);
-    /* 第一段继续下拉(或快速下滑)超过关闭阈值 → 关闭 */
-    if (d.from === "peek" && (v < -SWIPE_V || h < s.peek * CLOSE_RATIO)) { closePanel(); return; }
+    /* 关闭:下拉到 peek 的 CLOSE_RATIO 以下(任意一段都算"拖过页面优先态"),
+       或在第一段快速下滑。从第二/三段一路下拉也能直接关掉,不必先停在第一段 */
+    if (h < s.peek * CLOSE_RATIO || (d.from === "peek" && v < -SWIPE_V)) {
+      /* 关闭走位移过渡:先摘 is-dragging 让过渡生效,高度保持跟手值,
+         等滑下去之后再交回 CSS(否则 peek 保底高度会在下滑途中把面板顶高) */
+      panel.classList.remove("is-dragging");
+      panel.classList.add("is-compact");
+      markSnapping();
+      closePanel("drag");
+      setTimeout(clearDragHeight, SNAP_MS + 90);
+      return;
+    }
     const next = Math.abs(v) > SWIPE_V ? stepSnap(d.from, v > 0 ? 1 : -1) : nearestSnap(h);
-    setSnap(next);
+    setSnap(next, true);
   };
 
   panel.addEventListener("pointerdown", onDragDown);
@@ -1076,6 +1146,10 @@
     applyMode();
     syncKeyboard();
   };
+  /* 输入条高度会随多行输入 / 附件 chips 变化,peek 高度要跟着重算 */
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => { if (mode === "sheet") applyMetrics(); }).observe(els.composer);
+  }
   window.addEventListener("resize", onViewportChange, { passive: true });
   window.addEventListener("orientationchange", onViewportChange, { passive: true });
   MQ_DOCK.addEventListener("change", onViewportChange);

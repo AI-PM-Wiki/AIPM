@@ -6,8 +6,9 @@
      页面整体保留并收窄(html.aipm-chat-mode--dock.aipm-chat-open 给 .md-container
      留 margin-right),TOC 不再被替换或隐藏;页面与面板各自独立滚动
    - 平板浮层 overlay(768–1199px):面板浮在页面之上 + 遮罩(页面不收窄)
-   - 移动抽屉 sheet(<768px):三段式底部抽屉 peek/half/expanded,三段高度由 JS
-     依视口写入 --aipm-chat-sheet-*(见 chat-widget.js 的 metrics())
+   - 移动抽屉 sheet(<768px):三段式底部抽屉 peek/half/expanded;peek 高度按内容
+     实测(手柄+标题+输入条),half/expanded 依视口写入 --aipm-chat-sheet-*
+     (见 chat-widget.js 的 metrics()/refreshPeek())
 
    层级:遮罩 65 < 面板 70;FAB 60。面板关闭态用 visibility 挂起(不可聚焦),
    打开后 240ms 位移动画(reduced-motion 下取消)。颜色全走 Material --md-* 变量。
@@ -26,7 +27,7 @@
   /* 经典滚动条宽度(JS 实测写入):面板让开滚动条,页面收窄量与之对齐 */
   --aipm-chat-sbw: 0px;
   /* 移动端三段高度(JS 启动时按视口重写,此处仅作无 JS 兜底) */
-  --aipm-chat-sheet-peek: 9.5rem;
+  --aipm-chat-sheet-peek: 8.5rem;
   --aipm-chat-sheet-half: 55vh;
   --aipm-chat-sheet-expanded: calc(100dvh - var(--aipm-chat-top-gap));
 }
@@ -189,9 +190,10 @@ html.aipm-chat-mode--sheet.aipm-chat-open .aipm-chat {
               visibility 0s;
 }
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] {
+  /* 页面优先态贴住内容:手柄 + 标题 + 输入条,不留空白。
+     高度是实测出来的长度(JS 写 --aipm-chat-sheet-peek):
+     fit-content 虽然语义更直白,但 CSS 无法对它做高度过渡,吸附会瞬跳 */
   height: var(--aipm-chat-sheet-peek);
-  /* 输入条长高时页面优先态跟着长(不裁掉标题),内容矮时仍是 22vh */
-  min-height: fit-content;
 }
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] {
   height: var(--aipm-chat-sheet-half);
@@ -199,10 +201,21 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] {
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="expanded"] {
   height: var(--aipm-chat-sheet-expanded);
 }
-/* 拖拽中:高度跟手,关掉吸附动画,也不受 peek 的 fit-content 下限约束 */
+/* 拖拽中:高度跟手,关掉吸附动画,也不受 peek 的 min-height 下限约束 */
 .aipm-chat.is-dragging {
   transition: none !important;
   min-height: 0 !important;
+}
+/* 拖拽 / 吸附期间消息区上缘渐隐:半行文字柔和收起,而不是被硬切一刀 */
+.aipm-chat.is-dragging .aipm-chat__msgs,
+.aipm-chat.is-snapping .aipm-chat__msgs {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
+          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
+}
+/* 拖到半开以下 = 正在往页面优先态去(那一段不展示历史),消息区整体淡出 */
+.aipm-chat.is-compact .aipm-chat__msgs {
+  opacity: 0;
+  transition: opacity .12s linear;
 }
 /* 抽屉内滚动交给消息区/输入区,避免拖拽时整页跟着动 */
 html.aipm-chat-mode--sheet .aipm-chat__msgs {
@@ -306,6 +319,10 @@ html.aipm-chat-mode--sheet .aipm-chat__head {
    页面优先态只露手柄 + 标题 + 输入条,不展示历史消息(消息区被隐藏)。
    ---------------------------------------------------------------------------- */
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__msgs {
+  display: none;
+}
+/* 页面优先态不展示历史消息,清屏按钮也就没有存在的必要 */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__clear {
   display: none;
 }
 /* 页面优先态垂直空间金贵:手柄与头部收紧,把高度留给输入条 */
