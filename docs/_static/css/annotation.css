@@ -266,22 +266,55 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   height: 1.05rem;
   fill: var(--md-accent-fg-color);
 }
-/* 标题是「批注 ↔ 评论」的切换器,所以它是一颗按钮 —— 按钮要重来一遍重置,
-   否则会带上浏览器默认的边框与底色。悬停给一点底色,让人看得出点得动。 */
+/* 标题是「批注 ↔ 评论」的切换器,所以它是一颗按钮 —— 但按钮得在**不悬停**的
+   时候也看得出来。原先只有一条 :hover 底色,那等于把「这里能点」这句话只讲给
+   鼠标听:触屏没有悬停,键盘更是什么都看不见。
+
+   所以正面直接做成一颗胶囊:边框勾出控件轮廓,左边写当前模式,尾巴上一对反向
+   箭头说明点下去会换一份列表。
+
+   边框用 --md-default-fg-color--lighter 而不是页头那条发丝线(--aipm-anno-line
+   在暗色下是 12% 白,做分隔够用,勾控件轮廓就几乎看不见了;手柄条用的也是这一档)。
+
+   底色刻意留空 —— 紧挨着的条数徽章是**实底无框**的,一虚一实才不会看成一串
+   同样的标记。悬停时才填底,填的就是徽章那一档,顺手把边框再加重一档。 */
 .aipm-anno__title {
-  padding: 0 .3rem;
-  border: 0;
-  border-radius: .25rem;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: .22rem;
+  height: 1.5rem;
+  padding: 0 .45rem;
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 999px;
   color: inherit;
   background: transparent;
   font-family: inherit;
   font-weight: 600;
   font-size: .8125rem;
+  line-height: 1;
   cursor: pointer;
-  transition: background-color .15s ease;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+/* 箭头比文字矮一档、颜色也轻一档:它是副手,当前模式才是主角。 */
+.aipm-anno__title svg {
+  width: .78rem;
+  height: .78rem;
+  fill: var(--md-default-fg-color--light);
+  transition: fill .15s ease;
 }
 .aipm-anno__title:hover {
+  border-color: var(--md-default-fg-color--light);
   background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__title:hover svg {
+  fill: var(--md-default-fg-color);
+}
+/* 按下要「陷」一下,否则点完等于没点过。用 1px 下沉而不是再换一档底色:
+   底色在亮/暗两套下的对比走向相反(亮色下加深、暗色下提亮),换错一边暗色下
+   就成了浅底浅字。位移没有这个问题 —— 站内 .pm-btn 的按下也是这一招。 */
+.aipm-anno__title:active {
+  transform: translateY(1px);
 }
 .aipm-anno__count {
   min-width: 1.2rem;

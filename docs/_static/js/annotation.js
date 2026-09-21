@@ -124,6 +124,10 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10,9V5l-7,7 7,7v-4.1c5,0 8.5,1.6 11,5.1 -1,-5 -4,-10 -11,-11z"/></svg>',
     caret:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7,10l5,5 5,-5z"/></svg>',
+    /* 标题按钮尾巴上那对反向箭头:点一下换到另一份列表(批注 ↔ 评论)。
+       用方向对立的两个箭头,而不是下拉的三角 —— 它不是菜单,是开关。 */
+    swap:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.99,11L3,15l3.99,4v-3H14v-2H6.99V11zM21,9l-3.99,-4v3H10v2h7.01v3L21,9z"/></svg>',
     edit:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.06,9.02l0.92,0.92L5.92,19H5v-0.92l9.06,-9.06M17.66,3c-0.25,0 -0.51,0.1 -0.7,0.29l-1.83,1.83 3.75,3.75 1.83,-1.83c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34C18.17,3.1 17.91,3 17.66,3zM14.06,6.19L3,17.25V21h3.75L17.81,9.94l-3.75,-3.75z"/></svg>',
     heart:
@@ -488,8 +492,14 @@
     '<span class="aipm-anno__head-icon">' +
     ICON.pen +
     "</span>" +
-    // 标题即「批注 ↔ 评论」的切换器:它同时是当前模式的指示
-    '<button type="button" class="aipm-anno__title" aria-label="切换批注与评论">批注</button>' +
+    /* 标题即「批注 ↔ 评论」的切换器:它同时是当前模式的指示。但它首先是**按钮**,
+       而按钮得在不悬停的时候就看得出来 —— 悬停底色只帮得到鼠标,触屏没有悬停。
+       所以正面是一颗带边框的胶囊:左边写当前模式(syncMode() 改的就是这个 span),
+       尾巴上一对双向箭头说明点下去会换一份列表。 */
+    '<button type="button" class="aipm-anno__title" aria-label="切换批注与评论">' +
+    '<span class="aipm-anno__title-label">批注</span>' +
+    ICON.swap +
+    "</button>" +
     '<span class="aipm-anno__count" hidden></span>' +
     '<button type="button" class="aipm-anno__iconbtn aipm-anno__smart" title="智能高亮" aria-label="智能高亮">' +
     ICON.spark +
@@ -565,6 +575,7 @@
     grip: panel.querySelector(".aipm-anno__grip"),
     head: panel.querySelector(".aipm-anno__head"),
     title: panel.querySelector(".aipm-anno__title"),
+    titleLabel: panel.querySelector(".aipm-anno__title-label"),
     count: panel.querySelector(".aipm-anno__count"),
     smart: panel.querySelector(".aipm-anno__smart"),
     account: panel.querySelector(".aipm-anno__account"),
@@ -3405,11 +3416,18 @@
      面板外壳:模式切换 / 账号 / 分组折叠与显示
      ================================================================ */
 
-  /** 标题就是模式开关 —— 它写着什么,列表里就是什么。 */
+  /** 标题就是模式开关 —— 它写着什么,列表里就是什么。
+
+      只改 label span 的 textContent:按钮里还有那颗双向箭头,整颗重写 innerHTML
+      会把图标一起抹掉。aria 三件套跟着当前模式走 —— 读屏听到的应该是**点下去
+      会发生什么**(切到评论),而不是一句恒定的「切换批注与评论」。 */
   function syncMode() {
     var isComments = panelMode === "comments";
-    els.title.textContent = isComments ? "评论" : "批注";
-    els.title.title = isComments ? "切回批注(锚在正文某一段上)" : "切到评论(对整页说话)";
+    var label = isComments ? "评论" : "批注";
+    var hint = isComments ? "切回批注(锚在正文某一段上)" : "切到评论(对整页说话)";
+    els.titleLabel.textContent = label;
+    els.title.title = hint;
+    els.title.setAttribute("aria-label", hint);
     els.title.setAttribute("aria-pressed", isComments ? "true" : "false");
     /* 智能高亮找的是「正文里值得划线的地方」,评论模式下没有正文可划。 */
     els.smart.hidden = isComments;

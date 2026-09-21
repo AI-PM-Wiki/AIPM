@@ -1597,5 +1597,59 @@ class TestScrimTracksTheFinger(unittest.TestCase):
 
 
 
+class TestUiRoundSix(unittest.TestCase):
+    """第六轮:标题按钮要看得出来是按钮 —— 「能点」不能只在悬停时才说。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def test_title_wears_an_outline_at_rest(self):
+        """原先这颗按钮只有一条 :hover 底色 —— 那等于把「这里能点」只讲给鼠标听:
+        触屏没有悬停,键盘更是什么都看不见。所以静息态就得有轮廓:边框 + 胶囊圆角,
+        底色留空(紧挨着它的条数徽章是**实底无框**的,一虚一实才不会混成一片)。
+
+        边框色钉 --md-default-fg-color--lighter 而不是页头那条发丝线
+        --aipm-anno-line:后者在两套配色下都是 12% 的白/黑,做分隔够用,勾控件
+        轮廓时暗色下几乎看不见。退回发丝线 = 暗色下这颗按钮又变回一段纯文字。
+        """
+        rule = _block(self.css, ".aipm-anno__title {")
+        self.assertIn(
+            "border: 1px solid var(--md-default-fg-color--lighter)", rule
+        )
+        self.assertIn("border-radius: 999px", rule)
+        self.assertIn("cursor: pointer", rule)
+        self.assertIn("background: transparent", rule)
+        self.assertNotIn("border: 0", rule)
+
+    def test_title_carries_a_swap_glyph(self):
+        """光有边框还不说明点下去会怎样;尾巴上那对反向箭头才是「会换一份列表」
+        那句话。它得写在按钮里面,并且 aria-hidden —— 名字已经由 title /
+        aria-label 说了,读屏不该把图标也念一遍。
+        """
+        self.assertIn("swap:", self.js)
+        panel = self.js[self.js.index('var panel = document.createElement("div");') :]
+        panel = panel[: panel.index("document.body.appendChild(panel)")]
+        button = panel[panel.index("aipm-anno__title") :]
+        button = button[: button.index("aipm-anno__count")]
+        self.assertIn("aipm-anno__title-label", button)
+        self.assertIn("ICON.swap", button)
+        self.assertIn('aria-hidden="true"', self.js[self.js.index("swap:") :][:200])
+
+    def test_the_mode_flip_rewrites_only_the_label(self):
+        """每次换模式都要改按钮正面的字,改的必须是那个 label span —— 对整颗按钮写
+        textContent 会把尾巴上的图标一并抹掉,换一次模式按钮就秃了。
+
+        aria-label 跟着当前模式走:读屏该听到「点下去会发生什么」(切到评论),
+        而不是一句恒定的「切换批注与评论」。
+        """
+        block = _block(self.js, "function syncMode()")
+        self.assertIn("els.titleLabel.textContent = label", block)
+        self.assertNotIn("els.title.textContent", block)
+        self.assertIn('els.title.setAttribute("aria-label", hint)', block)
+        self.assertIn('els.title.setAttribute("aria-pressed"', block)
+
+
 if __name__ == "__main__":
     unittest.main()
