@@ -385,5 +385,82 @@ class TestServerSideVisibilityRules(unittest.TestCase):
         self.assertNotIn("local", block)
 
 
+class TestUiReviewRound(unittest.TestCase):
+    """第二轮验收(2026-09-21)定下的界面契约。
+
+    这几条都是「改回去也照样能跑、但用户会立刻看出来」的那类,所以钉在源码上。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def test_headings_are_not_highlight_candidates(self):
+        """标题不再送判:单独成条时是一句没头没尾的标题(「产品设计要点」)。"""
+        line = next(
+            l for l in self.js.splitlines() if l.strip().startswith("var BLOCK_SELECTOR")
+        )
+        for tag in ("h2", "h3", "h4", "h5"):
+            self.assertNotIn(tag, line, f"标题 {tag} 又混进候选块了")
+        self.assertIn("p", line)
+        self.assertIn("blockquote", line)
+
+    def test_already_highlighted_blocks_are_skipped(self):
+        """块内的 mark 要用 querySelector 找 —— closest 是往上找,永远命中不了。"""
+        block = _block(self.js, "function extractBlocks()")
+        self.assertIn('el.querySelector("mark.aipm-anno-mark")', block)
+
+    def test_smart_highlight_is_a_two_state_toggle(self):
+        """建议不再逐条罗列,只有「全部高亮 / 全部关闭」两态。"""
+        self.assertNotIn("aipm-anno__smart-list", self.js)
+        self.assertNotIn("aipm-anno__smart-item", self.css)
+        block = _block(self.js, "function renderSuggestions(payload)")
+        self.assertIn("全部高亮(", block)
+        self.assertIn("全部关闭(", block)
+        self.assertIn("smartAnnos()", block)
+
+    def test_smart_batch_lands_as_local_only(self):
+        """智能高亮落库只落到「仅本机」,且带 origin 标记以便整批撤销。"""
+        block = _block(self.js, "function applySmart(payload)")
+        self.assertIn('origin: "smart"', block)
+        self.assertIn('visibility: "local"', block)
+        self.assertNotIn("/api/annotations", block)
+
+    def test_duplicate_落库_is_blocked_at_apply_time(self):
+        """点第二次不能重复落 —— 靠落库前重新核对块上有没有 mark。"""
+        block = _block(self.js, "function applySmart(payload)")
+        self.assertIn("blockMarked(block)", block)
+
+    def test_account_button_sits_between_smart_and_close(self):
+        """账号按钮夹在智能高亮与关闭之间(顺序即视觉顺序)。"""
+        head = self.js[
+            self.js.index('class="aipm-anno__iconbtn aipm-anno__smart"') :
+            self.js.index('class="aipm-anno__iconbtn aipm-anno__close"')
+        ]
+        self.assertIn("aipm-anno__account", head)
+
+    def test_composer_is_a_draft_card(self):
+        """编辑区渲染成一张「新批注」卡,复用列表项的骨架与文案规则。"""
+        self.assertIn('class="aipm-anno__draft"', self.js)
+        block = _block(self.js, "function syncComposer()")
+        self.assertIn("visLabel(", block)
+        self.assertIn("els.draft.setAttribute(\"data-color\"", block)
+
+    def test_visibility_picker_is_a_menu_right_of_save(self):
+        """三态收进保存键右侧的下拉;未登录点公开/私有走登录引导。"""
+        actions = self.js[self.js.index('class="aipm-anno__actions"') :]
+        actions = actions[: actions.index("</form>")]
+        self.assertLess(actions.index("aipm-anno__save"), actions.index("aipm-anno__vismenu"))
+        handler = _block(self.js, 'els.vislist.addEventListener("click"')
+        self.assertIn("loginForDraft(", handler)
+        self.assertIn('vis === "public" || vis === "private"', handler)
+
+    def test_the_logged_out_explainer_is_gone(self):
+        """用户点名删掉的那行提示不许回来。"""
+        self.assertNotIn("只会存在这台设备上", self.js)
+        self.assertNotIn("用 GitHub 登录后可以保存为公开或私有", self.js)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -48,7 +48,7 @@
   var MAX_BLOCKS = 120;
   /** 单块送去判分的字符上限:过长会把预算花在一条上,截断即可(锚定仍用整块)。 */
   var MAX_BLOCK_CHARS = 1000;
-  var BLOCK_SELECTOR = "p, li, h2, h3, h4, h5, blockquote, td, th, dd, dt";
+  var BLOCK_SELECTOR = "p, li, blockquote, td, th, dd, dt";
   var ORPHAN_GROUP = "orphan";
 
   var ICON = {
@@ -64,6 +64,8 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6v12zM19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z"/></svg>',
     reply:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10,9V5l-7,7 7,7v-4.1c5,0 8.5,1.6 11,5.1 -1,-5 -4,-10 -11,-11z"/></svg>',
+    caret:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7,10l5,5 5,-5z"/></svg>',
     login:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,2C6.48,2 2,6.48 2,12c0,4.42 2.87,8.17 6.84,9.5 0.5,0.09 0.68,-0.22 0.68,-0.48 0,-0.24 -0.01,-0.87 -0.01,-1.71 -2.78,0.6 -3.37,-1.34 -3.37,-1.34 -0.45,-1.16 -1.11,-1.47 -1.11,-1.47 -0.91,-0.62 0.07,-0.61 0.07,-0.61 1,0.07 1.53,1.03 1.53,1.03 0.89,1.53 2.34,1.09 2.91,0.83 0.09,-0.65 0.35,-1.09 0.63,-1.34 -2.22,-0.25 -4.56,-1.11 -4.56,-4.94 0,-1.09 0.39,-1.99 1.03,-2.69 -0.1,-0.25 -0.45,-1.27 0.1,-2.65 0,0 0.84,-0.27 2.75,1.03 0.8,-0.22 1.65,-0.33 2.5,-0.34 0.85,0 1.7,0.12 2.5,0.34 1.91,-1.3 2.75,-1.03 2.75,-1.03 0.55,1.38 0.2,2.4 0.1,2.65 0.64,0.7 1.03,1.6 1.03,2.69 0,3.84 -2.34,4.69 -4.57,4.94 0.36,0.31 0.68,0.92 0.68,1.85 0,1.34 -0.01,2.42 -0.01,2.75 0,0.27 0.18,0.58 0.69,0.48C19.13,20.17 22,16.42 22,12c0,-5.52 -4.48,-10 -10,-10z"/></svg>'
   };
@@ -403,31 +405,54 @@
     '<button type="button" class="aipm-anno__iconbtn aipm-anno__smart" title="智能高亮" aria-label="智能高亮">' +
     ICON.spark +
     "</button>" +
+    // 账号按钮夹在智能高亮与关闭之间(顺序即视觉顺序):登录态的唯一入口
+    '<button type="button" class="aipm-anno__iconbtn aipm-anno__account" title="用 GitHub 登录" aria-label="账号">' +
+    ICON.login +
+    "</button>" +
     '<button type="button" class="aipm-anno__iconbtn aipm-anno__close" title="关闭(Esc)" aria-label="关闭">' +
     ICON.close +
     "</button>" +
     "</header>" +
+    '<div class="aipm-anno__acct" hidden>' +
+    '<span class="aipm-anno__acct-name"></span>' +
+    '<button type="button" class="aipm-anno__logout">退出登录</button>' +
+    "</div>" +
     '<div class="aipm-anno__smartbar" hidden></div>' +
     '<div class="aipm-anno__list" role="log" aria-live="polite"></div>' +
     '<form class="aipm-anno__composer">' +
-    '<div class="aipm-anno__quote" hidden></div>' +
-    '<div class="aipm-anno__swatches" role="radiogroup" aria-label="高亮颜色">' +
-    swatchHtml() +
+    // 编辑区做成一张「新批注」卡:发出去会长什么样,写的时候就长什么样 ——
+    // 圆点随色板实时变色、meta 行走 visLabel(),与 renderItem 同一套渲染规则。
+    '<article class="aipm-anno__draft">' +
+    '<div class="aipm-anno__item-top">' +
+    '<span class="aipm-anno__dot"></span>' +
+    '<span class="aipm-anno__meta"></span>' +
+    '<span class="aipm-anno__spacer"></span>' +
+    '<span class="aipm-anno__badge">新批注</span>' +
     "</div>" +
-    '<div class="aipm-anno__vis" role="radiogroup" aria-label="可见范围">' +
-    '<button type="button" data-vis="public">公开</button>' +
-    '<button type="button" data-vis="private">私有</button>' +
-    '<button type="button" data-vis="local">仅本机</button>' +
-    "</div>" +
+    '<blockquote class="aipm-anno__quote" hidden></blockquote>' +
     '<textarea class="aipm-anno__input" rows="2" placeholder="写点什么(可留空,只做高亮)…" aria-label="批注正文"></textarea>' +
     '<div class="aipm-anno__hint" hidden></div>' +
     '<div class="aipm-anno__actions">' +
-    '<button type="button" class="aipm-anno__login" hidden>用 GitHub 登录</button>' +
-    '<span class="aipm-anno__user" hidden></span>' +
-    '<button type="button" class="aipm-anno__logout" hidden>退出</button>' +
+    '<div class="aipm-anno__swatches" role="radiogroup" aria-label="高亮颜色">' +
+    swatchHtml() +
+    "</div>" +
+    '<span class="aipm-anno__spacer"></span>' +
     '<button type="button" class="aipm-anno__cancel">取消</button>' +
     '<button type="submit" class="aipm-anno__save">保存</button>' +
+    // 可见范围收进保存键右侧的下拉;未登录点公开/私有走登录引导,见 els.vislist
+    '<div class="aipm-anno__vismenu">' +
+    '<button type="button" class="aipm-anno__visbtn" aria-haspopup="listbox" aria-expanded="false">' +
+    '<span class="aipm-anno__visbtn-text"></span>' +
+    ICON.caret +
+    "</button>" +
+    '<div class="aipm-anno__vislist" role="listbox" hidden>' +
+    '<button type="button" role="option" data-vis="public">公开<span>任何访客不登录也能读到</span></button>' +
+    '<button type="button" role="option" data-vis="private">私有<span>只有你自己登录后能看到</span></button>' +
+    '<button type="button" role="option" data-vis="local">仅本机<span>只存在这台设备上</span></button>' +
     "</div>" +
+    "</div>" +
+    "</div>" +
+    "</article>" +
     "</form>";
   document.body.appendChild(panel);
 
@@ -452,23 +477,28 @@
     head: panel.querySelector(".aipm-anno__head"),
     count: panel.querySelector(".aipm-anno__count"),
     smart: panel.querySelector(".aipm-anno__smart"),
+    account: panel.querySelector(".aipm-anno__account"),
+    acct: panel.querySelector(".aipm-anno__acct"),
+    acctName: panel.querySelector(".aipm-anno__acct-name"),
     close: panel.querySelector(".aipm-anno__close"),
     smartbar: panel.querySelector(".aipm-anno__smartbar"),
     list: panel.querySelector(".aipm-anno__list"),
     composer: panel.querySelector(".aipm-anno__composer"),
+    draft: panel.querySelector(".aipm-anno__draft"),
+    draftDot: panel.querySelector(".aipm-anno__draft .aipm-anno__dot"),
+    draftMeta: panel.querySelector(".aipm-anno__draft .aipm-anno__meta"),
     quote: panel.querySelector(".aipm-anno__quote"),
     swatches: panel.querySelector(".aipm-anno__swatches"),
-    vis: panel.querySelector(".aipm-anno__vis"),
+    visbtn: panel.querySelector(".aipm-anno__visbtn"),
+    visbtnText: panel.querySelector(".aipm-anno__visbtn-text"),
+    vislist: panel.querySelector(".aipm-anno__vislist"),
     input: panel.querySelector(".aipm-anno__input"),
     hint: panel.querySelector(".aipm-anno__hint"),
     actions: panel.querySelector(".aipm-anno__actions"),
-    login: panel.querySelector(".aipm-anno__login"),
     logout: panel.querySelector(".aipm-anno__logout"),
-    user: panel.querySelector(".aipm-anno__user"),
     cancel: panel.querySelector(".aipm-anno__cancel"),
     save: panel.querySelector(".aipm-anno__save")
   };
-
   /* 页头入口按钮(位置与样式沿用 issue #67:页头右上角、贴浏览器右边缘) */
   var entry = document.createElement("button");
   entry.type = "button";
@@ -635,6 +665,8 @@
     open = false;
     syncChrome();
     hideToolbar();
+    closeVisMenu();
+    els.acct.hidden = true;
     entry.focus();
     void openedAt;
   }
@@ -825,7 +857,7 @@
     if (items.length === 0 && orphans.length === 0) {
       var empty = document.createElement("p");
       empty.className = "aipm-anno__empty";
-      empty.textContent = "选中正文里的一段话就能加批注。未登录也可以写,批注只存在这台设备上。";
+      empty.textContent = "选中正文里的一段话就能加批注。";
       els.list.appendChild(empty);
       return;
     }
@@ -1127,6 +1159,11 @@
     syncComposer();
   }
 
+  /**
+   * 草稿卡与控件同步。草稿卡走 renderItem 的同一套渲染规则(圆点取 activeColor、
+   * meta 走 visLabel),所以「写的时候看到的」就是「发出去之后的」。
+   * 未登录时的那行说明已按验收意见删掉 —— 可见范围按钮本身就是说明。
+   */
   function syncComposer() {
     var swatches = els.swatches.querySelectorAll(".aipm-anno__swatch");
     for (var i = 0; i < swatches.length; i++) {
@@ -1136,23 +1173,22 @@
       );
     }
     var vis = defaultVisibility();
-    var buttons = els.vis.querySelectorAll("button");
-    for (var j = 0; j < buttons.length; j++) {
-      buttons[j].classList.toggle("is-active", buttons[j].getAttribute("data-vis") === vis);
-    }
+    var label = visLabel({ visibility: vis });
     var loggedIn = auth ? auth.isLoggedIn() : false;
-    els.login.hidden = loggedIn;
-    els.logout.hidden = !loggedIn;
-    els.user.hidden = !loggedIn;
-    var me = auth ? auth.user() : null;
-    els.user.textContent = me ? me.login : "";
-    setHint(
-      !loggedIn
-        ? "未登录:现在保存只会存在这台设备上(仅本机)。用 GitHub 登录后可以保存为公开或私有。"
-        : vis === "private"
-        ? "私有:只有你自己登录后能看到;换设备登录同一账号也能看到。"
-        : "公开:任何访客不登录也能读到。"
-    );
+    var me = loggedIn && auth.user() ? auth.user().login : "";
+    els.draft.setAttribute("data-color", activeColor);
+    els.draftDot.setAttribute("data-color", activeColor);
+    els.draftMeta.textContent = (me || "本机") + " · " + label.text;
+    els.draftMeta.setAttribute("data-vis", label.cls);
+    els.visbtnText.textContent = label.text;
+    var opts = els.vislist.querySelectorAll("button[data-vis]");
+    for (var j = 0; j < opts.length; j++) {
+      opts[j].classList.toggle("is-active", opts[j].getAttribute("data-vis") === vis);
+    }
+    els.account.classList.toggle("is-logged-in", loggedIn);
+    els.account.title = me ? me + "(已登录)" : "用 GitHub 登录";
+    els.account.setAttribute("aria-label", me ? "账号:" + me : "用 GitHub 登录");
+    els.acctName.textContent = me;
   }
 
   function setHint(text) {
@@ -1180,24 +1216,56 @@
     }
   });
 
-  els.vis.addEventListener("click", function (e) {
-    var b = e.target.closest("button");
+  /* 可见范围下拉:挪到保存键右侧后,三个选项收进菜单;未登录点公开/私有时
+     先存草稿再走 OAuth(与原来点「用 GitHub 登录」是同一条路径)。 */
+  function openVisMenu() {
+    els.vislist.hidden = false;
+    els.visbtn.setAttribute("aria-expanded", "true");
+  }
+  function closeVisMenu() {
+    els.vislist.hidden = true;
+    els.visbtn.setAttribute("aria-expanded", "false");
+  }
+  els.visbtn.addEventListener("click", function () {
+    if (els.vislist.hidden) openVisMenu();
+    else closeVisMenu();
+  });
+  els.vislist.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-vis]");
     if (!b) return;
-    activeVis = b.getAttribute("data-vis");
+    var vis = b.getAttribute("data-vis");
+    if ((vis === "public" || vis === "private") && !(auth && auth.isLoggedIn())) {
+      closeVisMenu();
+      if (auth) auth.loginForDraft(draftForLogin());
+      return;
+    }
+    activeVis = vis;
+    closeVisMenu();
     syncComposer();
   });
+  document.addEventListener("mousedown", function (e) {
+    if (els.vislist.hidden) return;
+    if (e.target && e.target.closest && e.target.closest(".aipm-anno__vismenu")) return;
+    closeVisMenu();
+  });
 
-  els.login.addEventListener("click", function () {
-    if (!auth) return;
-    auth.loginForDraft(draftForLogin());
+  /* 账号按钮:登录态的唯一入口,夹在智能高亮与关闭之间 */
+  els.account.addEventListener("click", function () {
+    if (auth && auth.isLoggedIn()) {
+      els.acct.hidden = !els.acct.hidden;
+      return;
+    }
+    if (auth) auth.loginForDraft(draftForLogin());
   });
   els.logout.addEventListener("click", function () {
     if (!auth) return;
+    els.acct.hidden = true;
     auth.logout().then(function () {
       invalidate();
       return ensureAnnotationsLoaded();
     });
   });
+
   els.cancel.addEventListener("click", function () {
     editingId = null;
     els.input.value = "";
@@ -1418,6 +1486,7 @@
     composerSelection = null;
     els.input.value = "";
     els.quote.hidden = true;
+    closeVisMenu();
     setHint("");
     syncComposer();
   }
@@ -1528,7 +1597,7 @@
       // 映射,而服务端同页缓存是按页面内容哈希共享的 —— 那样 id 会错配到别的段落。
       // 位置序号只依赖 DOM 顺序,各客户端一致。
       var id = "b" + seq++;
-      if (el.closest("mark.aipm-anno-mark")) continue;
+      if (el.querySelector("mark.aipm-anno-mark")) continue;
       var text = (el.textContent || "").replace(/\s+/g, " ").trim();
       if (!text) continue;
       var range = document.createRange();
@@ -1621,137 +1690,133 @@
     return "规则";
   }
 
-  function renderSuggestions(payload) {
-    var blocks = payload.blocks || [];
+  /** 本页由智能高亮落下的「仅本机」批注(带 origin 标记,刷新后仍认得出)。 */
+  function smartAnnos() {
+    return store.localList(pagePath()).filter(function (a) {
+      return a && a.visibility === "local" && a.origin === "smart";
+    });
+  }
+
+  /**
+   * 块内是否已有高亮。用它挡住重复落库 —— 之前 extractBlocks 里那句
+   * `el.closest("mark...")` 是往上找,块不可能在 mark 里,从未命中过,于是
+   * 已高亮的段落会被反复送去判分、再次点击就重复落库。
+   */
+  function blockMarked(block) {
+    if (!block || !block.range) return true;
+    var el = block.range.startContainer;
+    if (el && el.nodeType !== 1) el = el.parentNode;
+    return !!(el && el.querySelector && el.querySelector("mark.aipm-anno-mark"));
+  }
+
+  /** 还没有落过高亮的那部分建议(已高亮的不再重复出现)。 */
+  function freshSuggestions(payload) {
     var byId = {};
-    blocks.forEach(function (b) {
+    (payload.blocks || []).forEach(function (b) {
       byId[b.id] = b;
     });
+    return (payload.suggestions || []).filter(function (s) {
+      var block = byId[s.id];
+      return block && !blockMarked(block);
+    });
+  }
+
+  /**
+   * 智能高亮条只有两态:还能落 → 「全部高亮(N)」,已经落过 → 「全部关闭(N)」。
+   * 建议不在这里逐条罗列(用户验收意见:一条条列出来太吵),落库后它们就是
+   * 面板列表里普通的「仅本机」条目,和手写的批注一样可以编辑、改色、上传。
+   */
+  function renderSuggestions(payload) {
     els.smartbar.hidden = false;
     els.smartbar.setAttribute("data-kind", "result");
     els.smartbar.textContent = "";
+
     var head = document.createElement("div");
     head.className = "aipm-anno__smart-head";
-    var label = sourceLabel(payload.judge);
-    var parts = ["智能高亮 · 来源 " + label];
+    var parts = ["智能高亮 · 来源 " + sourceLabel(payload.judge)];
     if (payload.fallbackFrom) parts.push("(由 " + sourceLabel(payload.fallbackFrom) + " 回退)");
     if (payload.model) parts.push(payload.model);
     if (payload.cached) parts.push("缓存");
     head.textContent = parts.join(" ");
     els.smartbar.appendChild(head);
 
-    if (!payload.suggestions || payload.suggestions.length === 0) {
-      var none = document.createElement("p");
-      none.className = "aipm-anno__smart-none";
-      none.textContent = "这一页没有值得高亮的地方。";
-      els.smartbar.appendChild(none);
-      return;
+    var applied = smartAnnos();
+    var fresh = freshSuggestions(payload);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "aipm-anno__smart-toggle";
+
+    if (applied.length > 0) {
+      btn.textContent = "全部关闭(" + applied.length + ")";
+      btn.addEventListener("click", function () {
+        revertSmart(payload);
+      });
+    } else if (fresh.length > 0) {
+      btn.textContent = "全部高亮(" + fresh.length + ")";
+      btn.addEventListener("click", function () {
+        applySmart(payload);
+      });
+    } else {
+      btn.disabled = true;
+      btn.textContent = (payload.suggestions || []).length
+        ? "本页已全部高亮"
+        : "本页没有值得高亮的地方";
     }
-
-    var all = document.createElement("button");
-    all.type = "button";
-    all.className = "aipm-anno__link";
-    all.textContent = "全部采纳(" + payload.suggestions.length + ")";
-    all.addEventListener("click", function () {
-      payload.suggestions.forEach(function (s) {
-        acceptSuggestion(s, byId[s.id]);
-      });
-      setSmartbar("", "");
-    });
-    els.smartbar.appendChild(all);
-
-    var list = document.createElement("ul");
-    list.className = "aipm-anno__smart-list";
-    payload.suggestions.forEach(function (s) {
-      var block = byId[s.id];
-      if (!block) return;
-      var li = document.createElement("li");
-      li.className = "aipm-anno__smart-item";
-      var dot = document.createElement("span");
-      dot.className = "aipm-anno__dot";
-      dot.setAttribute("data-color", s.color || store.DEFAULT_COLOR);
-      li.appendChild(dot);
-      var text = document.createElement("span");
-      text.className = "aipm-anno__smart-text";
-      text.textContent = block.text.slice(0, 90) + (block.text.length > 90 ? "…" : "");
-      li.appendChild(text);
-      var badge = document.createElement("span");
-      badge.className = "aipm-anno__badge";
-      badge.textContent = "重要度 " + s.importance;
-      li.appendChild(badge);
-      var accept = document.createElement("button");
-      accept.type = "button";
-      accept.className = "aipm-anno__link";
-      accept.textContent = "采纳";
-      accept.addEventListener("click", function () {
-        acceptSuggestion(s, block);
-        li.remove();
-      });
-      li.appendChild(accept);
-      list.appendChild(li);
-    });
-    els.smartbar.appendChild(list);
+    els.smartbar.appendChild(btn);
 
     if (payload.degraded && payload.degraded.length) {
-      var note = document.createElement("p");
-      note.className = "aipm-anno__smart-none";
-      note.textContent = payload.degraded.length + " 段未给出建议(代码、导航或已超预算)。";
+      var note = document.createElement("span");
+      note.className = "aipm-anno__smart-note";
+      note.textContent = payload.degraded.length + " 段未判定";
+      note.title = "这些段落是代码、导航或已超出本次预算,没有给出建议。";
       els.smartbar.appendChild(note);
     }
   }
 
-  function acceptSuggestion(s, block) {
-    if (!block || !block.range) return;
-    var selectors = computeSelectors(block.range);
-    var visibility = defaultVisibility();
-    activeColor = s.color || store.DEFAULT_COLOR;
-    store.setLastColor(activeColor);
-    var saved = activeVis;
-    activeVis = visibility;
-    var body = "";
-    var anno = {
-      id: store.uid(),
-      page: pagePath(),
-      visibility: "local",
-      color: activeColor,
-      body: body,
-      author: { githubId: 0, login: (auth && auth.user() ? auth.user().login : "本机") },
-      target: { selectors: selectors },
-      replies: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    if (visibility === "local" || !(auth && auth.isLoggedIn())) {
+  /** 全开:一次性把余下的建议落成「仅本机」。已高亮的块跳过,不重复落。 */
+  function applySmart(payload) {
+    var byId = {};
+    (payload.blocks || []).forEach(function (b) {
+      byId[b.id] = b;
+    });
+    var fresh = freshSuggestions(payload);
+    var page = pagePath();
+    var now = new Date().toISOString();
+    var who = auth && auth.isLoggedIn() && auth.user() ? auth.user().login : "本机";
+    var added = 0;
+    fresh.forEach(function (s) {
+      var block = byId[s.id];
+      if (!block || !block.range || blockMarked(block)) return;
       try {
-        store.localAdd(anno);
+        store.localAdd({
+          id: store.uid(),
+          page: page,
+          visibility: "local",
+          color: s.color || store.DEFAULT_COLOR,
+          body: "",
+          origin: "smart",
+          author: { githubId: 0, login: who },
+          target: { selectors: computeSelectors(block.range) },
+          replies: [],
+          createdAt: now,
+          updatedAt: now
+        });
+        added++;
       } catch (err) {
         setHint(err.message);
-        return;
       }
-      refreshLocal();
-    } else {
-      store
-        .request("/api/annotations", {
-          method: "POST",
-          token: auth.token(),
-          body: {
-            page: anno.page,
-            body: body,
-            color: activeColor,
-            visibility: visibility,
-            target: anno.target
-          }
-        })
-        .then(function (res) {
-          if (!res.ok) {
-            setHint("采纳失败:" + ((res.body && res.body.message) || res.status));
-            return;
-          }
-          invalidate();
-          return ensureAnnotationsLoaded();
-        });
-    }
-    activeVis = saved;
+    });
+    refreshLocal();
+    renderSuggestions(payload);
+  }
+
+  /** 全关:把本页由智能高亮落下的批注全部撤掉。手写的批注不受影响。 */
+  function revertSmart(payload) {
+    smartAnnos().forEach(function (a) {
+      store.localRemove(a.page, a.id);
+    });
+    refreshLocal();
+    renderSuggestions(payload);
   }
 
   els.smart.addEventListener("click", smartHighlight);

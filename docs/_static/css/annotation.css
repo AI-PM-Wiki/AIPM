@@ -421,13 +421,18 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
    6. 智能高亮
    ---------------------------------------------------------------------------- */
 .aipm-anno__smartbar {
+  display: flex;
   flex: none;
-  max-height: 45%;
-  padding: .5rem .75rem;
-  overflow-y: auto;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem .75rem;
   border-bottom: 1px solid var(--aipm-anno-line);
   background: var(--md-code-bg-color);
   font-size: .75rem;
+}
+/* display:flex 会盖掉 [hidden] 的默认表现,必须显式收回 */
+.aipm-anno__smartbar[hidden] {
+  display: none;
 }
 .aipm-anno__smartbar[data-kind="warn"] {
   color: var(--aipm-anno-pink);
@@ -435,32 +440,42 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__smartbar[data-kind="busy"] {
   color: var(--md-default-fg-color--light);
 }
+/* 标题行吃掉剩余宽度、省略号收尾;开关与「N 段未判定」不参与收缩 —— 三者
+   必须挤在一行里(验收意见:建议不要一条条列出来)。 */
 .aipm-anno__smart-head {
-  margin-bottom: .35rem;
-  color: var(--md-default-fg-color--light);
-  font-size: .6875rem;
-}
-.aipm-anno__smart-list {
-  margin: .35rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-.aipm-anno__smart-item {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .25rem 0;
-  border-top: 1px solid var(--aipm-anno-line);
-}
-.aipm-anno__smart-text {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
+  color: var(--md-default-fg-color--light);
+  font-size: .6875rem;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.aipm-anno__smart-none {
-  margin: .35rem 0 0;
+.aipm-anno__smartbar[data-kind="warn"] .aipm-anno__smart-head,
+.aipm-anno__smartbar[data-kind="busy"] .aipm-anno__smart-head {
+  color: inherit;
+}
+.aipm-anno__smart-toggle {
+  flex: none;
+  white-space: nowrap;
+  padding: .25rem .6rem;
+  border: 1px solid var(--md-accent-fg-color);
+  border-radius: .3rem;
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+  font-family: inherit;
+  font-size: .6875rem;
+  cursor: pointer;
+}
+.aipm-anno__smart-toggle:disabled {
+  border-color: var(--aipm-anno-line);
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  cursor: default;
+}
+.aipm-anno__smart-note {
+  flex: none;
+  white-space: nowrap;
   color: var(--md-default-fg-color--light);
   font-size: .6875rem;
 }
@@ -470,13 +485,28 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
    ---------------------------------------------------------------------------- */
 .aipm-anno__composer {
   flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: .4rem;
+  display: block;
   padding: .6rem .75rem;
   margin-bottom: 0;
   border-top: 1px solid var(--aipm-anno-line);
 }
+/* 草稿卡:与 .aipm-anno__item 同一套骨架,区别只在底色与「新批注」角标 ——
+   写的时候看到的排版,就是发出去之后的排版。 */
+.aipm-anno__draft {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding: .55rem .6rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-left: 3px solid var(--md-default-fg-color--lightest);
+  border-radius: .3rem;
+  background: var(--md-code-bg-color);
+}
+.aipm-anno__draft[data-color="yellow"] { border-left-color: var(--aipm-anno-yellow); }
+.aipm-anno__draft[data-color="green"]  { border-left-color: var(--aipm-anno-green); }
+.aipm-anno__draft[data-color="blue"]   { border-left-color: var(--aipm-anno-blue); }
+.aipm-anno__draft[data-color="pink"]   { border-left-color: var(--aipm-anno-pink); }
+.aipm-anno__draft[data-color="purple"] { border-left-color: var(--aipm-anno-purple); }
 .aipm-anno__quote {
   padding: .25rem .45rem;
   border-left: 2px solid var(--aipm-anno-yellow);
@@ -519,29 +549,73 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__swatch-dot[data-color="pink"]   { background: var(--aipm-anno-pink); }
 .aipm-anno__swatch-dot[data-color="purple"] { background: var(--aipm-anno-purple); }
 
-.aipm-anno__vis {
-  display: flex;
-  gap: .25rem;
+.aipm-anno__vismenu {
+  position: relative;
+  flex: none;
 }
-.aipm-anno__vis button {
-  flex: 1 1 0;
-  padding: .22rem .3rem;
+.aipm-anno__visbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: .1rem;
+  padding: .3rem .4rem .3rem .6rem;
   border: 1px solid var(--aipm-anno-line);
-  border-radius: .25rem;
-  color: var(--md-default-fg-color--light);
+  border-radius: .3rem;
+  color: var(--md-default-fg-color);
   background: transparent;
   font-family: inherit;
-  font-size: .6875rem;
+  font-size: .75rem;
   cursor: pointer;
-  transition: border-color .15s ease, color .15s ease, background-color .15s ease;
 }
-.aipm-anno__vis button:hover {
+.aipm-anno__visbtn:hover {
+  border-color: var(--md-default-fg-color--light);
+}
+.aipm-anno__visbtn svg {
+  width: .9rem;
+  height: .9rem;
+  fill: currentColor;
+}
+.aipm-anno__vislist {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + .3rem);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 11rem;
+  padding: .25rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .35rem;
+  background: var(--md-default-bg-color);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+}
+.aipm-anno__vislist[hidden] {
+  display: none;
+}
+.aipm-anno__vislist button {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  padding: .35rem .5rem;
+  border: 0;
+  border-radius: .25rem;
   color: var(--md-default-fg-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: .75rem;
+  text-align: left;
+  cursor: pointer;
 }
-.aipm-anno__vis button.is-active {
-  border-color: var(--md-accent-fg-color);
-  color: var(--md-accent-bg-color);
-  background: var(--md-accent-fg-color);
+.aipm-anno__vislist button:hover {
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__vislist button.is-active {
+  color: var(--md-accent-fg-color);
+  font-weight: 600;
+}
+.aipm-anno__vislist button span {
+  color: var(--md-default-fg-color--light);
+  font-size: .625rem;
+  font-weight: 400;
 }
 .aipm-anno__input {
   width: 100%;
@@ -571,17 +645,79 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   align-items: center;
   gap: .4rem;
 }
-.aipm-anno__user {
-  color: var(--md-default-fg-color--light);
-  font-size: .6875rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* 色板靠左,取消/保存/可见范围靠右。列表项里的同名 spacer 不需要撑开,
+   所以只在这个按键行里给它 flex。 */
+.aipm-anno__actions .aipm-anno__spacer {
+  flex: 1 1 auto;
+}
+/* 400px 宽的面板里五个色块 + 三个控件排一行已经很挤;不锁住的话弹性收缩会把
+   「取消」「保存」压成竖排两行。色板与控件都不参与收缩,由 spacer 吸收余量。 */
+.aipm-anno__actions .aipm-anno__swatches,
+.aipm-anno__actions button {
+  flex: none;
   white-space: nowrap;
 }
+/* 341px 的可用宽度里塞五个色块 + 取消/保存/可见范围会溢出 57px(实测),
+   所以色块在按键行里缩一号、行间距也收一档。工具条上的色块不受影响。 */
+.aipm-anno__actions {
+  gap: .3rem;
+}
+.aipm-anno__actions .aipm-anno__swatch {
+  width: 1rem;
+  height: 1rem;
+}
+.aipm-anno__actions .aipm-anno__swatch-dot {
+  width: .6rem;
+  height: .6rem;
+}
+/* 取消/保存也收一档内边距:主题把根字号放大到 20px,rem 换算比直觉大一档,
+   按键行(341px)要同时塞下五个色块 + 两个按钮 + 可见范围,只能逐项瘦身。 */
 .aipm-anno__actions .aipm-anno__cancel,
-.aipm-anno__actions .aipm-anno__save,
-.aipm-anno__actions .aipm-anno__login,
-.aipm-anno__actions .aipm-anno__logout {
+.aipm-anno__actions .aipm-anno__save {
+  padding: .3rem .55rem;
+}
+.aipm-anno__visbtn {
+  padding: .3rem .35rem .3rem .5rem;
+}
+.aipm-anno__account.is-logged-in {
+  color: var(--md-accent-fg-color);
+}
+.aipm-anno__acct {
+  position: absolute;
+  top: 2.45rem;
+  right: .6rem;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem .45rem .35rem .6rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .35rem;
+  background: var(--md-default-bg-color);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+  font-size: .75rem;
+}
+.aipm-anno__acct[hidden] {
+  display: none;
+}
+.aipm-anno__acct-name {
+  color: var(--md-default-fg-color--light);
+}
+.aipm-anno__logout {
+  padding: .2rem .5rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .25rem;
+  color: var(--md-default-fg-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  cursor: pointer;
+}
+.aipm-anno__logout:hover {
+  border-color: var(--md-default-fg-color--light);
+}
+.aipm-anno__actions .aipm-anno__cancel,
+.aipm-anno__actions .aipm-anno__save {
   padding: .3rem .7rem;
   border: 1px solid var(--aipm-anno-line);
   border-radius: .3rem;
@@ -591,14 +727,10 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-size: .75rem;
   cursor: pointer;
 }
-.aipm-anno__actions .aipm-anno__login,
 .aipm-anno__actions .aipm-anno__save {
   border-color: var(--md-accent-fg-color);
   color: var(--md-accent-bg-color);
   background: var(--md-accent-fg-color);
-}
-.aipm-anno__actions .aipm-anno__save {
-  margin-left: auto;
 }
 .aipm-anno__actions .aipm-anno__save:disabled {
   opacity: .6;
