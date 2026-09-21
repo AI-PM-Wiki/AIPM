@@ -5,6 +5,9 @@
    - 白底(暗:#0B0C0F 蓝调黑)+ indigo(#4051b5)/ accent(#526cfe)克制学术风
    - 全站唯一玻璃:顶栏 .md-header(blur 8px);其余组件纯色或透明,无 backdrop-filter
    - 无背景光斑(body::before 已删)、无 hero 光晕、无装饰动画
+   - 例外:§13 首页 v2(候选方向 w5 · liquid glass)在首页 hero 与栏目卡片上
+     刻意扩张玻璃 + 加回色场与漂移光斑;新增类名 .gl-* 只出现在 docs/index.md,
+     其余页面的契约不变。
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -1511,5 +1514,525 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
 
   .pm-banner::after {
     display: none;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   13. 首页 v2:浅色 liquid glass(候选方向 w5 · glass)
+   ----------------------------------------------------------------------------
+   定位:把首页 hero 与栏目卡片换成「浅色液态玻璃」——柔和的色彩场 + 玻璃面,
+   亮/暗各一套配方,并与站点既有 chrome(顶栏 §5.1、搜索 §5.4、卡片、chat-widget)同语言。
+
+   结构(hero 直接内联在 docs/index.md 正文,不再经 theme 的 home.html 模板;
+   本方向不修改 mkdocs-material/ 子模块):
+     .gl-hero                    色场容器(玻璃要有东西可折射)
+       .gl-hero__field           多层 radial-gradient 色场 + 2 个缓慢漂移光斑(纯 CSS)
+       .gl-hero__panel           玻璃面板:承载眉题 / 品牌 / CTA / 搜索
+     .pm-card-grid               栏目卡片网格(11 张 .pm-card,复用 §11.4 的列数定义)
+       ::before                  网格自己的色场,让卡片也有内容可折射
+
+   玻璃配方(每个玻璃面 5 层,见 .gl-hero__panel / .pm-card):
+     1 backdrop-filter: blur(16px) saturate(180%)
+     2 半透底色 rgba(255,255,255,.55~.72) / 暗色 rgba(20,24,32,.55)
+     3 顶·左上高光 linear-gradient(135deg, rgba(255,255,255,.9), rgba(255,255,255,.15) 40%, transparent)
+     4 边缘折射 border 1px rgba(255,255,255,.6) + inset 上高光 / 下暗边 + 0 8px 32px rgba(31,38,135,.12)
+     5 斜向 specular(面板用 ::before 垫在文字之下;卡片用 background-image 第二层)
+
+   降级:文件末尾 @supports not (backdrop-filter) → 提高不透明底,保证可读。
+   性能:backdrop-filter 面数受控(1 面板 + 11 卡片 + 网格/英雄 2 个色场);
+        面板内的按钮故意不再叠 backdrop-filter(嵌套会二次模糊,且徒增面数),
+        改用半透底 + inset 高光模拟玻璃;色场只对 transform 做动画,不动 filter。
+   注意:本节刻意偏离文件头「全站唯一玻璃」的旧契约——本方向就是要玻璃扩张到首页
+        hero 与卡片;新增类名 .gl-* 只出现在 docs/index.md,其余页面不受影响。
+   ---------------------------------------------------------------------------- */
+
+/* 13.0 玻璃 token:亮色 = 白玻璃 / 暗色 = 深色玻璃(高光减弱、描边转白低透明) */
+:root {
+  /* 色场(玻璃背后「可折射的内容」) */
+  --gl-field-indigo: rgba(99, 102, 241, .52);
+  --gl-field-sky:    rgba(56, 189, 248, .44);
+  --gl-field-rose:   rgba(244, 114, 182, .36);
+  --gl-field-teal:   rgba(45, 212, 191, .33);
+
+  /* 玻璃面 */
+  --gl-panel-bg:      rgba(255, 255, 255, .62);
+  --gl-card-bg:       rgba(255, 255, 255, .58);
+  --gl-border:        rgba(255, 255, 255, .60);
+  --gl-border-hover:  rgba(255, 255, 255, .90);
+  --gl-sheen:         rgba(255, 255, 255, .90);
+  --gl-sheen-soft:    rgba(255, 255, 255, .15);
+  --gl-inset-top:     rgba(255, 255, 255, .90);
+  --gl-inset-bottom:  rgba(0, 0, 0, .05);
+  --gl-shadow:        0 8px 32px rgba(31, 38, 135, .12);
+  --gl-shadow-hover:  0 16px 44px rgba(31, 38, 135, .20);
+  --gl-specular:      rgba(255, 255, 255, .55);
+
+  /* 玻璃上的文字(实测对比度见仓库报告) */
+  --gl-ink:           #0B1220;
+  --gl-ink-soft:      #2A3A55;
+  --gl-accent-ink:    #4051b5;
+  --gl-focus:         #4051b5;
+
+  /* 按钮 */
+  --gl-btn-ghost-bg:        rgba(255, 255, 255, .55);
+  --gl-btn-ghost-bg-hover:  rgba(255, 255, 255, .82);
+  --gl-btn-primary-bg:      #4051b5;
+  --gl-btn-primary-bg-hover:#34408f;
+  --gl-btn-primary-fg:      #ffffff;
+  --gl-btn-primary-glow:    rgba(64, 81, 181, .32);
+}
+
+[data-md-color-scheme="slate"] {
+  --gl-field-indigo: rgba(82, 108, 254, .30);
+  --gl-field-sky:    rgba(34, 211, 238, .20);
+  --gl-field-rose:   rgba(168, 85, 247, .22);
+  --gl-field-teal:   rgba(20, 184, 166, .16);
+
+  --gl-panel-bg:      rgba(20, 24, 32, .55);
+  --gl-card-bg:       rgba(20, 24, 32, .55);
+  --gl-border:        rgba(255, 255, 255, .12);
+  --gl-border-hover:  rgba(255, 255, 255, .24);
+  --gl-sheen:         rgba(255, 255, 255, .16);
+  --gl-sheen-soft:    rgba(255, 255, 255, .04);
+  --gl-inset-top:     rgba(255, 255, 255, .14);
+  --gl-inset-bottom:  rgba(0, 0, 0, .32);
+  --gl-shadow:        0 8px 32px rgba(0, 0, 0, .42);
+  --gl-shadow-hover:  0 16px 44px rgba(0, 0, 0, .55);
+  --gl-specular:      rgba(255, 255, 255, .20);
+
+  --gl-ink:           #E9EEF7;
+  --gl-ink-soft:      rgba(233, 238, 247, .76);
+  --gl-accent-ink:    #9DABFF;
+  --gl-focus:         #9DABFF;
+
+  --gl-btn-ghost-bg:        rgba(255, 255, 255, .08);
+  --gl-btn-ghost-bg-hover:  rgba(255, 255, 255, .18);
+  --gl-btn-primary-bg:      #7A8CFF;
+  --gl-btn-primary-bg-hover:#9AA8FF;
+  --gl-btn-primary-fg:      #0B0C0F;
+  --gl-btn-primary-glow:    rgba(122, 140, 255, .34);
+}
+
+/* 13.1 hero 容器 + 色彩场:玻璃必须有内容可折射,否则只是一片灰糊。
+   四层 radial-gradient(靛/天蓝/玫红/青)天然向边缘淡出(不留矩形硬边),
+   再叠两个缓慢漂移的光斑让折射随时间和指针位置变化。纯 CSS,无 WebGL、无外部资源。 */
+.gl-hero {
+  position: relative;
+  padding: .5rem 0 .25rem;
+}
+
+.gl-hero__field {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1.25rem;
+  bottom: -1.25rem;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 28px;
+  pointer-events: none;
+  background-image:
+    radial-gradient(58% 66% at 16% 18%, var(--gl-field-indigo), transparent 70%),
+    radial-gradient(54% 62% at 84% 22%, var(--gl-field-sky), transparent 72%),
+    radial-gradient(60% 72% at 74% 88%, var(--gl-field-rose), transparent 74%),
+    radial-gradient(56% 68% at 20% 84%, var(--gl-field-teal), transparent 74%);
+  filter: blur(6px);
+}
+
+.gl-hero__field::before,
+.gl-hero__field::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.gl-hero__field::before {
+  left: -8%;
+  top: -12%;
+  width: 52%;
+  height: 96%;
+  background-image: radial-gradient(closest-side, var(--gl-field-indigo), transparent);
+  animation: gl-drift-a 38s ease-in-out infinite alternate;
+}
+
+.gl-hero__field::after {
+  right: -8%;
+  bottom: -14%;
+  width: 48%;
+  height: 92%;
+  background-image: radial-gradient(closest-side, var(--gl-field-rose), transparent);
+  animation: gl-drift-b 46s ease-in-out infinite alternate;
+}
+
+@keyframes gl-drift-a {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(46%, 22%, 0); }
+}
+
+@keyframes gl-drift-b {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-42%, -18%, 0); }
+}
+
+/* 13.2 玻璃面板:hero 的眉题 / 品牌 / CTA / 搜索都装在这一块玻璃上(5 层配方) */
+.gl-hero__panel {
+  position: relative;
+  z-index: 1;              /* 压住色彩场 */
+  isolation: isolate;      /* 成为层叠上下文,保证 ::before(z-index:-1) 不外逃 */
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 1.75rem;
+  text-align: center;
+  border: 1px solid var(--gl-border);
+  border-radius: 24px;
+  background-color: var(--gl-panel-bg);
+  background-image: linear-gradient(135deg, var(--gl-sheen), var(--gl-sheen-soft) 40%, transparent);
+  box-shadow: inset 0 1px 0 var(--gl-inset-top),
+              inset 0 -1px 0 var(--gl-inset-bottom),
+              var(--gl-shadow);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+}
+
+/* 斜向 specular:垫在文字之下(z-index:-1),只做一道弱反射,不糊字 */
+.gl-hero__panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: .5;
+  background-image: linear-gradient(112deg,
+    transparent 30%, var(--gl-specular) 44%, rgba(255, 255, 255, .06) 52%, transparent 64%);
+}
+
+/* 13.3 面板内文字(统一 .md-typeset 前缀提权,压过 .md-typeset h1 / .md-typeset p) */
+.md-typeset .gl-hero__eyebrow {
+  margin: 0 0 .5rem;
+  font-family: var(--md-code-font);
+  font-size: .64rem;
+  font-weight: 500;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--gl-ink-soft);
+}
+
+/* h1 选择器带元素名:(0,2,1) 与 §4 的 [data-md-color-scheme="slate"] .md-typeset h1
+   同权重、靠后取胜,否则暗色下标题会被 §4 的 #ffffff 接管。 */
+.md-typeset h1.gl-hero__title {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: .01em;
+  color: var(--gl-ink);
+}
+
+.md-typeset .gl-hero__tagline {
+  max-width: 34rem;
+  margin: .6rem auto 0;
+  font-size: .95rem;
+  line-height: 1.75;
+  color: var(--gl-ink-soft);
+  text-wrap: balance;
+}
+
+.md-typeset .gl-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  margin: 1.4rem 0 0;
+}
+
+.md-typeset .gl-hero__search {
+  margin: 1.1rem 0 0;
+}
+
+/* 13.4 按钮:胶囊 + 玻璃高光(primary 走品牌实底保证对比度,ghost/search 走半透玻璃)。
+   选择器加 .md-typeset a 前缀提权,压过 .md-typeset a / .md-typeset a:hover。 */
+.md-typeset a.gl-btn,
+.gl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  padding: .62em 1.35em;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: .92rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 160ms ease, box-shadow 160ms ease,
+              background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.md-typeset a.gl-btn:hover,
+.md-typeset a.gl-btn:focus-visible,
+.gl-btn:hover,
+.gl-btn:focus-visible {
+  transform: translateY(-1px);
+}
+
+.md-typeset a.gl-btn:active,
+.gl-btn:active {
+  transform: translateY(0);
+}
+
+.md-typeset a.gl-btn:focus-visible,
+.gl-btn:focus-visible {
+  outline: 2px solid var(--gl-focus);
+  outline-offset: 2px;
+}
+
+/* 主按钮:品牌实底 + 顶部玻璃高光 + 品牌辉光 */
+.md-typeset a.gl-btn--primary,
+.gl-btn--primary {
+  color: var(--gl-btn-primary-fg);
+  background-color: var(--gl-btn-primary-bg);
+  background-image: linear-gradient(160deg, rgba(255, 255, 255, .30), rgba(255, 255, 255, 0) 58%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45),
+              0 6px 18px var(--gl-btn-primary-glow);
+}
+
+.md-typeset a.gl-btn--primary:hover,
+.md-typeset a.gl-btn--primary:focus-visible,
+.gl-btn--primary:hover,
+.gl-btn--primary:focus-visible {
+  color: var(--gl-btn-primary-fg);
+  background-color: var(--gl-btn-primary-bg-hover);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5),
+              0 10px 26px var(--gl-btn-primary-glow);
+}
+
+/* 幽灵按钮 / 搜索按钮:半透玻璃 + 发丝描边 + inset 高光
+   (不再叠 backdrop-filter:嵌在玻璃面板里会二次模糊,且徒增昂贵的合成面) */
+.md-typeset a.gl-btn--ghost,
+.gl-btn--ghost,
+.gl-btn--search {
+  color: var(--gl-ink);
+  background-color: var(--gl-btn-ghost-bg);
+  border-color: var(--gl-border);
+  box-shadow: inset 0 1px 0 var(--gl-sheen-soft),
+              inset 0 -1px 0 var(--gl-inset-bottom);
+}
+
+.gl-btn--search {
+  color: var(--gl-ink-soft);
+}
+
+.md-typeset a.gl-btn--ghost:hover,
+.md-typeset a.gl-btn--ghost:focus-visible,
+.gl-btn--ghost:hover,
+.gl-btn--ghost:focus-visible,
+.gl-btn--search:hover,
+.gl-btn--search:focus-visible {
+  background-color: var(--gl-btn-ghost-bg-hover);
+  border-color: var(--gl-border-hover);
+}
+
+/* 搜索按钮的放大镜图标(纯 CSS mask,沿用 §11.3 的内联 SVG 做法,无外部资源) */
+.gl-btn--search::before {
+  content: "";
+  display: inline-block;
+  width: 1.05em;
+  height: 1.05em;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.2'%20stroke-linecap='round'%3E%3Ccircle%20cx='11'%20cy='11'%20r='7'/%3E%3Cline%20x1='16.4'%20y1='16.4'%20x2='21'%20y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml;utf8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2.2'%20stroke-linecap='round'%3E%3Ccircle%20cx='11'%20cy='11'%20r='7'/%3E%3Cline%20x1='16.4'%20y1='16.4'%20x2='21'%20y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+/* 13.5 栏目卡片:网格自带色场,卡片是玻璃;hover 提升高光 + 轻微抬升。
+   卡片 HTML(class / href / 文案)保持原样,本节只覆写观感;选择器 [data-md-color-scheme] .pm-card
+   与 §11.5 同权重(0,2,0),靠后出现取胜。 */
+.pm-card-grid {
+  position: relative;
+}
+
+.pm-card-grid::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1rem;
+  bottom: .5rem;          /* 不下探到「本站的原则」标题区 */
+  z-index: 0;
+  border-radius: 28px;
+  pointer-events: none;
+  background-image:
+    radial-gradient(46% 54% at 12% 8%, var(--gl-field-teal), transparent 72%),
+    radial-gradient(44% 52% at 88% 26%, var(--gl-field-indigo), transparent 74%),
+    radial-gradient(50% 58% at 50% 96%, var(--gl-field-sky), transparent 76%);
+  filter: blur(6px);
+}
+
+[data-md-color-scheme] .pm-card {
+  z-index: 1;             /* 压住网格色场 */
+  color: var(--gl-ink);
+  background-color: var(--gl-card-bg);
+  background-image:
+    linear-gradient(135deg, var(--gl-sheen), var(--gl-sheen-soft) 42%, transparent),
+    linear-gradient(112deg, transparent 34%, var(--gl-specular) 48%, transparent 62%);
+  border-color: var(--gl-border);
+  box-shadow: inset 0 1px 0 var(--gl-inset-top),
+              inset 0 -1px 0 var(--gl-inset-bottom),
+              var(--gl-shadow);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  transition: translate 160ms ease, transform 160ms ease, box-shadow 160ms ease,
+              border-color 160ms ease, background-color 160ms ease;
+}
+
+/* 顶部发丝高光:由 §11.5 的青色改为玻璃白,随主题 */
+[data-md-color-scheme] .pm-card::before {
+  background: linear-gradient(90deg, transparent, var(--gl-sheen), transparent);
+  opacity: .75;
+}
+
+/* 原「右上角 ASCII 折角」是仪器风语言,与本方向的液态玻璃冲突:
+   改作卡片下缘的一道内暗边(玻璃厚度感),hover 加亮。 */
+[data-md-color-scheme] .pm-card::after {
+  top: auto;
+  right: 12%;
+  bottom: 0;
+  left: 12%;
+  width: auto;
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--gl-inset-bottom), transparent);
+  opacity: .9;
+}
+
+/* 抬升用独立的 translate 属性,不用 transform:§11.8 的入场动画
+   (.pm-card { animation: pm-rise … both })以 fill-mode 常驻 transform:none,
+   而动画声明在层叠上高过普通声明,写 transform 会被它吃掉(hover 抬升失效——
+   这也是 §11.5 原 hover translateY(-2px) 一直没生效的原因)。translate 是独立
+   属性,与动画的 transform 叠加,旧浏览器只是少了这 3px 位移,高光变化仍在。 */
+[data-md-color-scheme] .pm-card:hover,
+[data-md-color-scheme] .pm-card:focus-visible {
+  translate: 0 -3px;
+  border-color: var(--gl-border-hover);
+  box-shadow: inset 0 1px 0 var(--gl-inset-top),
+              inset 0 -1px 0 var(--gl-inset-bottom),
+              var(--gl-shadow-hover);
+}
+
+[data-md-color-scheme] .pm-card:hover::before,
+[data-md-color-scheme] .pm-card:focus-visible::before {
+  opacity: 1;
+}
+
+/* 文字:主文字继承卡片色,描述降为 78% 不透明(实测仍远高于 4.5:1);
+   hover 高亮由 sonar 青改为品牌 indigo(与按钮同色系) */
+[data-md-color-scheme] .pm-card__desc {
+  color: inherit;
+  opacity: .78;
+}
+
+/* 暗色玻璃实测最紧的一对(卡片描述 5.32:1):提一档不透明度换对比度余量 */
+[data-md-color-scheme="slate"] .pm-card__desc {
+  opacity: .84;
+}
+
+[data-md-color-scheme] .pm-card:hover .pm-card__title,
+[data-md-color-scheme] .pm-card:focus-visible .pm-card__title,
+[data-md-color-scheme] .pm-card:hover .pm-card__icon,
+[data-md-color-scheme] .pm-card:focus-visible .pm-card__icon {
+  color: var(--gl-accent-ink);
+}
+
+[data-md-color-scheme] .pm-card__icon {
+  color: var(--gl-accent-ink);
+  opacity: .85;
+}
+
+/* 13.6 与既有 chrome 对齐:顶栏是站点原先唯一的玻璃(§5.1 blur 8px)。
+   把模糊/饱和度对齐到本方向的玻璃语言,但不加边框与高光条——尊重 §5.1
+   「无边框、无渐变高光条」的既定决定。标题栏底色仍走 §5.1 的半透白/半透黑。 */
+.md-header {
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+}
+
+/* 13.7 锚点与响应式 */
+#pm-home-body {
+  scroll-margin-top: 5.25rem;  /* 粘性顶栏(必要时含 tab 栏)不遮挡滚动目标 */
+}
+
+@media screen and (max-width: 600px) {
+  .gl-hero__panel {
+    padding: 1.5rem 1.1rem 1.35rem;
+    border-radius: 20px;
+  }
+
+  .md-typeset h1.gl-hero__title {
+    font-size: 2rem;
+  }
+
+  .md-typeset .gl-hero__eyebrow {
+    font-size: .58rem;
+    letter-spacing: .16em;
+  }
+
+  .gl-hero__field {
+    top: -.75rem;
+    bottom: -.75rem;
+  }
+
+  .gl-hero__field,
+  .pm-card-grid::before {
+    filter: blur(4px);
+  }
+}
+
+/* 13.8 降低动态:关掉色场漂移,只留静态色彩场(玻璃观感不变) */
+@media (prefers-reduced-motion: reduce) {
+  .gl-hero__field::before,
+  .gl-hero__field::after {
+    animation: none;
+  }
+
+  /* 沿用 §11.7「减少动态即关闭位移」的意图,把新的 translate 抬升也一并关掉 */
+  [data-md-color-scheme] .pm-card:hover,
+  [data-md-color-scheme] .pm-card:focus-visible {
+    translate: none;
+  }
+
+  .md-typeset a.gl-btn:hover,
+  .md-typeset a.gl-btn:focus-visible,
+  .gl-btn:hover,
+  .gl-btn:focus-visible {
+    transform: none;
+  }
+}
+
+/* 13.9 降级:不支持 backdrop-filter 时退化为高不透明底,保证文字可读
+   (色场本身不依赖 backdrop-filter,保留;specular 减弱以免喧哗) */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gl-hero__panel,
+  [data-md-color-scheme] .pm-card {
+    background-image: none;
+  }
+
+  [data-md-color-scheme="default"] .gl-hero__panel,
+  [data-md-color-scheme="default"] .pm-card {
+    background-color: rgba(255, 255, 255, .93);
+  }
+
+  [data-md-color-scheme="slate"] .gl-hero__panel,
+  [data-md-color-scheme="slate"] .pm-card {
+    background-color: rgba(18, 22, 30, .95);
+  }
+
+  .gl-hero__panel::before {
+    opacity: .28;
   }
 }

@@ -1,9 +1,22 @@
 ---
 title: AI-PM
-template: home.html
 ---
 
-<div class="pm-card-grid">
+<!-- 首页 hero:直接内联在本文件(.md 里的顶层块级 HTML 会被原样输出),
+     不再经 theme 的 home.html 模板——本方向不修改 mkdocs-material/ 子模块。
+     样式见 docs/_static/css/extra.css §13;色彩场纯 CSS,无 WebGL、无外部资源。 -->
+<section class="gl-hero">
+<div class="gl-hero__field" aria-hidden="true"></div>
+<div class="gl-hero__panel">
+<p class="gl-hero__eyebrow">AI Product Manager Knowledge Base</p>
+<h1 class="gl-hero__title">AI-PM</h1>
+<p class="gl-hero__tagline">AI-PM 是一个 AI 产品经理知识整合站点，提供有趣又实用的 AI 产品、模型、工具与工作流知识，帮助广大 AI 产品从业者更快更深入地学习与实践</p>
+<p class="gl-hero__cta"><a class="gl-btn gl-btn--primary" href="#pm-home-body">开始学习</a><a class="gl-btn gl-btn--ghost" href="intro/about/">关于项目</a></p>
+<p class="gl-hero__search"><button class="gl-btn gl-btn--search" type="button" onclick="var t=document.getElementById('__search');if(t&amp;&amp;!t.checked){t.click()}var i=document.querySelector('.md-search__input');if(i){i.focus()}">搜索整个知识库</button></p>
+</div>
+</section>
+
+<div class="pm-card-grid" id="pm-home-body">
   <a class="pm-card" href="pm/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2.2 4.8-4.8 2.2 2.2-4.8z"/></svg>
     <span class="pm-card__title">产品方法论</span>
