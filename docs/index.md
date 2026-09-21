@@ -1,9 +1,19 @@
 ---
 title: AI-PM
-template: home.html
 ---
 
-<div class="pm-card-grid">
+<section class="pm-px-hero">
+<p class="pm-px-hero__eyebrow">AI Product Manager Knowledge Base</p>
+<h1 class="pm-px-hero__brand"><span class="pm-px-hero__cast"><svg class="pm-px-cast" viewBox="0 0 37 13" role="img" aria-hidden="true" focusable="false" shape-rendering="crispEdges"><defs><pattern id="pm-px-dots" width="2" height="2" patternUnits="userSpaceOnUse"><circle class="px-dot" cx=".5" cy=".5" r=".2"/></pattern></defs><rect class="px-panel" x="0" y="0" width="37" height="13"/><rect class="px-dots" x="1" y="1" width="35" height="11" fill="url(#pm-px-dots)"/><path class="px-frame" d="M0 0h37v1h-37zM0 1h1v1h-1zM36 1h1v1h-1zM0 2h1v1h-1zM36 2h1v1h-1zM0 3h1v1h-1zM36 3h1v1h-1zM0 4h1v1h-1zM36 4h1v1h-1zM0 5h1v1h-1zM36 5h1v1h-1zM0 6h1v1h-1zM36 6h1v1h-1zM0 7h1v1h-1zM36 7h1v1h-1zM0 8h1v1h-1zM36 8h1v1h-1zM0 9h1v1h-1zM36 9h1v1h-1zM0 10h1v1h-1zM36 10h1v1h-1zM0 11h1v1h-1zM36 11h1v1h-1zM0 12h37v1h-37z"/><path class="px-ink" d="M4 2h3v1h-3zM9 2h5v1h-5zM21 2h4v1h-4zM27 2h1v1h-1zM31 2h1v1h-1zM3 3h1v1h-1zM7 3h1v1h-1zM11 3h1v1h-1zM21 3h1v1h-1zM25 3h1v1h-1zM27 3h2v1h-2zM30 3h2v1h-2zM3 4h1v1h-1zM7 4h1v1h-1zM11 4h1v1h-1zM21 4h1v1h-1zM25 4h1v1h-1zM27 4h1v1h-1zM29 4h1v1h-1zM31 4h1v1h-1zM3 5h5v1h-5zM11 5h1v1h-1zM16 5h3v1h-3zM21 5h4v1h-4zM27 5h1v1h-1zM31 5h1v1h-1zM3 6h1v1h-1zM7 6h1v1h-1zM11 6h1v1h-1zM21 6h1v1h-1zM27 6h1v1h-1zM31 6h1v1h-1zM3 7h1v1h-1zM7 7h1v1h-1zM11 7h1v1h-1zM21 7h1v1h-1zM27 7h1v1h-1zM31 7h1v1h-1zM3 8h1v1h-1zM7 8h1v1h-1zM9 8h5v1h-5zM21 8h1v1h-1zM27 8h1v1h-1zM31 8h1v1h-1z"/><path class="px-accent" d="M3 10h19v1h-19z"/><path class="px-dim" d="M22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h1v1h-1zM32 10h1v1h-1z"/><rect class="px-cursor" x="33" y="2" width="1" height="7"/></svg></span><span class="pm-px-hero__sr">AI-PM</span></h1>
+<p class="pm-px-hero__tagline">AI-PM 是一个 AI 产品经理知识整合站点，提供有趣又实用的 AI 产品、模型、工具与工作流知识，帮助广大 AI 产品从业者更快更深入地学习与实践</p>
+<div class="pm-px-hero__cta">
+<a class="pm-px-btn pm-px-btn--primary" href="#pm-home-body">开始学习</a>
+<a class="pm-px-btn" href="intro/about/">关于项目</a>
+<button class="pm-px-btn pm-px-btn--search" type="button" onclick='var t=document.getElementById("__search");t&amp;&amp;!t.checked&amp;&amp;t.click(),document.querySelector(".md-search__input")?.focus()'>搜索整个知识库</button>
+</div>
+</section>
+
+<div class="pm-card-grid" id="pm-home-body">
   <a class="pm-card" href="pm/">
     <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2.2 4.8-4.8 2.2 2.2-4.8z"/></svg>
     <span class="pm-card__title">产品方法论</span>

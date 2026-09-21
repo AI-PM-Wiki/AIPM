@@ -1513,3 +1513,403 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   13. 首页像素画(方向 w4「pixel」,2026-09-21):
+       低分辨率栅格 + 有限调色板 + 像素级对齐 + 硬边缘无抗锯齿,借鉴 fumadocs
+       首页的像素画语汇。hero 主视觉是一幅内联 SVG 像素画(37×13 格):像素化
+       「AI-PM」字模 + 闪烁方块游标 + 进度条分隔线,单格按整数倍放大,
+       shape-rendering: crispEdges 关掉抗锯齿;卡片改直角 + 2px 硬描边 +
+       硬偏移阴影,hover 反色并位移 2px(用 steps() 量化,不做平滑过渡)。
+       动效一律量化;prefers-reduced-motion 下全停。不加载任何外部字体/图片/脚本。
+
+       结构来源:hero 由 docs/index.md 内联 HTML 输出(已摘除 frontmatter 的
+       template: home.html)。本仓库**未启用 md_in_html**,且 Python-Markdown 的
+       HTML 抽取器会把「未闭合块级标签」之后的整篇文档当成原始 HTML——实测
+       `<div class="pm-home-body">`(换行后不闭合)会让 `##` 小节全部不渲染。
+       故**不加外层包裹 div**,页身 markdown 的样式改用兄弟选择器
+       `.pm-px-hero ~ …` 限定:只有首页存在 .pm-px-hero,规则天然只作用于首页。
+
+       调色板 5 色(panel / ink / accent / dim / dot),亮暗同色相:
+       亮 = 浅底深像素(--pm-px-ink 深墨蓝),暗 = 深底同色相提亮。
+   ---------------------------------------------------------------------------- */
+:root {
+  --pm-px-panel: #EEF2F7;    /* 像素画底板 / 卡片底色 */
+  --pm-px-ink: #0F1B2D;      /* 主像素:字模、画框、卡片描边与文字 */
+  --pm-px-accent: #0891B2;   /* 强调像素:游标、进度条、角像素(亮底取深青保对比) */
+  --pm-px-dim: #94A3B8;      /* 弱像素:进度条虚线尾 */
+  --pm-px-dot: #CBD5E1;      /* 网格点 / 卡片与按钮的硬偏移阴影 */
+  --pm-pxp: 12px;            /* 像素画单格边长;必须为整数,否则出现半像素 */
+}
+
+[data-md-color-scheme="slate"] {
+  --pm-px-panel: #080F1E;
+  --pm-px-ink: #E6F0FA;
+  --pm-px-accent: #22D3EE;
+  --pm-px-dim: #64748B;
+  --pm-px-dot: #16233A;
+}
+
+/* 13.1 hero:像素画 + 品牌 + CTA;背景与站点其余页面一致,不设底色 */
+.pm-px-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.3rem 0 .5rem;
+  text-align: center;
+}
+
+.pm-px-hero__eyebrow {
+  margin: 0;
+  font-family: var(--md-code-font);
+  font-size: .66rem;
+  font-weight: 500;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+}
+
+.pm-px-hero__eyebrow::before {
+  content: "// ";
+  color: var(--pm-px-accent);
+}
+
+/* h1 只承载可访问名称与站点标题语义,视觉主体是它内部的像素画 */
+.pm-px-hero__brand {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1;
+  color: inherit;
+}
+
+.pm-px-hero__cast {
+  display: block;
+  width: calc(var(--pm-pxp) * 37);   /* 37 格宽;整数倍放大才不出半像素 */
+  max-width: 100%;                   /* 兜底:极端窄屏不至于横向溢出 */
+  margin: 0 auto;
+}
+
+/* 视觉隐藏:像素画对 AT 无意义,标题文本由此提供 */
+.pm-px-hero__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pm-px-hero__tagline {
+  max-width: 42rem;
+  margin: 0;
+  font-size: .95rem;
+  line-height: 1.7;
+  color: var(--md-default-fg-color--light);
+  text-wrap: balance;
+}
+
+.pm-px-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+}
+
+/* 13.2 像素画本体:1 用户单位 = 1 格;5 色全部走 CSS 变量,便于亮暗自适应 */
+.pm-px-cast {
+  display: block;
+  width: 100%;
+  height: auto;
+  shape-rendering: crispEdges;   /* 关抗锯齿 → 硬边缘 */
+}
+
+.pm-px-cast .px-panel  { fill: var(--pm-px-panel); }
+.pm-px-cast .px-dot    { fill: var(--pm-px-dot); }
+.pm-px-cast .px-frame,
+.pm-px-cast .px-ink    { fill: var(--pm-px-ink); }
+.pm-px-cast .px-accent { fill: var(--pm-px-accent); }
+.pm-px-cast .px-dim    { fill: var(--pm-px-dim); }
+
+/* 游标:硬开关闪烁(1 帧亮 / 1 帧灭,无渐隐) */
+.pm-px-cast .px-cursor {
+  fill: var(--pm-px-accent);
+  animation: pm-px-blink 1.2s steps(1, end) infinite;
+}
+
+@keyframes pm-px-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* 13.3 像素按钮:直角、2px 硬描边、硬偏移阴影;hover 压入 2px(量化瞬变) */
+.md-typeset a.pm-px-btn,
+.pm-px-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .5em 1.15em;
+  border: 2px solid var(--pm-px-ink);
+  border-radius: 0;
+  font-family: var(--md-code-font);
+  font-size: .8rem;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--pm-px-ink);
+  background-color: var(--pm-px-panel);
+  box-shadow: 3px 3px 0 0 var(--pm-px-dot);
+  transition: transform 100ms steps(2, end), box-shadow 100ms steps(2, end),
+              border-color 100ms steps(2, end), background-color 100ms steps(2, end);
+}
+
+.md-typeset a.pm-px-btn:hover,
+.md-typeset a.pm-px-btn:focus-visible,
+.pm-px-btn:hover,
+.pm-px-btn:focus-visible {
+  color: var(--pm-px-ink);
+  background-color: var(--pm-px-panel);
+  border-color: var(--pm-px-accent);
+  box-shadow: 1px 1px 0 0 var(--pm-px-dot);
+  transform: translate(2px, 2px);
+}
+
+.md-typeset a.pm-px-btn:focus-visible,
+.pm-px-btn:focus-visible {
+  outline: 2px solid var(--pm-px-accent);
+  outline-offset: 2px;
+}
+
+/* 主按钮:反相实底(ink 底 / panel 字),投影走 accent */
+.md-typeset a.pm-px-btn--primary,
+.pm-px-btn--primary {
+  color: var(--pm-px-panel);
+  background-color: var(--pm-px-ink);
+  border-color: var(--pm-px-ink);
+  box-shadow: 3px 3px 0 0 var(--pm-px-accent);
+}
+
+.md-typeset a.pm-px-btn--primary:hover,
+.md-typeset a.pm-px-btn--primary:focus-visible,
+.pm-px-btn--primary:hover,
+.pm-px-btn--primary:focus-visible {
+  color: var(--pm-px-panel);
+  background-color: var(--pm-px-ink);
+  border-color: var(--pm-px-accent);
+  box-shadow: 1px 1px 0 0 var(--pm-px-accent);
+  transform: translate(2px, 2px);
+}
+
+/* 13.4 卡片网格与卡片:直角 + 2px 硬描边 + 硬偏移阴影;hover 反色 + 位移 2px。
+   注:11.5 的玻璃卡片规则带 [data-md-color-scheme] 前缀(0,2,0),
+   这里同样加前缀以保证覆盖(同权重、本节在后)。 */
+[data-md-color-scheme="default"] .pm-card-grid,
+[data-md-color-scheme="slate"] .pm-card-grid {
+  max-width: 61rem;
+  margin: 0 auto;
+  padding: .9rem 0 2rem;
+  gap: 14px;
+}
+
+[data-md-color-scheme="default"] .pm-card,
+[data-md-color-scheme="slate"] .pm-card {
+  gap: .45rem;
+  padding: 1.1rem 1.15rem;
+  border: 2px solid var(--pm-px-ink);
+  border-radius: 0;
+  background-color: var(--pm-px-panel);
+  color: var(--pm-px-ink);
+  box-shadow: 4px 4px 0 0 var(--pm-px-dot);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: none;
+  animation-timing-function: steps(4, end);   /* 入场动画量化成 4 帧(11.8 提供 keyframes/延迟) */
+}
+
+[data-md-color-scheme="default"] .pm-card:hover,
+[data-md-color-scheme="default"] .pm-card:focus-visible,
+[data-md-color-scheme="slate"] .pm-card:hover,
+[data-md-color-scheme="slate"] .pm-card:focus-visible {
+  transform: translate(2px, 2px);
+  background-color: var(--pm-px-ink);
+  color: var(--pm-px-panel);
+  border-color: var(--pm-px-ink);
+  box-shadow: 1px 1px 0 0 var(--pm-px-accent);
+}
+
+/* 图标:硬笔画,反色后跟随 currentColor,保证任何底色下都够对比 */
+[data-md-color-scheme="default"] .pm-card .pm-card__icon,
+[data-md-color-scheme="slate"] .pm-card .pm-card__icon {
+  color: var(--pm-px-accent);
+  opacity: 1;
+  stroke-width: 2;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  transition: none;
+}
+
+[data-md-color-scheme="default"] .pm-card:hover .pm-card__icon,
+[data-md-color-scheme="default"] .pm-card:focus-visible .pm-card__icon,
+[data-md-color-scheme="slate"] .pm-card:hover .pm-card__icon,
+[data-md-color-scheme="slate"] .pm-card:focus-visible .pm-card__icon {
+  color: currentColor;
+  opacity: 1;
+}
+
+[data-md-color-scheme="default"] .pm-card .pm-card__title,
+[data-md-color-scheme="slate"] .pm-card .pm-card__title {
+  color: inherit;
+  transition: none;
+}
+
+[data-md-color-scheme="default"] .pm-card:hover .pm-card__title,
+[data-md-color-scheme="default"] .pm-card:focus-visible .pm-card__title,
+[data-md-color-scheme="slate"] .pm-card:hover .pm-card__title,
+[data-md-color-scheme="slate"] .pm-card:focus-visible .pm-card__title {
+  color: inherit;
+}
+
+[data-md-color-scheme="default"] .pm-card .pm-card__desc,
+[data-md-color-scheme="slate"] .pm-card .pm-card__desc {
+  color: inherit;
+  opacity: .72;
+}
+
+/* 去掉玻璃语言:顶部渐变发丝线整条移除,角标换成实心像素方块 */
+[data-md-color-scheme="default"] .pm-card::before,
+[data-md-color-scheme="slate"] .pm-card::before {
+  display: none;
+}
+
+[data-md-color-scheme="default"] .pm-card::after,
+[data-md-color-scheme="slate"] .pm-card::after {
+  top: .5rem;
+  right: .5rem;
+  width: 6px;
+  height: 6px;
+  border: 0;
+  background-color: var(--pm-px-accent);
+  opacity: 1;
+  transition: none;
+}
+
+[data-md-color-scheme="default"] .pm-card:hover::after,
+[data-md-color-scheme="default"] .pm-card:focus-visible::after,
+[data-md-color-scheme="slate"] .pm-card:hover::after,
+[data-md-color-scheme="slate"] .pm-card:focus-visible::after {
+  background-color: currentColor;
+  opacity: 1;
+}
+
+/* 13.5 页身 markdown 小节(「本站的原则」/「现在适合从哪里开始」):
+   用兄弟选择器从 .pm-px-hero 起限定,只作用于首页(见本节头部说明)。 */
+.pm-px-hero ~ h2 {
+  margin-top: 1.6rem;
+  padding-bottom: .4rem;
+  border-bottom: 2px solid var(--pm-px-ink);
+  color: var(--md-default-fg-color);
+}
+
+.pm-px-hero ~ ul {
+  margin-left: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.pm-px-hero ~ ul > li {
+  margin: .45rem 0;
+  padding: .6rem .9rem;
+  border: 2px solid var(--pm-px-ink);
+  border-radius: 0;
+  background-color: var(--pm-px-panel);
+  color: var(--pm-px-ink);
+  box-shadow: 4px 4px 0 0 var(--pm-px-dot);
+}
+
+.pm-px-hero ~ ul a {
+  color: var(--pm-px-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* 亮底例外(与 11.3/11.9 同一条既有约定):--pm-px-accent #0891B2 在浅色底板上
+   只有 3.3:1,不满足正文文字对比;文字链接改用同色相加深的 #0E7490(4.8:1)。
+   像素画/游标/描边等图形元素仍用 --pm-px-accent,不受此例外影响。 */
+[data-md-color-scheme="default"] .pm-px-hero ~ ul a {
+  color: #0E7490;
+}
+
+.pm-px-hero ~ ul a:hover,
+.pm-px-hero ~ ul a:focus-visible {
+  color: var(--pm-px-ink);
+}
+
+/* 13.6 入场:量化成 4 帧(像素 sprite 感),而非平滑上浮 */
+@keyframes pm-px-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.pm-px-hero > * {
+  animation: pm-px-rise .45s steps(4, end) both;
+}
+
+.pm-px-hero > :nth-child(2) { animation-delay: .05s; }
+.pm-px-hero > :nth-child(3) { animation-delay: .1s; }
+.pm-px-hero > :nth-child(4) { animation-delay: .15s; }
+
+/* 13.7 响应式:只改单格边长(取整数),像素画始终是整数倍放大 */
+@media screen and (max-width: 560px) {
+  :root { --pm-pxp: 9px; }
+}
+
+@media screen and (max-width: 420px) {
+  :root { --pm-pxp: 7px; }
+
+  .pm-px-hero__eyebrow {
+    font-size: .6rem;
+    letter-spacing: .18em;
+  }
+}
+
+/* 13.8 减少动态:关掉闪烁与量化过渡,游标常亮 */
+@media (prefers-reduced-motion: reduce) {
+  .pm-px-hero > *,
+  .pm-px-cast .px-cursor {
+    animation: none;
+  }
+
+  .pm-px-cast .px-cursor {
+    opacity: 1;
+  }
+
+  .md-typeset a.pm-px-btn,
+  .pm-px-btn,
+  [data-md-color-scheme="default"] .pm-card,
+  [data-md-color-scheme="slate"] .pm-card {
+    transition: none;
+  }
+
+  .md-typeset a.pm-px-btn:hover,
+  .md-typeset a.pm-px-btn:focus-visible,
+  .pm-px-btn:hover,
+  .pm-px-btn:focus-visible,
+  [data-md-color-scheme="default"] .pm-card:hover,
+  [data-md-color-scheme="default"] .pm-card:focus-visible,
+  [data-md-color-scheme="slate"] .pm-card:hover,
+  [data-md-color-scheme="slate"] .pm-card:focus-visible {
+    transform: none;
+  }
+}

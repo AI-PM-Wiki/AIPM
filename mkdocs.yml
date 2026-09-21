@@ -813,7 +813,7 @@ extra_javascript:
   - 'https://hypothes.is/embed.js'
   - '_static/js/hypothesis.js?v=9'
 extra_css:
-  - '_static/css/extra.css?v=37'
+  - '_static/css/extra.css?v=38'
   - '_static/css/mermaid-zoom.css?v=4'
 
 # Extensions
