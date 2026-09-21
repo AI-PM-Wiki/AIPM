@@ -1513,3 +1513,622 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   13. 首页 v2「内容图谱」(generative 方向)
+   ----------------------------------------------------------------------------
+   方向:把知识库自身的**内容量**画成一张图,而不是给首页套一层材质。
+
+   骨架(与旧版「居中堆叠 hero + 11 个等大卡片」的根本区别):
+     ① 满宽浅横带(42vh):一幅 Canvas2D 生成图形,11 个栏目 = 11 个测站;
+        纵坐标与点面积同时编码该栏目 docs/<key>/ 下真实 .md 篇数的平方根;
+        字标在横带**左下角**(图题位置),**不压在图上、不居中**。
+     ② 横带下方一条通栏:左对齐 CTA + 搜索,右端是全站总量。
+     ③ 栏目区是 12 列严格网格上的**非等大 bento**:前 3 名跨 2 行(5/4/3 列),
+        其余单行且列宽 4/3/2 交替,两行的分隔缝错开;不是 11 个等大盒子。
+
+   为了让横带、bento、字标、按钮竖向对齐在同一条内容栏上,首页**隐藏左右侧栏**
+   (它们在本页只有「简介子导航」和两条 TOC,信息量低;隐藏后正文栏从 688px
+   变成 1220px,横带里的图形和 bento 才有同一把尺子)。
+
+   调色:纸白/深墨 + **单一**强调 #C2410C(亮)/ #FB923C(暗)。无多色相渐变。
+   字号:11 / 14 / 20 / 28 / 40 px。这里**刻意用 px 而不是 rem**——Material 在
+   宽屏把 html 字号设成 125%,rem 会被整体放大 1.25 倍,横带里那套紧凑的
+   制图字号会被撑到溢出换行。
+
+   依赖:docs/_static/js/home-plate.js(canvas 绘制 + 图 ↔ 目录 hover 联动 +
+   满宽出血量)。无 JS:横带退化为内容栏宽(不横向溢出),底纹来自 CSS,
+   品牌与 CTA 是纯 HTML,不会白板。
+   ---------------------------------------------------------------------------- */
+
+/* 13.1 设计 token(亮/暗是两套设计,不是反色) */
+:root {
+  --pm2-ground: #F7F6F3;
+  --pm2-ink: #1C1917;
+  --pm2-ink-2: #57534E;
+  --pm2-ink-3: #A8A29E;
+  --pm2-rule: rgba(28, 25, 23, .09);
+  --pm2-rule-2: rgba(28, 25, 23, .18);
+  --pm2-accent: #C2410C;
+  --pm2-accent-ink: #9A3412;
+  --pm2-accent-wash: rgba(194, 65, 12, .07);
+  --pm2-hover: rgba(28, 25, 23, .028);
+  --pm2-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --pm2-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  --pm2-fs-mono: 11px;
+  --pm2-fs-body: 14px;
+  --pm2-fs-title: 20px;
+  --pm2-fs-lead: 28px;
+  --pm2-fs-mark: 40px;
+  --pm2-gap: 20px;
+  /* 满宽出血量,由 home-plate.js 按正文栏到视口两边的实际距离写入 */
+  --pm2-bleed-l: 0px;
+  --pm2-bleed-r: 0px;
+}
+
+[data-md-color-scheme="slate"] {
+  --pm2-ground: #121514;
+  --pm2-ink: #EDEAE4;
+  --pm2-ink-2: #A8A29E;
+  --pm2-ink-3: #6B6560;
+  --pm2-rule: rgba(237, 234, 228, .10);
+  --pm2-rule-2: rgba(237, 234, 228, .22);
+  --pm2-accent: #FB923C;
+  --pm2-accent-ink: #FDBA74;
+  --pm2-accent-wash: rgba(251, 146, 60, .15);
+  --pm2-hover: rgba(237, 234, 228, .045);
+}
+
+/* 13.2 首页改版:隐藏侧栏、接管正文栏的内边距、清掉摘掉 home.html 后露出来的
+   chrome(编辑按钮 / hr + 版权 blockquote / giscus 评论区留的白矩形)。
+   giscus 只 display:none,不删 DOM。 */
+body:has(.pm2-hero) .md-sidebar--secondary {
+  display: none;
+}
+
+@media screen and (min-width: 76.25em) {
+  /* 只在侧栏是静态栏的桌面断点隐藏;更窄时左侧栏是抽屉,不能 display:none */
+  body:has(.pm2-hero) .md-sidebar--primary {
+    display: none;
+  }
+}
+
+body:has(.pm2-hero) .md-content__inner {
+  padding-top: 0;
+  padding-inline: 1rem;
+}
+
+body:has(.pm2-hero) .md-content__inner > p:empty,
+body:has(.pm2-hero) .md-content__inner > hr,
+body:has(.pm2-hero) blockquote.page-copyright,
+body:has(.pm2-hero) #__comments,
+body:has(.pm2-hero) .giscus,
+body:has(.pm2-hero) .md-content__button,
+body:has(.pm2-hero) .md-feedback,
+body:has(.pm2-hero) .md-source-file {
+  display: none !important;
+}
+
+/* 13.3 满宽浅横带:出血量由 --pm2-bleed-* 给出,默认 0(退化为内容栏宽,
+   保证任何宽度都不横向溢出) */
+.pm2-hero,
+.pm2-lede {
+  width: auto;
+  margin-left: calc(-1 * var(--pm2-bleed-l));
+  margin-right: calc(-1 * var(--pm2-bleed-r));
+}
+
+.pm2-hero {
+  position: relative;
+  height: clamp(330px, 42vh, 460px);
+  background-color: var(--pm2-ground);
+  border-top: 1px solid var(--pm2-rule);
+  border-bottom: 1px solid var(--pm2-rule);
+  overflow: clip;
+  box-sizing: border-box;
+}
+
+/* 无 JS / 无 Canvas 时的静态底:横向规则线,保证横带不是一块白板
+   (有 JS 时 canvas 覆盖其上) */
+.pm2-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--pm2-rule) 0 1px,
+    transparent 1px 25%
+  );
+  opacity: .5;
+}
+
+/* 13.4 Canvas 图形层 */
+.pm2-fig {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pm2-hero--nojs .pm2-fig {
+  display: none;
+}
+
+/* JS 接管后,CSS 底纹退场 —— 否则 CSS 的 4 条线会和 canvas 的 3 条量尺线错位叠在一起 */
+.pm2-hero--js::before {
+  display: none;
+}
+
+.pm2-hero noscript {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+}
+
+.pm2-hero noscript svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 13.5 字标:横带**左下角**左对齐,中小字号 —— 图表 + 图题的关系。
+   left 无 JS 时是 0(与正文栏左缘齐),有 JS 时由绘图区左缘钉住 */
+.pm2-hero__mark {
+  position: absolute;
+  z-index: 2;
+  left: var(--pm2-plot-left, 0px);
+  bottom: 1.1rem;
+  max-width: min(340px, 52%);
+}
+
+.pm2-hero__mark::before {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 3px;
+  margin-bottom: .7rem;
+  background-color: var(--pm2-accent);
+}
+
+/* h1 需压过 §4 的 [data-md-color-scheme="slate"] .md-typeset h1{color:#fff}
+   (特异度 0,2,1),故选择器写到 0,3,1 以上 */
+[data-md-color-scheme] .md-typeset .pm2-hero__mark h1 {
+  margin: 0;
+  font-family: var(--pm2-sans);
+  font-size: var(--pm2-fs-mark);
+  font-weight: 600;
+  line-height: .96;
+  letter-spacing: -.035em;
+  color: var(--pm2-ink);
+}
+
+.pm2-hero__caption {
+  margin: .55rem 0 0;
+  font-family: var(--pm2-mono);
+  font-size: var(--pm2-fs-mono);
+  font-weight: 400;
+  line-height: 1.65;
+  letter-spacing: .01em;
+  color: var(--pm2-ink-2);
+  font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
+}
+
+.pm2-hero__caption b {
+  font-weight: 600;
+  color: var(--pm2-accent-ink);
+}
+
+/* 13.6 横带下方通栏:左对齐 CTA + 搜索 */
+.pm2-lede {
+  background-color: var(--pm2-ground);
+  border-bottom: 1px solid var(--pm2-rule-2);
+}
+
+.pm2-lede__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem .7rem;
+  padding: 1rem;
+}
+
+.pm2-lede__meta {
+  margin: 0 0 0 auto;
+  font-family: var(--pm2-mono);
+  font-size: var(--pm2-fs-mono);
+  letter-spacing: .04em;
+  color: var(--pm2-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pm2-lede__meta b {
+  font-weight: 600;
+  color: var(--pm2-ink);
+}
+
+/* 13.7 按钮:方角、1px 描边、无投影 —— 制图语言,不是 Material 胶囊。
+   .md-typeset a(特异度 0,1,1)会盖掉 .pm2-btn(0,1,0)的 color,把标签刷成
+   Material 靛蓝,所以本组选择器统一写到 .md-typeset .pm2-btn(0,2,0)以上 */
+.md-typeset .pm2-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 .95rem;
+  font-family: var(--pm2-sans);
+  font-size: var(--pm2-fs-body);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-decoration: none;
+  border: 1px solid var(--pm2-rule-2);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--pm2-ink);
+  cursor: pointer;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.md-typeset .pm2-btn:hover {
+  border-color: var(--pm2-ink);
+  background-color: var(--pm2-hover);
+  color: var(--pm2-ink);
+}
+
+.md-typeset .pm2-btn--solid,
+.md-typeset .pm2-btn--solid:hover {
+  border-color: var(--pm2-accent);
+  background-color: var(--pm2-accent);
+  color: #FFFFFF;
+}
+
+.md-typeset .pm2-btn--solid:hover {
+  border-color: var(--pm2-accent-ink);
+  background-color: var(--pm2-accent-ink);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .pm2-btn--solid,
+[data-md-color-scheme="slate"] .md-typeset .pm2-btn--solid:hover {
+  color: #1A1206;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .pm2-btn--solid:hover {
+  background-color: var(--pm2-accent-ink);
+  border-color: var(--pm2-accent-ink);
+}
+
+.md-typeset .pm2-btn--search {
+  border-style: dashed;
+  color: var(--pm2-ink-2);
+  font-family: var(--pm2-mono);
+  font-size: var(--pm2-fs-mono);
+  letter-spacing: .02em;
+}
+
+.md-typeset .pm2-btn--search::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  margin-right: .5rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  box-shadow: 5px 5px 0 -4px currentColor;
+  transform: rotate(-45deg);
+}
+
+.md-typeset .pm2-btn:focus-visible,
+.pm2-tile:focus-visible {
+  outline: 2px solid var(--pm2-accent);
+  outline-offset: 2px;
+}
+
+/* 13.8 栏目区:12 列严格网格 + 非等大 bento */
+.pm2-index {
+  margin: 2.2rem 0 0;
+}
+
+.pm2-index__cap {
+  margin: 0 0 .9rem;
+  padding-bottom: .5rem;
+  border-bottom: 2px solid var(--pm2-ink);
+  font-family: var(--pm2-mono);
+  font-size: var(--pm2-fs-mono);
+  letter-spacing: .06em;
+  line-height: 1.6;
+  color: var(--pm2-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pm2-index__cap b {
+  font-weight: 600;
+  color: var(--pm2-ink);
+}
+
+.pm2-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: minmax(104px, auto) minmax(104px, auto)
+    minmax(140px, auto) minmax(140px, auto) minmax(112px, auto);
+  gap: var(--pm2-gap);
+}
+
+/* 13.9 格子:索引号 + 篇数 + 比例量尺,没有图标 —— 图标是模板感的第一来源 */
+.pm2-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: .8rem .95rem .95rem;
+  border: 1px solid var(--pm2-rule);
+  border-radius: 2px;
+  text-decoration: none;
+  color: inherit;
+  background-color: transparent;
+  transition: background-color .16s ease, border-color .16s ease;
+  overflow: hidden;
+}
+
+.pm2-tile:hover {
+  background-color: var(--pm2-hover);
+  border-color: var(--pm2-rule-2);
+}
+
+.pm2-tile.is-linked {
+  border-color: var(--pm2-accent);
+  background-color: var(--pm2-accent-wash);
+}
+
+/* 顶部量尺:长度 ∝ √篇数,与横带里的点面积同一编码 */
+.pm2-tile__bar {
+  display: block;
+  height: 3px;
+  width: 100%;
+  margin-bottom: .7rem;
+  background-color: var(--pm2-rule);
+}
+
+.pm2-tile__bar i {
+  display: block;
+  height: 100%;
+  width: var(--pm2-w, 0%);
+  background-color: var(--pm2-ink-2);
+  transition: background-color .16s ease;
+}
+
+.pm2-tile:hover .pm2-tile__bar i,
+.pm2-tile.is-linked .pm2-tile__bar i {
+  background-color: var(--pm2-accent);
+}
+
+.pm2-tile__meta {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  font-family: var(--pm2-mono);
+  font-size: var(--pm2-fs-mono);
+  line-height: 1.2;
+  letter-spacing: .04em;
+  color: var(--pm2-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pm2-tile__num {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--pm2-ink-2);
+}
+
+.pm2-tile__title {
+  display: block;
+  margin-top: .45rem;
+  font-family: var(--pm2-sans);
+  font-size: var(--pm2-fs-title);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -.018em;
+  color: var(--pm2-ink);
+  text-wrap: balance;
+}
+
+.pm2-tile__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: .4rem;
+  font-size: var(--pm2-fs-body);
+  line-height: 1.6;
+  color: var(--pm2-ink-2);
+  text-wrap: pretty;
+}
+
+.pm2-tile--lead .pm2-tile__title {
+  font-size: var(--pm2-fs-lead);
+  line-height: 1.15;
+  letter-spacing: -.03em;
+}
+
+.pm2-tile--lead .pm2-tile__desc {
+  -webkit-line-clamp: 3;
+}
+
+/* 前 3 个大格底部的大号篇数:年鉴里那种「大数字 + 小标签」 */
+.pm2-tile__big {
+  display: flex;
+  align-items: baseline;
+  gap: .35rem;
+  margin-top: auto;
+  padding-top: .85rem;
+  border-top: 1px solid var(--pm2-rule);
+  font-family: var(--pm2-mono);
+  font-size: var(--pm2-fs-mono);
+  letter-spacing: .04em;
+  color: var(--pm2-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pm2-tile__big b {
+  font-size: var(--pm2-fs-lead);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -.03em;
+  color: var(--pm2-ink);
+}
+
+/* bento 摆位:前 3 名跨 2 行;后两行的列宽与分隔缝都错开 */
+.pm2-tile[data-pm2="business"]   { grid-column: span 5; grid-row: span 2; }
+.pm2-tile[data-pm2="vertical"]   { grid-column: span 4; grid-row: span 2; }
+.pm2-tile[data-pm2="case"]       { grid-column: span 3; grid-row: span 2; }
+.pm2-tile[data-pm2="job"]        { grid-column: span 5; }
+.pm2-tile[data-pm2="ai"]         { grid-column: span 4; }
+.pm2-tile[data-pm2="practice"]   { grid-column: span 3; }
+.pm2-tile[data-pm2="management"] { grid-column: span 4; }
+.pm2-tile[data-pm2="pm"]         { grid-column: span 4; }
+.pm2-tile[data-pm2="intro"]      { grid-column: span 4; }
+.pm2-tile[data-pm2="tech"]       { grid-column: span 6; }
+.pm2-tile[data-pm2="tools"]      { grid-column: span 6; }
+
+/* 13.10 两个既有小节(文案逐字保留,只重排样式):
+   改成制表风格的行,不是卡片 */
+body:has(.pm2-hero) .md-typeset h2 {
+  margin: 3rem 0 1rem;
+  padding-top: .7rem;
+  border-top: 2px solid var(--pm2-ink);
+  font-family: var(--pm2-sans);
+  font-size: var(--pm2-fs-lead);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -.03em;
+  color: var(--pm2-ink);
+}
+
+body:has(.pm2-hero) .md-typeset h2 .headerlink {
+  color: var(--pm2-ink-3);
+}
+
+body:has(.pm2-hero) .md-typeset h2 + ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body:has(.pm2-hero) .md-typeset h2 + ul > li {
+  position: relative;
+  margin: 0;
+  padding: .72rem 0 .72rem 1.45rem;
+  border-bottom: 1px solid var(--pm2-rule);
+  font-size: var(--pm2-fs-body);
+  line-height: 1.75;
+  color: var(--pm2-ink-2);
+  text-wrap: pretty;
+}
+
+body:has(.pm2-hero) .md-typeset h2 + ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1.5em;
+  width: 6px;
+  height: 6px;
+  background-color: var(--pm2-accent);
+}
+
+body:has(.pm2-hero) .md-typeset h2 + ul > li > strong {
+  font-weight: 600;
+  color: var(--pm2-ink);
+}
+
+body:has(.pm2-hero) .md-typeset h2 + ul a {
+  color: var(--pm2-accent-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--pm2-accent-wash);
+  transition: border-color .16s ease, color .16s ease;
+}
+
+body:has(.pm2-hero) .md-typeset h2 + ul a:hover {
+  color: var(--pm2-accent);
+  border-bottom-color: var(--pm2-accent);
+}
+
+/* 13.11 响应式:1440 / 1024 / 768 / 390 四档都不横向溢出 */
+@media screen and (max-width: 1100px) {
+  .pm2-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+
+  /* 6 列下最窄的格子只有 2 列,描述放宽到 3 行 */
+  .pm2-tile__desc {
+    -webkit-line-clamp: 3;
+  }
+
+  .pm2-tile[data-pm2="business"]   { grid-column: span 3; grid-row: span 2; }
+  .pm2-tile[data-pm2="vertical"]   { grid-column: span 3; grid-row: span 2; }
+  .pm2-tile[data-pm2="case"]       { grid-column: span 3; grid-row: span 1; }
+  .pm2-tile[data-pm2="job"]        { grid-column: span 3; grid-row: span 1; }
+  .pm2-tile[data-pm2="ai"]         { grid-column: span 2; grid-row: span 1; }
+  .pm2-tile[data-pm2="practice"]   { grid-column: span 2; grid-row: span 1; }
+  .pm2-tile[data-pm2="management"] { grid-column: span 2; grid-row: span 1; }
+  .pm2-tile[data-pm2="pm"]         { grid-column: span 3; grid-row: span 1; }
+  .pm2-tile[data-pm2="intro"]      { grid-column: span 3; grid-row: span 1; }
+  .pm2-tile[data-pm2="tech"]       { grid-column: span 3; grid-row: span 1; }
+  .pm2-tile[data-pm2="tools"]      { grid-column: span 3; grid-row: span 1; }
+}
+
+@media screen and (max-width: 760px) {
+  .pm2-hero__mark {
+    max-width: 88%;
+  }
+
+  /* 窄屏把图注的「编码说明」收起:横带里的坐标说明已经写着同一件事,
+     省下的两行高度留给图形 */
+  .pm2-hero__capmore {
+    display: none;
+  }
+
+  .pm2-lede__meta {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+
+  .pm2-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .pm2-tile,
+  .pm2-tile[data-pm2] {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+
+  .pm2-tile--lead .pm2-tile__desc {
+    -webkit-line-clamp: 4;
+  }
+
+  .pm2-tile__desc {
+    -webkit-line-clamp: 3;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  :root {
+    --pm2-fs-mark: 34px;
+    --pm2-fs-lead: 24px;
+  }
+}
+
+/* 13.12 减少动态:关闭过渡,canvas 侧另有固定相位静态帧 */
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .pm2-btn,
+  .pm2-tile,
+  .pm2-tile__bar i,
+  body:has(.pm2-hero) .md-typeset h2 + ul a {
+    transition: none;
+  }
+}
