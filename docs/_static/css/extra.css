@@ -1513,3 +1513,723 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   13. 首页 v2「Editorial」:国际主义排版(Swiss / International Typographic Style)
+
+   设计坐标:Josef Müller-Brockmann《Grid Systems in Graphic Design》、
+   Pentagram 的机构年报排版、一本排得很好的年鉴。
+   关键词:理性、自信、留白即结构。不是复古,是「当代人重新做一次瑞士网格」。
+
+   与 v1(居中堆叠 hero + 11 张等大卡片)的根本区别:
+   - hero 是非对称 7/5 分栏(左=字标+deck+操作,右=发丝线规格表),不是居中堆叠;
+   - 栏目区是「规则分隔的编号索引」,没有任何盒子/圆角/阴影,只有发丝线;
+   - 全页共用一条真实的 12 列网格(--pmx-gap = 一条列间距),
+     编号永远落在自己所在网格列左端的等宽槽(--pmx-gutter)里,
+     于是「章节号 / 行号」共享同一条竖向基线——这是本页唯一的核心排版决定。
+
+   强调色只用一个:朱红 #B23A2E。
+   选它而不是深墨蓝的理由:站点 chrome 已由 indigo #4051b5 / #526cfe 占据,
+   再用墨蓝做强调等于没有强调;朱红是瑞士网格海报的经典强调色,
+   在纸白 #FAFAF7 上对比 5.7:1,且与站点蓝形成明确的冷暖分工。
+
+   主题适配:亮=纸白 #FAFAF7 / 墨黑 #141414;暗=#0E0F11 / #F0EFEA。
+   暗色是第二套设计(单独的对比度、强调色与分隔线透明度),不是亮色取反。
+   ---------------------------------------------------------------------------- */
+
+/* 13.1 token:只在首页生效(body 有 .pmx 后代时才落地) */
+body:has(.pmx) {
+  --pmx-paper: #FAFAF7;
+  --pmx-ink: #141414;
+  --pmx-muted: #5F5F5A;   /* 纸白上 6.1:1 */
+  --pmx-faint: #6E6E68;   /* 纸白上 4.9:1(编号列) */
+  --pmx-line: rgba(20, 20, 20, .14);
+  --pmx-rule: rgba(20, 20, 20, .34);
+  --pmx-accent: #B23A2E;  /* 纸白上 5.7:1 */
+  --pmx-hover: rgba(20, 20, 20, .04);
+  /* 编号槽宽:章节号、行号、路径标记共用同一条竖向基线。
+     随视口平滑缩放,而不是在每个断点里硬改。 */
+  --pmx-gutter: clamp(30px, 3.6vw, 52px);
+  --pmx-gap: 24px;        /* 一条列间距 = 12 列网格的 column-gap */
+  /* 单列宽:只在「通栏 lead 行」里用来把描述列钉在真正的第 6 条网格线上 */
+  --pmx-colw: calc((100% - 11 * var(--pmx-gap)) / 12);
+  --pmx-mono: var(--md-code-font);
+}
+
+/* 暗色第二套:纸面转深墨、强调色提亮到 #E8705F(深底上 6.3:1),
+   发丝线改用浅色低不透明度——不是把亮色的 rgba(0,0,0,..) 取反了事 */
+body[data-md-color-scheme="slate"]:has(.pmx) {
+  --pmx-paper: #0E0F11;
+  --pmx-ink: #F0EFEA;
+  --pmx-muted: #A3A29C;   /* 深底上 7.5:1 */
+  --pmx-faint: #8E8D88;
+  --pmx-line: rgba(240, 239, 234, .15);
+  --pmx-rule: rgba(240, 239, 234, .32);
+  --pmx-accent: #E8705F;
+  --pmx-hover: rgba(240, 239, 234, .05);
+}
+
+/* 纸面底:首页整页换到纸白/深墨,与站点其余页面的纯白形成可感的印刷感 */
+body:has(.pmx) {
+  background-color: var(--pmx-paper);
+}
+
+body:has(.pmx) .pmx {
+  color: var(--pmx-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 13.1.1 首页是「封面」不是「阅读页」:收起右侧目录(全宽度),并在宽屏下
+   连左侧导航一起收起。理由:栏目索引本身就是目录(11 行编号索引 =
+   站点完整导览),「01/02/03」三个章节号也已经写在正文里,右侧 TOC 只是
+   把同样的两份信息再说一遍,却吃掉 180–240px 的画布——
+   12 列网格 + 7/5 非对称分栏 + 132px 字标撑不住这个损失。
+
+   分两级隐藏的必要性:低于 1220px 时 Material 把「左侧导航」收进抽屉,
+   那个 .md-sidebar--primary 是移动端导航的宿主,隐藏它会直接毁掉手机上
+   的抽屉菜单;而 .md-sidebar--secondary 在任何宽度下都只是目录,可以安全移除。 */
+body:has(.pmx) .md-sidebar--secondary {
+  display: none;
+}
+
+@media screen and (min-width: 1220px) {
+  body:has(.pmx) .md-sidebar--primary {
+    display: none;
+  }
+}
+
+/* 13.2 摘掉 home.html 模板后露出的三样 chrome:
+   编辑铅笔、正文末尾 <hr> + 版权 blockquote、giscus 评论容器。
+   首页不需要它们;隐藏 display 而不删 DOM(评论区由脚本注入,删了会报错)。 */
+body:has(.pmx) .md-content__button,
+body:has(.pmx) .md-content__inner > hr,
+body:has(.pmx) blockquote.page-copyright,
+body:has(.pmx) #__comments,
+body:has(.pmx) .giscus,
+body:has(.pmx) .md-content__inner > .giscus {
+  display: none;
+}
+
+/* document-offsets-injection 会给每个顶层 HTML 块套一个空 <p> */
+body:has(.pmx) .md-content__inner > p:empty {
+  display: none;
+}
+
+/* 13.3 hero:横带。上缘一条通栏发丝线(唯一动效:从左画到右),
+   下缘一条通栏发丝线;带内是 12 列网格上的 7/5 非对称分栏。 */
+.pmx-hero {
+  position: relative;
+  padding: 60px 0 40px;
+  border-bottom: 1px solid var(--pmx-rule);
+}
+
+.pmx-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background-color: var(--pmx-rule);
+  transform-origin: left center;
+}
+
+/* 整页唯一一处动效:hero 上缘发丝线的一次性画出。
+   prefers-reduced-motion: reduce 落到无 animation 的默认分支 → 直接满宽。 */
+@media (prefers-reduced-motion: no-preference) {
+  .pmx-hero::before {
+    animation: pmx-rule-draw 700ms cubic-bezier(.16, .84, .28, 1) both;
+  }
+}
+
+@keyframes pmx-rule-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.pmx-hero__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--pmx-gap);
+  align-items: start;
+}
+
+.pmx-hero__lead {
+  grid-column: 1 / 8;
+  min-width: 0;
+}
+
+/* 规格表贴到 hero 带的下缘:于是它的最后一行发丝线与左侧搜索提示的
+   下划线落在同一条水平线上——这是本页的第二处「跨栏对齐」,不是随手留白。 */
+.pmx-hero__facts {
+  grid-column: 8 / 13;
+  align-self: end;
+  min-width: 0;
+}
+
+/* 字标:瑞士式的紧字距大字。`-` 不是字体里那根细横,
+   而是按 cap-height 中线画出来的一条朱红实心规则——
+   它是本页的强调色落点,也是「负空间被当成构件用」的一处刻意决定。 */
+/* 注意:这里必须是 block 而不是 flex。flex 容器会忽略子元素的 vertical-align,
+   朱红规则会掉到基线上读成「AI_PM」——那正是要避免的「像渲染 bug」。 */
+body:has(.pmx) .md-typeset h1.pmx-mark {
+  display: block;
+  margin: 0;
+  white-space: nowrap;
+  font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC",
+               "Noto Sans SC", system-ui, sans-serif;
+  font-size: clamp(64px, 10vw, 132px);
+  font-weight: 700;
+  line-height: .92;
+  letter-spacing: -.035em;
+  color: var(--pmx-ink);
+}
+
+.pmx-mark__part {
+  display: inline-block;
+}
+
+.pmx-mark__dash {
+  display: inline-block;
+  flex: none;
+  width: .32em;
+  height: .058em;
+  margin: 0 .05em;
+  background-color: var(--pmx-accent);
+  /* .33em ≈ Helvetica cap-height(0.717em)的中线减去自身一半高度 */
+  vertical-align: .33em;
+}
+
+/* 用 em(= 自身 15px 字号)而不是 ch:ch 在本字体栈下按拉丁 "0" 计宽,
+   34ch 只有 ~280px,中文 deck 会被压成一根窄条。30em ≈ 30 个汉字/行。 */
+.pmx-deck {
+  max-width: 30em;
+  margin: 28px 0 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--pmx-muted);
+  text-wrap: pretty;
+}
+
+/* CTA:文本 + 下划线 + 细箭头,不是圆角实心按钮 */
+.pmx-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 36px;
+  margin-top: 34px;
+}
+
+body:has(.pmx) .md-content__inner a.pmx-act {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--pmx-rule);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--pmx-ink);
+  text-decoration: none;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+body:has(.pmx) .md-content__inner a.pmx-act:hover,
+body:has(.pmx) .md-content__inner a.pmx-act:focus-visible {
+  border-bottom-color: var(--pmx-accent);
+  color: var(--pmx-accent);
+}
+
+body:has(.pmx) .md-content__inner a.pmx-act--go {
+  border-bottom-color: var(--pmx-accent);
+}
+
+body:has(.pmx) .md-content__inner a.pmx-act--go:hover,
+body:has(.pmx) .md-content__inner a.pmx-act--go:focus-visible {
+  color: var(--pmx-accent);
+}
+
+/* 搜索:一行带发丝下划线的提示,左标签右提示词,不是胶囊按钮 */
+.pmx-search {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  max-width: 34rem;
+  margin: 34px 0 0;
+  padding: 0 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--pmx-rule);
+  background: none;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--pmx-muted);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.pmx-search:hover,
+.pmx-search:focus-visible {
+  border-bottom-color: var(--pmx-accent);
+  color: var(--pmx-ink);
+}
+
+.pmx-search__hint {
+  flex: none;
+  font-family: var(--pmx-mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  color: var(--pmx-faint);
+}
+
+/* 规格表:右侧 5 列。5 行元信息,每行左侧等宽标签、右侧值 */
+.pmx-facts {
+  margin: 6px 0 0;
+}
+
+.pmx-fact {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 16px;
+  padding: 10px 0 11px;
+  border-top: 1px solid var(--pmx-line);
+}
+
+.pmx-fact:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.pmx-fact:last-child {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--pmx-line);
+}
+
+.pmx-fact dt {
+  font-family: var(--pmx-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.9;
+  letter-spacing: .14em;
+  color: var(--pmx-muted);
+}
+
+.pmx-fact dd {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--pmx-ink);
+  text-wrap: pretty;
+}
+
+.pmx-num {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 13.4 章节带:章节号落在与行号同一个 --pmx-gutter 槽里,
+   标题落在与行标题同一列——这是全页对齐系统的支点。 */
+body:has(.pmx) .md-content__inner {
+  counter-reset: pmxsec;
+}
+
+body:has(.pmx) .md-content__inner h2 {
+  display: grid;
+  grid-template-columns: var(--pmx-gutter) minmax(0, 1fr);
+  align-items: baseline;
+  margin: 72px 0 0;
+  padding: 18px 0 10px;
+  border-top: 1px solid var(--pmx-rule);
+  font-family: var(--pmx-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: .16em;
+  color: var(--pmx-ink);
+  counter-increment: pmxsec;
+}
+
+body:has(.pmx) .md-content__inner h2::before {
+  content: counter(pmxsec, decimal-leading-zero);
+  color: var(--pmx-accent);
+  letter-spacing: .08em;
+}
+
+/* 首个章节带(栏目索引)紧贴 hero 下缘发丝线,不再叠一条 */
+body:has(.pmx) .md-content__inner .pmx-band {
+  margin-top: 0;
+  padding-top: 18px;
+  border-top: 0;
+}
+
+/* permalink 空锚点:permalink: "" 会渲染一个无文本 <a>,不让它占网格列 */
+body:has(.pmx) .md-content__inner h2 .headerlink {
+  display: none;
+}
+
+/* 13.5 栏目索引:12 列网格上的编号索引。没有盒子、圆角、阴影,
+   行与行之间只有一条发丝线;hover 时整行底色微亮 + 编号转强调色。 */
+.pmx-rows {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--pmx-gap);
+}
+
+body:has(.pmx) .md-content__inner a.pmx-row {
+  grid-column: span 6;
+  display: grid;
+  grid-template-columns: var(--pmx-gutter) minmax(0, 1fr) 18px;
+  grid-template-areas:
+    "no title arrow"
+    "no desc  arrow";
+  align-items: baseline;
+  padding: 15px 0 17px;
+  border-top: 1px solid var(--pmx-line);
+  color: var(--pmx-ink);
+  text-decoration: none;
+  transition: background-color 140ms ease;
+}
+
+/* 首行(索引表头行)用更重的一条规则收口 */
+.pmx-rows > .pmx-row:first-child {
+  border-top-color: var(--pmx-rule);
+}
+
+/* 前 3 行:整幅通栏 + 更大的标题字号,做出主次 */
+body:has(.pmx) .md-content__inner a.pmx-row--lead {
+  grid-column: 1 / -1;
+  /* 标题列用「5 条列宽 + 5 条列间距 - 编号槽」精确算出来,
+     于是描述列的左缘正好落在 12 列网格第 6 列的左缘上——
+     和 40fr/58fr 那种「看起来差不多」的近似值不是一回事。 */
+  grid-template-columns:
+    var(--pmx-gutter)
+    calc(5 * var(--pmx-colw) + 5 * var(--pmx-gap) - var(--pmx-gutter))
+    calc(5 * var(--pmx-colw) + 4 * var(--pmx-gap))
+    minmax(0, 1fr)
+    18px;
+  grid-template-areas: "no title desc . arrow";
+  padding: 26px 0 28px;
+}
+
+body:has(.pmx) .md-content__inner a.pmx-row:hover,
+body:has(.pmx) .md-content__inner a.pmx-row:focus-visible {
+  background-color: var(--pmx-hover);
+  text-decoration: none;
+}
+
+.pmx-row__no {
+  grid-area: no;
+  font-family: var(--pmx-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: .06em;
+  color: var(--pmx-faint);
+  transition: color 140ms ease;
+}
+
+body:has(.pmx) .md-content__inner a.pmx-row:hover .pmx-row__no,
+body:has(.pmx) .md-content__inner a.pmx-row:focus-visible .pmx-row__no {
+  color: var(--pmx-accent);
+}
+
+.pmx-row__title {
+  grid-area: title;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -.012em;
+  color: var(--pmx-ink);
+  text-wrap: balance;
+}
+
+body:has(.pmx) .md-content__inner a.pmx-row--lead .pmx-row__title {
+  font-size: 34px;
+  letter-spacing: -.028em;
+  line-height: 1.05;
+}
+
+.pmx-row__desc {
+  grid-area: desc;
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--pmx-muted);
+  text-wrap: pretty;
+}
+
+/* lead 行的描述列宽由网格决定(第 6–10 列),不再用 ch 近似值限宽:
+   右缘正好收在第 10 列的右缘上,一条真实存在的网格线。 */
+body:has(.pmx) .md-content__inner a.pmx-row--lead .pmx-row__desc {
+  margin-top: 0;
+  max-width: none;
+}
+
+/* 极小的箭头:1px 线 + 45° 折角,与文字基线对齐 */
+.pmx-row__arrow,
+.pmx-act__arrow {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 1px;
+  background-color: currentColor;
+}
+
+.pmx-row__arrow {
+  grid-area: arrow;
+  justify-self: end;
+  color: var(--pmx-faint);
+  transition: color 140ms ease, transform 140ms ease;
+}
+
+.pmx-row__arrow::after,
+.pmx-act__arrow::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+body:has(.pmx) .md-content__inner a.pmx-row:hover .pmx-row__arrow,
+body:has(.pmx) .md-content__inner a.pmx-row:focus-visible .pmx-row__arrow {
+  color: var(--pmx-accent);
+  transform: translateX(3px);
+}
+
+/* 13.6 「本站的原则」= 2×2 的规则块(文案与顺序逐字保留) */
+body:has(.pmx) .md-content__inner > ul:nth-of-type(1) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--pmx-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body:has(.pmx) .md-content__inner > ul:nth-of-type(1) > li {
+  margin: 0;
+  /* 正文左缘 = 行标题左缘(编号槽留白),整页只有两条竖向基线 */
+  padding: 18px 0 22px var(--pmx-gutter);
+  border-top: 1px solid var(--pmx-line);
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--pmx-muted);
+  text-wrap: pretty;
+}
+
+body:has(.pmx) .md-content__inner > ul:nth-of-type(1) > li::marker {
+  content: none;
+}
+
+body:has(.pmx) .md-content__inner > ul:nth-of-type(1) strong {
+  font-weight: 600;
+  color: var(--pmx-ink);
+}
+
+/* 13.7 「现在适合从哪里开始」= 2 列的路径清单,朱红短线做行首标记
+   (与编号索引区分:这里不加编号,不排序,只是路径) */
+body:has(.pmx) .md-content__inner > ul:nth-of-type(2) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--pmx-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body:has(.pmx) .md-content__inner > ul:nth-of-type(2) > li {
+  position: relative;
+  margin: 0;
+  /* 朱红短线占住编号槽的最左端(与章节号/行号同一条竖线),正文让到标题列 */
+  padding: 18px 0 22px var(--pmx-gutter);
+  border-top: 1px solid var(--pmx-line);
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--pmx-muted);
+  text-wrap: pretty;
+}
+
+body:has(.pmx) .md-content__inner > ul:nth-of-type(2) > li::marker {
+  content: none;
+}
+
+body:has(.pmx) .md-content__inner > ul:nth-of-type(2) > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 28px;
+  width: 14px;
+  height: 1px;
+  background-color: var(--pmx-accent);
+}
+
+/* 13.8 首页正文链接:墨色文字 + 朱红下划线,hover 加粗而不是换色 */
+body:has(.pmx) .md-content__inner a:not(.pmx-row):not(.pmx-act) {
+  color: var(--pmx-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--pmx-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-thickness 120ms ease;
+}
+
+body:has(.pmx) .md-content__inner a:not(.pmx-row):not(.pmx-act):hover,
+body:has(.pmx) .md-content__inner a:not(.pmx-row):not(.pmx-act):focus-visible {
+  text-decoration-thickness: 2px;
+}
+
+/* 焦点环:全页统一,键盘可见 */
+body:has(.pmx) .md-content__inner a:focus-visible,
+body:has(.pmx) .md-content__inner button:focus-visible {
+  outline: 2px solid var(--pmx-accent);
+  outline-offset: 3px;
+}
+
+/* 正文最后一段与页脚之间收一条线,给页面一个明确的结束 */
+body:has(.pmx) .md-content__inner > ul:last-of-type {
+  padding-bottom: 8px;
+}
+
+/* 13.9 响应式:1440 / 1024 / 900 / 760 / 390 五档,每档重排而不是简单堆叠 */
+@media screen and (max-width: 1023px) {
+  .pmx-hero {
+    padding: 48px 0 36px;
+  }
+
+  .pmx-deck {
+    max-width: 40ch;
+  }
+
+  body:has(.pmx) .md-typeset h1.pmx-mark {
+    letter-spacing: -.03em;
+  }
+
+  body:has(.pmx) .md-content__inner a.pmx-row--lead .pmx-row__title {
+    font-size: 30px;
+  }
+}
+
+/* ≤900:hero 由 7/5 分栏改为「大字标通栏 + 规格表移到其下」的两段,
+   规格表改双列排布,避免变成一条长长的单列清单 */
+@media screen and (max-width: 900px) {
+  .pmx-hero__lead,
+  .pmx-hero__facts {
+    grid-column: 1 / -1;
+  }
+
+  .pmx-hero__facts {
+    margin-top: 44px;
+  }
+
+  .pmx-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: calc(2 * var(--pmx-gap));
+    margin-top: 0;
+  }
+
+  .pmx-fact:nth-child(2) {
+    border-top: 0;
+  }
+
+  .pmx-fact:last-child {
+    border-bottom: 0;
+  }
+}
+
+/* ≤760:索引收成单列;lead 行的描述移到标题下方;两处 ul 各自收成一列 */
+@media screen and (max-width: 760px) {
+  body:has(.pmx) {
+    --pmx-gap: 16px;
+  }
+
+  .pmx-hero {
+    padding: 38px 0 30px;
+  }
+
+  .pmx-deck {
+    margin-top: 22px;
+  }
+
+  .pmx-acts {
+    margin-top: 28px;
+  }
+
+  .pmx-search {
+    margin-top: 28px;
+  }
+
+  body:has(.pmx) .md-content__inner a.pmx-row,
+  body:has(.pmx) .md-content__inner a.pmx-row--lead {
+    grid-column: 1 / -1;
+    grid-template-columns: var(--pmx-gutter) minmax(0, 1fr) 16px;
+    grid-template-areas:
+      "no title arrow"
+      "no desc  arrow";
+    padding: 16px 0;
+  }
+
+  body:has(.pmx) .md-content__inner a.pmx-row--lead {
+    padding: 22px 0;
+  }
+
+  .pmx-row__title {
+    font-size: 19px;
+  }
+
+  body:has(.pmx) .md-content__inner a.pmx-row--lead .pmx-row__title {
+    font-size: 26px;
+  }
+
+  .pmx-row__desc,
+  body:has(.pmx) .md-content__inner a.pmx-row--lead .pmx-row__desc {
+    margin-top: 6px;
+    max-width: none;
+  }
+
+  body:has(.pmx) .md-content__inner h2 {
+    margin-top: 48px;
+  }
+
+  body:has(.pmx) .md-content__inner > ul:nth-of-type(1),
+  body:has(.pmx) .md-content__inner > ul:nth-of-type(2) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media screen and (max-width: 520px) {
+  body:has(.pmx) .md-typeset h1.pmx-mark {
+    letter-spacing: -.025em;
+  }
+
+  .pmx-fact {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  body:has(.pmx) .md-content__inner a.pmx-row--lead .pmx-row__title {
+    font-size: 23px;
+  }
+}
+
+/* 900px 以下规格表转双列时,窄屏再收回单列 */
+@media screen and (max-width: 620px) {
+  .pmx-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pmx-fact:nth-child(2) {
+    border-top: 1px solid var(--pmx-line);
+  }
+
+  .pmx-fact:last-child {
+    border-bottom: 1px solid var(--pmx-line);
+  }
+}
