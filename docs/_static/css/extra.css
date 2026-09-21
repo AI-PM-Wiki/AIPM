@@ -1513,3 +1513,680 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   13. 首页现代化组件(w1「现代组件化 UI」,2026-09-21)
+
+   定位:hero 与栏目卡片换成现代 SaaS 组件语汇——1px 发丝描边 + 极淡渐变、
+   统一圆角/阴影尺度、150–250ms 的 hover/focus 微交互、focus-visible 可见 ring。
+   全部为纯 CSS(唯一 JS 是 home-modern.js 的指针聚光,可选增强),无 WebGL、
+   无外部资源、无 webfont。
+
+   命名:本节的类统一走 `pmx-` 前缀(pm eXtended),与 §11/§12 的 `pm-` 旧首页
+   组件并存不冲突——旧小节保持原样未改,便于回退与并行分支合并;首页已不再
+   引用 `pm-hero/pm-card/pm-btn/pm-banner`,待各分支合并后可由维护者统一清理。
+   主题:亮色 token 落 :root,暗色在 slate 块覆盖;颜色尽量复用 Material 的
+   --md-* 变量,保证与全站 header/tabs/搜索等 chrome 同调。
+   降级:无 JS 全部可读可点(聚光默认居中);prefers-reduced-motion 关动效与位移;
+   `:has()` 仅用于把页身正文样式限定在首页,不支持时回落到主题默认观感。
+   ---------------------------------------------------------------------------- */
+
+/* 13.0 组件 token(亮色) */
+:root {
+  /* 描边三级:发丝 / 常规 / 强调 */
+  --pmx-line-soft: rgba(15, 27, 45, .06);
+  --pmx-line: rgba(15, 27, 45, .1);
+  --pmx-line-strong: rgba(82, 108, 254, .42);
+
+  /* 表面 */
+  --pmx-surface: #ffffff;
+  --pmx-surface-raised: #ffffff;
+  --pmx-icon-bg: rgba(82, 108, 254, .07);
+  --pmx-icon-line: rgba(82, 108, 254, .16);
+  --pmx-icon-fg: #4051b5;
+
+  /* 装饰:网格发丝 / 双光晕 / 指针聚光 */
+  --pmx-grid-line: rgba(15, 27, 45, .05);
+  --pmx-aura-a: rgba(82, 108, 254, .14);
+  --pmx-aura-b: rgba(8, 145, 178, .09);
+  --pmx-spot: rgba(82, 108, 254, .09);
+
+  /* 阴影三级:静止 / 抬起 / 悬停 */
+  --pmx-shadow-1: 0 1px 2px rgba(15, 27, 45, .04), 0 1px 3px rgba(15, 27, 45, .06);
+  --pmx-shadow-2: 0 1px 2px rgba(15, 27, 45, .05), 0 10px 24px -8px rgba(15, 27, 45, .16);
+  --pmx-shadow-3: 0 1px 2px rgba(15, 27, 45, .05), 0 20px 44px -14px rgba(15, 27, 45, .22);
+
+  --pmx-ring: rgba(82, 108, 254, .55);
+
+  /* 圆角尺度:小件 / 卡片 / 胶囊 */
+  --pmx-r-sm: 8px;
+  --pmx-r-md: 12px;
+  --pmx-r-lg: 16px;
+  --pmx-r-pill: 999px;
+
+  --pmx-ease: cubic-bezier(.2, .7, .3, 1);
+  --pmx-t: 180ms;
+}
+
+/* 13.0b 组件 token(暗色 slate) */
+[data-md-color-scheme="slate"] {
+  --pmx-line-soft: rgba(255, 255, 255, .06);
+  --pmx-line: rgba(255, 255, 255, .1);
+  --pmx-line-strong: rgba(122, 140, 255, .5);
+
+  --pmx-surface: rgba(255, 255, 255, .035);
+  --pmx-surface-raised: rgba(255, 255, 255, .06);
+  --pmx-icon-bg: rgba(122, 140, 255, .12);
+  --pmx-icon-line: rgba(122, 140, 255, .22);
+  --pmx-icon-fg: #a8b6ff;
+
+  --pmx-grid-line: rgba(255, 255, 255, .045);
+  --pmx-aura-a: rgba(82, 108, 254, .24);
+  --pmx-aura-b: rgba(34, 211, 238, .1);
+  --pmx-spot: rgba(122, 140, 255, .12);
+
+  --pmx-shadow-1: 0 1px 2px rgba(0, 0, 0, .3), 0 1px 3px rgba(0, 0, 0, .35);
+  --pmx-shadow-2: 0 1px 2px rgba(0, 0, 0, .35), 0 10px 24px -8px rgba(0, 0, 0, .55);
+  --pmx-shadow-3: 0 1px 2px rgba(0, 0, 0, .4), 0 22px 46px -14px rgba(0, 0, 0, .7);
+
+  --pmx-ring: rgba(122, 140, 255, .6);
+}
+
+/* 13.1 hero:居中纵列构图;两层装饰伪元素(发丝网格 + 双光晕)在内容之下 */
+.pmx-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .8rem;
+  padding: 1.5rem 0 1rem;
+  text-align: center;
+}
+
+.pmx-hero::before,
+.pmx-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 13.1a 发丝网格:44px 方格,径向遮罩向四边淡出(纯 CSS,无贴图) */
+.pmx-hero::before {
+  inset: -1.5rem 0 -1rem;
+  background-image:
+    linear-gradient(var(--pmx-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pmx-grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 62% at 50% 32%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 70% 62% at 50% 32%, #000 0%, transparent 72%);
+}
+
+/* 13.1b 双光晕:极淡 indigo + 青,26s 缓慢漂移(唯一的环境动效,纯装饰)
+   几何约束(实测踩过两次,务必守住):每个百分比椭圆的圆心 ± 半径必须在两个
+   轴上都不越出 0–100%,即整个椭圆完全落在本元素盒内。只要椭圆碰到盒边,
+   该边上的 alpha 就不为 0,盒边界会把渐变裁成一块可见的硬边矩形——
+   这正是"hero 背后出现一个淡蓝色方框"的成因。故色标终点取 100%,圆心与
+   半径成对收紧到 cx±rx、cy±ry 均落在盒内。 */
+.pmx-hero::after {
+  inset: -2rem 0 -1.5rem;
+  background-image:
+    radial-gradient(46% 40% at 46% 40%, var(--pmx-aura-a), transparent 100%),
+    radial-gradient(26% 26% at 74% 28%, var(--pmx-aura-b), transparent 100%);
+  background-repeat: no-repeat;
+  animation: pmx-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes pmx-drift {
+  from { transform: translate3d(-1.5%, 0, 0); }
+  to   { transform: translate3d(2%, 2.5%, 0); }
+}
+
+/* 13.2 眉题:胶囊 + 状态点(点缓慢呼吸,纯装饰) */
+.md-typeset .pmx-hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  padding: .3rem .8rem .3rem .65rem;
+  border: 1px solid var(--pmx-line);
+  border-radius: var(--pmx-r-pill);
+  background-color: var(--pmx-surface);
+  box-shadow: var(--pmx-shadow-1);
+  font-family: var(--md-code-font);
+  font-size: .58rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+}
+
+.pmx-hero__pulse {
+  position: relative;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--md-primary-fg-color);
+}
+
+.pmx-hero__pulse::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--md-primary-fg-color);
+  border-radius: 50%;
+  animation: pmx-pulse 3.2s var(--pmx-ease) infinite;
+}
+
+@keyframes pmx-pulse {
+  0%   { transform: scale(.85); opacity: .65; }
+  65%  { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* 13.3 品牌:紧字距大标题(渐变取字,不支持则回落纯色)+ 平衡换行副题 */
+.md-typeset .pmx-hero__title {
+  margin: 0;
+  font-size: clamp(2.15rem, 4.4vw, 2.9rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  color: var(--md-default-fg-color);
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .md-typeset .pmx-hero__title {
+    background-image: linear-gradient(170deg,
+      var(--md-default-fg-color) 0%,
+      var(--md-default-fg-color) 62%,
+      var(--pmx-icon-fg) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: var(--pmx-icon-fg);
+  }
+}
+
+.md-typeset .pmx-hero__tagline {
+  max-width: 34rem;
+  margin: 0;
+  font-size: .95rem;
+  line-height: 1.75;
+  color: var(--md-default-fg-color--light);
+  text-wrap: balance;
+}
+
+/* 13.4 按钮:胶囊,主次两级;`.md-typeset a` 的链接色提权见 §11.3 同款注释 */
+.pmx-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  margin-top: .25rem;
+}
+
+.md-typeset a.pmx-btn,
+.pmx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  padding: .6rem 1.3rem;
+  border: 1px solid transparent;
+  border-radius: var(--pmx-r-pill);
+  font-size: .8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--pmx-t) var(--pmx-ease),
+              background-color var(--pmx-t) var(--pmx-ease),
+              border-color var(--pmx-t) var(--pmx-ease),
+              box-shadow var(--pmx-t) var(--pmx-ease),
+              color var(--pmx-t) var(--pmx-ease);
+}
+
+.md-typeset a.pmx-btn:hover,
+.md-typeset a.pmx-btn:focus-visible,
+.pmx-btn:hover,
+.pmx-btn:focus-visible {
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: var(--pmx-shadow-2);
+}
+
+.pmx-btn:active {
+  transform: translateY(0) scale(.99);
+}
+
+.md-typeset a.pmx-btn:focus-visible,
+.pmx-btn:focus-visible {
+  outline: 2px solid var(--pmx-ring);
+  outline-offset: 2px;
+}
+
+/* 主按钮:实心,取主题 primary 色(亮=深 indigo 白字 / 暗=亮 indigo 深字) */
+.md-typeset a.pmx-btn--primary,
+.pmx-btn--primary {
+  background-color: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  box-shadow: var(--pmx-shadow-1);
+}
+
+[data-md-color-scheme="default"] .md-typeset a.pmx-btn--primary:hover,
+[data-md-color-scheme="default"] .md-typeset a.pmx-btn--primary:focus-visible,
+[data-md-color-scheme="default"] .pmx-btn--primary:hover,
+[data-md-color-scheme="default"] .pmx-btn--primary:focus-visible {
+  background-color: var(--md-primary-fg-color--dark);
+  color: #ffffff;
+}
+
+[data-md-color-scheme="slate"] .md-typeset a.pmx-btn--primary:hover,
+[data-md-color-scheme="slate"] .md-typeset a.pmx-btn--primary:focus-visible,
+[data-md-color-scheme="slate"] .pmx-btn--primary:hover,
+[data-md-color-scheme="slate"] .pmx-btn--primary:focus-visible {
+  background-color: var(--md-primary-fg-color--light);
+  color: var(--md-primary-bg-color);
+}
+
+/* 次按钮:幽灵,hover 由发丝描边提到 accent 描边 + 极淡底 */
+.md-typeset a.pmx-btn--ghost,
+.pmx-btn--ghost {
+  background-color: var(--pmx-surface);
+  border-color: var(--pmx-line);
+  color: var(--md-default-fg-color);
+}
+
+[data-md-color-scheme="default"] .md-typeset a.pmx-btn--ghost:hover,
+[data-md-color-scheme="default"] .md-typeset a.pmx-btn--ghost:focus-visible,
+[data-md-color-scheme="default"] .pmx-btn--ghost:hover,
+[data-md-color-scheme="default"] .pmx-btn--ghost:focus-visible {
+  border-color: var(--pmx-line-strong);
+  background-color: var(--pmx-icon-bg);
+  color: var(--md-default-fg-color);
+}
+
+[data-md-color-scheme="slate"] .md-typeset a.pmx-btn--ghost:hover,
+[data-md-color-scheme="slate"] .md-typeset a.pmx-btn--ghost:focus-visible,
+[data-md-color-scheme="slate"] .pmx-btn--ghost:hover,
+[data-md-color-scheme="slate"] .pmx-btn--ghost:focus-visible {
+  border-color: var(--pmx-line-strong);
+  background-color: var(--pmx-surface-raised);
+  color: var(--md-default-fg-color);
+}
+
+/* 13.5 搜索:读作输入框的胶囊按钮(左对齐图标 + 文字),不改搜索行为 */
+/* 外层撑满 hero 宽度,胶囊自身居中并取 min(20rem, 100%);
+   若外层是 shrink-to-fit 的 flex item,width 里的 100% 会退化成内容宽 */
+.pmx-hero__search {
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
+}
+
+.md-typeset .pmx-search {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  width: min(20rem, 100%);
+  margin: 0 auto;
+  padding: .55rem .95rem;
+  border: 1px solid var(--pmx-line);
+  border-radius: var(--pmx-r-pill);
+  background-color: var(--pmx-surface);
+  box-shadow: var(--pmx-shadow-1);
+  font-family: var(--md-text-font);
+  font-size: .8rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--md-default-fg-color--light);
+  cursor: pointer;
+  transition: border-color var(--pmx-t) var(--pmx-ease),
+              box-shadow var(--pmx-t) var(--pmx-ease),
+              color var(--pmx-t) var(--pmx-ease);
+}
+
+.pmx-search__icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pmx-search__label {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.md-typeset .pmx-search:hover,
+.md-typeset .pmx-search:focus-visible {
+  border-color: var(--pmx-line-strong);
+  box-shadow: var(--pmx-shadow-2);
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset .pmx-search:focus-visible {
+  outline: 2px solid var(--pmx-ring);
+  outline-offset: 2px;
+}
+
+/* 13.6 卡片网格:auto-fit 自适应(688px 正文宽下稳定 3 列,窄屏 2/1 列) */
+.pmx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+  padding: .5rem 0 2.2rem;
+  margin: 0;
+}
+
+/* 13.7 栏目卡片:发丝描边 + 极淡底 + 微抬起;图标统一为圆角方块;
+   `::after` 是指针聚光(在卡片底之上、文字之下,靠 isolation 造层) */
+.md-typeset a.pmx-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: .42rem;
+  padding: 1rem 1.05rem 1.05rem;
+  border: 1px solid var(--pmx-line);
+  border-radius: var(--pmx-r-md);
+  background-color: var(--pmx-surface);
+  box-shadow: var(--pmx-shadow-1);
+  color: var(--md-default-fg-color);
+  text-decoration: none;
+  transition: transform var(--pmx-t) var(--pmx-ease),
+              border-color var(--pmx-t) var(--pmx-ease),
+              box-shadow var(--pmx-t) var(--pmx-ease),
+              background-color var(--pmx-t) var(--pmx-ease);
+}
+
+.md-typeset a.pmx-card:hover,
+.md-typeset a.pmx-card:focus-visible {
+  color: var(--md-default-fg-color);
+  text-decoration: none;
+}
+
+.md-typeset a.pmx-card:hover,
+.md-typeset a.pmx-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--pmx-line-strong);
+  background-color: var(--pmx-surface-raised);
+  box-shadow: var(--pmx-shadow-3);
+}
+
+.md-typeset a.pmx-card:focus-visible {
+  outline: 2px solid var(--pmx-ring);
+  outline-offset: 2px;
+}
+
+/* 指针聚光:位置由 home-modern.js 写入 --pmx-mx/--pmx-my,无 JS 时居中 */
+.md-typeset a.pmx-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: radial-gradient(220px circle at var(--pmx-mx, 50%) var(--pmx-my, 50%),
+                                    var(--pmx-spot), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--pmx-t) var(--pmx-ease);
+}
+
+.md-typeset a.pmx-card:hover::after,
+.md-typeset a.pmx-card:focus-visible::after {
+  opacity: 1;
+}
+
+/* 右上角指示箭头:静止低对比,悬停转正色并向外微移(与图标方块同轴) */
+.md-typeset a.pmx-card::before {
+  content: "";
+  position: absolute;
+  top: calc(1rem + 15px);
+  right: 1.15rem;
+  width: 7px;
+  height: 7px;
+  border-top: 1.6px solid var(--md-default-fg-color--lighter);
+  border-right: 1.6px solid var(--md-default-fg-color--lighter);
+  opacity: .6;
+  transform: rotate(45deg);
+  pointer-events: none;
+  transition: transform var(--pmx-t) var(--pmx-ease),
+              border-color var(--pmx-t) var(--pmx-ease),
+              opacity var(--pmx-t) var(--pmx-ease);
+}
+
+.md-typeset a.pmx-card:hover::before,
+.md-typeset a.pmx-card:focus-visible::before {
+  border-color: var(--md-primary-fg-color);
+  opacity: 1;
+  transform: rotate(45deg) translate(2px, -2px);
+}
+
+/* 图标方块:统一 38px 圆角方块 + 极淡 accent 底,悬停提亮 */
+.pmx-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: .2rem;
+  border: 1px solid var(--pmx-icon-line);
+  border-radius: var(--pmx-r-sm);
+  background-color: var(--pmx-icon-bg);
+  color: var(--pmx-icon-fg);
+  transition: color var(--pmx-t) var(--pmx-ease),
+              background-color var(--pmx-t) var(--pmx-ease),
+              border-color var(--pmx-t) var(--pmx-ease),
+              transform var(--pmx-t) var(--pmx-ease);
+}
+
+.pmx-card__glyph {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.md-typeset a.pmx-card:hover .pmx-card__icon,
+.md-typeset a.pmx-card:focus-visible .pmx-card__icon {
+  border-color: var(--pmx-line-strong);
+  background-color: var(--pmx-icon-bg);
+  color: var(--md-primary-fg-color);
+  transform: translateY(-1px);
+}
+
+/* 标题/描述:清晰两级层级;悬停标题转 accent */
+.pmx-card__title {
+  font-size: .92rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: .01em;
+  color: inherit;
+  transition: color var(--pmx-t) var(--pmx-ease);
+}
+
+.pmx-card__desc {
+  font-size: .78rem;
+  line-height: 1.7;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset a.pmx-card:hover .pmx-card__title,
+.md-typeset a.pmx-card:focus-visible .pmx-card__title {
+  color: var(--md-primary-fg-color);
+}
+
+[data-md-color-scheme="slate"] .md-typeset a.pmx-card:hover .pmx-card__title,
+[data-md-color-scheme="slate"] .md-typeset a.pmx-card:focus-visible .pmx-card__title {
+  color: #a8b6ff;
+}
+
+/* 13.8 页身正文(原则 / 起点):仅首页生效——用 :has() 圈定,避免影响其他页面 */
+.md-content__inner:has(.pmx-hero) h2 {
+  margin: 2.4rem 0 1rem;
+  padding-bottom: .55rem;
+  border-bottom: 1px solid var(--pmx-line);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+  color: var(--md-default-fg-color);
+}
+
+.md-content__inner:has(.pmx-hero) > ul {
+  display: grid;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.md-content__inner:has(.pmx-hero) > ul > li {
+  position: relative;
+  margin: 0;
+  padding: .7rem .95rem .7rem 2.1rem;
+  border: 1px solid var(--pmx-line-soft);
+  border-radius: var(--pmx-r-md);
+  background-color: var(--pmx-surface);
+  font-size: .82rem;
+  line-height: 1.7;
+  color: var(--md-default-fg-color--light);
+  transition: border-color var(--pmx-t) var(--pmx-ease),
+              background-color var(--pmx-t) var(--pmx-ease),
+              transform var(--pmx-t) var(--pmx-ease);
+}
+
+.md-content__inner:has(.pmx-hero) > ul > li::before {
+  content: "";
+  position: absolute;
+  top: 1.15rem;
+  left: 1rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--md-primary-fg-color);
+  opacity: .45;
+  transition: opacity var(--pmx-t) var(--pmx-ease);
+}
+
+.md-content__inner:has(.pmx-hero) > ul > li:hover {
+  border-color: var(--pmx-line);
+  background-color: var(--pmx-surface-raised);
+  transform: translateX(2px);
+}
+
+.md-content__inner:has(.pmx-hero) > ul > li:hover::before {
+  opacity: .9;
+}
+
+.md-content__inner:has(.pmx-hero) > ul > li strong {
+  color: var(--md-default-fg-color);
+  font-weight: 700;
+}
+
+.md-content__inner:has(.pmx-hero) > ul > li a {
+  color: var(--md-typeset-a-color);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .16em;
+}
+
+.md-content__inner:has(.pmx-hero) > ul > li a:hover {
+  color: var(--md-accent-fg-color);
+  text-decoration-thickness: 2px;
+}
+
+/* 13.8b 首页不承载的两处页身 chrome(详见报告「方向取舍」):
+   摘掉 template: home.html 后,默认 content block 会额外带出「编辑本页」铅笔按钮
+   与 giscus 评论区——旧模板整块覆写 content block 时两者都不出现。
+   - 铅笔按钮:浮在 hero 右上角,与落地页构图冲突,隐藏(全站其它页面保留);
+   - giscus:主题 comments.html 本就用 `{% if not page.is_homepage %}` 声明首页不该
+     有评论区,但本站 MkDocs/Material 版本下该判断未生效;隐藏容器以恢复其原意。
+   注:CSS 只挡显示,giscus 的 <script src=…/client.js> 仍会被内联脚本插进 DOM,
+   要连加载一起省掉需在 hooks/ 里按 page.is_homepage 剥节点(见报告「已知问题」)。
+   底部 hr + blockquote.page-copyright(贡献者与许可声明)是有意保留的,不做隐藏。 */
+.md-content__inner:has(.pmx-hero) > .md-content__button,
+.md-content__inner:has(.pmx-hero) > #__comments {
+  display: none;
+}
+
+/* 13.9 响应式:≤600px 收起按钮为整宽、卡片单列 */
+@media screen and (max-width: 600px) {
+  .pmx-hero {
+    padding: 1.1rem 0 .9rem;
+    gap: .65rem;
+  }
+
+  .md-typeset .pmx-hero__eyebrow {
+    font-size: .52rem;
+    letter-spacing: .1em;
+  }
+
+  .md-typeset .pmx-hero__title {
+    font-size: 2.05rem;
+  }
+
+  .md-typeset .pmx-hero__tagline {
+    font-size: .88rem;
+  }
+
+  .pmx-hero__cta {
+    align-self: stretch;
+    flex-direction: column;
+  }
+
+  .pmx-hero__cta .pmx-btn {
+    width: 100%;
+  }
+
+  .pmx-grid {
+    grid-template-columns: 1fr;
+    gap: .75rem;
+  }
+}
+
+/* 13.10 减少动态:停环境漂移/呼吸,去掉位移动效(保留配色与阴影反馈) */
+@media (prefers-reduced-motion: reduce) {
+  .pmx-hero::after,
+  .pmx-hero__pulse::after {
+    animation: none;
+  }
+
+  .pmx-hero__pulse::after {
+    opacity: 0;
+  }
+
+  .md-typeset a.pmx-btn,
+  .md-typeset .pmx-search,
+  .md-typeset a.pmx-card,
+  .pmx-card__icon,
+  .pmx-card__title,
+  .md-content__inner:has(.pmx-hero) > ul > li {
+    transition: none;
+  }
+
+  .md-typeset a.pmx-btn:hover,
+  .md-typeset a.pmx-btn:focus-visible,
+  .pmx-btn:active,
+  .md-typeset a.pmx-card:hover,
+  .md-typeset a.pmx-card:focus-visible,
+  .md-typeset a.pmx-card:hover .pmx-card__icon,
+  .md-typeset a.pmx-card:focus-visible .pmx-card__icon,
+  .md-typeset a.pmx-card:hover::before,
+  .md-typeset a.pmx-card:focus-visible::before,
+  .md-content__inner:has(.pmx-hero) > ul > li:hover {
+    transform: none;
+  }
+}
