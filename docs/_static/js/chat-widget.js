@@ -576,6 +576,10 @@
     panel.style.minHeight = "";
     panel.classList.remove("is-dragging");
     panel.style.height = "";
+    /* 遮罩的跟手明暗也一起撤掉:inline opacity 会压过 data-level,
+       撤掉的那一帧过渡从头接管,接着吸附动画走。 */
+    els.scrim.classList.remove("is-dragging");
+    els.scrim.style.opacity = "";
   };
 
   /* 吸附动画期间打标:消息区上缘渐隐,免得半截文字被硬切(见 CSS .is-snapping) */
@@ -684,6 +688,10 @@
   const closePanel = (via) => {
     if (!open) return;
     open = false;
+    /* 先撤跟手写下那层 inline opacity 再 syncChrome:否则它会压过 data-level,
+       遮罩要顶到 clearDragHeight 那一拍才跳变,而不是跟着面板一起淡出。 */
+    els.scrim.classList.remove("is-dragging");
+    els.scrim.style.opacity = "";
     syncChrome();
     releaseHistory();
     els.fab.focus();
@@ -721,6 +729,15 @@
       getSnap: () => snap,
       setSnap: (next, afterDrag) => setSnap(next, afterDrag),
       onCompactChange: (compact) => panel.classList.toggle("is-compact", compact),
+      /* 遮罩跟着手指走:与批注面板同一套(值也取自共享件的 SCRIM_AT / snapLerp),
+         两个面板占同一块屏幕区域、互相 claim,表现必须一致。 */
+      onDragStart: () => els.scrim.classList.add("is-dragging"),
+      onDragEnd: () => els.scrim.classList.remove("is-dragging"),
+      onDragHeight: (h, m) => {
+        els.scrim.style.opacity = String(
+          SHARED.snapLerp(SHARED.ORDER, m, h, SHARED.SCRIM_AT)
+        );
+      },
       markSnapping: markSnapping,
       clearDragHeight: clearDragHeight,
       onClose: (via) => closePanel(via)

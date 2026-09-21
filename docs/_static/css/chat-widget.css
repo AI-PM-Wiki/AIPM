@@ -89,19 +89,27 @@
   z-index: 65;
   opacity: 0;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0);
-  transition: opacity var(--aipm-chat-dur) var(--aipm-chat-ease),
-              background-color var(--aipm-chat-dur) var(--aipm-chat-ease);
+  /* 明暗只走 opacity:背景固定成最深那一档,半开 / 近全屏用 .5 / 1 表达。
+     早先是 opacity 与 background-color 一起过渡 —— 屏幕上真正看到的压暗是两者
+     相乘,于是成了 0.2·p²:缓动做了两遍,前半段几乎不变暗、最后三分之一才追上来
+     (实测 35% 进度处只有 24%,单次缓动应是 49%)。而且 background-color 是绘制
+     属性,每帧都要把整屏重栅格一遍;opacity 走合成器,栅格一次就够。
+     静息视觉逐像素相同:.5 × .4 = .2,1 × .4 = .4。 */
+  background: rgba(0, 0, 0, .4);
+  transition: opacity var(--aipm-chat-dur) var(--aipm-chat-ease);
 }
 .aipm-chat__scrim[data-level="half"] {
-  opacity: 1;
+  opacity: .5;
   pointer-events: auto;
-  background: rgba(0, 0, 0, .2);
 }
 .aipm-chat__scrim[data-level="full"] {
   opacity: 1;
   pointer-events: auto;
-  background: rgba(0, 0, 0, .4);
+}
+/* 跟手期间遮罩由 JS 逐帧写 inline opacity —— 带过渡的话每帧都在追一个移动的
+   目标,和面板高度那条一样会「蹭」而不是跟手。 */
+.aipm-chat__scrim.is-dragging {
+  transition: none;
 }
 
 /* 半开 / 近全屏 / 浮层:锁背景页面滚动(桌面停靠不锁,页面独立滚动) */

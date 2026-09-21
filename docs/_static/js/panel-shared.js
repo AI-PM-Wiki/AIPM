@@ -76,6 +76,32 @@
     };
   }
 
+  /* 遮罩在三段停靠点上的不透明度。两个面板共用同一套视觉语言:遮罩背景固定成
+     最深那一档 rgba(0,0,0,.4),明暗全靠元素自己的 opacity —— 半开 .5、近全屏 1
+     (见各自 CSS 里的 .aipm-anno__scrim / .aipm-chat__scrim)。有效压暗 = 背景
+     alpha × opacity,所以半开 .5×.4=.2、近全屏 1×.4=.4,与上一版(背景 .2/.4、
+     opacity 恒为 1)逐像素相同。放这里而不是各面板各写一份:两边的遮罩必须同步,
+     否则互相 claim 切换时背景会对不上。 */
+  var SCRIM_AT = { peek: 0, half: 0.5, expanded: 1 };
+
+  /**
+   * 把跟手高度插值成停靠点上的某个连续量(遮罩明暗这类)。
+   * order 上每个停靠点在 at 里给一个值,段内线性;低于首段取首段值,高于末段取末段值。
+   */
+  function snapLerp(order, metrics, h, at) {
+    if (h <= metrics[order[0]]) return at[order[0]];
+    for (var i = 1; i < order.length; i++) {
+      var lo = order[i - 1];
+      var hi = order[i];
+      if (h <= metrics[hi]) {
+        var span = metrics[hi] - metrics[lo];
+        var t = span > 0 ? (h - metrics[lo]) / span : 1;
+        return at[lo] + (at[hi] - at[lo]) * t;
+      }
+    }
+    return at[order[order.length - 1]];
+  }
+
   /** 视口与可视区高(软键盘适配用)。 */
   function viewportHeights() {
     var vh = window.innerHeight || document.documentElement.clientHeight;
@@ -110,6 +136,7 @@
    *   getSnap()        当前停靠点
    *   setSnap(next, afterDrag)
    *   isCompact(h, m)  是否该进「内容淡出」态(默认:低于 peek 与 half 的中点)
+   *   onDragHeight(h, m) 跟手期间逐帧回调(拖拽中才调,吸附动画期间不调)
    *   onCompactChange(compact)
    *   onDragStart() / onDragEnd()
    *   markSnapping()   吸附期间打标(消息区上缘渐隐)
@@ -178,6 +205,9 @@
       panel.style.height = h + "px";
       // 跟手期间压掉 CSS 的 peek 保底,否则缩不下去
       panel.style.minHeight = h + "px";
+      /* 跟手期间把高度同步出去(遮罩明暗这类要逐帧跟手的量)。只在拖动中调,
+         吸附动画由 CSS 过渡接管,不经这里。 */
+      if (opts.onDragHeight) opts.onDragHeight(h, m);
       var compact = opts.isCompact
         ? opts.isCompact(h, m)
         : h < (m.peek + m.half) / 2;
@@ -329,6 +359,8 @@
     attachSheetDrag: attachSheetDrag,
     stepSnap: stepSnap,
     nearestSnap: nearestSnap,
+    snapLerp: snapLerp,
+    SCRIM_AT: SCRIM_AT,
     velocity: velocity,
     computeMetrics: computeMetrics,
     viewportHeights: viewportHeights,
