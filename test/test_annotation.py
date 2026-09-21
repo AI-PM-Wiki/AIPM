@@ -1597,6 +1597,39 @@ class TestScrimTracksTheFinger(unittest.TestCase):
 
 
 
+class TestHidingAColumnDoesNotResizeTheList(unittest.TestCase):
+    """收掉一栏只是「这几条先不看了」,不该顺手把整栏卡片撑宽。
+
+    列表是 overflow-y: auto —— 内容够长才挂滚动条,不够长那条就整根撤掉。眼睛收掉
+    一栏是让内容变短的最短路径,于是滚动条一走、内容区当场宽出一条:实测 1440×900
+    收掉「公开」栏,.aipm-anno__list 的 clientWidth 从 387 跳到 402,卡片与分组头
+    跟着右移 15px(357 → 372)。变的是宽度,不是排版,所以看起来像整栏抖了一下。
+
+    scrollbar-gutter: stable 让槽位常驻:有没有滚动条,内容宽度都是同一个值。
+    代价是列表短的时候右边也留一条空槽 —— 比整栏文字横跳一次安静得多。
+    认不得这条属性的浏览器(老 Safari)退回原先的样子,不比现在更坏。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def test_the_list_reserves_its_scrollbar_gutter(self):
+        rule = _strip_comments(_block(self.css, "\n.aipm-anno__list {"))
+        # 得先是滚动容器,stable 才有意义;写 stable 的同时不能把 overflow-y 拿掉
+        self.assertIn("overflow-y: auto;", rule)
+        self.assertIn("scrollbar-gutter: stable;", rule)
+        # both-edges 会在左边也多留一条,内容整体左移 —— 那不是这里要的
+        self.assertNotIn("both-edges", rule)
+
+    def test_the_list_is_the_only_scrolling_box_in_the_panel(self):
+        """修的是面板里唯一的滚动容器。再长出第二个,就另开一处同样的跳变 ——
+        这条断言是提醒,不是禁令:真要加,得照着上面那条一起给槽位。"""
+        rule = _strip_comments(self.css)
+        scrollables = re.findall(r"(?:^|[;{\s])overflow(?:-y)?:\s*(?:auto|scroll)", rule)
+        self.assertEqual(len(scrollables), 1)
+
+
 class TestUiRoundSix(unittest.TestCase):
     """第六轮:标题按钮要看得出来是按钮 —— 「能点」不能只在悬停时才说。"""
 

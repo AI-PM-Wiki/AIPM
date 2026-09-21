@@ -385,6 +385,14 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   padding: .5rem .75rem 1rem;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* 滚动条槽位常驻。列表从「够长、能滚」变成「不用滚」时,overflow-y: auto 会把
+     整条滚动条撤掉,内容区当场宽出那一条 —— 眼睛收掉一栏是走到这一步最短的路:
+     收一栏本意只是「这几条先不看了」,结果卡片、分组头、输入框一起右移(实测
+     1440×900 收掉「公开」栏:.aipm-anno__list 的 clientWidth 387 → 402,卡片
+     357 → 372)。stable 让槽位一直占着,有没有滚动条内容宽度都是同一个值;代价
+     是列表短的时候右边也留一条空槽,那比整栏文字横跳一次要安静。
+     认不得 scrollbar-gutter 的浏览器退回今天的样子(照跳),不比现在更坏。 */
+  scrollbar-gutter: stable;
 }
 .aipm-anno__empty {
   margin: 1.5rem .25rem;

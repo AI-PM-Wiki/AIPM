@@ -417,6 +417,14 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__attachbar {
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--md-default-fg-color--lighter) transparent;
+  /* 滚动条槽位常驻,理由与批注面板的 .aipm-anno__list 同一条(那边是收掉一栏时
+     跳,这边是历史第一次长过一屏时跳):overflow-y: auto 只在需要时才挂滚动条,
+     挂上/撤下都会把内容区改宽一条 —— 实测空态 clientWidth 402、塞满后 391,气泡
+     与免责条在消息进来的一瞬间集体缩 11px。stable 让槽位一直占着。
+     代价是消息列的右边界比输入卡片(.aipm-chat__composer,margin 12px)多让出
+     一条滚动条。这一条差在历史长过一屏之后本来就有,只是从「有时有」变成「一直
+     有」——换来的是消息列表在长与短之间不再横跳。 */
+  scrollbar-gutter: stable;
 }
 .aipm-chat__msgs::-webkit-scrollbar {
   width: .3rem;

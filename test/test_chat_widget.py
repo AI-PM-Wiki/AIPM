@@ -70,6 +70,25 @@ class TestChatWidgetStyles(unittest.TestCase):
         self.assertEqual(lo, "20rem")   # 320px 最小宽
         self.assertEqual(hi, "26.25rem")  # 420px 最大宽
 
+    def test_message_list_reserves_its_scrollbar_gutter(self):
+        """消息列不能因为「历史长了」而换一个宽度。
+
+        .aipm-chat__msgs 是 overflow-y: auto:空历史时没有滚动条,历史第一次长过
+        一屏时挂上,内容区当场窄一条 —— 实测同一条免责条在挂上滚动条前后
+        362 → 351,列表 clientWidth 402 → 391。聊天恰恰是「内容一路长出来」的
+        地方,这一刻必然发生,而且就发生在用户盯着新消息进来的那一下。
+
+        scrollbar-gutter: stable 让槽位常驻,长与短都是同一个宽度(351)。代价是
+        消息列恒比输入卡片(.aipm-chat__composer,372)窄一条滚动条 —— 这个差值在
+        历史长过一屏之后本来就有,改的只是它不再来回变。批注面板的
+        .aipm-anno__list 是同一条(那边由收掉一栏触发)。
+        """
+        msgs = re.search(r"\n\.aipm-chat__msgs \{(.*?)\}", self.css, re.S).group(1)
+        self.assertIn("overflow-y: auto;", msgs)
+        self.assertIn("scrollbar-gutter: stable;", msgs)
+        # both-edges 会在左边也多留一条,内容整体左移 —— 那不是这里要的
+        self.assertNotIn("both-edges", msgs)
+
     # -- 移动抽屉:三段停靠点 ----------------------------------------------
     def test_sheet_has_three_snap_points(self):
         for snap in ("peek", "half", "expanded"):
