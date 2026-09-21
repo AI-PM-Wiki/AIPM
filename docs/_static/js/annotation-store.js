@@ -261,6 +261,12 @@
       showLocal: p.showLocal !== false,
       showPrivate: p.showPrivate !== false,
       showPublic: p.showPublic !== false,
+      /* 评论面板里那三只眼睛另存一份:评论不锚正文,它的显隐与正文里的高亮是两件
+         事,共用一份键会让「这栏评论先不看了」顺手抹掉文章里的划线。
+         批注那份(上面三条)同时管着列表与正文高亮,见 syncGroupVisibility。 */
+      showCommentsLocal: p.showCommentsLocal !== false,
+      showCommentsPrivate: p.showCommentsPrivate !== false,
+      showCommentsPublic: p.showCommentsPublic !== false,
       /* 折叠态与「整栏不显示」是两件事:折叠只收起条目、分组标题还留在那儿,
          眼睛则连标题一起收走。默认都是展开(false)。 */
       collapsedLocal: p.collapsedLocal === true,

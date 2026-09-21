@@ -1057,6 +1057,21 @@
   }
 
   /**
+   * 「这一栏显不显示」的 prefs 键,批注与评论**各存一份**。
+   *
+   * 两边的栏目同名,收走的却是两样东西:批注那一栏还连着正文里的高亮(见
+   * syncGroupVisibility),评论压根不锚正文。共用一份键的话,在评论面板里把「公开」
+   * 收掉,回到文章里会发现公开那几条的划线也没了 —— 一次「这栏评论先不看了」的
+   * 过滤,顺手改了另一件不相关的事。
+   *
+   * 折叠态不跟着分家:折叠两处都是同一件事(把这一栏的条目收起来、标题还留着),
+   * 没有第二层含义要分开。
+   */
+  function groupShownKey(key) {
+    return prefKey(panelMode === "comments" ? "showComments" : "show", key);
+  }
+
+  /**
    * 排序键:这条批注在正文里的位置(文档序字符偏移)。三级回退 ——
    *
    *  1. 活 Range 最准,但只有「锚得上」的时候才有:resolved 里可能同时躺着孤儿
@@ -1147,7 +1162,7 @@
   /** 分组头:左侧箭头折叠(收起条目、标题还留着),右侧眼睛整栏不显示。 */
   function groupHead(key, count, prefs) {
     var collapsed = prefs[prefKey("collapsed", key)] === true;
-    var shown = prefs[prefKey("show", key)] !== false;
+    var shown = prefs[groupShownKey(key)] !== false;
     var head = document.createElement("div");
     head.className = "aipm-anno__group-head";
     head.setAttribute("data-group", key);
@@ -1245,6 +1260,8 @@
     var prefs = store.prefs();
     var cl = document.documentElement.classList;
     ["public", "private", "local"].forEach(function (g) {
+      /* 读的**始终是批注那一份**(不是 groupShownKey):正文里的 mark 属于批注,
+         评论那一栏的眼睛管不着它。在评论面板里收掉一栏,文章该怎么画还怎么画。 */
       var off = prefs[prefKey("show", g)] === false;
       cl.toggle("aipm-anno-hide-" + g, off);
       /* 收走的那几条也别再留在 Tab 序列里:看不见的东西被键盘停在上面,焦点环
@@ -1328,7 +1345,7 @@
          它自己就长在标题上,收走之后谁也点不回来。
          空栏平时不露头(一页干净的时候不该挂着三行 0),被眼睛收走的那一栏例外 ——
          标题与眼睛是唯一的回来路,栏里空了也得留着。 */
-      var hidden = prefs[prefKey("show", g.key)] === false;
+      var hidden = prefs[groupShownKey(g.key)] === false;
       if (visible.length === 0 && !draftHere && !hidden) return;
 
       els.list.appendChild(groupHead(g.key, visible.length + (draftHere ? 1 : 0), prefs));
@@ -1367,7 +1384,7 @@
        属于它原来那一栏,不该从这里漏回来。收走的那一条画不出高亮,也没进
        orphanIds 之外的任何地方,这里不滤就是一条藏不住的漏网之鱼。 */
     var shownOrphans = orphans.filter(function (anno) {
-      return prefs[prefKey("show", groupOf(anno))] !== false;
+      return prefs[groupShownKey(groupOf(anno))] !== false;
     });
     if (shownOrphans.length > 0 && panelMode === "annotations") {
       var oh = document.createElement("div");
@@ -3425,9 +3442,9 @@
     }
     if (action === "toggle-group") {
       var showPatch = {};
-      showPatch[prefKey("show", group)] = prefs[prefKey("show", group)] === false;
-      /* 随意显隐,不做「至少留一栏」的拦截:三栏都收起来时面板底部有一条
-         「显示全部」的恢复入口(见 render 的空列表分支),回得来。 */
+      showPatch[groupShownKey(group)] = prefs[groupShownKey(group)] === false;
+      /* 随意显隐,不做「至少留一栏」的拦截:眼睛收走的是栏的**内容**而不是栏本身,
+         三个标题与眼睛一直留在那儿(见 render 的分组循环),点哪只都能回来。 */
       store.setPrefs(showPatch);
       render();
     }

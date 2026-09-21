@@ -762,7 +762,7 @@ class TestUiRoundFour(unittest.TestCase):
         它自己就长在标题上,那一栏再也叫不回来。"""
         block = _block(self.js, "function render()")
         self.assertNotIn("if (!shown && !draftHere) return;", block)
-        self.assertIn("var hidden = prefs[prefKey(\"show\", g.key)] === false;", block)
+        self.assertIn("var hidden = prefs[groupShownKey(g.key)] === false;", block)
         self.assertLess(
             block.index("appendChild(groupHead("), block.index("if (hidden ||")
         )
@@ -840,8 +840,32 @@ class TestUiRoundFour(unittest.TestCase):
         """未在正文中定位的那些也属于它原来那一栏,眼睛收走一栏时不许从这里漏回来。"""
         block = _block(self.js, "function render(")
         self.assertIn("shownOrphans", block)
-        self.assertIn('prefs[prefKey("show", groupOf(anno))] !== false', block)
+        self.assertIn("prefs[groupShownKey(groupOf(anno))] !== false", block)
         self.assertNotIn("String(orphans.length)", block)
+
+    def test_the_comments_eye_never_touches_the_page(self):
+        """评论不锚正文,评论那一栏的眼睛只管列表 —— 它不该碰正文里的高亮。
+        两边因此各存一份键:在评论面板里收掉一栏,文章该怎么画还怎么画。"""
+        key = _block(self.js, "function groupShownKey(")
+        self.assertIn('panelMode === "comments" ? "showComments" : "show"', key)
+        # 正文那一侧读的始终是批注那份键,不看当前在哪个模式
+        sync = _block(self.js, "function syncGroupVisibility(")
+        self.assertIn('prefs[prefKey("show", g)] === false', sync)
+        self.assertNotIn("groupShownKey", _strip_comments(sync))
+        self.assertNotIn("panelMode", _strip_comments(sync))
+        # 分组头 / 列表 / 未定位组 / 眼睛的点击:四处都走模式各自的那份键
+        for marker in ("function groupHead(", "function render()",
+                       'els.list.addEventListener("click"'):
+            block = _block(self.js, marker)
+            self.assertNotIn('prefKey("show"', _strip_comments(block))
+
+    def test_both_eyes_persist_under_their_own_keys(self):
+        """两份键都要落进 store 的白名单 —— prefs() 只回列出来的那几个,
+        漏掉的话 setPrefs 写进去、读出来就没了(点完眼睛像没反应)。"""
+        prefs = _block(self.store, "function prefs()")
+        for name in ("showLocal", "showPrivate", "showPublic",
+                     "showCommentsLocal", "showCommentsPrivate", "showCommentsPublic"):
+            self.assertIn(f"{name}: p.{name} !== false", prefs)
 
     def test_store_owns_the_style_whitelist(self):
         self.assertIn('ANNO_STYLES = ["underline", "highlight", "both"]', self.store)
