@@ -1513,3 +1513,480 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   13. 首页 ASCII 终端(w3 方向,2026-09-21:等宽字符本身就是主视觉)
+
+   本小节为新增,不修改 §11 / §12 的既有规则。
+   - hero 不再由主题子模块模板 home.html 输出:docs/index.md 去掉 frontmatter 的
+     `template: home.html` 后,把 ASCII 窗口作为顶层 HTML 直接写进正文,
+     无 JS 也能看到完整主视觉;等宽字体走 --md-code-font 的系统回退,零网络请求。
+   - 两套配色:浅色 = 纸面墨黑(印刷体 ASCII),暗色 = 磷光绿 + 琥珀(CRT 终端)。
+     正文对比度最低 6.1:1(浅)/ 7.2:1(暗),均在 AA 4.5:1 之上,注释里标了实测值。
+   - 动效只有「逐行显影」(home-ascii.js)与「光标闪烁」两项,CSS 与 JS 双重遵守
+     prefers-reduced-motion: reduce。
+   - 结构性取舍:ASCII 窗口内的“空行”写成 |      | 而不是真空行,让每一行都以
+     非空白字符结尾 —— git diff --check 不允许行尾空白。
+   ---------------------------------------------------------------------------- */
+
+/* 13.0 token:浅色 = 纸面墨黑(刻意单色,不加暖色) */
+[data-md-color-scheme="default"] {
+  --pm-ascii-fg: #1A1A1A;              /* 主视觉 / 强调,对白底 16.6:1 */
+  --pm-ascii-body: #3F3F3F;            /* 次要正文,对白底 10.4:1 */
+  --pm-ascii-dim: #5F5F5F;             /* 眉题 / 注脚,对白底 6.1:1 */
+  --pm-ascii-paper: #FAFAF8;           /* 极淡底色,同时作主按钮文字色 */
+  --pm-ascii-rule: rgba(26, 26, 26, .22);
+  --pm-ascii-rule-strong: rgba(26, 26, 26, .45);
+  --pm-ascii-wash: rgba(26, 26, 26, .05);
+  --pm-ascii-card: #FFFFFF;
+  --pm-ascii-accent: #1A1A1A;
+}
+
+/* 13.0 token:暗色 = 磷光 CRT */
+[data-md-color-scheme="slate"] {
+  --pm-ascii-fg: #35D07F;              /* 终端绿,对 #0B0C0F 9.5:1 */
+  --pm-ascii-body: #B9C6BE;            /* 对 #0B0C0F 11.1:1 */
+  --pm-ascii-dim: #8AA596;             /* 对 #0B0C0F 7.2:1 */
+  --pm-ascii-paper: #0D1117;
+  --pm-ascii-rule: rgba(53, 208, 127, .3);
+  --pm-ascii-rule-strong: rgba(53, 208, 127, .6);
+  --pm-ascii-wash: rgba(53, 208, 127, .08);
+  --pm-ascii-card: rgba(13, 17, 23, .72);
+  --pm-ascii-accent: #F0B429;          /* 琥珀:光标 / primary hover,对深底 10.2:1 */
+}
+
+/* 13.1 hero 骨架:单列居中,与 §11.2 同节奏但无 banner 视口 */
+.pm-ascii-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .8rem;
+  padding: .5rem 0 1.7rem;
+  text-align: center;
+}
+
+.pm-ascii-hero__eyebrow {
+  margin: 0;
+  font-family: var(--md-code-font);
+  font-size: .64rem;
+  font-weight: 500;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--pm-ascii-dim);
+}
+
+/* 13.2 ASCII 面板:细描边 + 极淡底色的容器,内部是三行终端文本
+   (cmd / art / meta)。三行各是一个 <pre>,间距交给容器 flex —— 这样 pre 内
+   不会出现真正的空行(真空行会提前终止 Markdown 的 HTML 块),也不会产生
+   行尾空白(git diff --check 不允许)。 */
+.pm-ascii-hero__window {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .5rem;
+  max-width: 100%;
+  min-width: 0;
+  padding: 1rem 1.15rem 1.1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  background-color: var(--pm-ascii-paper);
+  border: 1px solid var(--pm-ascii-rule);
+  border-radius: 4px;              /* 以直角为主,4px 只为不生硬 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+}
+
+.pm-ascii-hero__window::-webkit-scrollbar {
+  display: none;
+}
+
+/* 提权到 (0,2,1):§6.2 的 `.md-typeset pre` 与主题的
+   `.md-typeset code, kbd, pre`(均 0,1,1)会设 color / background / border /
+   line-height / margin,终端面板必须整体压过代码块样式 */
+.md-typeset .pm-ascii-hero__window pre {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  font-family: var(--md-code-font);
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: pre;
+  text-align: left;
+  tab-size: 4;
+}
+
+.md-typeset pre.pm-ascii-hero__cmd,
+.md-typeset pre.pm-ascii-hero__meta {
+  font-size: .72rem;
+  line-height: 1.5;
+  color: var(--pm-ascii-dim);
+}
+
+.md-typeset pre.pm-ascii-hero__meta {
+  letter-spacing: .02em;
+}
+
+/* 主视觉:FIGlet 风格 AI-PM 字样,38ch 宽;clamp 保证 320px 视口也不横向溢出 */
+.md-typeset pre.pm-ascii-hero__art {
+  font-size: clamp(.62rem, 1.45vw + .42rem, 1.6rem);
+  line-height: 1.28;
+  color: var(--pm-ascii-fg);
+}
+
+/* 13.3 品牌行(真实 <h1>,可被读屏与搜索引擎读到)+ 终端光标 */
+/* 提权到 (0,3,1):主题的 `[data-md-color-scheme="slate"] .md-typeset h1`
+   (0,2,1)会把标题压成纯白 —— 终端面板的墨黑/磷光绿必须自己说了算 */
+.md-typeset .pm-ascii-hero h1.pm-ascii-hero__title {
+  margin: .3rem 0 0;
+  font-family: var(--md-code-font);
+  font-size: clamp(1.05rem, 1.6vw + .6rem, 1.45rem);
+  font-weight: 700;
+  letter-spacing: .18em;
+  line-height: 1.3;
+  color: var(--pm-ascii-fg);
+}
+
+.md-typeset .pm-ascii-hero h1.pm-ascii-hero__title::after {
+  content: "_";
+  margin-left: .1em;
+  color: var(--pm-ascii-accent);
+  animation: pm-ascii-caret 1.15s steps(1, end) infinite;
+}
+
+@keyframes pm-ascii-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* 13.3.1 逐行显影:home-ascii.js 给 <pre> 每一行包上行内 span 后由这里提供动画;
+   JS 被禁用或 reduce 时 <pre> 保持原样静态显示(both 让延迟期间停在 opacity 0) */
+.pm-ascii-hero__window--typed .pm-ascii-hero__line {
+  animation: pm-ascii-line-in 220ms ease-out both;
+}
+
+@keyframes pm-ascii-line-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pm-ascii-hero__tagline {
+  max-width: 32rem;
+  margin: 0;
+  font-size: .8rem;
+  line-height: 1.85;
+  color: var(--pm-ascii-body);
+}
+
+/* 13.4 按钮:直角 + 等宽字,浅色墨底反白 / 暗色磷光绿底;hover 一律「反相」 */
+.pm-ascii-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  margin-top: .25rem;
+}
+
+.pm-ascii-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  padding: .55em 1.25em;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: var(--md-code-font);
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: .06em;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease, border-color 150ms ease,
+              color 150ms ease;
+}
+
+/* `.md-typeset a`(0,1,1)会盖掉按钮文字色,故 <a> 按钮同样前置提权(0,2,1) */
+.md-typeset a.pm-ascii-btn--primary,
+.pm-ascii-btn--primary {
+  color: var(--pm-ascii-paper);
+  background-color: var(--pm-ascii-fg);
+  border-color: var(--pm-ascii-fg);
+}
+
+.md-typeset a.pm-ascii-btn--ghost,
+.pm-ascii-btn--ghost {
+  color: var(--pm-ascii-fg);
+  background-color: transparent;
+  border-color: var(--pm-ascii-rule-strong);
+}
+
+[data-md-color-scheme="default"] .md-typeset a.pm-ascii-btn--primary:hover,
+[data-md-color-scheme="default"] .md-typeset a.pm-ascii-btn--primary:focus-visible,
+[data-md-color-scheme="default"] .pm-ascii-btn--primary:hover,
+[data-md-color-scheme="default"] .pm-ascii-btn--primary:focus-visible {
+  color: var(--pm-ascii-fg);
+  background-color: transparent;
+  border-color: var(--pm-ascii-fg);
+}
+
+[data-md-color-scheme="slate"] .md-typeset a.pm-ascii-btn--primary:hover,
+[data-md-color-scheme="slate"] .md-typeset a.pm-ascii-btn--primary:focus-visible,
+[data-md-color-scheme="slate"] .pm-ascii-btn--primary:hover,
+[data-md-color-scheme="slate"] .pm-ascii-btn--primary:focus-visible {
+  color: var(--pm-ascii-paper);
+  background-color: var(--pm-ascii-accent);
+  border-color: var(--pm-ascii-accent);
+}
+
+.md-typeset a.pm-ascii-btn--ghost:hover,
+.md-typeset a.pm-ascii-btn--ghost:focus-visible,
+.pm-ascii-btn--ghost:hover,
+.pm-ascii-btn--ghost:focus-visible {
+  color: var(--pm-ascii-paper);
+  background-color: var(--pm-ascii-fg);
+  border-color: var(--pm-ascii-fg);
+}
+
+.md-typeset a.pm-ascii-btn:focus-visible,
+.pm-ascii-btn:focus-visible {
+  outline: 2px solid var(--pm-ascii-accent);
+  outline-offset: 2px;
+}
+
+/* 搜索按钮:ghost 变体,前缀一枚 ASCII 标记(替代 §11.3 的 SVG 放大镜) */
+.pm-ascii-btn--search {
+  color: var(--pm-ascii-dim);
+  background-color: transparent;
+  border-color: var(--pm-ascii-rule);
+}
+
+.pm-ascii-btn--search::before {
+  content: "[/]";
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--pm-ascii-accent);
+}
+
+.pm-ascii-btn--search:hover,
+.pm-ascii-btn--search:focus-visible {
+  color: var(--pm-ascii-fg);
+  border-color: var(--pm-ascii-rule-strong);
+  background-color: var(--pm-ascii-wash);
+}
+
+.pm-ascii-hero__search {
+  display: flex;
+  justify-content: center;
+}
+
+/* 13.5 栏目卡片:ASCII 终端面板 —— 去玻璃、去模糊、去圆角,
+   1px 描边 + 对角两枚字面 "+" 接点,读起来就是 +---+ 框线 */
+.pm-card-grid {
+  padding-top: 1.1rem;
+}
+
+[data-md-color-scheme="default"] .pm-card,
+[data-md-color-scheme="slate"] .pm-card {
+  background-color: var(--pm-ascii-card);
+  border-color: var(--pm-ascii-rule);
+  color: var(--pm-ascii-fg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.pm-card {
+  gap: .55rem;
+  padding: 1.05rem 1.1rem 1.15rem;
+  border-radius: 2px;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.pm-card::before,
+.pm-card::after {
+  content: "+";
+  position: absolute;
+  width: auto;
+  height: auto;
+  border: 0;
+  background: none;
+  font-family: var(--md-code-font);
+  font-size: .82rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--pm-ascii-rule-strong);
+  opacity: 1;
+  transition: color 150ms ease;
+  pointer-events: none;
+}
+
+.pm-card::before {
+  top: -.44em;
+  left: .5rem;
+  right: auto;
+}
+
+.pm-card::after {
+  top: auto;
+  bottom: -.44em;
+  left: auto;
+  right: .5rem;
+}
+
+/* hover:只换描边与底色,不做位移、不加光晕(ASCII 方向不要玻璃辉光) */
+.pm-card:hover,
+.pm-card:focus-visible {
+  transform: none;
+  border-color: var(--pm-ascii-rule-strong);
+  background-color: var(--pm-ascii-wash);
+  box-shadow: none;
+}
+
+.pm-card:hover::before,
+.pm-card:hover::after,
+.pm-card:focus-visible::before,
+.pm-card:focus-visible::after {
+  color: var(--pm-ascii-accent);
+}
+
+/* ASCII 栏目标记,取代 §11.5 的 .pm-card__icon(stroke SVG,本方向不再使用) */
+.pm-card__glyph {
+  display: inline-block;
+  align-self: flex-start;
+  padding: .3rem .45rem;
+  font-family: var(--md-code-font);
+  font-size: .76rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .04em;
+  color: var(--pm-ascii-fg);
+  background-color: var(--pm-ascii-wash);
+  border: 1px solid var(--pm-ascii-rule);
+  border-radius: 2px;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.pm-card:hover .pm-card__glyph,
+.pm-card:focus-visible .pm-card__glyph {
+  color: var(--pm-ascii-paper);
+  background-color: var(--pm-ascii-fg);
+}
+
+.pm-card__title {
+  font-size: .98rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--pm-ascii-fg);
+}
+
+.pm-card__desc {
+  font-size: .82rem;
+  line-height: 1.7;
+  color: var(--pm-ascii-body);
+  opacity: 1;
+}
+
+.pm-card:hover .pm-card__title,
+.pm-card:focus-visible .pm-card__title {
+  color: var(--pm-ascii-fg);
+}
+
+/* 13.6 页身两节(## 本站的原则 / ## 现在适合从哪里开始)
+   原 §11.9 依赖模板输出的 .pm-home-body 包裹层;去掉 template 后正文里不再有
+   该层,故用 :has() 把「首页专属」重新限定到首页。不支持 :has() 的浏览器退化为
+   站点默认排版,文案与链接不受影响。 */
+body:has(.pm-ascii-hero) .md-content__inner > h2 {
+  font-family: var(--md-code-font);
+  font-size: .95rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--pm-ascii-fg);
+  padding-bottom: .5rem;
+  border-bottom: 1px solid var(--pm-ascii-rule);
+}
+
+body:has(.pm-ascii-hero) .md-content__inner > h2::before {
+  content: "> ";
+  color: var(--pm-ascii-accent);
+}
+
+body:has(.pm-ascii-hero) .md-content__inner > ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+body:has(.pm-ascii-hero) .md-content__inner > ul > li {
+  position: relative;
+  margin: .4rem 0;
+  padding: .55rem .9rem .55rem 1.9rem;
+  border: 0;
+  border-left: 2px solid var(--pm-ascii-rule);
+  border-radius: 0;
+  background-color: var(--pm-ascii-wash);
+  font-size: .82rem;
+  line-height: 1.8;
+  color: var(--pm-ascii-body);
+}
+
+body:has(.pm-ascii-hero) .md-content__inner > ul > li::before {
+  content: "-";
+  position: absolute;
+  top: .55rem;
+  left: .8rem;
+  font-family: var(--md-code-font);
+  font-weight: 700;
+  color: var(--pm-ascii-accent);
+}
+
+/* 13.7 窄屏:收字号与内边距,CTA 竖排占满 */
+@media screen and (max-width: 700px) {
+  .pm-ascii-hero__window {
+    gap: .45rem;
+    padding: .8rem .75rem .85rem;
+  }
+
+  .md-typeset pre.pm-ascii-hero__cmd,
+  .md-typeset pre.pm-ascii-hero__meta {
+    font-size: .66rem;
+  }
+
+  .pm-ascii-hero__eyebrow {
+    font-size: .56rem;
+    letter-spacing: .16em;
+  }
+
+  .pm-ascii-hero__tagline {
+    font-size: .75rem;
+    line-height: 1.8;
+  }
+
+  .pm-ascii-hero__cta {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .pm-ascii-hero__cta .pm-ascii-btn {
+    width: 100%;
+  }
+}
+
+/* 13.8 减少动态:光标停闪、逐行显影改为直接显示(JS 侧同样提前返回) */
+@media (prefers-reduced-motion: reduce) {
+  .pm-ascii-hero__title::after {
+    animation: none;
+    opacity: 1;
+  }
+
+  .pm-ascii-hero__window--typed .pm-ascii-hero__line {
+    animation: none;
+    opacity: 1;
+  }
+}
