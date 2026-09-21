@@ -34,6 +34,11 @@ SERVER_ANNOTATIONS_TS = (
 )
 
 
+def _strip_comments(src: str) -> str:
+    """Drop /* ... */ comments so contract assertions only read code."""
+    return re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+
+
 def _block(src: str, marker: str) -> str:
     """Return the brace-balanced block that starts at ``marker``."""
     start = src.index(marker)
@@ -111,6 +116,31 @@ class TestEntryButton(unittest.TestCase):
 
     def test_mobile_search_covers_the_button(self):
         self.assertIn('[data-md-toggle="search"]:checked ~ .md-header .aipm-anno-entry', self.css)
+
+    def test_entry_button_is_a_toggle(self):
+        """入口是开关,不是「只负责开」:开着时再点一次要收起。
+
+        与助手 FAB 的区别:助手的 FAB 在面板开着时整个隐藏(.is-hidden),
+        所以它不需要「再点一次」;批注入口一直可见,收起只能由它自己承担。
+        """
+        block = _block(self.js, 'entry.addEventListener("click"')
+        self.assertIn("if (open)", block)
+        self.assertIn('panels.close("annotation"', block)
+        self.assertIn('panels.claim("annotation")', block)
+
+    def test_entry_icon_never_changes(self):
+        """入口图标不随开合变化(验收意见):页头始终是那支笔。
+
+        换成叉会和面板头部自己的关闭叉在同一屏里打架 —— 状态由 aria-expanded、
+        title 与面板本身表达。收起路径(叉按钮 / Esc / 遮罩 / 下拉)都经
+        syncChrome,所以 aria 侧始终跟得上。
+        """
+        sync = _block(self.js, "function syncEntry()")
+        self.assertNotIn("innerHTML", sync)
+        self.assertNotIn("ICON.close", sync)
+        self.assertIn("aria-expanded", sync)
+        # 由 syncChrome 驱动 —— 忘了接上,开合状态就跟不上
+        self.assertIn("syncEntry();", _block(self.js, "function syncChrome()"))
 
 
 class TestPanelsAreMutuallyExclusive(unittest.TestCase):
@@ -498,23 +528,6 @@ class TestUiRoundThree(unittest.TestCase):
         # 默认展开:不是 === true 就当展开
         self.assertIn("=== true", prefs)
 
-    def test_the_eye_never_removes_the_last_way_back(self):
-        """三栏不能全被眼睛收走 —— 那样连把它们打开的入口都没有了。"""
-        block = self.js[self.js.index('els.list.addEventListener("click"') :]
-        block = block[: block.index("els.account.addEventListener")]
-        self.assertIn("left.length === 0", block)
-        self.assertIn("setPrefs(showPatch)", block)
-
-    # ---- 排序:按正文位置 ----
-
-    def test_the_eye_guard_counts_only_groups_with_content(self):
-        """只在「还有内容、且打开着」的栏会被关光时才拦 —— 空栏关不关都一样,
-        拦它反而让用户没法把面板收干净。"""
-        block = self.js[self.js.index('els.list.addEventListener("click"') :]
-        block = block[: block.index("els.account.addEventListener")]
-        self.assertIn("groupOf(all[i]) === g", block)
-        self.assertIn("orphansShown", block)
-
     def test_position_key_falls_back_in_three_steps(self):
         block = _block(self.js, "function positionKey(")
         self.assertIn("offsetOf(", block)
@@ -528,7 +541,9 @@ class TestUiRoundThree(unittest.TestCase):
         self.assertIn("orphanIds = {};", _block(self.js, "function applyAll()"))
 
     def test_list_is_sorted_by_document_position(self):
-        self.assertIn("visible.sort(byPosition)", _block(self.js, "function render()"))
+        """批注按正文位置排;评论另有一套排序比较器(见 TestUiRoundFour)。"""
+        block = _block(self.js, "function render()")
+        self.assertIn("visible.sort(panelMode === \"comments\" ? commentComparator(commentSort) : byPosition)", block)
 
     # ---- 全页评论 ----
 
@@ -547,10 +562,23 @@ class TestUiRoundThree(unittest.TestCase):
         self.assertIn('"批注"', block)
         self.assertIn("els.smart.hidden", block)
 
-    def test_comment_mode_does_not_offer_text_selection(self):
+    def test_smart_button_hidden_attribute_actually_hides(self):
+        """iconbtn 是 inline-flex,作者样式优先于 UA 的 [hidden]{display:none} ——
+        少一条 .aipm-anno__iconbtn[hidden] 的收回规则,评论模式下智能高亮按钮
+        会照样杵在页头。"""
+        css = self.css
+        rule = css[css.index(".aipm-anno__iconbtn[hidden]") :]
+        rule = rule[: rule.index("}")]
+        self.assertIn("display: none", rule)
+
+    def test_comment_mode_still_offers_the_selection_toolbar(self):
+        """在评论视图里划词也要出悬浮窗(第三轮验收第 6 条),而且落了批注要切回
+        批注视图 —— 否则新卡片落在一个只列整页评论的列表里,看起来像没反应。"""
         handler = self.js[self.js.index('document.addEventListener("selectionchange"') :]
         handler = handler[: handler.index("toolbar.addEventListener")]
-        self.assertIn('panelMode === "comments"', handler)
+        self.assertNotIn('panelMode === "comments"', handler)
+        start = _block(self.js, "function startCreate()")
+        self.assertIn('panelMode = "annotations"', start)
 
     def test_comment_mode_has_its_own_new_entry(self):
         """没有划词这个动作,就得有一颗看得见的「写一条评论」。"""
@@ -569,11 +597,12 @@ class TestUiRoundThree(unittest.TestCase):
             self.assertNotIn(gone, item)
 
     def test_recolour_goes_through_the_dot_popover(self):
-        self.assertIn("function toggleColorPop(", self.js)
-        pop = _block(self.js, "function toggleColorPop(")
+        self.assertIn("function togglePop(", self.js)
+        pop = _block(self.js, "function togglePop(")
+        self.assertIn("styleHtml()", pop)
         self.assertIn("swatchHtml()", pop)
-        self.assertIn("patchAnnotation(anno, { color: color })", pop)
-        self.assertIn("closeColorPop()", _block(self.js, "function render()"))
+        self.assertIn("apply({ color: color })", pop)
+        self.assertIn("closePop()", _block(self.js, "function render()"))
 
     def test_highlight_only_cards_use_a_badge(self):
         item = _block(self.js, "function renderItem(anno, isOrphan)")
@@ -658,6 +687,385 @@ class TestUiRoundThree(unittest.TestCase):
         plain = self.css.index("border-radius: .3rem;", save)
         squared = self.css.index("border-top-right-radius: 0;", save)
         self.assertLess(plain, squared)
+
+
+class TestUiRoundFour(unittest.TestCase):
+    """第四轮验收:任意显隐 / 三类画法 / 悬浮窗完整选择 / 评论排序 /
+    回复的回复与权限 / 点赞。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+        cls.store = STORE_JS.read_text(encoding="utf-8")
+
+    # ---- 分栏:随意的显隐 ----
+
+    def test_the_eye_guard_is_gone(self):
+        """第三轮那道「至少留一栏」的护栏按验收意见撤掉 —— 支持随意显隐。"""
+        block = self.js[self.js.index('els.list.addEventListener("click"') :]
+        block = block[: block.index("els.account.addEventListener")]
+        self.assertNotIn("left.length === 0", block)
+        self.assertNotIn("orphansShown", block)
+        self.assertIn("setPrefs(showPatch)", block)
+
+    def test_empty_panel_counts_content_not_chrome(self):
+        """把三栏都用眼睛收走之后必须给一条回来的路。判据不能是 childNodes.length ——
+        排序条与「写一条评论」常驻在列表里,那样会被误判成「还有内容」,于是评论视图
+        下收走唯一一栏就再也打不开了。"""
+        body = _block(self.js, "function render(")
+        self.assertIn("contentCount", body)
+        self.assertIn("if (contentCount === 0) {", body)
+        self.assertIn('"show-all"', body)
+        self.assertIn("showPublic: true, showPrivate: true, showLocal: true", body)
+        self.assertNotIn("if (els.list.childNodes.length === 0)", body)
+
+    # ---- 三类画法 ----
+
+    def test_three_styles_are_offered_as_icons(self):
+        styles = self.js[self.js.index("var STYLES = [") : self.js.index("var COMMENT_SORTS")]
+        for sid in ("underline", "highlight", "both"):
+            self.assertIn(f'id: "{sid}"', styles)
+        self.assertIn("icon:", styles)
+        # 图标按钮,不是文字按钮
+        builder = _block(self.js, "function styleHtml()")
+        self.assertIn("st.icon", builder)
+        self.assertIn("aipm-anno__tb-style", builder)
+        self.assertIn('aria-label="', builder)
+        # 按钮正面是图标,文字只进 title / aria-label
+        self.assertIn("st.icon +", builder)
+        self.assertIn('"</button>"', builder)
+
+    def test_three_group_eyes_can_all_be_turned_off(self):
+        """撤掉护栏之后必须留下回来的路,否则面板会变成一个没有出口的空白。"""
+        block = _block(self.js, "function render()")
+        self.assertIn("显示全部批注栏", block)
+        self.assertIn("showPublic: true, showPrivate: true, showLocal: true", block)
+
+    def test_store_owns_the_style_whitelist(self):
+        self.assertIn('ANNO_STYLES = ["underline", "highlight", "both"]', self.store)
+        self.assertIn('DEFAULT_STYLE = "highlight"', self.store)
+
+    def test_unknown_style_falls_back(self):
+        fn = _block(self.js, "function styleOf(")
+        self.assertIn("store.ANNO_STYLES.indexOf(st)", fn)
+
+    def test_marks_carry_the_style(self):
+        mark = _block(self.js, "function markRange(")
+        self.assertIn('mark.setAttribute("data-style", styleOf(anno))', mark)
+        for style in ("underline", "highlight", "both"):
+            self.assertIn(f'[data-style="{style}"]', self.css)
+        # 墨色与底色两个变量,画法决定用哪个
+        self.assertIn("--aipm-mark-wash", self.css)
+        self.assertIn("--aipm-mark-ink", self.css)
+
+    # ---- 悬浮窗 ----
+
+    def test_toolbar_offers_style_colour_and_visibility(self):
+        bar = self.js[self.js.index("toolbar.innerHTML =") :]
+        bar = bar[: bar.index("document.body.appendChild(toolbar)")]
+        self.assertIn("styleHtml()", bar)
+        self.assertIn("swatchHtml()", bar)
+        self.assertIn("visChipsHtml()", bar)
+        self.assertIn("aipm-anno__tb-annotate", bar)
+
+    def test_picking_a_colour_creates_the_annotation(self):
+        """「划词后选颜色没反应」的修复:选色即落这条批注。"""
+        handler = self.js[self.js.index('toolbar.addEventListener("click"') :]
+        handler = handler[: handler.index("\n  /*")]
+        swatch_branch = handler[handler.index('closest(".aipm-anno__swatch")') :]
+        swatch_branch = swatch_branch[: swatch_branch.index("return;")]
+        self.assertIn("startCreate()", swatch_branch)
+        self.assertIn("store.setLastColor(activeColor)", swatch_branch)
+
+    def test_unlogged_public_or_private_goes_to_login(self):
+        handler = self.js[self.js.index('toolbar.addEventListener("click"') :]
+        handler = handler[: handler.index("\n  /*")]
+        self.assertIn("loginForDraft(draftForLogin())", handler)
+
+    def test_logged_out_local_chip_is_not_locked(self):
+        """未登录时公开/私有挂锁(点了去登录),「仅本机」不挂 ——
+        三片都挂锁会让人以为一条都写不了。"""
+        block = self.js[self.js.index("function syncToolbar()") :]
+        block = block[: block.index("function showToolbar(")]
+        guard = block[block.index('"is-locked"') :]
+        self.assertIn('!== "local"', guard)
+        self.assertIn("isLoggedIn()", guard)
+
+    # ---- 新卡落位 ----
+
+    def test_new_card_lands_where_its_text_is(self):
+        block = _block(self.js, "function render()")
+        self.assertIn("draftRank", block)
+        self.assertIn("draftRank <= positionKey(anno)", block)
+
+    def test_new_comment_is_pinned_to_the_top(self):
+        """新增评论没有正文位置可依,固定在最上方。"""
+        block = _block(self.js, "function render()")
+        self.assertIn('panelMode === "comments" ? -Infinity', block)
+
+    # ---- 评论排序 ----
+
+    def test_comment_sort_has_three_modes(self):
+        sorts = self.js[
+            self.js.index("var COMMENT_SORTS = [") : self.js.index("function isPageComment(")
+        ]
+        for sid in ("hot", "newest", "mostReplies"):
+            self.assertIn(f'id: "{sid}"', sorts)
+        self.assertIn('COMMENT_SORTS = ["hot", "newest", "mostReplies"]', self.store)
+
+    def test_hot_is_likes_plus_replies(self):
+        self.assertIn("(anno.likeCount || 0) + repliesOf(anno)", _block(self.js, "function hotOf("))
+
+    def test_sort_is_persisted_and_switchable(self):
+        row = _block(self.js, "function sortRow()")
+        self.assertIn('store.setPrefs({ commentSort: s.id })', row)
+        self.assertIn("is-active", row)
+        # 批注不参与评论排序
+        self.assertIn("commentComparator(commentSort) : byPosition", _block(self.js, "function render()"))
+
+    # ---- 回复 ----
+
+    def test_reply_box_is_not_a_draft_card(self):
+        """回复框与新批注卡故意不同形:不要颜色、画法、可见范围那些「批注自己的」控件。"""
+        box = _block(self.js, "function buildReplyEditor(")
+        self.assertIn("aipm-anno__replybox", box)
+        self.assertNotIn("aipm-anno__draft", box)
+        self.assertNotIn("swatchHtml()", box)
+        self.assertNotIn("buildVisPicker()", box)
+        self.assertIn('save.textContent = "回复"', box)
+
+    def test_reply_to_a_reply_carries_parent_id(self):
+        start = _block(self.js, "function startReply(anno, reply)")
+        self.assertIn("parentId: reply ? reply.id : null", start)
+        item = _block(self.js, "function renderItem(anno, isOrphan)")
+        self.assertIn("replyParent === r.id", item)
+        self.assertIn("data-depth", item)
+
+    def test_replies_go_through_the_reply_endpoint(self):
+        """回复**不能**走 PATCH 的整数组 replies —— 那条是「仅作者」的,
+        而回复的定义就是别人回你。"""
+        fn = _block(self.js, "function postReply(")
+        self.assertIn('"/replies"', fn)
+        self.assertIn('method: "POST"', fn)
+        self.assertNotIn("patchAnnotation(", fn)
+
+    def test_logged_out_can_only_touch_local(self):
+        """未登录只能在本机批注与回复:服务端那两条路都要记名。"""
+        can = _block(self.js, "function canReply(")
+        self.assertIn("if (isLocal(anno)) return true", can)
+        self.assertIn("auth.isLoggedIn()", can)
+        item = _block(self.js, "function renderItem(anno, isOrphan)")
+        self.assertIn("登录后回复", item)
+
+    def test_reply_deletion_respects_authorship(self):
+        can = _block(self.js, "function canDeleteReply(")
+        self.assertIn("reply.author.githubId === me.githubId", can)
+        self.assertIn("canEdit(anno)", can)
+        fn = _block(self.js, "function removeReply(")
+        self.assertIn("/replies/", fn)
+        self.assertIn('method: "DELETE"', fn)
+
+    # ---- 点赞 ----
+
+    def test_like_button_only_on_server_annotations(self):
+        item = _block(self.js, "function renderItem(anno, isOrphan)")
+        self.assertIn("if (!isLocal(anno)) acts.appendChild(likeButton(anno))", item)
+        btn = _block(self.js, "function likeButton(")
+        self.assertIn("ICON.heart", btn)
+        self.assertIn("ICON.heartOutline", btn)
+        self.assertIn("likeCount", btn)
+
+    def test_liking_needs_login(self):
+        fn = _block(self.js, "function toggleLike(")
+        self.assertIn("auth.login(location.href)", fn)
+        self.assertIn('method: liked ? "DELETE" : "PUT"', fn)
+        # 就地更新,不整页重拉(点赞是高频轻动作,重拉会把列表滚回顶部)
+        self.assertIn("anno.likeCount = res.body.annotation.likeCount", fn)
+
+    # ---- 发出去的形状 ----
+
+    def test_style_is_sent_on_create(self):
+        fn = _block(self.js, "function submitAnnotation(")
+        self.assertIn("style: activeStyle", fn)
+
+    def test_style_and_colour_are_patched_together(self):
+        fn = _block(self.js, "function submitEditor()")
+        self.assertIn("style: activeStyle", fn)
+        self.assertIn("apply({ style: nextStyle })", self.js)
+        self.assertIn("apply({ color: color })", self.js)
+        # 已存卡片把这两个回调接到 patchAnnotation 上,服务端 PATCH 支持 style
+        self.assertIn("patchAnnotation(anno, patch);", self.js)
+
+class TestSnapAnimationStaysSmooth(unittest.TestCase):
+    """三段抽屉吸附必须真的跑完那 240ms,别每帧被量具重置一次。
+
+    批注面板的 peek 高度靠实测量出来(卡片高 + 把手 + 页头)。早先那版量之前先把
+    面板切到 data-snap="peek"、量完再切回来,以为"同一个任务里做完,浏览器只画
+    一帧"。可中间要读 offsetHeight / getComputedStyle —— 那是一次强制样式与布局,
+    浏览器因此真的提交了 peek 这个中间态;列表是面板的 flex 子项,高度一变就触发
+    ResizeObserver,回调又走 applyMetrics → refreshPeek → 再切一次。于是吸附动画
+    每一帧都被 retarget 一次,过渡时钟永远停在 ~17ms:实测 240ms 的过渡两秒才蹭到
+    目标高度的九成,落点还差几十像素,慢拖时干脆一动不动。
+
+    AI 助手面板当年踩的是同一个坑(issue #73),修法是"量具只借几何、不碰停靠点
+    状态"。批注面板不需要量具类 —— 它的把手与页头不随停靠点变形,卡片在滚动列表
+    里始终按自然高度排版,所以直接不碰 data-snap 即可。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def test_peek_measure_never_fakes_the_snap_state(self):
+        code = _strip_comments(_block(self.js, "function refreshPeek()"))
+        # 量高度不改停靠点状态(注释里可以提,代码里不许写)
+        self.assertNotIn("data-snap", code)
+        self.assertNotIn("setAttribute", code)
+
+    def test_metrics_are_not_rewritten_while_animating(self):
+        """动画期间 ResizeObserver 每帧都来,不能让它每帧写一遍 CSS 变量。"""
+        block = _block(self.js, "new ResizeObserver(function ()")
+        self.assertIn('classList.contains("is-dragging")', block)
+        self.assertIn('classList.contains("is-snapping")', block)
+        # 动画落定后补一次对账,动画中间跳过的那些不会丢
+        snap = _block(self.js, "function markSnapping()")
+        self.assertIn("applyMetrics()", snap)
+
+    def test_apply_metrics_is_idempotent(self):
+        """值没变就不写 —— 改文档根上的 CSS 变量要作废整棵树的样式计算。"""
+        block = _block(self.js, "function applyMetrics()")
+        self.assertRegex(block, r"if \(key === appliedMetrics\) return;")
+
+    def test_compact_fade_is_declared_in_both_directions(self):
+        """淡出 120ms 跟手指;淡入要跟面板吸附同长,不能瞬跳。
+
+        transition 取的是"变化之后"那条规则的声明:只在 .is-compact 里写,
+        类一摘掉就退回基础规则,而基础规则里没有 opacity —— 淡入 0 → 1 无插值。
+        """
+        base = self.css.index(".aipm-anno__list > *:not(.aipm-anno__composer),")
+        compact = self.css.index(
+            ".aipm-anno.is-compact .aipm-anno__list > *:not(.aipm-anno__composer),"
+        )
+        self.assertLess(base, compact, "基础态那条要写在 compact 那条之前")
+        base_rule = _block(self.css[base:], ".aipm-anno__list > *:not(.aipm-anno__composer),")
+        self.assertIn("opacity var(--aipm-anno-dur)", base_rule)
+        compact_rule = _block(
+            self.css[compact:],
+            ".aipm-anno.is-compact .aipm-anno__list > *:not(.aipm-anno__composer),",
+        )
+        self.assertIn("opacity .12s linear", compact_rule)
+
+
+
+class TestScrimTracksTheFinger(unittest.TestCase):
+    """抽屉后面那层压暗:既要跟手,又不能把缓动做两遍。
+
+    1. **跟手**。早先遮罩明暗只由 data-level 推,而 data-level 只在松手/点按时提交
+       (syncChrome 的四个调用点都不在拖拽路径上)。实测慢拖到 441px(二段是 464)
+       背景仍全透明,松手才从 0 开始跑满 240ms —— 拖到哪儿都一样。
+    2. **只走 opacity**。早先 opacity 与 background-color 一起过渡,屏幕上看到的压暗
+       是两者相乘 = 0.2·p²,缓动做了两遍(实测 35% 进度处只有 24%,单次缓动应是
+       49%);而且 background-color 是绘制属性,每帧都要整屏重栅格。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+        cls.shared = SHARED_JS.read_text(encoding="utf-8")
+        cls.chat_js = CHAT_JS.read_text(encoding="utf-8")
+        cls.chat_css = (ROOT / "docs" / "_static" / "css" / "chat-widget.css").read_text(encoding="utf-8")
+
+    # ---- 1. 跟手 ----
+
+    def test_shared_code_exposes_a_height_to_value_lerp(self):
+        self.assertIn("function snapLerp(", self.shared)
+        self.assertRegex(
+            self.shared, r"SCRIM_AT\s*=\s*\{\s*peek:\s*0,\s*half:\s*0?\.5,\s*expanded:\s*1\s*\}"
+        )
+        self.assertIn("snapLerp: snapLerp,", self.shared)
+        self.assertIn("SCRIM_AT: SCRIM_AT,", self.shared)
+
+    def test_drag_height_is_published_every_frame(self):
+        """共享件每帧把跟手高度交出来(只在拖动中,吸附动画由 CSS 过渡接管)。"""
+        block = _block(self.shared, "function attachSheetDrag(")
+        self.assertIn("opts.onDragHeight(h, m)", block)
+
+    def test_both_panels_dim_the_scrim_while_dragging(self):
+        """两个面板必须同一套:占同一块屏幕区域,互相 claim 时要接得上。"""
+        for js, ns in ((self.js, "panels"), (self.chat_js, "SHARED")):
+            self.assertIn("onDragStart", js)
+            self.assertIn("onDragHeight", js)
+            self.assertIn(
+                "%s.snapLerp(%s.ORDER, m, h, %s.SCRIM_AT)" % (ns, ns, ns), js
+            )
+            self.assertIn('els.scrim.style.opacity = String(', js)
+
+    def test_drag_scrim_is_not_transitioned(self):
+        """跟手期间带过渡的话,每帧都在追一个移动的目标(和面板高度那条同理)。"""
+        for css, prefix in ((self.css, "aipm-anno"), (self.chat_css, "aipm-chat")):
+            rule = _block(css, ".%s__scrim.is-dragging {" % prefix)
+            self.assertIn("transition: none;", rule)
+
+    def test_release_and_close_hand_the_scrim_back_to_css(self):
+        """松手/关闭时要撤掉 inline opacity,否则它会压过 data-level。"""
+        pairs = (
+            (self.js, "function clearDragHeight()", "function closePanel()"),
+            (self.chat_js, "const clearDragHeight = () =>", "const closePanel = (via) =>"),
+        )
+        for js, clear_marker, close_marker in pairs:
+            for marker in (clear_marker, close_marker):
+                block = _block(js, marker)
+                self.assertIn('els.scrim.classList.remove("is-dragging");', block)
+                self.assertIn('els.scrim.style.opacity = "";', block)
+
+    # ---- 2. 明暗只走 opacity ----
+
+    def test_scrim_transitions_opacity_only(self):
+        for css, prefix in ((self.css, "aipm-anno"), (self.chat_css, "aipm-chat")):
+            rule = _block(css, ".%s__scrim {" % prefix)
+            self.assertIn("background: rgba(0, 0, 0, .4);", rule)
+            self.assertNotIn("background-color", rule)
+            self.assertIn('opacity: .5;', _block(css, '.%s__scrim[data-level="half"] {' % prefix))
+            self.assertIn('opacity: 1;', _block(css, '.%s__scrim[data-level="full"] {' % prefix))
+
+    def test_scrim_darkness_matches_the_previous_representation(self):
+        """换了表示法,压暗的深浅不能跟着变(旧写法:背景 .2/.4、opacity 恒为 1)。"""
+        for css, prefix in ((self.css, "aipm-anno"), (self.chat_css, "aipm-chat")):
+            base = float(
+                re.search(
+                    r"\.%s__scrim \{[^}]*background: rgba\(0, 0, 0, (\.\d+)\)" % prefix,
+                    css,
+                    re.S,
+                ).group(1)
+            )
+            half = float(
+                re.search(
+                    r'\.%s__scrim\[data-level="half"\] \{\s*opacity: (\.?\d+)' % prefix, css
+                ).group(1)
+            )
+            full = float(
+                re.search(
+                    r'\.%s__scrim\[data-level="full"\] \{\s*opacity: (\.?\d+)' % prefix, css
+                ).group(1)
+            )
+            self.assertAlmostEqual(base * half, 0.2, places=6)
+            self.assertAlmostEqual(base * full, 0.4, places=6)
+
+    def test_both_scrims_stay_verbatim_in_sync(self):
+        """除去类名前缀,两份遮罩规则应当逐字相同 —— 一处改了另一处没跟上就会分叉。"""
+
+        def block(css, prefix):
+            start = css.index(".%s__scrim {" % prefix)
+            end = css.index("html.", start)
+            return css[start:end].replace(prefix, "aipm-X")
+
+        self.assertEqual(
+            block(self.css, "aipm-anno"), block(self.chat_css, "aipm-chat")
+        )
+
 
 
 if __name__ == "__main__":

@@ -17,7 +17,10 @@
   - 两者**互斥**:同一时刻最多一个,靠 window.__aipmPanels 注册表串起来 ——
     批注面板开着时点 FAB「询问助手」→ claim("chat") 先关批注再开助手;
     助手开着时点页头批注按钮 → claim("annotation")。关与开在同一个同步任务里,
-    浏览器只画一帧,桌面停靠下页面宽度不跳。
+    浏览器只画一帧,桌面停靠下页面宽度不跳;
+  - 页头入口是**开关**:面板开着时再点一次即收起。但图标不变(始终是那支笔)——
+    换叉会与面板头部自己的关闭叉打架;助手的 FAB 开着时整个隐藏,所以它没有这个
+    来回,而批注入口一直可见,收起的动作只能由它自己承担。
 
   工程契约:
   - 面板、遮罩、选中工具条都 append 到 document.body 顶层(与 .aipm-chat 同理:
@@ -61,6 +64,35 @@
   var BLOCK_SELECTOR = "p, li, blockquote, td, th, dd, dt";
   var ORPHAN_GROUP = "orphan";
 
+  /* 画法与颜色正交。图标照阅读器的惯例画成小图示:两条文字条 + 一条下划线 /
+     一块浅底 / 两者叠加 —— 比「U」之类的字形更好认,也不必依赖字体。 */
+  var STYLES = [
+    {
+      id: "underline",
+      label: "划线",
+      icon:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="3" rx="1"/><rect x="4" y="9" width="16" height="3" rx="1"/><rect x="3" y="15.5" width="18" height="2.6" rx="1"/></svg>'
+    },
+    {
+      id: "highlight",
+      label: "高亮",
+      icon:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="1.6" fill-opacity=".3"/><rect x="5.5" y="8.4" width="13" height="3" rx="1"/><rect x="5.5" y="13" width="9" height="3" rx="1"/></svg>'
+    },
+    {
+      id: "both",
+      label: "高亮划线",
+      icon:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="18" height="11" rx="1.6" fill-opacity=".3"/><rect x="5.5" y="5.8" width="13" height="3" rx="1"/><rect x="5.5" y="10.2" width="9" height="3" rx="1"/><rect x="3" y="17" width="18" height="2.6" rx="1"/></svg>'
+    }
+  ];
+
+  var COMMENT_SORTS = [
+    { id: "hot", label: "热度" },
+    { id: "newest", label: "最新发布" },
+    { id: "mostReplies", label: "最多回复" }
+  ];
+
   var ICON = {
     pen:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z"/></svg>',
@@ -78,6 +110,10 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7,10l5,5 5,-5z"/></svg>',
     edit:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.06,9.02l0.92,0.92L5.92,19H5v-0.92l9.06,-9.06M17.66,3c-0.25,0 -0.51,0.1 -0.7,0.29l-1.83,1.83 3.75,3.75 1.83,-1.83c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34C18.17,3.1 17.91,3 17.66,3zM14.06,6.19L3,17.25V21h3.75L17.81,9.94l-3.75,-3.75z"/></svg>',
+    heart:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,21.35l-1.45,-1.32C5.4,15.36 2,12.28 2,8.5 2,5.42 4.42,3 7.5,3c1.74,0 3.41,0.81 4.5,2.09C13.09,3.81 14.76,3 16.5,3 19.58,3 22,5.42 22,8.5c0,3.78 -3.4,6.86 -8.55,11.54L12,21.35z"/></svg>',
+    heartOutline:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5,3c-1.74,0 -3.41,0.81 -4.5,2.09C10.91,3.81 9.24,3 7.5,3 4.42,3 2,5.42 2,8.5c0,3.78 3.4,6.86 8.55,11.54L12,21.35l1.45,-1.32C18.6,15.36 22,12.28 22,8.5 22,5.42 19.58,3 16.5,3zM12.1,18.55l-0.1,0.1 -0.1,-0.1C7.14,14.24 4,11.39 4,8.5 4,6.5 5.5,5 7.5,5c1.54,0 3.04,0.99 3.57,2.36h1.87C13.46,5.99 14.96,5 16.5,5c2,0 3.5,1.5 3.5,3.5 0,2.89 -3.14,5.74 -7.9,10.05z"/></svg>',
     eye:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,4.5C7,4.5 2.73,7.61 1,12c1.73,4.39 6,7.5 11,7.5s9.27,-3.11 11,-7.5c-1.73,-4.39 -6,-7.5 -11,-7.5zM12,17c-2.76,0 -5,-2.24 -5,-5s2.24,-5 5,-5 5,2.24 5,5 -2.24,5 -5,5zM12,9c-1.66,0 -3,1.34 -3,3s1.34,3 3,3 3,-1.34 3,-3 -1.34,-3 -3,-3z"/></svg>',
     eyeOff:
@@ -351,6 +387,7 @@
       mark.className = "aipm-anno-mark";
       mark.setAttribute("data-anno-id", anno.id);
       mark.setAttribute("data-color", anno.color || store.DEFAULT_COLOR);
+      mark.setAttribute("data-style", styleOf(anno));
       mark.setAttribute("role", "button");
       mark.setAttribute("tabindex", "0");
       mark.setAttribute("aria-label", "批注:" + (anno.body ? anno.body.slice(0, 60) : "高亮"));
@@ -377,6 +414,40 @@
   /* ================================================================
      DOM 构造
      ================================================================ */
+
+  function styleHtml() {
+    return STYLES.map(function (st) {
+      return (
+        '<button type="button" class="aipm-anno__tb-style" data-style="' +
+        st.id +
+        '" title="' +
+        st.label +
+        '" aria-label="' +
+        st.label +
+        '">' +
+        st.icon +
+        "</button>"
+      );
+    }).join("");
+  }
+
+  /* 悬浮窗里的短标签。列表卡片上用的是 visLabel() 的长文案(「登录同账号可见」),
+     那颗芯片塞不下,也不该塞。 */
+  var VIS_SHORT = { public: "公开", private: "私有", local: "仅本机" };
+
+  function visChipsHtml() {
+    return ["public", "private", "local"]
+      .map(function (v) {
+        return (
+          '<button type="button" class="aipm-anno__tb-vis" data-vis="' +
+          v +
+          '">' +
+          VIS_SHORT[v] +
+          "</button>"
+        );
+      })
+      .join("");
+  }
 
   function swatchHtml() {
     return store.PALETTE.map(function (p) {
@@ -443,8 +514,23 @@
   var toolbar = document.createElement("div");
   toolbar.className = "aipm-anno__toolbar";
   toolbar.hidden = true;
+  /* 两行:上行挑画法与颜色,下行挑可见范围并确认。单行在手机宽度上放不下
+     (3 个画法 + 5 个色块 + 3 个范围 + 确认,约 460px)。 */
   toolbar.innerHTML =
+    '<div class="aipm-anno__tb-row">' +
+    '<div class="aipm-anno__tb-group" role="radiogroup" aria-label="批注画法">' +
+    styleHtml() +
+    "</div>" +
+    '<span class="aipm-anno__tb-sep"></span>' +
+    '<div class="aipm-anno__tb-group" role="radiogroup" aria-label="颜色">' +
     swatchHtml() +
+    "</div>" +
+    "</div>" +
+    '<div class="aipm-anno__tb-row">' +
+    '<div class="aipm-anno__tb-group" role="radiogroup" aria-label="可见范围">' +
+    visChipsHtml() +
+    "</div>" +
+    '<span class="aipm-anno__tb-spacer"></span>' +
     '<button type="button" class="aipm-anno__tb-annotate">' +
     ICON.pen +
     "<span>写批注</span></button>" +
@@ -475,10 +561,30 @@
   var entry = document.createElement("button");
   entry.type = "button";
   entry.className = "md-header__button md-icon aipm-anno-entry";
-  entry.title = "网页批注";
+  entry.title = "打开批注面板";
   entry.setAttribute("aria-label", "打开批注面板");
   entry.setAttribute("aria-expanded", "false");
+  entry.setAttribute("data-state", "closed");
   entry.innerHTML = ICON.pen;
+
+  /* 入口是**开关**,不是「只负责开」:面板开着时再点一次即收起。
+
+     但图标**不随开合变**(验收意见):页头那个叉会和面板头部自己的关闭叉在同一屏
+     里互相打架,页头始终就是那支笔 —— 开合由 aria-expanded 与面板本身表达。
+     助手那边也不需要这个来回:它的 FAB 在面板开着时直接隐藏(.is-hidden),
+     而批注入口一直可见,收起这个动作只能由它自己承担。
+
+     状态真的翻转时才写一次:syncChrome() 在拖拽吸附、换形态、开关面板时都会被
+     调到,重复写同样的值无害,但没必要。 */
+  function syncEntry() {
+    var state = open ? "open" : "closed";
+    if (entry.getAttribute("data-state") === state) return;
+    entry.setAttribute("data-state", state);
+    entry.setAttribute("aria-expanded", open ? "true" : "false");
+    var label = open ? "收起批注面板" : "打开批注面板";
+    entry.title = label;
+    entry.setAttribute("aria-label", label);
+  }
 
   function mountEntry() {
     var inner = document.querySelector(".md-header__inner");
@@ -500,11 +606,16 @@
       peekH = SHEET_PEEK_MIN;
       return;
     }
-    var prev = panel.getAttribute("data-snap");
-    if (prev !== "peek") panel.setAttribute("data-snap", "peek");
     /* peek 高度 = 把手 + 页头 + 一张卡。编辑卡搬进列表之后这里量不到「底部那条
        固定输入区」了 —— 有编辑卡就量它,否则量列表里的第一张,再没有就用占位
-       高度,免得 peek 掉到下限、把手也一起沉下去。 */
+       高度,免得 peek 掉到下限、把手也一起沉下去。
+
+       **量之前不把面板切到 peek**。列表是滚动容器,卡片在里面始终按自然高度排版
+       (溢出的是列表,不是卡片),所以量得到的东西跟面板当前多高无关;而早先那版
+       先 data-snap="peek" 再切回来,中间要读 offsetHeight / getComputedStyle,
+       那是一次强制样式与布局 —— 浏览器因此真的提交了 peek 这个中间态,于是吸附
+       动画每帧都被「切到 peek、再切回来」重置一次过渡时钟:高度只能一帧蹭一点,
+       240ms 的过渡永远走不完(实测每帧 currentTime 都回到 ~17ms)。 */
     var c =
       els.composer ||
       els.list.querySelector(".aipm-anno__item") ||
@@ -515,7 +626,6 @@
       cardH = c.offsetHeight + mb;
     }
     var h = els.grip.offsetHeight + els.head.offsetHeight + cardH + 1;
-    if (prev !== "peek") panel.setAttribute("data-snap", prev || "peek");
     var cap = Math.round((window.innerHeight || 800) * SHEET_PEEK_MAX_VH);
     peekH = Math.max(SHEET_PEEK_MIN, Math.min(Math.round(h), cap));
   }
@@ -536,17 +646,23 @@
       : { peek: peekH, half: vp.vh * SHEET_HALF_VH, expanded: vp.visible - SHEET_TOP_GAP };
   }
 
+  /* 上一次真正写进 CSS 变量的那组值。ResizeObserver 在面板做吸附动画时会每帧
+     回调一次(列表跟着面板长高),改 CSS 变量要作废整棵文档树的样式计算 ——
+     值没变就一个字节都别写。 */
+  var appliedMetrics = "";
+
   function applyMetrics() {
     refreshPeek();
     var m = metrics();
+    var sbw = panels ? panels.scrollbarWidth() : 0;
+    var key = m.peek + "/" + m.half + "/" + m.expanded + "/" + sbw;
+    if (key === appliedMetrics) return;
+    appliedMetrics = key;
     var st = document.documentElement.style;
     st.setProperty("--aipm-anno-sheet-peek", m.peek + "px");
     st.setProperty("--aipm-anno-sheet-half", m.half + "px");
     st.setProperty("--aipm-anno-sheet-expanded", m.expanded + "px");
-    st.setProperty(
-      "--aipm-anno-sbw",
-      (panels ? panels.scrollbarWidth() : 0) + "px"
-    );
+    st.setProperty("--aipm-anno-sbw", sbw + "px");
   }
 
   function computeMode() {
@@ -572,7 +688,7 @@
     cl.toggle("aipm-anno-mode--sheet", mode === "sheet");
     cl.toggle("aipm-anno-locked", locked());
     els.scrim.setAttribute("data-level", scrimLevel());
-    entry.setAttribute("aria-expanded", open ? "true" : "false");
+    syncEntry();
     var modal = open && (mode === "overlay" || (mode === "sheet" && snap !== "peek"));
     panel.setAttribute("role", mode === "dock" ? "complementary" : "dialog");
     if (mode === "dock") panel.removeAttribute("aria-modal");
@@ -584,6 +700,10 @@
     panel.style.minHeight = "";
     panel.classList.remove("is-dragging");
     panel.style.height = "";
+    /* 遮罩的跟手明暗也一起撤掉:inline opacity 会压过 data-level,
+       撤掉的那一帧过渡从头接管,接着吸附动画走。 */
+    els.scrim.classList.remove("is-dragging");
+    els.scrim.style.opacity = "";
   }
 
   function markSnapping() {
@@ -591,6 +711,9 @@
     panel.classList.add("is-snapping");
     snapTimer = setTimeout(function () {
       panel.classList.remove("is-snapping");
+      /* 动画期间跳过的那些 ResizeObserver 回调,在这里补一次:内容若真在动画
+         中间变过(卡片增减、编辑卡长高),peek 到这一刻才对得上。 */
+      if (mode === "sheet") applyMetrics();
     }, SNAP_MS + 90);
   }
 
@@ -645,6 +768,10 @@
   function closePanel() {
     if (!open) return;
     open = false;
+    /* 先撤跟手写下那层 inline opacity 再 syncChrome:否则它会压过 data-level,
+       遮罩要顶到 clearDragHeight 那一拍才跳变,而不是跟着面板一起淡出。 */
+    els.scrim.classList.remove("is-dragging");
+    els.scrim.style.opacity = "";
     syncChrome();
     hideToolbar();
     closeVisMenu();
@@ -674,6 +801,21 @@
       onCompactChange: function (compact) {
         panel.classList.toggle("is-compact", compact);
       },
+      /* 遮罩跟着手指走:拖动中按跟手高度在 peek/half/expanded 三档之间插值,
+         松手后交回 data-level(见 panel-shared 的 SCRIM_AT / snapLerp)。
+         拖动中面板还没「提交」停靠点,所以明暗只能由高度推 —— 不能让用户拖到
+         二段高度了背景还停在页面优先态。 */
+      onDragStart: function () {
+        els.scrim.classList.add("is-dragging");
+      },
+      onDragEnd: function () {
+        els.scrim.classList.remove("is-dragging");
+      },
+      onDragHeight: function (h, m) {
+        els.scrim.style.opacity = String(
+          panels.snapLerp(panels.ORDER, m, h, panels.SCRIM_AT)
+        );
+      },
       markSnapping: markSnapping,
       clearDragHeight: clearDragHeight,
       onClose: closePanel
@@ -688,9 +830,16 @@
   }
 
   entry.addEventListener("click", function () {
-    if (panels) panels.claim("annotation");
-    else if (open) closePanel();
-    else openPanel();
+    /* 开着 → 收起;没开 → 打开。助手开着时走 claim:注册表先关助手再开批注,
+       两步在同一个同步任务里,所以那是「切到批注」而不是「什么都没发生」。 */
+    if (open) {
+      if (panels) panels.close("annotation");
+      else closePanel();
+    } else if (panels) {
+      panels.claim("annotation");
+    } else {
+      openPanel();
+    }
   });
   els.close.addEventListener("click", closePanel);
   els.scrim.addEventListener("click", function () {
@@ -710,10 +859,10 @@
   /* 开始写批注时把选区**锁定**一份到这里。工具条一收起(点「批注」就会收起,
      而且收起的同一步会把 pendingSelection 置空),待提交的这条批注就再没有
      选区可用了 —— 之前因此永远走到「先在正文里选中一段话」这句提示上,
-     即从前端根本建不出批注。它一直留到 finishComposer() 才清。 */
+     即从前端根本建不出批注。它一直留到编辑器关闭才清。 */
   var composerSelection = null; // {selectors, quote}
-  var editingId = null; // 正在编辑的批注 id(null = 新建)
   var activeColor = store.lastColor();
+  var activeStyle = store.prefs().lastStyle;
   var activeVis = null;
   var busy = false;
   var cache = {};
@@ -729,9 +878,24 @@
     return (h ? h.textContent : document.title || "").trim();
   }
 
+  /* 未登录一律只能落本机(服务端那两条路都要 token);登录后按用户在悬浮窗里选的那个
+     走,「仅本机」仍然可选 —— 登录了也想把某些东西留在自己机器上是合理诉求。 */
   function defaultVisibility() {
     if (!auth || !auth.isLoggedIn()) return "local";
-    return activeVis === "private" ? "private" : "public";
+    if (activeVis === "private") return "private";
+    if (activeVis === "local") return "local";
+    return "public";
+  }
+
+  /** 画法归一:不认识的 id 一律按高亮(与 store 的默认一致)。 */
+  function styleOf(anno) {
+    var st = anno && anno.style;
+    return store.ANNO_STYLES.indexOf(st) >= 0 ? st : store.DEFAULT_STYLE;
+  }
+
+  function styleLabel(id) {
+    for (var i = 0; i < STYLES.length; i++) if (STYLES[i].id === id) return STYLES[i].label;
+    return "高亮";
   }
 
   /* ================================================================
@@ -911,6 +1075,62 @@
     return positionKey(a) - positionKey(b);
   }
 
+  function tsMs(iso) {
+    var t = Date.parse(iso || "");
+    return Number.isFinite(t) ? t : 0;
+  }
+
+  function repliesOf(anno) {
+    return (anno.replies && anno.replies.length) || 0;
+  }
+
+  /** 热度 = 点赞数 + 回复数。两者都是「别人对这条的反应」,直接相加即可。 */
+  function hotOf(anno) {
+    return (anno.likeCount || 0) + repliesOf(anno);
+  }
+
+  /**
+   * 评论排序。批注**不参与** —— 它们按正文位置排,那是唯一的合理顺序;
+   * 给批注排「热度」只会让人找不到刚才看到的那句话。
+   * 同分一律按发布时间倒序兜底,免得顺序在两次渲染之间跳。
+   */
+  function commentComparator(sort) {
+    return function (a, b) {
+      if (sort === "newest") return tsMs(b.createdAt) - tsMs(a.createdAt);
+      if (sort === "mostReplies") {
+        return repliesOf(b) - repliesOf(a) || tsMs(b.createdAt) - tsMs(a.createdAt);
+      }
+      return hotOf(b) - hotOf(a) || tsMs(b.createdAt) - tsMs(a.createdAt);
+    };
+  }
+
+  /** 评论模式下、且没有编辑器在写时,给一排排序开关。 */
+  function sortRow() {
+    var prefs = store.prefs();
+    var row = document.createElement("div");
+    row.className = "aipm-anno__sort";
+    row.setAttribute("role", "radiogroup");
+    row.setAttribute("aria-label", "评论排序");
+    var label = document.createElement("span");
+    label.className = "aipm-anno__sort-label";
+    label.textContent = "排序";
+    row.appendChild(label);
+    COMMENT_SORTS.forEach(function (s) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "aipm-anno__sort-btn";
+      b.setAttribute("data-sort", s.id);
+      b.textContent = s.label;
+      b.classList.toggle("is-active", prefs.commentSort === s.id);
+      b.addEventListener("click", function () {
+        store.setPrefs({ commentSort: s.id });
+        render();
+      });
+      row.appendChild(b);
+    });
+    return row;
+  }
+
   /** 分组头:左侧箭头折叠(收起条目、标题还留着),右侧眼睛整栏不显示。 */
   function groupHead(key, count, prefs) {
     var collapsed = prefs[prefKey("collapsed", key)] === true;
@@ -987,7 +1207,7 @@
     /* 列表整体重建,上一轮物化出来的编辑卡已经随之消失 —— 先把 els 里那组
        指针清掉,免得后面读到已经脱开的节点。 */
     unmountEditor();
-    closeColorPop();
+    closePop();
 
     var all = publicList.concat(privateList).concat(localList);
     var items = all.filter(inMode);
@@ -996,20 +1216,32 @@
     els.list.textContent = "";
 
     /* 评论模式没有「划词」这个动作,新建得有一颗看得见的按钮。 */
-    if (panelMode === "comments" && editorDraft === null) {
-      var newbtn = document.createElement("button");
-      newbtn.type = "button";
-      newbtn.className = "aipm-anno__newbtn";
-      newbtn.setAttribute("data-action", "new-comment");
-      newbtn.innerHTML = ICON.edit + "<span>写一条评论</span>";
-      newbtn.addEventListener("click", function () {
-        startPageComment();
-      });
-      els.list.appendChild(newbtn);
+    if (panelMode === "comments") {
+      if (editorDraft === null) {
+        var newbtn = document.createElement("button");
+        newbtn.type = "button";
+        newbtn.className = "aipm-anno__newbtn";
+        newbtn.setAttribute("data-action", "new-comment");
+        newbtn.innerHTML = ICON.edit + "<span>写一条评论</span>";
+        newbtn.addEventListener("click", function () {
+          startPageComment();
+        });
+        els.list.appendChild(newbtn);
+      }
+      els.list.appendChild(sortRow());
     }
 
     var draft = draftSlot();
     var prefs = store.prefs();
+    var commentSort = prefs.commentSort;
+    /* 新增评论没有正文位置可依,固定钉在最上方;新批注则按落点插进排序好的列表。 */
+    var draftRank =
+      panelMode === "comments" ? -Infinity : draft === null || draft.inline ? null : draftKey();
+
+    /* 面板「空不空」只看真正的内容。排序条与「写一条评论」是常驻的 chrome,
+       拿 childNodes.length 去判会把「三栏都被眼睛收走」误判成有内容 —— 于是
+       一条回来的路都不给(第三轮那道「至少留一栏」的护栏撤掉之后,这是唯一的退路)。 */
+    var contentCount = 0;
 
     var groups = [
       { key: "public", list: publicList },
@@ -1023,7 +1255,7 @@
       var visible = g.list.filter(function (anno) {
         return !orphanIds[anno.id];
       }).filter(inMode);
-      visible.sort(byPosition);
+      visible.sort(panelMode === "comments" ? commentComparator(commentSort) : byPosition);
 
       var draftHere = draft !== null && !draft.inline && draft.group === g.key;
       var shown = prefs[prefKey("show", g.key)] !== false;
@@ -1033,15 +1265,32 @@
       if (!shown && !draftHere) return;
 
       els.list.appendChild(groupHead(g.key, visible.length + (draftHere ? 1 : 0), prefs));
+      contentCount++;
 
-      if (draftHere) {
-        var form = materializeEditor();
-        if (form) els.list.appendChild(form);
+      /* 编辑器由 render 现场产出(列表每轮整体重建),而且要落在它该在的位置上:
+         新批注按它选中那段文字的位置插进排序好的列表,不再钉在分组最前面。 */
+      var pending = draftHere ? materializeEditor() : null;
+      if (prefs[prefKey("collapsed", g.key)] === true) {
+        if (pending !== null) {
+          els.list.appendChild(pending);
+          contentCount++;
+        }
+        return;
       }
-      if (prefs[prefKey("collapsed", g.key)] === true) return;
+      var inComments = panelMode === "comments";
       visible.forEach(function (anno) {
+        if (pending !== null && (inComments || draftRank <= positionKey(anno))) {
+          els.list.appendChild(pending);
+          pending = null;
+          contentCount++;
+        }
         els.list.appendChild(renderItem(anno));
+        contentCount++;
       });
+      if (pending !== null) {
+        els.list.appendChild(pending);
+        contentCount++;
+      }
     });
 
     /* 未定位组不进「评论」模式:评论本来就没有位置,列在这里毫无意义。 */
@@ -1058,19 +1307,43 @@
       oh.appendChild(ohNum);
       oh.title = "页面改过之后这些批注找不到原来的位置了;它们没有被删掉";
       els.list.appendChild(oh);
+      contentCount++;
       orphans.forEach(function (anno) {
         els.list.appendChild(renderItem(anno, true));
+        contentCount++;
       });
     }
 
-    if (els.list.childNodes.length === 0) {
-      var empty = document.createElement("p");
-      empty.className = "aipm-anno__empty";
-      empty.textContent =
-        panelMode === "comments"
-          ? "还没有人对这一页留下评论。"
-          : "选中正文里的一段话就能加批注。";
-      els.list.appendChild(empty);
+    if (contentCount === 0) {
+      /* 三栏被眼睛收光之后,面板上不能只剩一句空白 —— 那只眼睛自己也长在被收走
+         的标题上。给一条明确的回来的路。 */
+      var anyHidden = ["public", "private", "local"].some(function (g) {
+        return prefs[prefKey("show", g)] === false;
+      });
+      if (anyHidden) {
+        var restore = document.createElement("button");
+        restore.type = "button";
+        restore.className = "aipm-anno__newbtn";
+        restore.setAttribute("data-action", "show-all");
+        restore.innerHTML =
+          ICON.eye +
+          "<span>" +
+          (panelMode === "comments" ? "显示全部评论栏" : "显示全部批注栏") +
+          "</span>";
+        restore.addEventListener("click", function () {
+          store.setPrefs({ showPublic: true, showPrivate: true, showLocal: true });
+          render();
+        });
+        els.list.appendChild(restore);
+      } else {
+        var empty = document.createElement("p");
+        empty.className = "aipm-anno__empty";
+        empty.textContent =
+          panelMode === "comments"
+            ? "还没有人对这一页留下评论。"
+            : "选中正文里的一段话就能加批注。";
+        els.list.appendChild(empty);
+      }
     }
 
     /* 手机上 peek 的高度按「一张卡」算,而卡片是这里刚建出来的 —— 重建完顺手
@@ -1079,34 +1352,64 @@
     if (mode === "sheet") applyMetrics();
   }
 
-  /* ---- 卡片上的小浮层:点左上角圆点改颜色 ---- */
+  /* ---- 卡片上的小浮层:点左上角圆点改「外观」----
+     画法与颜色是同一件事的两面(怎么画、用什么色),所以合在一个浮层里,而不是
+     在卡片上再排一排按钮 —— 卡片顶栏已经很挤了。 */
 
   var openPop = null;
 
-  function closeColorPop() {
+  function closePop() {
     if (openPop !== null) {
       if (openPop.node.parentNode) openPop.node.parentNode.removeChild(openPop.node);
       openPop = null;
     }
   }
 
-  function toggleColorPop(wrapEl, anno) {
+  function popRow(label, html) {
+    return (
+      '<div class="aipm-anno__pop-row"><span class="aipm-anno__pop-label">' +
+      label +
+      "</span>" +
+      html +
+      "</div>"
+    );
+  }
+
+  /**
+   * 开/关「外观」浮层。`current` 是这条(或这张草稿卡)现在的 {style, color},
+   * `apply` 收到 {style?} 或 {color?} 后负责落地 —— 已存的批注走 patchAnnotation,
+   * 草稿卡只改内存态。这样同一个浮层两边都能用。
+   */
+  function togglePop(wrapEl, current, apply) {
     var same = openPop !== null && openPop.wrap === wrapEl;
-    closeColorPop();
+    closePop();
     if (same) return;
     var pop = document.createElement("div");
-    pop.className = "aipm-anno__colorpop";
-    pop.setAttribute("role", "listbox");
-    pop.setAttribute("aria-label", "高亮颜色");
-    pop.innerHTML = swatchHtml();
+    pop.className = "aipm-anno__pop";
+    pop.setAttribute("role", "group");
+    pop.setAttribute("aria-label", "批注外观");
+    pop.innerHTML = popRow("画法", styleHtml()) + popRow("颜色", swatchHtml());
+    // styleHtml/swatchHtml 产出的是 .aipm-anno__tb-style 与 .aipm-anno__swatch,
+    // 选中态与悬浮窗共用一套 is-active。
+    var st = pop.querySelector('[data-style="' + styleOf(current) + '"]');
+    if (st) st.classList.add("is-active");
+    var sw = pop.querySelector('[data-color="' + (current.color || store.DEFAULT_COLOR) + '"]');
+    if (sw) sw.classList.add("is-active");
     pop.addEventListener("click", function (e) {
-      var sw = e.target.closest(".aipm-anno__swatch");
-      if (!sw) return;
+      var styleBtn = e.target.closest(".aipm-anno__tb-style");
+      if (styleBtn) {
+        e.stopPropagation();
+        var nextStyle = styleBtn.getAttribute("data-style");
+        closePop();
+        if (nextStyle !== styleOf(current)) apply({ style: nextStyle });
+        return;
+      }
+      var swatch = e.target.closest(".aipm-anno__swatch");
+      if (!swatch) return;
       e.stopPropagation();
-      var color = sw.getAttribute("data-color");
-      closeColorPop();
-      if (color === (anno.color || store.DEFAULT_COLOR)) return;
-      patchAnnotation(anno, { color: color });
+      var color = swatch.getAttribute("data-color");
+      closePop();
+      if (color !== (current.color || store.DEFAULT_COLOR)) apply({ color: color });
     });
     wrapEl.appendChild(pop);
     openPop = { wrap: wrapEl, node: pop };
@@ -1124,6 +1427,7 @@
     wrap.className = "aipm-anno__item";
     wrap.setAttribute("data-anno-id", anno.id);
     wrap.setAttribute("data-color", color);
+    wrap.setAttribute("data-style", styleOf(anno));
 
     var top = document.createElement("div");
     top.className = "aipm-anno__item-top";
@@ -1144,7 +1448,9 @@
     if (canEdit(anno)) {
       dot.addEventListener("click", function (e) {
         e.stopPropagation();
-        toggleColorPop(dotWrap, anno);
+        togglePop(dotWrap, anno, function (patch) {
+          patchAnnotation(anno, patch);
+        });
       });
     } else {
       dot.disabled = true;
@@ -1237,32 +1543,84 @@
     var replies = anno.replies || [];
     var replyingHere =
       editorDraft !== null && editorDraft.kind === "reply" && editorDraft.annoId === anno.id;
+    var replyParent = replyingHere ? editorDraft.parentId || null : null;
     if (replies.length > 0 || replyingHere) {
       var box = document.createElement("div");
       box.className = "aipm-anno__replies";
+      var byId = {};
       replies.forEach(function (r) {
-        var line = document.createElement("p");
+        byId[r.id] = r;
+      });
+      /* 缩进深度按「往上还有几层父回复」算。父回复被删之后 parentId 会悬空 ——
+         那种按顶层渲染,不然这条会缩进到一个看不见的层级里。深度封顶两层:
+         再深的缩进在 400px 宽的面板里就只剩一条竖线了。 */
+      var depthOf = function (r) {
+        var d = 0;
+        var cur = r.parentId ? byId[r.parentId] : null;
+        while (cur && d < 3) {
+          d++;
+          cur = cur.parentId ? byId[cur.parentId] : null;
+        }
+        return Math.min(d, 2);
+      };
+      var appendEditor = function () {
+        var form = materializeEditor();
+        if (form) box.appendChild(form);
+      };
+      replies.forEach(function (r) {
+        var depth = depthOf(r);
+        var line = document.createElement("div");
         line.className = "aipm-anno__reply";
+        line.setAttribute("data-reply-id", r.id);
+        if (depth > 0) line.setAttribute("data-depth", String(depth));
         var author = document.createElement("b");
         author.textContent = (r.author && r.author.login) || "匿名";
         line.appendChild(author);
         line.appendChild(document.createTextNode(" " + r.body));
+
+        var tools = document.createElement("span");
+        tools.className = "aipm-anno__reply-tools";
+        if (canReply(anno)) {
+          tools.appendChild(
+            replyTool("回复", function () {
+              startReply(anno, r);
+            })
+          );
+        }
+        if (canDeleteReply(anno, r)) {
+          tools.appendChild(
+            replyTool("删除", function () {
+              removeReply(anno, r);
+            })
+          );
+        }
+        if (tools.childNodes.length > 0) line.appendChild(tools);
         box.appendChild(line);
+        // 回这一条 → 输入框就落在这条下面,不是统一堆在末尾
+        if (replyingHere && replyParent === r.id) appendEditor();
       });
-      if (replyingHere) {
-        var replyForm = materializeEditor();
-        if (replyForm) box.appendChild(replyForm);
-      }
+      if (replyingHere && replyParent === null) appendEditor();
       wrap.appendChild(box);
     }
 
     var acts = document.createElement("div");
     acts.className = "aipm-anno__item-actions";
-    acts.appendChild(
-      actionButton("回复", "reply", function () {
-        startReply(anno);
-      })
-    );
+    /* 点赞:本机批注没有服务端可言,不显示。 */
+    if (!isLocal(anno)) acts.appendChild(likeButton(anno));
+    if (canReply(anno)) {
+      acts.appendChild(
+        actionButton("回复", "reply", function () {
+          startReply(anno);
+        })
+      );
+    } else {
+      // 未登录看别人的批注:回复要在服务端落库,得先登录
+      acts.appendChild(
+        actionButton("登录后回复", "reply-login", function () {
+          if (auth) auth.loginForDraft(draftForLogin());
+        })
+      );
+    }
     if (isLocal(anno) && !store.serverIdOf(anno.id) && auth && auth.isLoggedIn()) {
       acts.appendChild(
         actionButton("上传为公开", "upload-public", function () {
@@ -1313,6 +1671,121 @@
     return me !== null && anno.author && anno.author.githubId === me.githubId;
   }
 
+  /**
+   * 能不能回这条。**未登录只能在本机折腾**:本机批注的回复也落本机,服务端批注的
+   * 回复要记名,匿名在服务端没有归属可言 —— 这条路只能引导登录。
+   */
+  function canReply(anno) {
+    if (isLocal(anno)) return true;
+    return !!(auth && auth.isLoggedIn());
+  }
+
+  /** 删回复:回复作者本人,或这条批注的作者(楼主清理自己的楼)。 */
+  function canDeleteReply(anno, reply) {
+    if (isLocal(anno)) return true;
+    if (!auth || !auth.isLoggedIn()) return false;
+    var me = auth.user();
+    if (me && reply.author && reply.author.githubId === me.githubId) return true;
+    return canEdit(anno);
+  }
+
+  function replyTool(label, handler) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "aipm-anno__link";
+    b.textContent = label;
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      handler();
+    });
+    return b;
+  }
+
+  function likeButton(anno) {
+    var liked = anno.likedByMe === true;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "aipm-anno__like";
+    b.setAttribute("data-action", "like");
+    b.setAttribute("aria-pressed", liked ? "true" : "false");
+    b.classList.toggle("is-on", liked);
+    b.title = liked ? "取消点赞" : "点赞";
+    b.innerHTML = liked ? ICON.heart : ICON.heartOutline;
+    var num = document.createElement("span");
+    num.textContent = String(anno.likeCount || 0);
+    b.appendChild(num);
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggleLike(anno);
+    });
+    return b;
+  }
+
+  /**
+   * 点赞。**按账号记名**,所以未登录点不了 —— 服务端不知道你是谁,直接引导登录
+   * (与选了公开/私有时的处置一致)。登录后 PUT / DELETE 都幂等,连点与重试都不会
+   * 把计数点乱。
+   */
+  function toggleLike(anno) {
+    if (!auth || !auth.isLoggedIn()) {
+      if (auth) auth.login(location.href);
+      return;
+    }
+    var liked = anno.likedByMe === true;
+    store
+      .request("/api/annotations/" + encodeURIComponent(anno.id) + "/like", {
+        method: liked ? "DELETE" : "PUT",
+        token: auth.token()
+      })
+      .then(function (res) {
+        if (res.status === 401) {
+          auth.forget();
+          return;
+        }
+        if (!res.ok) {
+          setSmartbar("点赞失败:" + ((res.body && res.body.message) || res.status), "warn");
+          return;
+        }
+        /* 就地改这一条,不整页重拉 —— 点个赞把列表滚回顶部很烦 */
+        anno.likeCount = res.body.annotation.likeCount;
+        anno.likedByMe = res.body.annotation.likedByMe;
+        render();
+      });
+  }
+
+  /** 删一条回复。服务端有专门的 DELETE(走 PATCH 需要作者权限,回的人不一定是作者)。 */
+  function removeReply(anno, reply) {
+    if (isLocal(anno)) {
+      patchAnnotation(anno, {
+        replies: (anno.replies || []).filter(function (r) {
+          return r.id !== reply.id;
+        })
+      });
+      return;
+    }
+    if (!auth || !auth.token()) return;
+    store
+      .request(
+        "/api/annotations/" +
+          encodeURIComponent(anno.id) +
+          "/replies/" +
+          encodeURIComponent(reply.id),
+        { method: "DELETE", token: auth.token() }
+      )
+      .then(function (res) {
+        if (res.status === 401) {
+          auth.forget();
+          return;
+        }
+        if (!res.ok) {
+          setSmartbar("删除回复失败:" + ((res.body && res.body.message) || res.status), "warn");
+          return;
+        }
+        invalidate();
+        return ensureAnnotationsLoaded();
+      });
+  }
+
   /* ================================================================
      选中 → 工具条 → 新建批注
      ================================================================ */
@@ -1327,9 +1800,34 @@
     return range;
   }
 
+  /** 悬浮窗上的选中态:画法、颜色、可见范围各一组。 */
+  function syncToolbar() {
+    var i;
+    var styles = toolbar.querySelectorAll(".aipm-anno__tb-style");
+    for (i = 0; i < styles.length; i++) {
+      styles[i].classList.toggle("is-active", styles[i].getAttribute("data-style") === activeStyle);
+    }
+    var sws = toolbar.querySelectorAll(".aipm-anno__swatch");
+    for (i = 0; i < sws.length; i++) {
+      sws[i].classList.toggle("is-active", sws[i].getAttribute("data-color") === activeColor);
+    }
+    var vis = defaultVisibility();
+    var chips = toolbar.querySelectorAll(".aipm-anno__tb-vis");
+    for (i = 0; i < chips.length; i++) {
+      chips[i].classList.toggle("is-active", chips[i].getAttribute("data-vis") === vis);
+      /* 未登录时公开/私有不是禁用,而是「点了去登录」—— 禁用会让人以为这功能没了。
+         「仅本机」不需要登录,不该跟着挂锁;三片都挂锁会让人以为一条都写不了。 */
+      chips[i].classList.toggle(
+        "is-locked",
+        !(auth && auth.isLoggedIn()) && chips[i].getAttribute("data-vis") !== "local"
+      );
+    }
+  }
+
   function showToolbar(range) {
     var rect = range.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return;
+    syncToolbar();
     toolbar.hidden = false;
     // 先显示再量尺寸,免得取到 0
     var tw = toolbar.offsetWidth || 260;
@@ -1351,11 +1849,6 @@
 
   document.addEventListener("selectionchange", function () {
     if (!open && toolbar.hidden === false) hideToolbar();
-    /* 划词工具条是「给这段文字加批注」的入口;评论模式下没有这段文字可言。 */
-    if (panelMode === "comments") {
-      hideToolbar();
-      return;
-    }
     if (locked() && open) return;
     var range = selectionInContent();
     if (range === null) {
@@ -1379,16 +1872,36 @@
     if (e.target && e.target.closest && e.target.closest("button")) e.preventDefault();
   });
   toolbar.addEventListener("click", function (e) {
-    var cancel = e.target.closest(".aipm-anno__tb-cancel");
-    if (cancel) {
+    if (e.target.closest(".aipm-anno__tb-cancel")) {
       hideToolbar();
+      return;
+    }
+    var style = e.target.closest(".aipm-anno__tb-style");
+    if (style) {
+      activeStyle = style.getAttribute("data-style");
+      store.setPrefs({ lastStyle: activeStyle });
+      syncToolbar();
+      return;
+    }
+    var vis = e.target.closest(".aipm-anno__tb-vis");
+    if (vis) {
+      var pick = vis.getAttribute("data-vis");
+      if ((pick === "public" || pick === "private") && !(auth && auth.isLoggedIn())) {
+        // 未登录只能落本机 —— 选了公开/私有就去登录,草稿扛过往返
+        if (auth) auth.loginForDraft(draftForLogin());
+        return;
+      }
+      activeVis = pick;
+      syncToolbar();
       return;
     }
     var swatch = e.target.closest(".aipm-anno__swatch");
     if (swatch) {
+      /* 选颜色 = 直接落这条批注(用当前选中的画法与范围)。这是「划词 → 挑个颜色」
+         这条最短路径,不该再要求点一次确认。想先定画法与范围就先点它们,再挑色。 */
       activeColor = swatch.getAttribute("data-color");
       store.setLastColor(activeColor);
-      syncComposer();
+      startCreate();
       return;
     }
     if (e.target.closest(".aipm-anno__tb-annotate")) {
@@ -1415,14 +1928,16 @@
   var DRAFT_ID = "__draft__";
 
   function mountEditor(nodes) {
+    // 回复框没有卡片那套控件,缺的一律落成 null —— syncComposer 见 els.draft 为
+    // 空就整体跳过,其余读 els.input/hint/save 的地方照常工作。
     els.composer = nodes.form;
-    els.draft = nodes.card;
-    els.draftDot = nodes.dot;
-    els.draftMeta = nodes.meta;
-    els.quote = nodes.quote;
-    els.swatches = nodes.swatches;
-    els.visbtn = nodes.visbtn;
-    els.vislist = nodes.vislist;
+    els.draft = nodes.card || null;
+    els.draftDot = nodes.dot || null;
+    els.draftMeta = nodes.meta || null;
+    els.quote = nodes.quote || null;
+    els.swatches = nodes.swatches || null;
+    els.visbtn = nodes.visbtn || null;
+    els.vislist = nodes.vislist || null;
     els.input = nodes.input;
     els.hint = nodes.hint;
     els.cancel = nodes.cancel;
@@ -1440,10 +1955,51 @@
   /** 把当前编辑器物化成 DOM 并挂上事件。由 render() 调用,每轮至多一次。 */
   function materializeEditor() {
     if (editorDraft === null) return null;
-    var nodes = buildEditor(editorDraft);
+    var nodes =
+      editorDraft.kind === "reply" ? buildReplyEditor(editorDraft) : buildEditor(editorDraft);
     mountEditor(nodes);
     wireEditor(nodes);
     return nodes.form;
+  }
+
+  /**
+   * 回复框。与新批注卡**故意不同形**:颜色、画法、可见范围都是「这条批注自己」
+   * 的属性,回复继承所在批注的,不该在回复框里再问一遍。所以它就是个朴素的小输入框
+   * —— 一眼能看出「这是在回话」,而不是「这是在新建一条批注」。
+   */
+  function buildReplyEditor(opts) {
+    var form = document.createElement("form");
+    form.className = "aipm-anno__replybox";
+    form.setAttribute("data-editor", "reply");
+    form.noValidate = true;
+
+    var input = document.createElement("textarea");
+    input.className = "aipm-anno__input aipm-anno__input--reply";
+    input.rows = 2;
+    input.setAttribute("aria-label", "回复正文");
+    input.placeholder = opts.placeholder || "写下回复…";
+    form.appendChild(input);
+
+    var hint = document.createElement("div");
+    hint.className = "aipm-anno__hint";
+    hint.hidden = true;
+    form.appendChild(hint);
+
+    var actions = document.createElement("div");
+    actions.className = "aipm-anno__replybox-actions";
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "aipm-anno__cancel";
+    cancel.textContent = "取消";
+    actions.appendChild(cancel);
+    var save = document.createElement("button");
+    save.type = "submit";
+    save.className = "aipm-anno__save";
+    save.textContent = "回复";
+    actions.appendChild(save);
+    form.appendChild(actions);
+
+    return { form: form, card: null, input: input, hint: hint, cancel: cancel, save: save };
   }
 
   /** 可见范围选择器:右半颗分体按钮的菜单。 */
@@ -1486,14 +2042,37 @@
     var card = document.createElement("article");
     card.className = "aipm-anno__draft";
     card.setAttribute("data-color", activeColor);
+    card.setAttribute("data-style", activeStyle);
     form.appendChild(card);
 
     var top = document.createElement("div");
     top.className = "aipm-anno__item-top";
-    var dot = document.createElement("span");
+    /* 外面这层 wrap 只负责给浮层当定位锚(与已存卡片同构) */
+    var dotWrap = document.createElement("span");
+    dotWrap.className = "aipm-anno__dotwrap";
+    var dot = document.createElement("button");
+    dot.type = "button";
     dot.className = "aipm-anno__dot";
     dot.setAttribute("data-color", activeColor);
-    top.appendChild(dot);
+    dot.setAttribute("aria-haspopup", "group");
+    dot.setAttribute("aria-label", "画法与颜色");
+    dot.title = "画法与颜色";
+    dot.addEventListener("click", function (e) {
+      e.stopPropagation();
+      togglePop(dotWrap, { style: activeStyle, color: activeColor }, function (patch) {
+        if (patch.style) {
+          activeStyle = patch.style;
+          store.setPrefs({ lastStyle: activeStyle });
+        }
+        if (patch.color) {
+          activeColor = patch.color;
+          store.setLastColor(activeColor);
+        }
+        syncComposer();
+      });
+    });
+    dotWrap.appendChild(dot);
+    top.appendChild(dotWrap);
     var meta = document.createElement("span");
     meta.className = "aipm-anno__meta";
     top.appendChild(meta);
@@ -1575,18 +2154,23 @@
     nodes.cancel.addEventListener("click", function () {
       closeEditor();
     });
-    nodes.swatches.addEventListener("click", function (e) {
-      var swatch = e.target.closest(".aipm-anno__swatch");
-      if (!swatch) return;
-      activeColor = swatch.getAttribute("data-color");
-      store.setLastColor(activeColor);
-      setHint("");
-      syncComposer();
-    });
-    nodes.visbtn.addEventListener("click", function () {
-      if (nodes.vislist.hidden) openVisMenu(nodes);
-      else closeVisMenu(nodes);
-    });
+    if (nodes.swatches) {
+      nodes.swatches.addEventListener("click", function (e) {
+        var swatch = e.target.closest(".aipm-anno__swatch");
+        if (!swatch) return;
+        activeColor = swatch.getAttribute("data-color");
+        store.setLastColor(activeColor);
+        setHint("");
+        syncComposer();
+      });
+    }
+    if (nodes.visbtn) {
+      nodes.visbtn.addEventListener("click", function () {
+        if (nodes.vislist.hidden) openVisMenu(nodes);
+        else closeVisMenu(nodes);
+      });
+    }
+    if (!els.vislist) return;
     els.vislist.addEventListener("click", function (e) {
       var b = e.target.closest("button[data-vis]");
       if (!b) return;
@@ -1625,31 +2209,50 @@
       selectors: pendingSelection.selectors,
       quote: pendingSelection.range.toString()
     };
-    beginEditor("create", null, composerSelection.quote, false);
+    /* 在「评论」视图里划词加批注:先把视图切回「批注」。否则这条新建的批注落在
+       一个只列整页评论的列表里 —— 卡片会被筛掉,用户看到的就是「点了没反应」。 */
+    if (panelMode === "comments") {
+      panelMode = "annotations";
+      syncMode();
+    }
+    beginEditor({ kind: "create", quote: composerSelection.quote });
   }
 
   /** 全页评论:不需要选区,整条针对这一页。 */
   function startPageComment() {
     composerSelection = null;
-    beginEditor("create", null, "", true);
+    beginEditor({ kind: "create", page: true });
   }
 
   function startEdit(anno) {
     composerSelection = null;
-    beginEditor("edit", anno.id, quoteOf(anno));
+    beginEditor({ kind: "edit", annoId: anno.id, quote: quoteOf(anno) });
   }
 
-  function startReply(anno) {
+  /** reply 非空 = 回复某一条回复;为空 = 回复这条批注。 */
+  function startReply(anno, reply) {
     composerSelection = null;
-    beginEditor("reply", anno.id, "回复 " + ((anno.author && anno.author.login) || "匿名") + " 的批注");
+    var who =
+      (reply && reply.author && reply.author.login) ||
+      (anno.author && anno.author.login) ||
+      "匿名";
+    beginEditor({
+      kind: "reply",
+      annoId: anno.id,
+      parentId: reply ? reply.id : null,
+      placeholder: "回复 " + who + "…"
+    });
   }
 
-  function beginEditor(kind, annoId, quote, isPage) {
-    var body = "";
+  function beginEditor(opts) {
+    var kind = opts.kind;
+    var annoId = opts.annoId || null;
+    var body = opts.body || "";
     if (kind === "edit") {
       var target = annoById(annoId);
       body = target ? target.body || "" : "";
       activeColor = (target && target.color) || activeColor;
+      activeStyle = target ? styleOf(target) : activeStyle;
     }
     hideToolbar();
     if (panels) panels.claim("annotation");
@@ -1657,14 +2260,16 @@
     // 移动端:划词之后是要写字的,抽屉停在 peek 那一条上没法写 —— 直接展开到第三段。
     if (mode === "sheet") setSnap("expanded", false);
     if (kind === "edit" || kind === "reply") {
-      closeColorPop();
+      closePop();
     }
     editorDraft = {
       kind: kind,
       annoId: annoId,
-      quote: quote,
+      parentId: opts.parentId || null,
+      quote: opts.quote || "",
       body: body,
-      page: isPage === true,
+      placeholder: opts.placeholder || "",
+      page: opts.page === true,
       draftId: DRAFT_ID
     };
     render();
@@ -1700,6 +2305,7 @@
     var loggedIn = auth ? auth.isLoggedIn() : false;
     var me = loggedIn && auth.user() ? auth.user().login : "";
     els.draft.setAttribute("data-color", activeColor);
+    els.draft.setAttribute("data-style", activeStyle);
     els.draftDot.setAttribute("data-color", activeColor);
     els.draftMeta.textContent = (me || "本机") + " · " + label.text;
     els.draftMeta.setAttribute("data-vis", label.cls);
@@ -1752,11 +2358,20 @@
     els.hint.textContent = text;
   }
 
+  /* 按钮上的字随编辑器而不同:新批注卡是「保存」,回复框是「回复」—— 忙碌时统一
+     换成「处理中…」,回落后恢复它自己那个词,别把回复框写成「保存」。 */
   function setBusy(v) {
     busy = v;
     if (!els.save) return;
     els.save.disabled = v;
-    els.save.textContent = v ? "保存中…" : "保存";
+    if (v) {
+      if (!els.save.hasAttribute("data-label")) {
+        els.save.setAttribute("data-label", els.save.textContent);
+      }
+      els.save.textContent = "处理中…";
+      return;
+    }
+    els.save.textContent = els.save.getAttribute("data-label") || "保存";
   }
 
   /**
@@ -1772,41 +2387,50 @@
     var kind = editorDraft.kind;
     var body = els.input ? els.input.value.trim() : "";
 
-    if (kind === "edit" || kind === "reply") {
+    if (kind === "reply") {
       var on = annoById(editorDraft.annoId);
       if (on === null) {
         closeEditor();
         return;
       }
-      var patch;
-      if (kind === "edit") {
-        /* 本机批注改成公开/私有,意思就是「连这次编辑一起上传」。先落这次编辑,
-           再走已有的上传通路 —— 直接上传会把刚改的内容丢掉。 */
-        if (isLocal(on) && defaultVisibility() !== "local") {
-          store.localUpdate(on.page, on.id, { body: body, color: activeColor });
-          var updated = annoById(on.id);
-          closeEditor();
-          uploadLocal(updated || on, defaultVisibility());
-          return;
-        }
-        patch = { body: body, color: activeColor };
-        /* 服务端批注可以直接改可见性(公开 ↔ 私有)。 */
-        if (!isLocal(on) && defaultVisibility() !== on.visibility) {
-          patch.visibility = defaultVisibility();
-        }
-      } else {
-        if (!body) {
-          setHint("回复不能是空的。");
-          return;
-        }
-        var replies = (on.replies || []).slice();
-        replies.push({ body: body });
-        /* 回复是往 replies 数组里追加,所以提交整个数组 —— 服务端与本机走的是
-           同一条 patchAnnotation,本机那条会被 localUpdate 合并。 */
-        patch = { replies: replies };
+      if (!body) {
+        setHint("回复不能是空的。");
+        return;
       }
       setBusy(true);
-      patchAnnotation(on, patch).then(function (ok) {
+      postReply(on, body, editorDraft.parentId).then(function (ok) {
+        setBusy(false);
+        if (ok) closeEditor();
+      });
+      return;
+    }
+
+    if (kind === "edit") {
+      var target = annoById(editorDraft.annoId);
+      if (target === null) {
+        closeEditor();
+        return;
+      }
+      /* 本机批注改成公开/私有,意思就是「连这次编辑一起上传」。先落这次编辑,
+         再走已有的上传通路 —— 直接上传会把刚改的内容丢掉。 */
+      if (isLocal(target) && defaultVisibility() !== "local") {
+        store.localUpdate(target.page, target.id, {
+          body: body,
+          color: activeColor,
+          style: activeStyle
+        });
+        var updated = annoById(target.id);
+        closeEditor();
+        uploadLocal(updated || target, defaultVisibility());
+        return;
+      }
+      var patch = { body: body, color: activeColor, style: activeStyle };
+      /* 服务端批注可以直接改可见性(公开 ↔ 私有)。 */
+      if (!isLocal(target) && defaultVisibility() !== target.visibility) {
+        patch.visibility = defaultVisibility();
+      }
+      setBusy(true);
+      patchAnnotation(target, patch).then(function (ok) {
         setBusy(false);
         if (ok) closeEditor();
       });
@@ -1828,6 +2452,57 @@
   }
 
   /**
+   * 落一条回复。
+   *
+   * 服务端走 `POST /api/annotations/:id/replies` —— **不是** PATCH 的 replies:
+   * 那条是「改内容仅作者」,回的人不一定是作者(而回复的定义就是别人回你)。
+   * 本机批注的回复只落 localStorage。
+   */
+  function postReply(anno, body, parentId) {
+    if (isLocal(anno)) {
+      var replies = (anno.replies || []).slice();
+      var now = new Date().toISOString();
+      var reply = {
+        id: store.uid(),
+        body: body,
+        author: { githubId: 0, login: auth && auth.user() ? auth.user().login : "本机" },
+        createdAt: now,
+        updatedAt: now
+      };
+      if (parentId) reply.parentId = parentId;
+      replies.push(reply);
+      store.localUpdate(anno.page, anno.id, { replies: replies });
+      refreshLocal();
+      return Promise.resolve(true);
+    }
+    if (!auth || !auth.token()) {
+      setHint("登录后才能回复别人的批注。");
+      return Promise.resolve(false);
+    }
+    return store
+      .request("/api/annotations/" + encodeURIComponent(anno.id) + "/replies", {
+        method: "POST",
+        token: auth.token(),
+        body: { body: body, parentId: parentId || undefined }
+      })
+      .then(function (res) {
+        if (res.status === 401) {
+          auth.forget();
+          setHint("登录已过期,请重新登录。");
+          return false;
+        }
+        if (!res.ok) {
+          setHint("回复失败:" + ((res.body && res.body.message) || res.status));
+          return false;
+        }
+        invalidate();
+        return ensureAnnotationsLoaded().then(function () {
+          return true;
+        });
+      });
+  }
+
+  /**
    * 新建一条(本机或服务端)。pageScope 为真 = 全页评论,此时 selectors 为空数组,
    * target 上带 scope:'page' 供服务端辨认。
    */
@@ -1844,6 +2519,7 @@
         page: page,
         visibility: "local",
         color: activeColor,
+        style: activeStyle,
         body: body,
         author: { githubId: 0, login: auth && auth.user() ? auth.user().login : "本机" },
         target: target,
@@ -1873,6 +2549,7 @@
           page: page,
           body: body,
           color: activeColor,
+          style: activeStyle,
           visibility: visibility,
           target: target
         }
@@ -2301,24 +2978,8 @@
     if (action === "toggle-group") {
       var showPatch = {};
       showPatch[prefKey("show", group)] = prefs[prefKey("show", group)] === false;
-      /* 眼睛一关整栏连标题一起收走,用户随即失去把这一栏打开的入口(那只眼睛
-         自己也在被收走的标题上)。所以「还有内容的栏」不能全关掉 —— 拦下最后
-         一次。空栏不参与计数:它的标题本来就没渲染,关与不关没有区别。 */
-      var all = publicList.concat(privateList).concat(localList).filter(inMode);
-      var left = ["public", "private", "local"].filter(function (g) {
-        var key = prefKey("show", g);
-        if (g === group ? showPatch[key] === false : prefs[key] === false) return false;
-        for (var i = 0; i < all.length; i++) {
-          if (groupOf(all[i]) === g && !orphanIds[all[i].id]) return true;
-        }
-        return false;
-      });
-      /* 未定位组不受眼睛管,它还在的话面板就不是空的。 */
-      var orphansShown = orphans.length > 0 && panelMode === "annotations";
-      if (left.length === 0 && !orphansShown) {
-        setSmartbar("这一栏收起来之后,面板里就再没有能打开的栏了 —— 至少留一栏。", "warn");
-        return;
-      }
+      /* 随意显隐,不做「至少留一栏」的拦截:三栏都收起来时面板底部有一条
+         「显示全部」的恢复入口(见 render 的空列表分支),回得来。 */
       store.setPrefs(showPatch);
       render();
     }
@@ -2348,7 +3009,7 @@
     if (els.vislist && !els.vislist.hidden && !e.target.closest(".aipm-anno__vismenu")) {
       closeVisMenu();
     }
-    if (openPop !== null && !e.target.closest(".aipm-anno__dotwrap")) closeColorPop();
+    if (openPop !== null && !e.target.closest(".aipm-anno__dotwrap")) closePop();
   });
 
   /**
@@ -2368,6 +3029,7 @@
     return {
       page: pagePath(),
       color: activeColor,
+      style: activeStyle,
       body: els.input ? els.input.value : "",
       visibility: activeVis === "private" ? "private" : "public",
       /* 正在编辑/回复哪一条:登录回来后要接着编那一条,不能当成新建 ——
@@ -2398,6 +3060,8 @@
     editorDraft = {
       kind: resume === null ? "create" : draft.resumeKind || "edit",
       annoId: resume === null ? null : resume.id,
+      parentId: null,
+      placeholder: "",
       quote: draft.quote || "",
       body: draft.body || "",
       page: false,
@@ -2407,6 +3071,7 @@
       ? { selectors: draft.selectors, quote: draft.quote || "" }
       : null;
     activeColor = draft.color || activeColor;
+    activeStyle = store.ANNO_STYLES.indexOf(draft.style) >= 0 ? draft.style : activeStyle;
     activeVis = draft.visibility || null;
     render();
     if (els.input) els.input.focus();
@@ -2517,7 +3182,13 @@
   MQ_SHEET.addEventListener("change", onViewportChange);
   if (window.ResizeObserver) {
     new ResizeObserver(function () {
-      if (mode === "sheet") applyMetrics();
+      if (mode !== "sheet") return;
+      /* 动画期间列表每帧都在变高变矮,这个回调于是每帧来一次;此时量出来的 peek
+         没有任何新信息,却要在动画中间强制一次布局。等吸附落定再对一次账
+         (见 markSnapping 的收尾),中间这些直接跳过。 */
+      if (panel.classList.contains("is-dragging")) return;
+      if (panel.classList.contains("is-snapping")) return;
+      applyMetrics();
     }).observe(els.list);
   }
 

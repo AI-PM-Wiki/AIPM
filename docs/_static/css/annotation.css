@@ -49,19 +49,27 @@
   z-index: 65;
   opacity: 0;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0);
-  transition: opacity var(--aipm-anno-dur) var(--aipm-anno-ease),
-              background-color var(--aipm-anno-dur) var(--aipm-anno-ease);
+  /* 明暗只走 opacity:背景固定成最深那一档,半开 / 近全屏用 .5 / 1 表达。
+     早先是 opacity 与 background-color 一起过渡 —— 屏幕上真正看到的压暗是两者
+     相乘,于是成了 0.2·p²:缓动做了两遍,前半段几乎不变暗、最后三分之一才追上来
+     (实测 35% 进度处只有 24%,单次缓动应是 49%)。而且 background-color 是绘制
+     属性,每帧都要把整屏重栅格一遍;opacity 走合成器,栅格一次就够。
+     静息视觉逐像素相同:.5 × .4 = .2,1 × .4 = .4。 */
+  background: rgba(0, 0, 0, .4);
+  transition: opacity var(--aipm-anno-dur) var(--aipm-anno-ease);
 }
 .aipm-anno__scrim[data-level="half"] {
-  opacity: 1;
+  opacity: .5;
   pointer-events: auto;
-  background: rgba(0, 0, 0, .2);
 }
 .aipm-anno__scrim[data-level="full"] {
   opacity: 1;
   pointer-events: auto;
-  background: rgba(0, 0, 0, .4);
+}
+/* 跟手期间遮罩由 JS 逐帧写 inline opacity —— 带过渡的话每帧都在追一个移动的
+   目标,和面板高度那条一样会「蹭」而不是跟手。 */
+.aipm-anno__scrim.is-dragging {
+  transition: none;
 }
 html.aipm-anno-locked {
   overflow: hidden;
@@ -178,7 +186,22 @@ html.aipm-anno-mode--sheet .aipm-anno[data-snap="expanded"] {
           mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
 }
 /* compact 淡出的是列表内容,不能连编辑卡一起抹掉 —— 编辑卡现在就长在列表里,
-   整块 opacity:0 会把用户正在写的那几个字也一并藏了。 */
+   整块 opacity:0 会把用户正在写的那几个字也一并藏了。
+
+   过渡**两个方向都要声明**,时长还故意不一样:
+   - 往下缩(进 compact):120ms linear,内容快点让开,跟手指;
+   - 弹回停靠点(出 compact):跟面板的吸附同长同曲线,内容和面板像一个动作。
+   transition 取的是「变化之后」那条规则的声明,所以只在 .is-compact 里写是不够的:
+   类一摘掉就退回基础规则,而基础规则里没有 opacity —— 实测淡出有插值、淡入却是
+   0 → 1 瞬跳,正好落在松手那一下。基础态这条同时列出卡片自己原有的
+   border-color / background-color 过渡(卡片是列表的直接子元素,会被这条覆盖,
+   所以在这里一并写上,并同步删掉 .aipm-anno__item 里那份重复声明)。 */
+.aipm-anno__list > *:not(.aipm-anno__composer),
+.aipm-anno__smartbar {
+  transition: opacity var(--aipm-anno-dur) var(--aipm-anno-ease),
+              border-color .15s ease,
+              background-color .15s ease;
+}
 .aipm-anno.is-compact .aipm-anno__list > *:not(.aipm-anno__composer),
 .aipm-anno.is-compact .aipm-anno__smartbar {
   opacity: 0;
@@ -287,6 +310,11 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   cursor: pointer;
   transition: background-color .15s ease, color .15s ease;
 }
+/* display 会盖掉 [hidden] 的默认表现(作者来源优先于 UA,与特异性无关)——
+   页头那三颗按钮都吃这条,少一条就会「切了模式按钮还在」。 */
+.aipm-anno__iconbtn[hidden] {
+  display: none;
+}
 .aipm-anno__iconbtn + .aipm-anno__iconbtn {
   margin-left: 0;
 }
@@ -321,6 +349,38 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   line-height: 1.7;
 }
 /* 分组头:左边箭头折叠、右边眼睛整栏不显示 —— 两件事分开,别混成一颗开关。 */
+/* 评论排序:三颗芯片。只出现在「评论」视图 —— 批注按正文位置排,没有可选项。 */
+.aipm-anno__sort {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  margin: 0 0 .5rem;
+}
+.aipm-anno__sort-label {
+  margin-right: .1rem;
+  color: var(--md-default-fg-color--light);
+  font-size: .625rem;
+}
+.aipm-anno__sort-btn {
+  padding: .1rem .4rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.aipm-anno__sort-btn:hover {
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__sort-btn.is-active {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+}
+
 /* 评论模式下的新建入口 —— 那里没有划词这个动作,得有一颗看得见的按钮。 */
 .aipm-anno__newbtn {
   display: flex;
@@ -419,7 +479,8 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   border-left: 3px solid var(--md-default-fg-color--lightest);
   border-radius: .3rem;
   background: var(--md-code-bg-color);
-  transition: border-color .15s ease, background-color .15s ease;
+  /* 色过渡统一写在上面那条「列表内容」规则里(卡片是列表的直接子元素,会被它覆盖),
+     这里不再重复一份,免得两处时长各改各的。 */
 }
 .aipm-anno__item[data-color="yellow"] { border-left-color: var(--aipm-anno-yellow); }
 .aipm-anno__item[data-color="green"]  { border-left-color: var(--aipm-anno-green); }
@@ -458,18 +519,35 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__dot:not(.is-readonly):hover {
   box-shadow: 0 0 0 3px var(--md-default-fg-color--lightest);
 }
-.aipm-anno__colorpop {
+/* 点左上角圆点弹出:画法 + 颜色。两件事都是「这条怎么画」,合成一个浮层,
+   卡片顶栏就不必再排一排按钮。 */
+.aipm-anno__pop {
   position: absolute;
   top: calc(100% + .35rem);
-  left: -.2rem;
+  left: -.4rem;
   z-index: 6;
   display: flex;
-  gap: .2rem;
-  padding: .25rem;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .3rem;
   border: 1px solid var(--aipm-anno-line);
   border-radius: .35rem;
   background: var(--md-default-bg-color);
   box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+}
+.aipm-anno__pop-row {
+  display: flex;
+  align-items: center;
+  gap: .15rem;
+}
+.aipm-anno__pop-label {
+  width: 2rem;
+  color: var(--md-default-fg-color--light);
+  font-size: .625rem;
+}
+.aipm-anno__pop .aipm-anno__swatch.is-active,
+.aipm-anno__pop .aipm-anno__tb-style.is-active {
+  border-color: var(--md-default-fg-color);
 }
 .aipm-anno__item-edit,
 .aipm-anno__item-close {
@@ -546,6 +624,66 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__reply {
   margin: .15rem 0;
   font-size: .75rem;
+  line-height: 1.55;
+  word-break: break-word;
+}
+/* 回复的回复:缩进一层。深度由脚本封顶在两层 —— 400px 宽的面板里再往里缩,
+   正文就只剩一条竖线了。 */
+.aipm-anno__reply[data-depth="1"] {
+  margin-left: .7rem;
+  padding-left: .5rem;
+  border-left: 2px solid var(--md-default-fg-color--lightest);
+}
+.aipm-anno__reply[data-depth="2"] {
+  margin-left: 1.4rem;
+  padding-left: .5rem;
+  border-left: 2px solid var(--md-default-fg-color--lightest);
+}
+/* 回复自己的操作链:平时淡着,悬停才实 —— 它不该跟正文抢注意力 */
+.aipm-anno__reply-tools {
+  display: inline-flex;
+  gap: .4rem;
+  margin-left: .35rem;
+  opacity: .55;
+}
+.aipm-anno__reply:hover .aipm-anno__reply-tools {
+  opacity: 1;
+}
+/* 回复框:与新批注卡**故意不同形** —— 没有底色、没有左边那条主色、没有角标。
+   它就是个朴素的小输入框,一眼看出「这是在回话」。 */
+.aipm-anno__replybox {
+  display: block;
+  margin: .2rem 0 .1rem;
+}
+.aipm-anno__input--reply {
+  min-height: 2.2rem;
+  font-size: .75rem;
+}
+.aipm-anno__replybox-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .3rem;
+  margin-top: .25rem;
+}
+.aipm-anno__replybox-actions .aipm-anno__cancel,
+.aipm-anno__replybox-actions .aipm-anno__save {
+  padding: .2rem .55rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .3rem;
+  color: var(--md-default-fg-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  cursor: pointer;
+}
+.aipm-anno__replybox-actions .aipm-anno__save {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
+.aipm-anno__replybox-actions .aipm-anno__save:disabled {
+  opacity: .6;
+  cursor: progress;
 }
 .aipm-anno__item-actions {
   display: flex;
@@ -562,6 +700,30 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-family: inherit;
   font-size: .6875rem;
   cursor: pointer;
+}
+/* 点赞:心 + 计数。赞过的主色实心,没赞过是描边 —— 两种状态一眼可分。 */
+.aipm-anno__like {
+  display: inline-flex;
+  align-items: center;
+  gap: .15rem;
+  padding: 0;
+  border: 0;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  cursor: pointer;
+}
+.aipm-anno__like svg {
+  width: .85rem;
+  height: .85rem;
+  fill: currentColor;
+}
+.aipm-anno__like:hover {
+  color: var(--aipm-anno-pink);
+}
+.aipm-anno__like.is-on {
+  color: var(--aipm-anno-pink);
 }
 .aipm-anno__link:hover {
   text-decoration: underline;
@@ -705,6 +867,8 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__swatch-dot[data-color="pink"]   { background: var(--aipm-anno-pink); }
 .aipm-anno__swatch-dot[data-color="purple"] { background: var(--aipm-anno-purple); }
 
+/* 可见范围是「保存」的右半颗,不是一颗独立按钮:底色、字色与左半颗同一套,
+   左侧圆角削平好跟左半颗拼成一颗(几何关系见 7 段末尾的分体按钮说明)。 */
 .aipm-anno__vismenu {
   position: relative;
   flex: none;
@@ -713,17 +877,19 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   display: inline-flex;
   align-items: center;
   gap: .1rem;
-  padding: .3rem .4rem .3rem .6rem;
-  border: 1px solid var(--aipm-anno-line);
-  border-radius: .3rem;
-  color: var(--md-default-fg-color);
-  background: transparent;
+  padding: .3rem .4rem;
+  border: 0;
+  border-radius: 0 .3rem .3rem 0;
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
   font-family: inherit;
   font-size: .75rem;
   cursor: pointer;
 }
-.aipm-anno__visbtn:hover {
-  border-color: var(--md-default-fg-color--light);
+/* 开合与悬停都只压暗这一半的底色,不换边框 —— 换边框会让两半重新变成两颗按钮 */
+.aipm-anno__visbtn:hover,
+.aipm-anno__visbtn[aria-expanded="true"] {
+  background-image: linear-gradient(rgba(0, 0, 0, .14), rgba(0, 0, 0, .14));
 }
 .aipm-anno__visbtn svg {
   width: .9rem;
@@ -903,39 +1069,123 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   cursor: progress;
 }
 
-/* 保存与可见范围合成分体按钮:左半是保存,右半只是那颗箭头(当前范围由草稿卡的
-   meta 行说明,不再占按钮上的字)。两颗之间不留缝,相邻的圆角削平 —— 必须写在
-   上面那条 border-radius 简写之后,否则会被它一并重置回去。 */
+/* 保存 + 可见范围是一颗分体按钮:左半写「保存」,右半只有那颗箭头(当前范围由
+   草稿卡的 meta 行说明,不占按钮上的字)。要读成一颗,三件事缺一不可 ——
+   同一层底色、同一道外轮廓、同一条水平线:
+     - 底色:右半用与左半相同的填充色,不再自己描一圈线(描边会把一颗切成两颗);
+     - 缝:左半去掉右边框、右半整颗不描边,两个盒子的边正好相接,缝里不叠出两层
+       边框;那条发丝线由右半自己的 inset 阴影画在填充色上;
+     - 高度:右半 align-self: stretch 跟着行高走(行高由取消/保存这类文字按钮
+       定),不再自己算一套内边距 —— 差几个像素就够看出是两颗。
+   -0.3rem 恰好是上面那条 gap 的值,两半严丝合缝;rem 随根字号缩放,两者同步。 */
 .aipm-anno__actions .aipm-anno__vismenu {
+  display: flex;
+  align-self: stretch;
   margin-left: -.3rem;
 }
 .aipm-anno__actions .aipm-anno__visbtn {
   padding: .3rem .3rem;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+  box-shadow: inset 1px 0 0 rgba(0, 0, 0, .22);
 }
 .aipm-anno__actions .aipm-anno__save {
+  border-right: 0;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+}
+/* 两半要一起响应 hover:同一颗按钮上左半不动、右半变暗,比都不动更割裂。 */
+.aipm-anno__actions .aipm-anno__save:hover:not(:disabled) {
+  background-image: linear-gradient(rgba(0, 0, 0, .14), rgba(0, 0, 0, .14));
 }
 
 /* ----------------------------------------------------------------------------
    8. 选中工具条(浮在正文上,层级高于面板)
+   划词之后在这里一次定完:画法、颜色、可见范围,然后落这条批注。
+   单行放不下(3 画法 + 5 色 + 3 范围 + 确认 ≈ 460px),所以分两行。
    ---------------------------------------------------------------------------- */
 .aipm-anno__toolbar {
   position: fixed;
   z-index: 80;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: .15rem;
-  padding: .2rem .3rem;
+  padding: .3rem .35rem;
   border: 1px solid var(--aipm-anno-line);
-  border-radius: 999px;
+  border-radius: .45rem;
   background: var(--md-default-bg-color);
   box-shadow: 0 3px 14px rgba(0, 0, 0, .22);
 }
 .aipm-anno__toolbar[hidden] {
   display: none;
+}
+.aipm-anno__tb-row {
+  display: flex;
+  align-items: center;
+  gap: .2rem;
+}
+.aipm-anno__tb-group {
+  display: flex;
+  align-items: center;
+  gap: .1rem;
+}
+.aipm-anno__tb-sep {
+  width: 1px;
+  height: 1rem;
+  margin: 0 .15rem;
+  background: var(--aipm-anno-line);
+}
+.aipm-anno__tb-spacer {
+  flex: 1 1 auto;
+}
+/* 画法:三个小图示按钮,选中的那个有底色 */
+.aipm-anno__tb-style {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  color: var(--md-default-fg-color);
+  background: transparent;
+  cursor: pointer;
+}
+.aipm-anno__tb-style svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+.aipm-anno__tb-style:hover {
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__tb-style.is-active {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+/* 可见范围:三颗小芯片 */
+.aipm-anno__tb-vis {
+  padding: .15rem .4rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: 999px;
+  color: var(--md-default-fg-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.aipm-anno__tb-vis:hover {
+  border-color: var(--md-default-fg-color--light);
+}
+.aipm-anno__tb-vis.is-active {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
+/* 未登录时公开/私有不是禁用,而是「点了去登录」—— 用虚线上的一点提示区分 */
+.aipm-anno__tb-vis.is-locked {
+  border-style: dashed;
 }
 .aipm-anno__toolbar .aipm-anno__swatch {
   width: 1.35rem;
@@ -971,36 +1221,56 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
    9. 正文里的高亮
    文字颜色一律 inherit(见文件头):对比度不被底色改变。
    ---------------------------------------------------------------------------- */
+/* 画法与颜色正交:先按色定出「墨色」与「底色」两个变量,再由画法决定用哪个。
+   underline 只用 ink、highlight 只用 wash、both 两个都用。 */
 .aipm-anno-mark {
   padding: 0;
   color: inherit;
-  background: var(--aipm-anno-yellow-bg);
-  border-bottom: 2px solid var(--aipm-anno-yellow);
+  background: transparent;
+  border-bottom: 2px solid transparent;
   cursor: pointer;
   transition: background-color .15s ease;
 }
 .aipm-anno-mark[data-color="yellow"] {
-  background: var(--aipm-anno-yellow-bg);
-  border-bottom-color: var(--aipm-anno-yellow);
+  --aipm-mark-ink: var(--aipm-anno-yellow);
+  --aipm-mark-wash: var(--aipm-anno-yellow-bg);
 }
 .aipm-anno-mark[data-color="green"] {
-  background: var(--aipm-anno-green-bg);
-  border-bottom-color: var(--aipm-anno-green);
+  --aipm-mark-ink: var(--aipm-anno-green);
+  --aipm-mark-wash: var(--aipm-anno-green-bg);
 }
 .aipm-anno-mark[data-color="blue"] {
-  background: var(--aipm-anno-blue-bg);
-  border-bottom-color: var(--aipm-anno-blue);
+  --aipm-mark-ink: var(--aipm-anno-blue);
+  --aipm-mark-wash: var(--aipm-anno-blue-bg);
 }
 .aipm-anno-mark[data-color="pink"] {
-  background: var(--aipm-anno-pink-bg);
-  border-bottom-color: var(--aipm-anno-pink);
+  --aipm-mark-ink: var(--aipm-anno-pink);
+  --aipm-mark-wash: var(--aipm-anno-pink-bg);
 }
 .aipm-anno-mark[data-color="purple"] {
-  background: var(--aipm-anno-purple-bg);
-  border-bottom-color: var(--aipm-anno-purple);
+  --aipm-mark-ink: var(--aipm-anno-purple);
+  --aipm-mark-wash: var(--aipm-anno-purple-bg);
+}
+/* 必须写成 [data-style="..."] 而不是只靠基类的 background:transparent ——
+   主题自带 `.md-typeset mark`(0,1,1)比 `.aipm-anno-mark`(0,1,0)更具体,
+   只划线那条会被它铺上一层默认的黄底。带属性选择器才够赢。 */
+.aipm-anno-mark[data-style="highlight"],
+.aipm-anno-mark[data-style="both"] {
+  background: var(--aipm-mark-wash);
+}
+.aipm-anno-mark[data-style="underline"] {
+  background: transparent;
+}
+.aipm-anno-mark[data-style="underline"],
+.aipm-anno-mark[data-style="both"] {
+  border-bottom-color: var(--aipm-mark-ink);
 }
 .aipm-anno-mark:hover {
   background: var(--md-default-fg-color--lightest);
+}
+/* 只划线的那条悬停时先给一层底色 —— 划线的反馈没法只靠底边线表达 */
+.aipm-anno-mark[data-style="underline"]:hover {
+  background: var(--aipm-mark-wash);
 }
 .aipm-anno-mark:focus-visible {
   outline: 2px solid var(--md-accent-fg-color);

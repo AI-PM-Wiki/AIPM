@@ -49,6 +49,12 @@
   var K_DRAFT = "aipm-anno-draft";
   var K_LAST_COLOR = "aipm-anno-last-color";
   var K_PREFS = "aipm-anno-prefs";
+
+  /* 批注的画法(与颜色正交):只划线 / 只高亮 / 两者都要。
+     放在 store 是因为 prefs() 要校验它 —— 面板文件里那份是渲染用的标签与图标。 */
+  var ANNO_STYLES = ["underline", "highlight", "both"];
+  var DEFAULT_STYLE = "highlight";
+  var COMMENT_SORTS = ["hot", "newest", "mostReplies"];
   var LOCAL_WARN_BYTES = 3 * 1024 * 1024; // 约 4–5MB 配额下的提前预警线
 
   function QuotaError(message) {
@@ -259,7 +265,12 @@
          眼睛则连标题一起收走。默认都是展开(false)。 */
       collapsedLocal: p.collapsedLocal === true,
       collapsedPrivate: p.collapsedPrivate === true,
-      collapsedPublic: p.collapsedPublic === true
+      collapsedPublic: p.collapsedPublic === true,
+      /* 评论排序。批注按正文位置排(那是唯一的合理顺序),只有评论需要挑:
+         热度 = 点赞数 + 回复数。 */
+      commentSort: COMMENT_SORTS.indexOf(p.commentSort) >= 0 ? p.commentSort : "hot",
+      /* 上次用的画法,下次开悬浮窗时预选上 */
+      lastStyle: ANNO_STYLES.indexOf(p.lastStyle) >= 0 ? p.lastStyle : DEFAULT_STYLE
     };
   }
 
@@ -324,6 +335,10 @@
     saveDraft: saveDraft,
     peekDraft: peekDraft,
     clearDraft: clearDraft,
+
+    ANNO_STYLES: ANNO_STYLES,
+    DEFAULT_STYLE: DEFAULT_STYLE,
+    COMMENT_SORTS: COMMENT_SORTS,
 
     lastColor: lastColor,
     setLastColor: setLastColor,
