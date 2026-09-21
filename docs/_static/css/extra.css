@@ -1513,3 +1513,368 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   13. 首页(学术版 w2):论文题头 masthead + 编号索引表
+   ----------------------------------------------------------------------------
+   设计契约(方向「严肃 / 学术出版物」):
+   - 视觉语言取自学术期刊与大学出版物的扉页 + 目录:衬线标题、等宽元信息行、
+     发丝线与 3px 双线分隔、罗马数字章节目号、朱红单点强调;
+     无 WebGL、无渐变光效、无投影装饰、无玻璃卡片。
+   - 配色:单一墨色系 + 朱红强调(--pm-ac-accent);暗色主题 = 深色纸张 + 米白
+     文字 + 同系提亮强调色。亮/暗两套 token 见 13.0。
+   - 字体全部为系统字体栈(衬线 / 等宽),不引入任何网络字体。
+   - 作用域:首页专属规则一律以题头 <section class="pm-ac-masthead"> 为锚点
+       * `[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ h2 / ~ ul` —— 题头之后的 Markdown 章节
+         (「栏目索引」标题、本站的原则、现在适合从哪里开始);
+       * `body:has(.pm-ac-masthead)` —— 首页整页纸张底色(其他页面不受影响)。
+     选择器统一写成 `[data-md-color-scheme] .md-typeset .pm-ac-*`:material 的
+     palette 始终把 data-md-color-scheme 写在 <body> 上,该前缀把特异性提到
+     (0,3,x),压过主题的 `.md-typeset h1/h2/ul/ol/li/a`(0,1,x)以及站点 §4 的
+     `[data-md-color-scheme="slate"] .md-typeset h1`(0,2,1,会把标题刷成纯白)。
+   - 本节的 pm-ac-* 类名与 §11 的 pm-hero / pm-card / pm-btn 无任何耦合:
+     §11 保留给其它首页方向复用,本节不覆盖其任何选择器。
+   2026-09-21 新增。
+   ---------------------------------------------------------------------------- */
+:root {
+  --pm-ac-serif: "Source Serif 4", "Songti SC", "Noto Serif SC", Georgia,
+                 "Times New Roman", serif;
+  --pm-ac-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* 亮:暖白纸张 + 墨黑 + 朱红 */
+  --pm-ac-paper: #faf8f4;
+  --pm-ac-ink: #1a1714;
+  --pm-ac-muted: rgba(26, 23, 20, .7);
+  --pm-ac-faint: rgba(26, 23, 20, .44);
+  --pm-ac-rule: rgba(26, 23, 20, .14);
+  --pm-ac-rule-strong: rgba(26, 23, 20, .4);
+  --pm-ac-accent: #9b2c1f;
+  --pm-ac-hover: rgba(26, 23, 20, .035);
+}
+
+[data-md-color-scheme="slate"] {
+  /* 暗:深色纸张 + 米白文字 + 同系提亮朱红 */
+  --pm-ac-paper: #131311;
+  --pm-ac-ink: #ece7de;
+  --pm-ac-muted: rgba(236, 231, 222, .68);
+  --pm-ac-faint: rgba(236, 231, 222, .42);
+  --pm-ac-rule: rgba(236, 231, 222, .15);
+  --pm-ac-rule-strong: rgba(236, 231, 222, .38);
+  --pm-ac-accent: #dd7a5c;
+  --pm-ac-hover: rgba(236, 231, 222, .045);
+}
+
+/* 13.1 首页整页纸张底色。:has() 只匹配含学术题头的首页;
+   不支持 :has() 的浏览器自动退化为站点默认底色,布局与可读性不受影响 */
+body:has(.pm-ac-masthead),
+body:has(.pm-ac-masthead) .md-container {
+  background-color: var(--pm-ac-paper);
+}
+
+/* 顶层原生 HTML 块(document-offsets-injection 扩展的副作用):该扩展在
+   Python-Markdown 把 HTML 块存入 htmlStash 之后,又给承载占位符的 <p> 加上
+   data-original-document-* 属性;主题的 RawHtmlPostprocessor 只解包「无属性」
+   的 <p>,于是留下一个空的包裹 <p>(浏览器在 <section>/<ol> 处已自动闭合它,
+   其上下外边距与相邻块折叠,视觉上本就为零)。这里显式隐藏,保持 DOM 干净。
+   仅限首页(:has 作用域),其它页面不受影响 */
+body:has(.pm-ac-masthead) .md-content__inner > p:empty {
+  display: none;
+}
+
+/* 13.2 题头:论文扉页——窄栏居中,上 3px 双线 + 下 1px 发丝线。
+   counter-reset 建在题头上,其后每个 h2 递增(见 13.6),得到 I. / II. / III. */
+[data-md-color-scheme] .md-typeset .pm-ac-masthead {
+  counter-reset: pm-ac-sec;
+  max-width: 46rem;
+  margin: 1.2rem auto 2.8rem;
+  padding: 2.2rem 1.4rem 1.8rem;
+  border-top: 3px double var(--pm-ac-rule-strong);
+  border-bottom: 1px solid var(--pm-ac-rule);
+  text-align: center;
+}
+
+/* 眉题:学术元信息行——等宽小字 + 全大写 + 宽字距 */
+[data-md-color-scheme] .md-typeset .pm-ac-eyebrow {
+  margin: 0 0 1.4rem;
+  font-family: var(--pm-ac-mono);
+  font-size: .62rem;
+  font-weight: 500;
+  letter-spacing: .34em;
+  text-indent: .34em;
+  text-transform: uppercase;
+  color: var(--pm-ac-faint);
+}
+
+/* 刊名:衬线,系统衬线栈(无网络字体) */
+[data-md-color-scheme] .md-typeset .pm-ac-title {
+  margin: 0;
+  font-family: var(--pm-ac-serif);
+  font-size: 3rem;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: .01em;
+  color: var(--pm-ac-ink);
+  text-wrap: balance;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-subtitle {
+  max-width: 62ch;
+  margin: 1.1rem auto 0;
+  font-size: .86rem;
+  line-height: 1.8;
+  color: var(--pm-ac-muted);
+  text-wrap: pretty;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+/* 版本记录行(imprint):等宽双行,每条独占一行,避免折行时行首出现分隔符 */
+[data-md-color-scheme] .md-typeset .pm-ac-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .2rem;
+  max-width: 44rem;
+  margin: 1.5rem auto 0;
+  padding-top: .95rem;
+  border-top: 1px solid var(--pm-ac-rule);
+  font-family: var(--pm-ac-mono);
+  font-size: .66rem;
+  line-height: 1.9;
+  letter-spacing: .06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--pm-ac-faint);
+}
+
+/* 13.3 题头动作行:等宽小字 + 下划线,克制;主行动用朱红 */
+[data-md-color-scheme] .md-typeset .pm-ac-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: .5rem 1.6rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-action {
+  appearance: none;
+  margin: 0;
+  padding: 0 0 .18em;
+  border: 0;
+  border-bottom: 1px solid var(--pm-ac-rule-strong);
+  background: none;
+  font-family: var(--pm-ac-mono);
+  font-size: .68rem;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: none;
+  color: var(--pm-ac-ink);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-action--primary,
+[data-md-color-scheme] .md-typeset .pm-ac-action:hover,
+[data-md-color-scheme] .md-typeset .pm-ac-action:focus-visible {
+  color: var(--pm-ac-accent);
+  border-bottom-color: var(--pm-ac-accent);
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-action:focus-visible {
+  outline: 2px solid var(--pm-ac-accent);
+  outline-offset: 3px;
+}
+
+/* 13.4 栏目索引:编号索引表(替代原 .pm-card-grid 卡片网格)。
+   每行 = 等宽序号 + 衬线栏目名 + 说明;行间 1px 发丝线,hover 整行淡底、
+   序号转强调色。序号由 CSS counter 生成(01…11),不写进正文 */
+[data-md-color-scheme] .md-typeset .pm-ac-index {
+  counter-reset: pm-ac-no;
+  max-width: 46rem;
+  margin: 1.2rem auto 2.4rem;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--pm-ac-rule);
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-entry {
+  counter-increment: pm-ac-no;
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  align-items: start;
+  margin: 0;
+  padding: 0 .5rem;
+  border-top: 1px solid var(--pm-ac-rule);
+  transition: background-color 120ms ease;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-entry::before {
+  content: counter(pm-ac-no, decimal-leading-zero);
+  grid-column: 1;
+  padding: .95rem 0;
+  font-family: var(--pm-ac-mono);
+  font-size: .7rem;
+  letter-spacing: .06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--pm-ac-faint);
+  transition: color 120ms ease;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-link {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 8.5rem) 1fr;
+  gap: 0 1.4rem;
+  align-items: baseline;
+  padding: .95rem 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-cat {
+  font-family: var(--pm-ac-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--pm-ac-ink);
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-desc {
+  font-size: .82rem;
+  line-height: 1.75;
+  color: var(--pm-ac-muted);
+  text-wrap: pretty;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-entry:hover,
+[data-md-color-scheme] .md-typeset .pm-ac-entry:focus-within {
+  background-color: var(--pm-ac-hover);
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-entry:hover::before,
+[data-md-color-scheme] .md-typeset .pm-ac-entry:focus-within::before {
+  color: var(--pm-ac-accent);
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-entry:hover .pm-ac-cat,
+[data-md-color-scheme] .md-typeset .pm-ac-entry:focus-within .pm-ac-cat {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--pm-ac-accent);
+  text-underline-offset: .22em;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-link:focus-visible {
+  outline: 2px solid var(--pm-ac-accent);
+  outline-offset: 2px;
+}
+
+/* 13.5 题头之后的 Markdown 正文:窄栏 + 章节目号 + 发丝线分隔的条目列表 */
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ p {
+  max-width: 68ch;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
+
+/* 13.6 章节标题:衬线 + 罗马数字章节目号(counter 自题头起算) */
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ h2 {
+  counter-increment: pm-ac-sec;
+  max-width: 46rem;
+  margin: 2.8rem auto 0;
+  padding-top: .9rem;
+  border-top: 1px solid var(--pm-ac-rule-strong);
+  font-family: var(--pm-ac-serif);
+  font-size: 1.34rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: .01em;
+  color: var(--pm-ac-ink);
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ h2::before {
+  content: counter(pm-ac-sec, upper-roman) ".  ";
+  font-family: var(--pm-ac-mono);
+  font-size: .72em;
+  font-weight: 500;
+  letter-spacing: .12em;
+  color: var(--pm-ac-accent);
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ ul {
+  max-width: 46rem;
+  margin: 1rem auto 2.2rem;
+  padding: 0;
+  list-style: none;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ ul > li {
+  position: relative;
+  margin: 0;
+  padding: .7rem 0 .7rem 1.7rem;
+  border-top: 1px solid var(--pm-ac-rule);
+  font-size: .86rem;
+  line-height: 1.8;
+  color: var(--pm-ac-muted);
+  text-wrap: pretty;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ ul > li:first-child {
+  border-top: 0;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ ul > li::before {
+  content: "§";
+  position: absolute;
+  left: 0;
+  top: .7rem;
+  font-family: var(--pm-ac-serif);
+  font-size: .8em;
+  line-height: 1.8;
+  color: var(--pm-ac-accent);
+  opacity: .8;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ ul > li strong {
+  font-weight: 600;
+  color: var(--pm-ac-ink);
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ ul a {
+  color: var(--pm-ac-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--pm-ac-rule-strong);
+  text-underline-offset: .18em;
+}
+
+[data-md-color-scheme] .md-typeset .pm-ac-masthead ~ ul a:hover {
+  text-decoration-color: var(--pm-ac-accent);
+}
+
+/* 13.7 窄屏:题头收边,索引行由「序号 | 栏目 | 说明」三栏折为两栏堆叠 */
+@media screen and (max-width: 760px) {
+  [data-md-color-scheme] .md-typeset .pm-ac-masthead {
+    padding: 1.6rem .8rem 1.4rem;
+  }
+
+  [data-md-color-scheme] .md-typeset .pm-ac-title {
+    font-size: 2.2rem;
+  }
+
+  [data-md-color-scheme] .md-typeset .pm-ac-entry {
+    grid-template-columns: 2.1rem 1fr;
+    padding: 0 .15rem;
+  }
+
+  [data-md-color-scheme] .md-typeset .pm-ac-link {
+    grid-template-columns: 1fr;
+    gap: .15rem 0;
+  }
+}
