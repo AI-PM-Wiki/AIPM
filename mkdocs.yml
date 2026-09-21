@@ -807,7 +807,6 @@ extra_javascript:
   - '_static/js/mathjax.js?v=2'
   - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
   - '_static/js/home-ascii.js?v=1'
-  - '_static/js/banner.js?v=11'
   - '_static/js/header-line.js?v=1'
   - '_static/js/umami.js?v=1'
   - '_static/js/mermaid-zoom.js?v=4'
