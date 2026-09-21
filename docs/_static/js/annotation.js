@@ -7,7 +7,7 @@
   面板有两个模式,由页头标题切换:
   - **批注**锚在正文的某一段上,列表按该段在正文里的位置排序;
   - **评论**针对整个页面(target.scope = "page"),不锚定任何文字,因此画不出
-    高亮、也不会进「未在正文中定位」。
+    高亮、也不会进「未在正文中定位」;列表按「最热 / 最新」排。
   两者共用同一份列表、同一套「公开 / 私有 / 仅本机」分栏;分栏可折叠,也可整栏
   不显示(两种状态都记在 prefs 里)。
 
@@ -18,9 +18,11 @@
     批注面板开着时点 FAB「询问助手」→ claim("chat") 先关批注再开助手;
     助手开着时点页头批注按钮 → claim("annotation")。关与开在同一个同步任务里,
     浏览器只画一帧,桌面停靠下页面宽度不跳;
-  - 页头入口是**开关**:面板开着时再点一次即收起。但图标不变(始终是那支笔)——
-    换叉会与面板头部自己的关闭叉打架;助手的 FAB 开着时整个隐藏,所以它没有这个
-    来回,而批注入口一直可见,收起的动作只能由它自己承担。
+  - 页头入口是**开关**:面板开着时再点一次即收起。两个状态用一对方向箭头表示
+    (收起态 ‹ / 展开态 ›),箭头指面板将要移动的方向 —— 面板停靠在右侧,所以收起
+    时向左(拉出来)、展开时向右(推回去);不用叉,是因为页头那个叉会和面板头部
+    自己的关闭叉在同一屏里打架。助手的 FAB 开着时整个隐藏,所以它没有这个来回,
+    而批注入口一直可见,收起的动作只能由它自己承担。
 
   工程契约:
   - 面板、遮罩、选中工具条都 append 到 document.body 顶层(与 .aipm-chat 同理:
@@ -29,9 +31,16 @@
     —— 不写 MutationObserver 重建逻辑;
   - 锚定按 W3C Web Annotation 存三类 selector(TextQuote / TextPosition / Range),
     三级回退;全失败进「未能定位」分组,绝不静默丢;
-  - 列表每次 render 整体重建,所以**编辑器由 render 现场产出**(新建 / 编辑 / 回复
-    共用一套卡片),它落在列表里该在的位置上,而不是钉在面板底部 —— 写的时候看到
-    的排版就是发出去之后的排版;
+  - 列表每次 render 整体重建,所以**编辑器由 render 现场产出**,它落在列表里该在
+    的位置上,而不是钉在面板底部 —— 写的时候看到的排版就是发出去之后的排版;
+  - 两套卡片,两套编辑器:批注锚在正文某一段上,所以它有引文、色点、画法,空正文
+    就等于「只划线不写字」;**评论不锚正文**,所以卡片是另一套(头像 + 用户名 +
+    发布时间),新评论的编辑卡就长在「写一条评论」那颗按钮的位置上,正文不能为空。
+    回复框、回复区、底部操作链三者两套卡片共用 —— 那几件事两边长得一样;
+  - 「回复 / 编辑 / 删除」只出图标不出字。这几个动作在所有评论系统里长着同一张
+    脸(回勾箭头 / 铅笔 / 垃圾桶),写字只会把一行按钮撑成一行字;名字挂在 title
+    与 aria-label 上 —— 那是图标唯一的可读副本。删除另加一道「再点一次」的确认:
+    图标按钮比文字链好点错,而删掉的东西回不来。样式见 .aipm-anno__ibtn。
   - 未登录能做的:读公开批注、写「仅本机」批注、用智能高亮。
 */
 (function () {
@@ -87,13 +96,20 @@
     }
   ];
 
+  /* 评论排序:两颗芯片。批注不参与 —— 它们按正文位置排,那是唯一的合理顺序;
+     「最多回复」并进「最热」(热度 = 点赞 + 回复),两颗比三颗好认。 */
   var COMMENT_SORTS = [
-    { id: "hot", label: "热度" },
-    { id: "newest", label: "最新发布" },
-    { id: "mostReplies", label: "最多回复" }
+    { id: "hot", label: "最热" },
+    { id: "newest", label: "最新" }
   ];
 
   var ICON = {
+    /* 页头入口的开合图标:箭头指面板**将要移动的方向**。面板停靠在右侧,
+       所以收起态指向左(点它拉出来)、展开态指向右(点它推回去)。 */
+    chevronLeft:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.41,7.41L14,6l-6,6 6,6 1.41,-1.41L10.83,12z"/></svg>',
+    chevronRight:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.59,16.59L10,18l6,-6 -6,-6 -1.41,1.41L13.17,12z"/></svg>',
     pen:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z"/></svg>',
     close:
@@ -388,6 +404,9 @@
       mark.setAttribute("data-anno-id", anno.id);
       mark.setAttribute("data-color", anno.color || store.DEFAULT_COLOR);
       mark.setAttribute("data-style", styleOf(anno));
+      /* 这条属于哪一栏写在 mark 上:眼睛收走一栏时,正文里对应的那几笔也要跟着
+         收(见 syncGroupVisibility),CSS 得认得出它是公开、私有还是仅本机。 */
+      mark.setAttribute("data-group", groupOf(anno));
       mark.setAttribute("role", "button");
       mark.setAttribute("tabindex", "0");
       mark.setAttribute("aria-label", "批注:" + (anno.body ? anno.body.slice(0, 60) : "高亮"));
@@ -429,24 +448,6 @@
         "</button>"
       );
     }).join("");
-  }
-
-  /* 悬浮窗里的短标签。列表卡片上用的是 visLabel() 的长文案(「登录同账号可见」),
-     那颗芯片塞不下,也不该塞。 */
-  var VIS_SHORT = { public: "公开", private: "私有", local: "仅本机" };
-
-  function visChipsHtml() {
-    return ["public", "private", "local"]
-      .map(function (v) {
-        return (
-          '<button type="button" class="aipm-anno__tb-vis" data-vis="' +
-          v +
-          '">' +
-          VIS_SHORT[v] +
-          "</button>"
-        );
-      })
-      .join("");
   }
 
   function swatchHtml() {
@@ -514,10 +515,10 @@
   var toolbar = document.createElement("div");
   toolbar.className = "aipm-anno__toolbar";
   toolbar.hidden = true;
-  /* 两行:上行挑画法与颜色,下行挑可见范围并确认。单行在手机宽度上放不下
-     (3 个画法 + 5 个色块 + 3 个范围 + 确认,约 460px)。 */
+  /* 一行:挑画法、挑颜色,然后笔 = 写批注、叉 = 收起。可见范围不在这一行 ——
+     划词挑个颜色就是「把这段划出来」,犯不着每次先答一遍给谁看;真要选范围的人
+     走笔那条路,编辑卡里还留着那个菜单(见 buildVisPicker)。 */
   toolbar.innerHTML =
-    '<div class="aipm-anno__tb-row">' +
     '<div class="aipm-anno__tb-group" role="radiogroup" aria-label="批注画法">' +
     styleHtml() +
     "</div>" +
@@ -525,19 +526,35 @@
     '<div class="aipm-anno__tb-group" role="radiogroup" aria-label="颜色">' +
     swatchHtml() +
     "</div>" +
-    "</div>" +
-    '<div class="aipm-anno__tb-row">' +
-    '<div class="aipm-anno__tb-group" role="radiogroup" aria-label="可见范围">' +
-    visChipsHtml() +
-    "</div>" +
-    '<span class="aipm-anno__tb-spacer"></span>' +
-    '<button type="button" class="aipm-anno__tb-annotate">' +
+    '<button type="button" class="aipm-anno__tb-annotate" title="写批注" aria-label="写批注">' +
     ICON.pen +
-    "<span>写批注</span></button>" +
-    '<button type="button" class="aipm-anno__tb-cancel" aria-label="取消">' +
+    "</button>" +
+    '<button type="button" class="aipm-anno__tb-cancel" title="取消" aria-label="取消">' +
     ICON.close +
     "</button>";
   document.body.appendChild(toolbar);
+
+  /* 快速高亮不开面板 —— 面板里的 hint / smartbar 这时都够不着,回执得落在页面上。
+     一条自己会消失的小提示,挂在 body 上,不进面板。 */
+  var toast = document.createElement("div");
+  toast.className = "aipm-anno__toast";
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
+  toast.hidden = true;
+  document.body.appendChild(toast);
+  var toastTimer = 0;
+
+  function flash(text, kind) {
+    if (!text) return;
+    toast.textContent = text;
+    toast.setAttribute("data-kind", kind || "");
+    toast.hidden = false;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toast.hidden = true;
+      toastTimer = 0;
+    }, 2400);
+  }
 
   /* 只留静态外壳上的引用。编辑卡的节点每次 render 现建现取,不进这张表 ——
      它们随列表一起被重建,存下来必然过期。 */
@@ -565,22 +582,23 @@
   entry.setAttribute("aria-label", "打开批注面板");
   entry.setAttribute("aria-expanded", "false");
   entry.setAttribute("data-state", "closed");
-  entry.innerHTML = ICON.pen;
+  entry.innerHTML = ICON.chevronLeft;
 
-  /* 入口是**开关**,不是「只负责开」:面板开着时再点一次即收起。
+  /* 入口是**开关**,不是「只负责开」:面板开着时再点一次即收起。这个来回只能由它
+     自己承担 —— 助手的 FAB 在面板开着时直接隐藏(.is-hidden),批注入口一直可见。
 
-     但图标**不随开合变**(验收意见):页头那个叉会和面板头部自己的关闭叉在同一屏
-     里互相打架,页头始终就是那支笔 —— 开合由 aria-expanded 与面板本身表达。
-     助手那边也不需要这个来回:它的 FAB 在面板开着时直接隐藏(.is-hidden),
-     而批注入口一直可见,收起这个动作只能由它自己承担。
+     开合用一对方向箭头表示:收起态 ‹、展开态 ›,箭头指面板**将要移动的方向**
+     (面板停靠在右侧,故收起时向左=拉出来,展开时向右=推回去)。刻意不用叉 ——
+     页头那个叉会和面板头部自己的关闭叉在同一屏里打架(验收意见)。
 
-     状态真的翻转时才写一次:syncChrome() 在拖拽吸附、换形态、开关面板时都会被
-     调到,重复写同样的值无害,但没必要。 */
+     图标只在状态真的翻转时换一次:syncChrome() 在拖拽吸附、换形态、开关面板时都会
+     被调到,每次重建 innerHTML 会让图标白闪一下。 */
   function syncEntry() {
     var state = open ? "open" : "closed";
     if (entry.getAttribute("data-state") === state) return;
     entry.setAttribute("data-state", state);
     entry.setAttribute("aria-expanded", open ? "true" : "false");
+    entry.innerHTML = open ? ICON.chevronRight : ICON.chevronLeft;
     var label = open ? "收起批注面板" : "打开批注面板";
     entry.title = label;
     entry.setAttribute("aria-label", label);
@@ -619,6 +637,7 @@
     var c =
       els.composer ||
       els.list.querySelector(".aipm-anno__item") ||
+      els.list.querySelector(".aipm-anno__comment") ||
       els.list.querySelector(".aipm-anno__draft");
     var cardH = 72;
     if (c) {
@@ -1090,31 +1109,25 @@
   }
 
   /**
-   * 评论排序。批注**不参与** —— 它们按正文位置排,那是唯一的合理顺序;
-   * 给批注排「热度」只会让人找不到刚才看到的那句话。
+   * 评论排序,两档:最热 / 最新。批注**不参与** —— 它们按正文位置排,那是唯一的
+   * 合理顺序;给批注排「热度」只会让人找不到刚才看到的那句话。
    * 同分一律按发布时间倒序兜底,免得顺序在两次渲染之间跳。
    */
   function commentComparator(sort) {
     return function (a, b) {
       if (sort === "newest") return tsMs(b.createdAt) - tsMs(a.createdAt);
-      if (sort === "mostReplies") {
-        return repliesOf(b) - repliesOf(a) || tsMs(b.createdAt) - tsMs(a.createdAt);
-      }
       return hotOf(b) - hotOf(a) || tsMs(b.createdAt) - tsMs(a.createdAt);
     };
   }
 
-  /** 评论模式下、且没有编辑器在写时,给一排排序开关。 */
+  /* 排序开关:两颗芯片,没有「排序」二字 —— 芯片自己写着「最热 / 最新」,
+     再挂一个提示语只是占地方。语义由 radiogroup 的 aria-label 承担。 */
   function sortRow() {
     var prefs = store.prefs();
     var row = document.createElement("div");
     row.className = "aipm-anno__sort";
     row.setAttribute("role", "radiogroup");
     row.setAttribute("aria-label", "评论排序");
-    var label = document.createElement("span");
-    label.className = "aipm-anno__sort-label";
-    label.textContent = "排序";
-    row.appendChild(label);
     COMMENT_SORTS.forEach(function (s) {
       var b = document.createElement("button");
       b.type = "button";
@@ -1179,9 +1192,25 @@
     return head;
   }
 
-  /** 当前编辑卡该落在哪一组、组内哪个位置。没有编辑器时返回 null。 */
+  /** 这张编辑卡是不是「评论」的(而不是批注或回复)。 */
+  function isCommentDraft() {
+    if (editorDraft === null) return false;
+    if (editorDraft.kind === "reply") return false;
+    if (editorDraft.kind === "create") return editorDraft.page === true;
+    var on = annoById(editorDraft.annoId);
+    return on !== null && isPageComment(on);
+  }
+
+  /**
+   * 当前编辑卡该落在哪一组、组内哪个位置。没有编辑器时返回 null。
+   *
+   * 评论不走这里:新评论的编辑卡落在「写一条评论」那颗按钮的位置上(见 render),
+   * 改已有评论的编辑卡落在那条自己的位置上(见 renderCommentItem)—— 反正不该
+   * 按正文位置插进某个分栏,它压根没有正文位置。
+   */
   function draftSlot() {
     if (!editorDraft) return null;
+    if (panelMode === "comments") return null;
     if (editorDraft.kind === "create") {
       return { group: defaultVisibility(), inline: false, at: null };
     }
@@ -1203,11 +1232,39 @@
     });
   }
 
+  /**
+   * 眼睛收走后,正文里对应的高亮也跟着收。
+   *
+   * 收走的是「画上去的那一笔」,不是那段文字:`<mark>` 仍旧裹着原文,只把底色与
+   * 下划线撤掉,所以收走一栏不会把正文挖出几个洞、行高也不动。
+   *
+   * 隐藏态挂在 <html> 上而不是面板上 —— `<mark>` 在正文里、眼睛在面板里,两棵
+   * 子树没有公共祖先,只有根节点同时罩得住两边(与 syncChrome 那组状态类同处)。
+   */
+  function syncGroupVisibility() {
+    var prefs = store.prefs();
+    var cl = document.documentElement.classList;
+    ["public", "private", "local"].forEach(function (g) {
+      var off = prefs[prefKey("show", g)] === false;
+      cl.toggle("aipm-anno-hide-" + g, off);
+      /* 收走的那几条也别再留在 Tab 序列里:看不见的东西被键盘停在上面,焦点环
+         会凭空画在一段没有任何标记的文字上。(aria-label 留着 —— 文字本身还要
+         能被读出来,把整个 mark 打成 aria-hidden 会把那段正文一起读没了。) */
+      var marks = document.querySelectorAll('mark.aipm-anno-mark[data-group="' + g + '"]');
+      for (var i = 0; i < marks.length; i++) {
+        marks[i].setAttribute("tabindex", off ? "-1" : "0");
+      }
+    });
+  }
+
   function render() {
     /* 列表整体重建,上一轮物化出来的编辑卡已经随之消失 —— 先把 els 里那组
        指针清掉,免得后面读到已经脱开的节点。 */
     unmountEditor();
     closePop();
+    /* 面板与正文是两棵子树,一栏的显隐得同时在两边落地:列表这边按 prefs 少排
+       几栏的内容,正文那边换一根根节点上的 class。 */
+    syncGroupVisibility();
 
     var all = publicList.concat(privateList).concat(localList);
     var items = all.filter(inMode);
@@ -1215,9 +1272,16 @@
     els.count.hidden = items.length === 0;
     els.list.textContent = "";
 
-    /* 评论模式没有「划词」这个动作,新建得有一颗看得见的按钮。 */
+    /* 评论模式没有「划词」这个动作,新建得有一颗看得见的按钮 —— 而且新评论的
+       编辑卡就长在这颗按钮的位置上:点开它,写的时候看到的排版就是发出去之后的
+       排版,发出去之后也还在这一条上,不再另起一张落到某个分栏里。
+       编辑器一轮 render 只能物化一次(它会覆写 els 里那组指针),所以这里物化了,
+       下面的分组循环就不会再碰它 —— 评论不走 draftSlot()。 */
     if (panelMode === "comments") {
-      if (editorDraft === null) {
+      var composer = editorDraft !== null && editorDraft.page === true ? materializeEditor() : null;
+      if (composer !== null) {
+        els.list.appendChild(composer);
+      } else if (editorDraft === null) {
         var newbtn = document.createElement("button");
         newbtn.type = "button";
         newbtn.className = "aipm-anno__newbtn";
@@ -1234,13 +1298,13 @@
     var draft = draftSlot();
     var prefs = store.prefs();
     var commentSort = prefs.commentSort;
-    /* 新增评论没有正文位置可依,固定钉在最上方;新批注则按落点插进排序好的列表。 */
-    var draftRank =
-      panelMode === "comments" ? -Infinity : draft === null || draft.inline ? null : draftKey();
+    /* 新批注按落点插进排序好的列表。评论已经没有这一节了(draftSlot 对评论返回
+       null,它的编辑卡在上面那颗按钮的位置上)。 */
+    var draftRank = draft === null || draft.inline ? null : draftKey();
 
     /* 面板「空不空」只看真正的内容。排序条与「写一条评论」是常驻的 chrome,
-       拿 childNodes.length 去判会把「三栏都被眼睛收走」误判成有内容 —— 于是
-       一条回来的路都不给(第三轮那道「至少留一栏」的护栏撤掉之后,这是唯一的退路)。 */
+       拿 childNodes.length 去判会把它们误判成「还有内容」,那句「还没有人…」
+       就永远露不了面。 */
     var contentCount = 0;
 
     var groups = [
@@ -1258,11 +1322,14 @@
       visible.sort(panelMode === "comments" ? commentComparator(commentSort) : byPosition);
 
       var draftHere = draft !== null && !draft.inline && draft.group === g.key;
-      var shown = prefs[prefKey("show", g.key)] !== false;
-      if (visible.length === 0 && !draftHere) return;
-      /* 眼睛关掉的是「闲着的列表」;正在写的那张卡不能被它连同一起藏掉,
-         否则编辑器还在内存里、屏幕上却什么都没有。 */
-      if (!shown && !draftHere) return;
+      /* 眼睛收走的是这一栏的**内容**,不是这一栏本身 —— 所以这里只判「有没有
+         东西」,不判「眼睛开着没有」。标题、条数与那只眼睛都留在原地(标题变淡),
+         收走的只有下面那些卡片。连标题一起收的话,点过的那只眼睛会跟着没:
+         它自己就长在标题上,收走之后谁也点不回来。
+         空栏平时不露头(一页干净的时候不该挂着三行 0),被眼睛收走的那一栏例外 ——
+         标题与眼睛是唯一的回来路,栏里空了也得留着。 */
+      var hidden = prefs[prefKey("show", g.key)] === false;
+      if (visible.length === 0 && !draftHere && !hidden) return;
 
       els.list.appendChild(groupHead(g.key, visible.length + (draftHere ? 1 : 0), prefs));
       contentCount++;
@@ -1270,7 +1337,9 @@
       /* 编辑器由 render 现场产出(列表每轮整体重建),而且要落在它该在的位置上:
          新批注按它选中那段文字的位置插进排序好的列表,不再钉在分组最前面。 */
       var pending = draftHere ? materializeEditor() : null;
-      if (prefs[prefKey("collapsed", g.key)] === true) {
+      /* 收走的那一栏不排内容;正在写的那张卡除外 —— 编辑器还在内存里、屏幕上
+         却什么都没有,是说不过去的。 */
+      if (hidden || prefs[prefKey("collapsed", g.key)] === true) {
         if (pending !== null) {
           els.list.appendChild(pending);
           contentCount++;
@@ -1284,7 +1353,7 @@
           pending = null;
           contentCount++;
         }
-        els.list.appendChild(renderItem(anno));
+        els.list.appendChild(inComments ? renderCommentItem(anno) : renderItem(anno));
         contentCount++;
       });
       if (pending !== null) {
@@ -1293,8 +1362,14 @@
       }
     });
 
-    /* 未定位组不进「评论」模式:评论本来就没有位置,列在这里毫无意义。 */
-    if (orphans.length > 0 && panelMode === "annotations") {
+    /* 未定位组不进「评论」模式:评论本来就没有位置,列在这里毫无意义。
+       被眼睛收走的那些也不进来:眼睛说的是「这一栏先不显示」,未定位的条目仍旧
+       属于它原来那一栏,不该从这里漏回来。收走的那一条画不出高亮,也没进
+       orphanIds 之外的任何地方,这里不滤就是一条藏不住的漏网之鱼。 */
+    var shownOrphans = orphans.filter(function (anno) {
+      return prefs[prefKey("show", groupOf(anno))] !== false;
+    });
+    if (shownOrphans.length > 0 && panelMode === "annotations") {
       var oh = document.createElement("div");
       oh.className = "aipm-anno__group-head is-orphan";
       var ohLabel = document.createElement("span");
@@ -1303,47 +1378,29 @@
       oh.appendChild(ohLabel);
       var ohNum = document.createElement("span");
       ohNum.className = "aipm-anno__group-count";
-      ohNum.textContent = String(orphans.length);
+      ohNum.textContent = String(shownOrphans.length);
       oh.appendChild(ohNum);
       oh.title = "页面改过之后这些批注找不到原来的位置了;它们没有被删掉";
       els.list.appendChild(oh);
       contentCount++;
-      orphans.forEach(function (anno) {
+      shownOrphans.forEach(function (anno) {
         els.list.appendChild(renderItem(anno, true));
         contentCount++;
       });
     }
 
     if (contentCount === 0) {
-      /* 三栏被眼睛收光之后,面板上不能只剩一句空白 —— 那只眼睛自己也长在被收走
-         的标题上。给一条明确的回来的路。 */
-      var anyHidden = ["public", "private", "local"].some(function (g) {
-        return prefs[prefKey("show", g)] === false;
-      });
-      if (anyHidden) {
-        var restore = document.createElement("button");
-        restore.type = "button";
-        restore.className = "aipm-anno__newbtn";
-        restore.setAttribute("data-action", "show-all");
-        restore.innerHTML =
-          ICON.eye +
-          "<span>" +
-          (panelMode === "comments" ? "显示全部评论栏" : "显示全部批注栏") +
-          "</span>";
-        restore.addEventListener("click", function () {
-          store.setPrefs({ showPublic: true, showPrivate: true, showLocal: true });
-          render();
-        });
-        els.list.appendChild(restore);
-      } else {
-        var empty = document.createElement("p");
-        empty.className = "aipm-anno__empty";
-        empty.textContent =
-          panelMode === "comments"
-            ? "还没有人对这一页留下评论。"
-            : "选中正文里的一段话就能加批注。";
-        els.list.appendChild(empty);
-      }
+      /* 面板空不空只看真正的内容。从前这里有第二条支路:三栏被眼睛收光之后补一颗
+         「显示全部」,因为那只眼睛自己也长在被收走的标题上。现在眼睛收走的是栏的
+         内容而不是栏本身,三个标题一直在,那条路就没得可走了 —— 点哪只眼睛都能
+         回来。 */
+      var empty = document.createElement("p");
+      empty.className = "aipm-anno__empty";
+      empty.textContent =
+        panelMode === "comments"
+          ? "还没有人对这一页留下评论。"
+          : "选中正文里的一段话就能加批注。";
+      els.list.appendChild(empty);
     }
 
     /* 手机上 peek 的高度按「一张卡」算,而卡片是这里刚建出来的 —— 重建完顺手
@@ -1413,6 +1470,242 @@
     });
     wrapEl.appendChild(pop);
     openPop = { wrap: wrapEl, node: pop };
+  }
+
+  /**
+   * 回复区。批注卡与评论卡共用 —— 「回复」这件事两边长得一样,没理由两套。
+   * 返回 null = 这条既没有回复、也不在回复中,调用方据此决定要不要挂这一块。
+   */
+  function repliesBox(anno) {
+    var replies = anno.replies || [];
+    var replyingHere =
+      editorDraft !== null && editorDraft.kind === "reply" && editorDraft.annoId === anno.id;
+    var replyParent = replyingHere ? editorDraft.parentId || null : null;
+    if (replies.length > 0 || replyingHere) {
+      var box = document.createElement("div");
+      box.className = "aipm-anno__replies";
+      var byId = {};
+      replies.forEach(function (r) {
+        byId[r.id] = r;
+      });
+      /* 楼层先按「谁回了谁」挂成一棵树,再顺着树铺开 —— 不是照收到的顺序平铺。
+         平铺时后写的那条总排在最后:回第一层的那条会落在「顶层第二条」底下、
+         缩进还是一层,读起来就是「回的是顶层第二条」—— 回复挂到了不是它回的那条
+         名下。回复挨着它回的那条站,缩进才说明得了问题。
+         父回复被删之后 parentId 会悬空,那种按顶层渲染(缩进到看不见的层级里更糟)。
+         父级恒在子级之前(服务端只收已经存在的楼层),所以这棵树不会有环。 */
+      var childrenOf = {};
+      replies.forEach(function (r) {
+        var parent = r.parentId && byId[r.parentId] ? r.parentId : "";
+        if (!childrenOf[parent]) childrenOf[parent] = [];
+        childrenOf[parent].push(r);
+      });
+      /* 缩进深度封顶两层:再深的缩进在 400px 宽的面板里就只剩一条竖线了。 */
+      var MAX_DEPTH = 2;
+      var placedEditor = false;
+      var appendEditor = function (depth) {
+        var form = materializeEditor();
+        placedEditor = true;
+        if (form === null) return;
+        /* 回复框跟着它将要成为的那一层缩进:写的时候看见的层次,就是发出去之后的
+           层次。回整条批注时缩进为 0,不带这个属性。 */
+        if (depth > 0) form.setAttribute("data-depth", String(Math.min(depth, MAX_DEPTH)));
+        box.appendChild(form);
+      };
+      var paintReply = function (r, depth) {
+        var line = document.createElement("div");
+        line.className = "aipm-anno__reply";
+        line.setAttribute("data-reply-id", r.id);
+        if (depth > 0) line.setAttribute("data-depth", String(Math.min(depth, MAX_DEPTH)));
+
+        /* 回复排成「头一行 + 正文」两段,而不是**作者**正文一串连排:操作按钮
+           挂在这条回复自己的头一行右端,位置就固定了 —— 连排时它们跟在正文尾巴
+           后面,每条回复的按钮都落在不同的横坐标上,越读越散。这也正是批注卡
+           自己的排法(左边是谁、右边是能对它做的事)。 */
+        var head = document.createElement("div");
+        head.className = "aipm-anno__reply-head";
+        var author = document.createElement("b");
+        author.className = "aipm-anno__reply-who";
+        author.textContent = (r.author && r.author.login) || "匿名";
+        head.appendChild(author);
+        var when = relTime(r.createdAt);
+        if (when) {
+          var time = document.createElement("time");
+          time.className = "aipm-anno__reply-time";
+          time.dateTime = r.createdAt;
+          time.textContent = when;
+          time.title = absTime(r.createdAt);
+          head.appendChild(time);
+        }
+        head.appendChild(spacerNode());
+
+        var tools = document.createElement("span");
+        tools.className = "aipm-anno__reply-tools";
+        if (canReply(anno)) {
+          tools.appendChild(
+            iconButton(ICON.reply, "回复这条", "reply", function () {
+              startReply(anno, r);
+            })
+          );
+        }
+        if (canDeleteReply(anno, r)) {
+          var del = ibtn(ICON.trash, "删除这条回复", "delete-reply");
+          del.classList.add("is-danger");
+          armDelete(del, "删除这条回复", function () {
+            removeReply(anno, r);
+          });
+          tools.appendChild(del);
+        }
+        if (tools.childNodes.length > 0) head.appendChild(tools);
+        line.appendChild(head);
+
+        var text = document.createElement("p");
+        text.className = "aipm-anno__reply-body";
+        text.textContent = r.body;
+        line.appendChild(text);
+
+        box.appendChild(line);
+        /* 回这一条 → 输入框就落在这条下面、它已有的回复之前:新回复本来就是它的
+           第一条子回复,写的时候看见的位置就是发出去之后的位置。 */
+        if (replyingHere && replyParent === r.id) appendEditor(depth + 1);
+        (childrenOf[r.id] || []).forEach(function (child) {
+          paintReply(child, depth + 1);
+        });
+      };
+      (childrenOf[""] || []).forEach(function (r) {
+        paintReply(r, 0);
+      });
+      /* 回的是这条批注自己(不是某一条回复)→ 输入框排在整棵树后面。 */
+      if (replyingHere && replyParent === null) appendEditor(0);
+      /* 要回的那条回复在别处被删了:输入框仍旧要看得见,不然这段字写进了一块没有
+         出口的空白里。落回末尾 —— 提交时服务端会说这条回复不存在。 */
+      if (replyingHere && !placedEditor) appendEditor(0);
+      return box;
+    }
+    return null;
+  }
+
+  /**
+   * 卡片底部的操作链:点赞 / 回复 / 上传 / 重新锚定。批注卡与评论卡共用 ——
+   * 「上传」对两者都成立(仅本机那条本来就能转成公开),「重新锚定」只有批注有
+   * (isOrphan 对评论恒为假)。一条操作都没有时返回空节点,调用方据此不挂这一行。
+   */
+  function itemActions(anno, isOrphan) {
+    var acts = document.createElement("div");
+    acts.className = "aipm-anno__item-actions";
+    /* 点赞:本机批注没有服务端可言,不显示。 */
+    if (!isLocal(anno)) acts.appendChild(likeButton(anno));
+    /* 「回复」是一支回勾箭头就够了 —— 它是评论区里最不需要解释的那个动作,
+       一行文字链反而把这一行拉得七长八短。回不成时(未登录看别人的批注)仍是
+       同一颗按钮,只是 title 换成「登录后回复」,点下去先去登录。 */
+    if (canReply(anno)) {
+      acts.appendChild(
+        iconButton(ICON.reply, "回复", "reply", function () {
+          startReply(anno);
+        })
+      );
+    } else {
+      // 未登录看别人的批注:回复要在服务端落库,得先登录
+      acts.appendChild(
+        iconButton(ICON.reply, "登录后回复", "reply-login", function () {
+          if (auth) auth.loginForDraft(draftForLogin());
+        })
+      );
+    }
+    if (isLocal(anno) && !store.serverIdOf(anno.id) && auth && auth.isLoggedIn()) {
+      acts.appendChild(
+        actionButton("上传为公开", "upload-public", function () {
+          uploadLocal(anno, "public");
+        })
+      );
+      acts.appendChild(
+        actionButton("上传为私有", "upload-private", function () {
+          uploadLocal(anno, "private");
+        })
+      );
+    }
+    if (isOrphan) {
+      acts.appendChild(
+        actionButton("重新锚定", "reanchor", function () {
+          reanchor(anno);
+        })
+      );
+    }
+    return acts;
+  }
+
+  /**
+   * 卡片右上角那两颗:铅笔 = 编辑,叉 = 删除。批注卡与评论卡共用 —— 四个操作
+   * 各归其位:改色在批注卡左上角的圆点(评论没有色可改),编辑与删除在这里。
+   * 编辑就地展开:点它,那张卡本身变成编辑态,不是另起一张。
+   */
+  function cardTools(anno) {
+    var frag = document.createDocumentFragment();
+    if (!canEdit(anno)) return frag;
+    var what = isPageComment(anno) ? "评论" : "批注";
+
+    frag.appendChild(
+      iconButton(ICON.edit, "编辑这条" + what, "edit", function () {
+        startEdit(anno);
+      })
+    );
+
+    /* 删除用垃圾桶,不用叉。叉是「关掉/算了」的意思,写在卡片右上角,点的人
+       多半以为那张卡只是收起来 —— 而它一按就真没了,服务端那条直接就删。垃圾桶
+       没有第二种读法,也正好与左边那支铅笔配成一对(编辑 / 删除)。 */
+    var del = ibtn(ICON.trash, "删除这条" + what, "delete");
+    del.classList.add("is-danger");
+    armDelete(del, "删除这条" + what, function () {
+      removeAnnotation(anno);
+    });
+    frag.appendChild(del);
+    return frag;
+  }
+
+  /**
+   * 评论卡。**不复用批注卡的骨架** —— 评论不锚正文,那张卡的顶栏(色点、引文、
+   * 可见范围、角标)在这里全是空的,正文也没有高亮可画。评论要的是另一套:
+   * 谁、什么时候、说了什么。头像是它的锚点,时间戳是它的顺序感。
+   */
+  function renderCommentItem(anno) {
+    /* 编辑就在原位置进行:轮到这条时直接把卡片换成编辑态,而不是另起一张。 */
+    if (editorDraft && editorDraft.kind === "edit" && editorDraft.annoId === anno.id) {
+      var editing = materializeEditor();
+      if (editing) return editing;
+    }
+
+    var wrap = document.createElement("article");
+    wrap.className = "aipm-anno__comment";
+    wrap.setAttribute("data-anno-id", anno.id);
+    /* 不留 data-vis:这一条在哪个分栏里,分栏标题已经写着 —— 卡片上再标一遍是
+       同一句话说两次。自己发的留一条左边线,那才是卡片自己要说的。 */
+    wrap.setAttribute("data-mine", canEdit(anno) ? "true" : "false");
+
+    var head = commentHead(anno.author, anno.createdAt);
+    head.appendChild(spacerNode());
+    if (isLocal(anno) && store.serverIdOf(anno.id)) {
+      var up = document.createElement("span");
+      up.className = "aipm-anno__badge is-quiet";
+      up.textContent = "已上传";
+      head.appendChild(up);
+    }
+    head.appendChild(cardTools(anno));
+    wrap.appendChild(head);
+
+    var bodyText = escapeText(anno.body);
+    if (bodyText) {
+      var body = document.createElement("p");
+      body.className = "aipm-anno__cbody";
+      body.textContent = bodyText;
+      wrap.appendChild(body);
+    }
+
+    var box = repliesBox(anno);
+    if (box) wrap.appendChild(box);
+
+    var acts = itemActions(anno, false);
+    if (acts.childNodes.length > 0) wrap.appendChild(acts);
+    return wrap;
   }
 
   function renderItem(anno, isOrphan) {
@@ -1492,37 +1785,7 @@
       up.textContent = "已上传";
       top.appendChild(up);
     }
-    if (canEdit(anno)) {
-      /* 四个操作各归其位:改色在左上角的圆点、编辑在右上角的铅笔、删除在右上角
-         的关闭,回复仍是卡片底部那条文字链。编辑就地展开 —— 点它,这张卡本身
-         变成编辑态,不是另起一张。 */
-      var edit = document.createElement("button");
-      edit.type = "button";
-      edit.className = "aipm-anno__item-edit";
-      edit.setAttribute("data-action", "edit");
-      edit.setAttribute("aria-label", "编辑这条批注");
-      edit.title = "编辑";
-      edit.innerHTML = ICON.edit;
-      edit.addEventListener("click", function (e) {
-        e.stopPropagation();
-        startEdit(anno);
-      });
-      top.appendChild(edit);
-
-      /* 右上角关闭 = 删除。与「新批注」卡上的关闭同形,一眼能认。 */
-      var del = document.createElement("button");
-      del.type = "button";
-      del.className = "aipm-anno__item-close";
-      del.setAttribute("data-action", "delete");
-      del.setAttribute("aria-label", "删除这条批注");
-      del.title = "删除";
-      del.innerHTML = ICON.close;
-      del.addEventListener("click", function (e) {
-        e.stopPropagation();
-        removeAnnotation(anno);
-      });
-      top.appendChild(del);
-    }
+    top.appendChild(cardTools(anno));
     wrap.appendChild(top);
 
     var quoteText = quoteOf(anno);
@@ -1540,106 +1803,10 @@
       wrap.appendChild(body);
     }
 
-    var replies = anno.replies || [];
-    var replyingHere =
-      editorDraft !== null && editorDraft.kind === "reply" && editorDraft.annoId === anno.id;
-    var replyParent = replyingHere ? editorDraft.parentId || null : null;
-    if (replies.length > 0 || replyingHere) {
-      var box = document.createElement("div");
-      box.className = "aipm-anno__replies";
-      var byId = {};
-      replies.forEach(function (r) {
-        byId[r.id] = r;
-      });
-      /* 缩进深度按「往上还有几层父回复」算。父回复被删之后 parentId 会悬空 ——
-         那种按顶层渲染,不然这条会缩进到一个看不见的层级里。深度封顶两层:
-         再深的缩进在 400px 宽的面板里就只剩一条竖线了。 */
-      var depthOf = function (r) {
-        var d = 0;
-        var cur = r.parentId ? byId[r.parentId] : null;
-        while (cur && d < 3) {
-          d++;
-          cur = cur.parentId ? byId[cur.parentId] : null;
-        }
-        return Math.min(d, 2);
-      };
-      var appendEditor = function () {
-        var form = materializeEditor();
-        if (form) box.appendChild(form);
-      };
-      replies.forEach(function (r) {
-        var depth = depthOf(r);
-        var line = document.createElement("div");
-        line.className = "aipm-anno__reply";
-        line.setAttribute("data-reply-id", r.id);
-        if (depth > 0) line.setAttribute("data-depth", String(depth));
-        var author = document.createElement("b");
-        author.textContent = (r.author && r.author.login) || "匿名";
-        line.appendChild(author);
-        line.appendChild(document.createTextNode(" " + r.body));
+    var box = repliesBox(anno);
+    if (box) wrap.appendChild(box);
 
-        var tools = document.createElement("span");
-        tools.className = "aipm-anno__reply-tools";
-        if (canReply(anno)) {
-          tools.appendChild(
-            replyTool("回复", function () {
-              startReply(anno, r);
-            })
-          );
-        }
-        if (canDeleteReply(anno, r)) {
-          tools.appendChild(
-            replyTool("删除", function () {
-              removeReply(anno, r);
-            })
-          );
-        }
-        if (tools.childNodes.length > 0) line.appendChild(tools);
-        box.appendChild(line);
-        // 回这一条 → 输入框就落在这条下面,不是统一堆在末尾
-        if (replyingHere && replyParent === r.id) appendEditor();
-      });
-      if (replyingHere && replyParent === null) appendEditor();
-      wrap.appendChild(box);
-    }
-
-    var acts = document.createElement("div");
-    acts.className = "aipm-anno__item-actions";
-    /* 点赞:本机批注没有服务端可言,不显示。 */
-    if (!isLocal(anno)) acts.appendChild(likeButton(anno));
-    if (canReply(anno)) {
-      acts.appendChild(
-        actionButton("回复", "reply", function () {
-          startReply(anno);
-        })
-      );
-    } else {
-      // 未登录看别人的批注:回复要在服务端落库,得先登录
-      acts.appendChild(
-        actionButton("登录后回复", "reply-login", function () {
-          if (auth) auth.loginForDraft(draftForLogin());
-        })
-      );
-    }
-    if (isLocal(anno) && !store.serverIdOf(anno.id) && auth && auth.isLoggedIn()) {
-      acts.appendChild(
-        actionButton("上传为公开", "upload-public", function () {
-          uploadLocal(anno, "public");
-        })
-      );
-      acts.appendChild(
-        actionButton("上传为私有", "upload-private", function () {
-          uploadLocal(anno, "private");
-        })
-      );
-    }
-    if (isOrphan) {
-      acts.appendChild(
-        actionButton("重新锚定", "reanchor", function () {
-          reanchor(anno);
-        })
-      );
-    }
+    var acts = itemActions(anno, isOrphan);
     if (acts.childNodes.length > 0) wrap.appendChild(acts);
     return wrap;
   }
@@ -1689,16 +1856,71 @@
     return canEdit(anno);
   }
 
-  function replyTool(label, handler) {
+  /* ---- 图标按钮 ----
+     回复、编辑、删除这几个动作在所有评论系统里都长着同一张脸(回勾箭头 / 铅笔 /
+     垃圾桶),写字反而把一行按钮撑成一行文字。所以它们只出图标:名字挂在 title
+     与 aria-label 上 —— 那是这颗按钮唯一的可读副本,两个都得写。 */
+
+  /** 图标按钮的壳:只造按钮,不接行为(删除要两段式,见 armDelete)。 */
+  function ibtn(icon, label, action) {
     var b = document.createElement("button");
     b.type = "button";
-    b.className = "aipm-anno__link";
-    b.textContent = label;
+    b.className = "aipm-anno__ibtn";
+    b.setAttribute("data-action", action);
+    b.title = label;
+    b.setAttribute("aria-label", label);
+    b.innerHTML = icon;
+    return b;
+  }
+
+  /** 点一下就走的那种。 */
+  function iconButton(icon, label, action, handler) {
+    var b = ibtn(icon, label, action);
     b.addEventListener("click", function (e) {
       e.stopPropagation();
       handler();
     });
     return b;
+  }
+
+  /* 删除的二次确认。
+     它以前是右上角那颗叉,现在是一颗不带字的垃圾桶 —— 图标按钮比文字链好点错,
+     而删掉的东西回不来(服务端那条是直接 DELETE)。所以第一次点只是「上膛」:
+     按钮转成警示色、title 改成「再点一次…」;再点一次才真删,点别处或者 4 秒
+     没动静就自动放下。不上模态框:为一次删除打断整个面板不值当。 */
+  var ARMED_MS = 4000;
+
+  function armDelete(btn, label, onConfirm) {
+    var timer = 0;
+    function disarm() {
+      if (timer) {
+        clearTimeout(timer);
+        timer = 0;
+      }
+      btn.classList.remove("is-armed");
+      btn.title = label;
+      btn.setAttribute("aria-label", label);
+      document.removeEventListener("click", onDoc, true);
+    }
+    /* 捕获阶段监听:点面板里任何别的地方都算「我改主意了」。点在按钮自己身上
+       不算 —— 那正是第二次点击。 */
+    function onDoc(e) {
+      if (!btn.contains(e.target)) disarm();
+    }
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (btn.classList.contains("is-armed")) {
+        disarm();
+        onConfirm();
+        return;
+      }
+      btn.classList.add("is-armed");
+      btn.title = "再点一次" + label;
+      btn.setAttribute("aria-label", "再点一次" + label);
+      document.addEventListener("click", onDoc, true);
+      timer = setTimeout(disarm, ARMED_MS);
+    });
+    return btn;
   }
 
   function likeButton(anno) {
@@ -1800,7 +2022,7 @@
     return range;
   }
 
-  /** 悬浮窗上的选中态:画法、颜色、可见范围各一组。 */
+  /** 悬浮窗上的选中态:画法、颜色各一组。 */
   function syncToolbar() {
     var i;
     var styles = toolbar.querySelectorAll(".aipm-anno__tb-style");
@@ -1810,17 +2032,6 @@
     var sws = toolbar.querySelectorAll(".aipm-anno__swatch");
     for (i = 0; i < sws.length; i++) {
       sws[i].classList.toggle("is-active", sws[i].getAttribute("data-color") === activeColor);
-    }
-    var vis = defaultVisibility();
-    var chips = toolbar.querySelectorAll(".aipm-anno__tb-vis");
-    for (i = 0; i < chips.length; i++) {
-      chips[i].classList.toggle("is-active", chips[i].getAttribute("data-vis") === vis);
-      /* 未登录时公开/私有不是禁用,而是「点了去登录」—— 禁用会让人以为这功能没了。
-         「仅本机」不需要登录,不该跟着挂锁;三片都挂锁会让人以为一条都写不了。 */
-      chips[i].classList.toggle(
-        "is-locked",
-        !(auth && auth.isLoggedIn()) && chips[i].getAttribute("data-vis") !== "local"
-      );
     }
   }
 
@@ -1883,25 +2094,14 @@
       syncToolbar();
       return;
     }
-    var vis = e.target.closest(".aipm-anno__tb-vis");
-    if (vis) {
-      var pick = vis.getAttribute("data-vis");
-      if ((pick === "public" || pick === "private") && !(auth && auth.isLoggedIn())) {
-        // 未登录只能落本机 —— 选了公开/私有就去登录,草稿扛过往返
-        if (auth) auth.loginForDraft(draftForLogin());
-        return;
-      }
-      activeVis = pick;
-      syncToolbar();
-      return;
-    }
     var swatch = e.target.closest(".aipm-anno__swatch");
     if (swatch) {
-      /* 选颜色 = 直接落这条批注(用当前选中的画法与范围)。这是「划词 → 挑个颜色」
-         这条最短路径,不该再要求点一次确认。想先定画法与范围就先点它们,再挑色。 */
+      /* 选颜色 = 当场落这条高亮(用当前选中的画法)。这是「划词 → 挑个颜色」这条
+         最短路径:不打开面板、不要一个字,挑完这段就划上了。要给它配文字的人才
+         去点右边那支笔 —— 那条路才开编辑卡。 */
       activeColor = swatch.getAttribute("data-color");
       store.setLastColor(activeColor);
-      startCreate();
+      quickHighlight();
       return;
     }
     if (e.target.closest(".aipm-anno__tb-annotate")) {
@@ -1934,6 +2134,7 @@
     els.draft = nodes.card || null;
     els.draftDot = nodes.dot || null;
     els.draftMeta = nodes.meta || null;
+    els.draftVisBadge = nodes.visBadge || null;
     els.quote = nodes.quote || null;
     els.swatches = nodes.swatches || null;
     els.visbtn = nodes.visbtn || null;
@@ -1948,15 +2149,17 @@
   /* 只清节点指针,不清 editorDraft —— 列表每重建一次就调一遍,状态得留着。 */
   function unmountEditor() {
     els.composer = els.draft = els.draftDot = els.draftMeta = null;
-    els.quote = els.swatches = els.visbtn = els.vislist = null;
+    els.quote = els.swatches = els.visbtn = els.vislist = els.draftVisBadge = null;
     els.input = els.hint = els.cancel = els.save = null;
   }
 
   /** 把当前编辑器物化成 DOM 并挂上事件。由 render() 调用,每轮至多一次。 */
   function materializeEditor() {
     if (editorDraft === null) return null;
-    var nodes =
-      editorDraft.kind === "reply" ? buildReplyEditor(editorDraft) : buildEditor(editorDraft);
+    var nodes;
+    if (editorDraft.kind === "reply") nodes = buildReplyEditor(editorDraft);
+    else if (isCommentDraft()) nodes = buildCommentEditor(editorDraft);
+    else nodes = buildEditor(editorDraft);
     mountEditor(nodes);
     wireEditor(nodes);
     return nodes.form;
@@ -2000,6 +2203,193 @@
     form.appendChild(actions);
 
     return { form: form, card: null, input: input, hint: hint, cancel: cancel, save: save };
+  }
+
+  /* ---- 评论卡:另一套骨架 ----
+     评论不锚正文,所以批注卡顶栏那一排(色点 / 引文 / 可见范围 / 角标)在评论这里
+     全是空的。评论要的是另一件事:谁、什么时候、说了什么 —— 头像是它的锚点,
+     时间戳是它的顺序感。这套骨架同时给「看评论」和「写评论」用。 */
+
+  /** 撑开一条 flex 行的尾巴,把后面的东西推到右边。 */
+  function spacerNode() {
+    var sp = document.createElement("span");
+    sp.className = "aipm-anno__spacer";
+    return sp;
+  }
+
+  function loginOf(author) {
+    return (author && author.login) || "匿名";
+  }
+
+  /** 当前用户的作者形状。未登录就是「本机」那份 —— 与 syncComposer 里的落款一致。 */
+  function meAuthor() {
+    var me = auth && auth.isLoggedIn() ? auth.user() : null;
+    return me || { githubId: 0, login: "本机" };
+  }
+
+  function initialOf(login) {
+    return String(login || "?").charAt(0).toUpperCase();
+  }
+
+  /** 2026-09-21 14:03。悬停时给的完整时间,精确到分钟。 */
+  function absTime(iso) {
+    var t = tsMs(iso);
+    if (!t) return "";
+    var pad = function (n) {
+      return (n < 10 ? "0" : "") + n;
+    };
+    var d = new Date(t);
+    return (
+      d.getFullYear() +
+      "-" + pad(d.getMonth() + 1) +
+      "-" + pad(d.getDate()) +
+      " " + pad(d.getHours()) +
+      ":" + pad(d.getMinutes())
+    );
+  }
+
+  /**
+   * 相对时间。评论带时间戳,但它该是「3 小时前」而不是一串 ISO ——
+   * 超过一周才回落成日期,那时「几天前」已经没什么信息量了。
+   */
+  function relTime(iso) {
+    var t = tsMs(iso);
+    if (!t) return "";
+    var diff = Date.now() - t;
+    if (diff < 0) diff = 0;
+    var min = Math.floor(diff / 60000);
+    if (min < 1) return "刚刚";
+    if (min < 60) return min + " 分钟前";
+    var hour = Math.floor(min / 60);
+    if (hour < 24) return hour + " 小时前";
+    var day = Math.floor(hour / 24);
+    if (day < 7) return day + " 天前";
+    return absTime(iso).slice(0, 10);
+  }
+
+  /** 作者头像。服务端不保证给 avatarUrl,退回首字母圆片;头像挂了也退回去。 */
+  function avatarOf(author) {
+    var login = loginOf(author);
+    var wrap = document.createElement("span");
+    wrap.className = "aipm-anno__cavatar";
+    var fallback = function () {
+      wrap.textContent = initialOf(login);
+      wrap.classList.add("is-letter");
+    };
+    if (author && author.avatarUrl) {
+      var img = document.createElement("img");
+      img.src = author.avatarUrl;
+      img.alt = "";
+      img.loading = "lazy";
+      // GitHub 头像走的是第三方域,被墙 / 限流时别在顶栏留一块空白
+      img.referrerPolicy = "no-referrer";
+      img.addEventListener("error", function () {
+        if (img.parentNode) img.parentNode.removeChild(img);
+        fallback();
+      });
+      wrap.appendChild(img);
+    } else {
+      fallback();
+    }
+    return wrap;
+  }
+
+  /**
+   * 评论顶栏:头像 + 用户名 + 发布时间。`iso` 为空 = 还没有时间可言(正在写),
+   * 那时只出头像和用户名 —— 草稿的时间戳是假的,不如不给。
+   */
+  function commentHead(author, iso) {
+    var head = document.createElement("div");
+    head.className = "aipm-anno__chead";
+    head.appendChild(avatarOf(author));
+    var who = document.createElement("span");
+    who.className = "aipm-anno__cwho";
+    var name = document.createElement("b");
+    name.className = "aipm-anno__cname";
+    name.textContent = loginOf(author);
+    who.appendChild(name);
+    if (iso) {
+      var t = document.createElement("time");
+      t.className = "aipm-anno__ctime";
+      t.dateTime = iso;
+      t.textContent = relTime(iso);
+      t.title = absTime(iso);
+      who.appendChild(t);
+    }
+    head.appendChild(who);
+    return head;
+  }
+
+  /**
+   * 评论编辑卡。它落在「写一条评论」那颗按钮的位置上,骨架与评论卡同形
+   * (.aipm-anno__comment)—— 写的时候看到的排版,就是发出去之后的排版。
+   *
+   * 与批注编辑卡的差别同样是「评论不锚正文」:没有引文、没有色板、没有画法,
+   * 只留一颗可见范围按钮(评论一样能只存本机)。
+   */
+  function buildCommentEditor(opts) {
+    var form = document.createElement("form");
+    form.className = "aipm-anno__composer";
+    form.setAttribute("data-editor", "comment");
+    form.noValidate = true;
+
+    var card = document.createElement("article");
+    card.className = "aipm-anno__comment is-draft";
+    form.appendChild(card);
+
+    var head = commentHead(meAuthor(), null);
+    /* 名字那一行只写名字。「这条会落到哪儿」用右上角的角标说 —— 并进名字里的话,
+       未登录时会读成「本机 · 仅本机」:两句话各说各的,凑在一起像口吃。 */
+    var meta = head.querySelector(".aipm-anno__cname");
+    head.appendChild(spacerNode());
+    var visBadge = document.createElement("span");
+    visBadge.className = "aipm-anno__badge is-quiet";
+    head.appendChild(visBadge);
+    var badge = document.createElement("span");
+    badge.className = "aipm-anno__badge";
+    badge.textContent = opts.kind === "edit" ? "编辑中" : "新评论";
+    head.appendChild(badge);
+    card.appendChild(head);
+
+    var input = document.createElement("textarea");
+    input.className = "aipm-anno__input aipm-anno__input--comment";
+    input.rows = 3;
+    input.setAttribute("aria-label", "评论正文");
+    input.placeholder = "写下你的评论…";
+    input.value = opts.body || "";
+    card.appendChild(input);
+
+    var hint = document.createElement("div");
+    hint.className = "aipm-anno__hint";
+    hint.hidden = true;
+    card.appendChild(hint);
+
+    var actions = document.createElement("div");
+    actions.className = "aipm-anno__actions";
+    actions.appendChild(spacerNode());
+
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "aipm-anno__cancel";
+    cancel.textContent = "取消";
+    actions.appendChild(cancel);
+
+    var save = document.createElement("button");
+    save.type = "submit";
+    save.className = "aipm-anno__save";
+    save.textContent = opts.kind === "edit" ? "保存" : "发表";
+    actions.appendChild(save);
+
+    var vis = buildVisPicker();
+    actions.appendChild(vis.root);
+    card.appendChild(actions);
+
+    return {
+      form: form, card: card, dot: null, meta: meta, visBadge: visBadge, quote: null,
+      input: input, hint: hint, actions: actions,
+      swatches: null, cancel: cancel, save: save,
+      visbtn: vis.btn, vislist: vis.list
+    };
   }
 
   /** 可见范围选择器:右半颗分体按钮的菜单。 */
@@ -2081,7 +2471,7 @@
     top.appendChild(spacer);
     var badge = document.createElement("span");
     badge.className = "aipm-anno__badge";
-    badge.textContent = kind === "edit" ? "编辑中" : kind === "reply" ? "回复" : "新批注";
+    badge.textContent = kind === "edit" ? "编辑中" : "新批注";
     top.appendChild(badge);
     card.appendChild(top);
 
@@ -2097,7 +2487,9 @@
     input.className = "aipm-anno__input";
     input.rows = 2;
     input.setAttribute("aria-label", "批注正文");
-    input.placeholder = kind === "reply" ? "写下回复…" : "写点什么(可留空,只做高亮)…";
+    /* 「可留空」是批注独有的:空正文 = 只划线不写字。评论编辑卡不再走这里,
+       它有自己的占位语(见 buildCommentEditor)。 */
+    input.placeholder = "写点什么(可留空,只做高亮)…";
     input.value = opts.body || "";
     card.appendChild(input);
 
@@ -2203,6 +2595,13 @@
 
   /* ---- 三种进入方式 ---- */
 
+  /** 划词之后落在「批注」列表里 —— 在「评论」视图里划的词也一样。 */
+  function showInAnnotations() {
+    if (panelMode !== "comments") return;
+    panelMode = "annotations";
+    syncMode();
+  }
+
   function startCreate() {
     if (!pendingSelection) return;
     composerSelection = {
@@ -2211,11 +2610,27 @@
     };
     /* 在「评论」视图里划词加批注:先把视图切回「批注」。否则这条新建的批注落在
        一个只列整页评论的列表里 —— 卡片会被筛掉,用户看到的就是「点了没反应」。 */
-    if (panelMode === "comments") {
-      panelMode = "annotations";
-      syncMode();
-    }
+    showInAnnotations();
     beginEditor({ kind: "create", quote: composerSelection.quote });
+  }
+
+  /**
+   * 划词之后直接挑了个颜色:当场落一条**只有高亮、没有文字**的批注。不开面板,
+   * 也不要用户输一个字 —— 「把这段划出来」本身就是完整的动作。
+   *
+   * 正文为空是服务端明确允许的(见 annotations.ts 的 normalizeBody:智能高亮落的
+   * 就是这种批注),所以这条路没有绕开任何校验。想给这段配文字的人走笔那条路
+   * (startCreate → 编辑卡),落库前还能改颜色、改范围。
+   */
+  function quickHighlight() {
+    if (!pendingSelection) return;
+    var selectors = pendingSelection.selectors;
+    var visibility = defaultVisibility();
+    hideToolbar();
+    showInAnnotations();
+    /* 落上了就落上了,不再弹一条「已高亮 · 仅本机」的道贺:高亮当场画在正文里,
+       看得见,那句话只是把视线从被划的那段拉到屏幕底下去。 */
+    submitAnnotation(selectors, "", visibility, false);
   }
 
   /** 全页评论:不需要选区,整条针对这一页。 */
@@ -2293,21 +2708,33 @@
   function syncComposer() {
     syncAccountButton();
     if (!els.draft) return;
-    var swatches = els.swatches.querySelectorAll(".aipm-anno__swatch");
-    for (var i = 0; i < swatches.length; i++) {
-      swatches[i].classList.toggle(
-        "is-active",
-        swatches[i].getAttribute("data-color") === activeColor
-      );
+    /* 色板与色点是「批注怎么画」那一套,评论编辑卡没有 —— 两边各自缺什么就跳什么。 */
+    if (els.swatches) {
+      var swatches = els.swatches.querySelectorAll(".aipm-anno__swatch");
+      for (var i = 0; i < swatches.length; i++) {
+        swatches[i].classList.toggle(
+          "is-active",
+          swatches[i].getAttribute("data-color") === activeColor
+        );
+      }
+    }
+    if (els.draftDot) {
+      els.draft.setAttribute("data-color", activeColor);
+      els.draft.setAttribute("data-style", activeStyle);
+      els.draftDot.setAttribute("data-color", activeColor);
     }
     var vis = defaultVisibility();
     var label = visLabel({ visibility: vis });
     var loggedIn = auth ? auth.isLoggedIn() : false;
     var me = loggedIn && auth.user() ? auth.user().login : "";
-    els.draft.setAttribute("data-color", activeColor);
-    els.draft.setAttribute("data-style", activeStyle);
-    els.draftDot.setAttribute("data-color", activeColor);
-    els.draftMeta.textContent = (me || "本机") + " · " + label.text;
+    /* 可见范围落在哪儿:批注草稿卡并进名字那一行(「名字 · 公开」),评论编辑卡
+       没有那行位置,改用右上角的角标 —— 名字那一行就只剩名字。 */
+    if (els.draftVisBadge) {
+      els.draftMeta.textContent = me || "本机";
+      els.draftVisBadge.textContent = label.text;
+    } else {
+      els.draftMeta.textContent = (me || "本机") + " · " + label.text;
+    }
     els.draftMeta.setAttribute("data-vis", label.cls);
     var opts = els.vislist.querySelectorAll("button[data-vis]");
     for (var j = 0; j < opts.length; j++) {
@@ -2347,8 +2774,23 @@
     }
   }
 
+  /**
+   * 服务端出错时给一句人话。status 0 是 store.request 对「根本没连上」的约定值
+   * (见它的 catch)—— 把 0 直接拼进「保存失败:0」等于什么都没说,而快速高亮这条路
+   * 只剩这一句话能解释「为什么没划上」。
+   */
+  function serverFailText(prefix, res) {
+    if (res.status === 0) return "连不上批注服务,请稍后再试。";
+    return prefix + ":" + ((res.body && res.body.message) || res.status);
+  }
+
   function setHint(text) {
-    if (!els.hint) return;
+    /* 没有编辑卡时 els.hint 是空的 —— 快速高亮、上传、重新锚定这几条路都可能在
+       面板里没开着编辑卡的时候失败,原来那些话因此一句都没人看见。改落到 toast 上。 */
+    if (!els.hint) {
+      flash(text, "warn");
+      return;
+    }
     if (!text) {
       els.hint.hidden = true;
       els.hint.textContent = "";
@@ -2442,6 +2884,12 @@
     var selectors = composerSelection ? composerSelection.selectors : [];
     if (!isPage && selectors.length === 0) {
       setHint("先在正文里选中一段话,或者把标题切到「评论」对整页说话。");
+      return;
+    }
+    /* 批注可以「只有高亮、没有文字」,评论不行 —— 一条没有正文的评论在列表里
+       是一块空白。回复同理(见上)。 */
+    if (isPage && !body) {
+      setHint("评论不能是空的。");
       return;
     }
     setBusy(true);
@@ -2561,7 +3009,7 @@
           return false;
         }
         if (!res.ok) {
-          setHint("保存失败:" + ((res.body && res.body.message) || res.status));
+          setHint(serverFailText("保存失败", res));
           return false;
         }
         invalidate();
@@ -2596,7 +3044,7 @@
           return false;
         }
         if (!res.ok) {
-          setHint("修改失败:" + ((res.body && res.body.message) || res.status));
+          setHint(serverFailText("修改失败", res));
           return false;
         }
         invalidate();
@@ -3036,6 +3484,9 @@
          当成新建的话,草稿里没有选区,用户回来只会撞上「先在正文里选中一段话」。 */
       resumeKind: editorDraft ? editorDraft.kind : "create",
       resumeId: editorDraft ? editorDraft.annoId : null,
+      /* 全页评论与划词批注的恢复路径不同(前者没有选区,得回到「写一条评论」那颗
+         按钮的位置上),往返一趟不能把这件事忘掉。 */
+      scope: isCommentDraft() ? "page" : null,
       selectors: locked === null ? null : locked.selectors,
       quote: locked === null ? "" : locked.quote
     };
@@ -3064,7 +3515,7 @@
       placeholder: "",
       quote: draft.quote || "",
       body: draft.body || "",
-      page: false,
+      page: draft.scope === "page",
       draftId: DRAFT_ID
     };
     composerSelection = draft.selectors

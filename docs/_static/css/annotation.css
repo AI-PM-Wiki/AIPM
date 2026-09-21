@@ -292,7 +292,18 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-size: .6875rem;
   text-align: center;
 }
-.aipm-anno__head .aipm-anno__iconbtn {
+/* 页头是一条「标题在左、动作在右」的横条:笔 + 面板名 + 条数贴着左边,账号与关闭
+   贴着右边。auto 必须只落在这一串里的**第一颗**身上 —— 三颗各给一个的话,富余
+   空间会被平摊成三段,于是智能高亮飘在中间、账号飘在三分之二处,看起来是三颗
+   各管各的散点(这正是改之前的样子)。
+
+   两套模式的第一颗不是同一颗:批注模式下智能高亮在最前,评论模式下它被藏起来
+   (display:none 的元素不是弹性项,它那个 auto 也就不作数),于是靠相邻兄弟规则
+   把 auto 交接给账号。 */
+.aipm-anno__head .aipm-anno__smart {
+  margin-left: auto;
+}
+.aipm-anno__head .aipm-anno__smart[hidden] + .aipm-anno__account {
   margin-left: auto;
 }
 .aipm-anno__iconbtn {
@@ -349,36 +360,33 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   line-height: 1.7;
 }
 /* 分组头:左边箭头折叠、右边眼睛整栏不显示 —— 两件事分开,别混成一颗开关。 */
-/* 评论排序:三颗芯片。只出现在「评论」视图 —— 批注按正文位置排,没有可选项。 */
+/* 评论排序:两颗芯片(最热 / 最新)。只出现在「评论」视图 —— 批注按正文位置排,
+   没有可选项。没有「排序」这个提示语:芯片自己写着「最热 / 最新」,再挂一个标签
+   只是占掉一行里最金贵的那几个字宽;语义由 radiogroup 的 aria-label 承担。 */
 .aipm-anno__sort {
   display: flex;
   align-items: center;
   gap: .25rem;
   margin: 0 0 .5rem;
 }
-.aipm-anno__sort-label {
-  margin-right: .1rem;
-  color: var(--md-default-fg-color--light);
-  font-size: .625rem;
-}
 .aipm-anno__sort-btn {
-  padding: .1rem .4rem;
+  padding: .12rem .55rem;
   border: 1px solid transparent;
   border-radius: 999px;
   color: var(--md-default-fg-color--light);
-  background: transparent;
+  background: var(--md-default-fg-color--lightest);
   font-family: inherit;
   font-size: .6875rem;
   white-space: nowrap;
   cursor: pointer;
+  transition: color .15s ease, background-color .15s ease;
 }
 .aipm-anno__sort-btn:hover {
   color: var(--md-default-fg-color);
-  background: var(--md-default-fg-color--lightest);
 }
 .aipm-anno__sort-btn.is-active {
-  border-color: var(--md-accent-fg-color);
-  color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
 }
 
 /* 评论模式下的新建入口 —— 那里没有划词这个动作,得有一颗看得见的按钮。 */
@@ -407,6 +415,99 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   height: .9rem;
   fill: currentColor;
 }
+/* ----------------------------------------------------------------------------
+   5.1 评论卡(另一套骨架)
+   评论不锚正文,所以不复用 .aipm-anno__item 那套骨架 —— 那张卡的顶栏(左侧色点、
+   引文、可见范围、角标)在评论这里全是空的,正文也没有高亮可画。评论要的是另一件
+   事:谁、什么时候、说了什么。头像是它的锚点,时间戳是它的顺序感。写评论的编辑卡
+   用的是同一个骨架(.is-draft),所以「写的时候看到的排版 = 发出去之后的排版」。
+   ---------------------------------------------------------------------------- */
+.aipm-anno__comment {
+  position: relative;
+  margin-bottom: .5rem;
+  padding: .5rem .6rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-left: 3px solid var(--md-default-fg-color--lightest);
+  border-radius: .3rem;
+  background: var(--md-code-bg-color);
+  /* 底色过渡统一由上面那条「列表内容」规则给(卡片是列表的直接子元素) */
+}
+/* 自己写的那些留一条主色左边线 —— 评论没有颜色那套语言,这条线是它唯一的「属性」。
+   正在写的那张(草稿)也走这条,于是「这条是我的」在看与写两个状态下是同一件事。 */
+.aipm-anno__comment[data-mine="true"],
+.aipm-anno__comment.is-draft {
+  border-left-color: var(--md-accent-fg-color);
+}
+.aipm-anno__comment.is-flash {
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__chead {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.aipm-anno__cavatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__cavatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 服务端不保证给 avatarUrl(也可能被墙拉不下来),退回首字母圆片 */
+.aipm-anno__cavatar.is-letter {
+  color: var(--md-default-bg-color);
+  background: var(--md-accent-fg-color);
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+/* 用户名压在时间上面两行,而不是「名字 · 时间」挤一行:顶栏要在一眼之内分得清
+   「谁」和「什么时候」,而名字长短不一,挤一行时时间会被推得忽左忽右。 */
+.aipm-anno__cwho {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+.aipm-anno__cname {
+  overflow: hidden;
+  font-size: .75rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aipm-anno__ctime {
+  color: var(--md-default-fg-color--light);
+  font-size: .625rem;
+}
+.aipm-anno__cbody {
+  margin: .4rem 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* 编辑卡里的输入框:与评论正文同字号、同左边界,写与读之间只差一个边框 */
+.aipm-anno__input--comment {
+  min-height: 3.4rem;
+  margin-top: .45rem;
+  font-size: .8125rem;
+}
+/* 卡片不是 flex 列(批注草稿卡才是),段与段之间自己带边距 */
+.aipm-anno__comment .aipm-anno__hint {
+  margin-top: .3rem;
+}
+.aipm-anno__comment .aipm-anno__actions {
+  margin-top: .45rem;
+}
+
 .aipm-anno__group-head {
   display: flex;
   align-items: center;
@@ -549,27 +650,53 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__pop .aipm-anno__tb-style.is-active {
   border-color: var(--md-default-fg-color);
 }
-.aipm-anno__item-edit,
-.aipm-anno__item-close {
+/* 图标按钮。卡片右上角的「编辑 / 删除」、每条回复右端的「回复 / 删除」、卡片
+   底部那条「回复」都是它 —— 这几个动作在所有评论系统里都长着同一张脸(铅笔 /
+   垃圾桶 / 回勾箭头),写字只会把一行按钮撑成一行文字。
+   平时是一档浅灰(不跟正文抢注意力),悬停才落到正文色并浮起一层极浅的底:
+   不描边、不铺底色块,一行图标才不至于把卡片压得很吵。名字全在 title 与
+   aria-label 上 —— 那是它唯一的可读副本。 */
+.aipm-anno__ibtn {
   display: inline-flex;
   flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
   padding: 0;
   border: 0;
+  border-radius: .25rem;
   color: var(--md-default-fg-color--light);
   background: transparent;
   cursor: pointer;
+  transition: color .15s ease, background-color .15s ease;
 }
-.aipm-anno__item-edit:hover {
-  color: var(--md-accent-fg-color);
+.aipm-anno__ibtn:hover {
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
 }
-.aipm-anno__item-close:hover {
-  color: var(--aipm-anno-pink);
+.aipm-anno__ibtn:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
 }
-.aipm-anno__item-edit svg,
-.aipm-anno__item-close svg {
+.aipm-anno__ibtn svg {
   width: .85rem;
   height: .85rem;
   fill: currentColor;
+}
+/* 删除:平时与编辑一个样,悬停才转警示色。它不是这一行的主角,没道理一直红着。 */
+.aipm-anno__ibtn.is-danger:hover {
+  color: var(--aipm-anno-pink);
+  background: var(--aipm-anno-pink-bg);
+}
+/* 上膛(见 annotation.js 的 armDelete):再点一次就真删。这一档必须一直亮着 ——
+   「我改主意了」的那 4 秒里,得一眼看出这颗按钮已经换了意思。 */
+.aipm-anno__ibtn.is-armed,
+.aipm-anno__ibtn.is-armed:hover,
+.aipm-anno__ibtn.is-armed:focus-visible {
+  color: var(--aipm-anno-pink);
+  background: var(--aipm-anno-pink-bg);
+  box-shadow: inset 0 0 0 1px var(--aipm-anno-pink);
 }
 .aipm-anno__dot[data-color="yellow"] { background: var(--aipm-anno-yellow); }
 .aipm-anno__dot[data-color="green"]  { background: var(--aipm-anno-green); }
@@ -622,10 +749,32 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   border-left: 2px solid var(--md-default-fg-color--lightest);
 }
 .aipm-anno__reply {
-  margin: .15rem 0;
+  margin: .3rem 0;
   font-size: .75rem;
   line-height: 1.55;
   word-break: break-word;
+}
+/* 回复的第一行:谁说的、什么时候,右端是能对它做的两件事。
+   操作按钮因此落在每条回复固定的横坐标上 —— 以前它们跟在正文尾巴后面,每条
+   回复的按钮都停在不同位置,一眼扫下去是散的;这也正是卡片自己的排法(左边是
+   谁、右边是能对它做的事)。 */
+.aipm-anno__reply-head {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+.aipm-anno__reply-who {
+  flex: none;
+  color: var(--md-default-fg-color);
+  font-weight: 700;
+}
+.aipm-anno__reply-time {
+  flex: none;
+  color: var(--md-default-fg-color--light);
+  font-size: .625rem;
+}
+.aipm-anno__reply-body {
+  margin: 0;
 }
 /* 回复的回复:缩进一层。深度由脚本封顶在两层 —— 400px 宽的面板里再往里缩,
    正文就只剩一条竖线了。 */
@@ -639,21 +788,27 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   padding-left: .5rem;
   border-left: 2px solid var(--md-default-fg-color--lightest);
 }
-/* 回复自己的操作链:平时淡着,悬停才实 —— 它不该跟正文抢注意力 */
+/* 回复的操作链。触屏没有 hover,所以它一直看得见 —— 靠一档浅灰压住存在感,
+   不再用 opacity 藏一半(那会让浅灰变到几乎看不见,点也点不准)。 */
 .aipm-anno__reply-tools {
   display: inline-flex;
-  gap: .4rem;
-  margin-left: .35rem;
-  opacity: .55;
-}
-.aipm-anno__reply:hover .aipm-anno__reply-tools {
-  opacity: 1;
+  flex: none;
+  align-items: center;
+  gap: .1rem;
 }
 /* 回复框:与新批注卡**故意不同形** —— 没有底色、没有左边那条主色、没有角标。
    它就是个朴素的小输入框,一眼看出「这是在回话」。 */
 .aipm-anno__replybox {
   display: block;
   margin: .2rem 0 .1rem;
+}
+/* 回复框跟着它将要成为的那一层缩进。回第一层回复时不再与顶层齐平 —— 写的时候
+   看见的层次就是发出去之后的层次,缩进的两档与 .aipm-anno__reply 保持一致。 */
+.aipm-anno__replybox[data-depth="1"] {
+  margin-left: .7rem;
+}
+.aipm-anno__replybox[data-depth="2"] {
+  margin-left: 1.4rem;
 }
 .aipm-anno__input--reply {
   min-height: 2.2rem;
@@ -685,11 +840,14 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   opacity: .6;
   cursor: progress;
 }
+/* 卡片底部的操作链。左边那颗是点赞(心 + 计数),右边是「回复」的图标按钮;
+   再往右的文字链是「上传为公开 / 私有」「重新锚定」—— 那几件事没有通行的图标,
+   写字比画图准。图标按钮自带内边距,间距因此收紧一档,免得一行里七长八短。 */
 .aipm-anno__item-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: .1rem .7rem;
+  gap: .1rem .3rem;
   margin-top: .4rem;
 }
 .aipm-anno__link {
@@ -706,13 +864,16 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   display: inline-flex;
   align-items: center;
   gap: .15rem;
-  padding: 0;
+  height: 1.4rem;
+  padding: 0 .3rem;
   border: 0;
+  border-radius: .25rem;
   color: var(--md-default-fg-color--light);
   background: transparent;
   font-family: inherit;
   font-size: .6875rem;
   cursor: pointer;
+  transition: color .15s ease, background-color .15s ease;
 }
 .aipm-anno__like svg {
   width: .85rem;
@@ -721,12 +882,26 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__like:hover {
   color: var(--aipm-anno-pink);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__like:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
 }
 .aipm-anno__like.is-on {
   color: var(--aipm-anno-pink);
 }
 .aipm-anno__link:hover {
   text-decoration: underline;
+}
+/* 文字链跟着图标按钮一起站在这一行里,高度对齐才不会一高一低。 */
+.aipm-anno__item-actions .aipm-anno__link {
+  height: 1.4rem;
+}
+/* 卡片底部这一行回答的是「这张卡能做什么」,比每条回复右端那两颗更该被看见 ——
+   同一颗图标按钮,这里给正文色,那里给浅灰。 */
+.aipm-anno__item-actions .aipm-anno__ibtn {
+  color: var(--md-default-fg-color);
 }
 
 /* ----------------------------------------------------------------------------
@@ -1099,14 +1274,16 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 
 /* ----------------------------------------------------------------------------
    8. 选中工具条(浮在正文上,层级高于面板)
-   划词之后在这里一次定完:画法、颜色、可见范围,然后落这条批注。
-   单行放不下(3 画法 + 5 色 + 3 范围 + 确认 ≈ 460px),所以分两行。
+   划词之后就一行:画法 / 颜色 / 写批注 / 收起。挑颜色即落这条高亮(不写字),
+   挑笔才开编辑卡写字 —— 可见范围归编辑卡管,不在这条上问。
+   宽度:3 画法 + 5 色 + 2 图标 ≈ 346px(Material 的根字号是 20px,1rem 不是 16px),
+   桌面与平板都够;窄屏靠文件末尾那条媒体查询缩尺寸,不换行。
    ---------------------------------------------------------------------------- */
 .aipm-anno__toolbar {
   position: fixed;
   z-index: 80;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: .15rem;
   padding: .3rem .35rem;
   border: 1px solid var(--aipm-anno-line);
@@ -1116,11 +1293,6 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__toolbar[hidden] {
   display: none;
-}
-.aipm-anno__tb-row {
-  display: flex;
-  align-items: center;
-  gap: .2rem;
 }
 .aipm-anno__tb-group {
   display: flex;
@@ -1132,9 +1304,6 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   height: 1rem;
   margin: 0 .15rem;
   background: var(--aipm-anno-line);
-}
-.aipm-anno__tb-spacer {
-  flex: 1 1 auto;
 }
 /* 画法:三个小图示按钮,选中的那个有底色 */
 .aipm-anno__tb-style {
@@ -1163,58 +1332,90 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   color: var(--md-accent-fg-color);
   background: var(--md-default-fg-color--lightest);
 }
-/* 可见范围:三颗小芯片 */
-.aipm-anno__tb-vis {
-  padding: .15rem .4rem;
-  border: 1px solid var(--aipm-anno-line);
-  border-radius: 999px;
-  color: var(--md-default-fg-color);
-  background: transparent;
-  font-family: inherit;
-  font-size: .6875rem;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.aipm-anno__tb-vis:hover {
-  border-color: var(--md-default-fg-color--light);
-}
-.aipm-anno__tb-vis.is-active {
-  border-color: var(--md-accent-fg-color);
-  color: var(--md-accent-bg-color);
-  background: var(--md-accent-fg-color);
-}
-/* 未登录时公开/私有不是禁用,而是「点了去登录」—— 用虚线上的一点提示区分 */
-.aipm-anno__tb-vis.is-locked {
-  border-style: dashed;
-}
 .aipm-anno__toolbar .aipm-anno__swatch {
   width: 1.35rem;
   height: 1.35rem;
 }
+/* 笔 = 写批注,叉 = 收起。两颗都与画法那几个一般大(1.6rem),排成一条整齐的行;
+   笔有底色,因为它是这一行里唯一「会开面板」的那个动作。 */
 .aipm-anno__tb-annotate,
 .aipm-anno__tb-cancel {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
-  padding: .15rem .45rem;
-  border: 0;
-  border-radius: 999px;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: .25rem;
   color: var(--md-default-fg-color);
   background: transparent;
-  font-family: inherit;
-  font-size: .6875rem;
   cursor: pointer;
 }
+/* 笔和「收起」是悬浮窗上的两格,跟旁边那三颗画法芯片同一种写法:静息透明、
+   悬停才起一层浅底。笔原来铺一整块主色,是这条工具条上唯一一处实心块,比旁边
+   表示选中的芯片还抢眼 —— 主次交给图标本身就够了:笔是主色,叉是正文色。 */
 .aipm-anno__tb-annotate {
   margin-left: .2rem;
-  color: var(--md-accent-bg-color);
-  background: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+  background: transparent;
+}
+.aipm-anno__tb-annotate:hover,
+.aipm-anno__tb-cancel:hover {
+  background: var(--md-default-fg-color--lightest);
 }
 .aipm-anno__tb-annotate svg,
 .aipm-anno__tb-cancel svg {
-  width: .85rem;
-  height: .85rem;
+  width: 1rem;
+  height: 1rem;
   fill: currentColor;
+}
+
+/* 窄屏:一行是这一版的要求,所以收的是尺寸。320px 的屏留给工具条的就 304px,
+   按桌面那套尺寸量出来约 346px —— 缩到 1.4rem/1.1rem 之后约 295px,放得下。 */
+@media screen and (max-width: 30em) {
+  .aipm-anno__toolbar {
+    gap: .1rem;
+    padding: .25rem;
+  }
+  .aipm-anno__toolbar .aipm-anno__tb-style,
+  .aipm-anno__tb-annotate,
+  .aipm-anno__tb-cancel {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+  .aipm-anno__toolbar .aipm-anno__swatch {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+  .aipm-anno__tb-sep {
+    margin: 0 .1rem;
+  }
+}
+
+/* 快速高亮的回执:面板没开的时候,提示只能落在页面上。 */
+.aipm-anno__toast {
+  position: fixed;
+  z-index: 90;
+  left: 50%;
+  bottom: 1.2rem;
+  transform: translateX(-50%);
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: .35rem .7rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .4rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .22);
+  font-size: .6875rem;
+  line-height: 1.4;
+  pointer-events: none;
+}
+.aipm-anno__toast[hidden] {
+  display: none;
+}
+.aipm-anno__toast[data-kind="warn"] {
+  border-color: var(--md-accent-fg-color);
 }
 
 /* ----------------------------------------------------------------------------
@@ -1275,6 +1476,22 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno-mark:focus-visible {
   outline: 2px solid var(--md-accent-fg-color);
   outline-offset: 1px;
+}
+/* 眼睛收走的那一栏(见 syncGroupVisibility),正文里对应的高亮也跟着收 ——
+   收的是画上去的那一笔,不是那段文字:<mark> 仍旧裹着原文,只把底色与下划线
+   撤掉,所以收走一栏不会把正文挖出几个洞,字号行距也不动。
+   隐藏态挂在 <html> 上:正文里的 <mark> 与面板里的眼睛在两棵子树里,只有根节点
+   同时罩得住两边。
+   收走的那条也不该再吃悬停与点击,pointer-events 一撤就都不接了 —— 还接的话,
+   点一段没有任何标记的文字会弹出面板并去找一张根本没排出来的卡片。
+   位置放在所有 mark 规则之后:hover 那几条同为三档特异性,靠顺序定胜负。 */
+.aipm-anno-hide-public .aipm-anno-mark[data-group="public"],
+.aipm-anno-hide-private .aipm-anno-mark[data-group="private"],
+.aipm-anno-hide-local .aipm-anno-mark[data-group="local"] {
+  background: transparent;
+  border-bottom-color: transparent;
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ----------------------------------------------------------------------------

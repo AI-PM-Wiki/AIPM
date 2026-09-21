@@ -134,18 +134,22 @@ class TestEntryButton(unittest.TestCase):
         self.assertIn('panels.close("annotation"', block)
         self.assertIn('panels.claim("annotation")', block)
 
-    def test_entry_icon_never_changes(self):
-        """入口图标不随开合变化(验收意见):页头始终是那支笔。
+    def test_entry_icon_flips_between_chevrons(self):
+        """入口两个状态各一枚方向箭头:收起态 ‹、展开态 ›。
 
-        换成叉会和面板头部自己的关闭叉在同一屏里打架 —— 状态由 aria-expanded、
-        title 与面板本身表达。收起路径(叉按钮 / Esc / 遮罩 / 下拉)都经
-        syncChrome,所以 aria 侧始终跟得上。
+        箭头指面板**将要移动的方向** —— 面板停靠在右侧,所以收起时向左(拉出来)、
+        展开时向右(推回去)。刻意不用叉:页头那个叉会和面板头部自己的关闭叉在
+        同一屏里打架(验收意见)。收起路径(叉按钮 / Esc / 遮罩 / 下拉)都经
+        syncChrome,所以图标始终跟得上。
         """
+        self.assertIn("chevronLeft:", self.js)
+        self.assertIn("chevronRight:", self.js)
         sync = _block(self.js, "function syncEntry()")
-        self.assertNotIn("innerHTML", sync)
-        self.assertNotIn("ICON.close", sync)
+        self.assertIn("ICON.chevronLeft", sync)
+        self.assertIn("ICON.chevronRight", sync)
         self.assertIn("aria-expanded", sync)
-        # 由 syncChrome 驱动 —— 忘了接上,开合状态就跟不上
+        self.assertNotIn("ICON.close", sync, "页头不该出现叉(那是面板头部自己的图标)")
+        # 由 syncChrome 驱动 —— 忘了接上,图标就跟不上开合
         self.assertIn("syncEntry();", _block(self.js, "function syncChrome()"))
 
 
@@ -583,8 +587,12 @@ class TestUiRoundThree(unittest.TestCase):
         handler = self.js[self.js.index('document.addEventListener("selectionchange"') :]
         handler = handler[: handler.index("toolbar.addEventListener")]
         self.assertNotIn('panelMode === "comments"', handler)
-        start = _block(self.js, "function startCreate()")
-        self.assertIn('panelMode = "annotations"', start)
+        # 切视图那句抽成了 showInAnnotations():划词落高亮(不写字)那条路也要切,
+        # 两个入口共用一份,不再是 startCreate 里的私有动作。
+        helper = _block(self.js, "function showInAnnotations()")
+        self.assertIn('panelMode = "annotations"', helper)
+        self.assertIn("showInAnnotations()", _block(self.js, "function startCreate()"))
+        self.assertIn("showInAnnotations()", _block(self.js, "function quickHighlight()"))
 
     def test_comment_mode_has_its_own_new_entry(self):
         """没有划词这个动作,就得有一颗看得见的「写一条评论」。"""
@@ -594,13 +602,23 @@ class TestUiRoundThree(unittest.TestCase):
     # ---- 卡片:四个操作各归其位 ----
 
     def test_card_actions_are_positioned_not_listed(self):
+        """改色在左上角圆点、编辑与删除在右上角 —— 都是按钮,不是底部那排文字链。
+        铅笔与叉抽进了 cardTools(),由批注卡与评论卡共用。"""
         item = _block(self.js, "function renderItem(anno, isOrphan)")
         self.assertIn("aipm-anno__dotwrap", item)
         self.assertIn('dot.type = "button"', item)
-        self.assertIn("aipm-anno__item-edit", item)
-        self.assertIn("aipm-anno__item-close", item)
+        self.assertIn("cardTools(anno)", item)
+        tools = _block(self.js, "function cardTools(")
+        # 断言的是「两颗带 data-action 的图标按钮」这件事,不锁具体的类名 ——
+        # 类名从 item-edit/item-close 换成共用的 ibtn 时,这条契约没变。
+        self.assertIn('"edit"', tools)
+        self.assertIn('"delete"', tools)
+        self.assertIn("ICON.edit", tools)
+        self.assertIn("startEdit(anno)", tools)
+        self.assertIn("removeAnnotation(anno)", tools)
         for gone in ('actionButton("改色"', 'actionButton("删除"', 'actionButton("编辑"'):
             self.assertNotIn(gone, item)
+            self.assertNotIn(gone, tools)
 
     def test_recolour_goes_through_the_dot_popover(self):
         self.assertIn("function togglePop(", self.js)
@@ -651,8 +669,10 @@ class TestUiRoundThree(unittest.TestCase):
 
     def test_reply_editor_nests_under_its_parent(self):
         item = _block(self.js, "function renderItem(anno, isOrphan)")
-        self.assertIn('editorDraft.kind === "reply"', item)
-        self.assertIn("aipm-anno__replies", item)
+        self.assertIn("repliesBox(anno)", item)
+        box = _block(self.js, "function repliesBox(anno)")
+        self.assertIn('editorDraft.kind === "reply"', box)
+        self.assertIn("aipm-anno__replies", box)
 
     # ---- 账号 ----
 
@@ -695,14 +715,12 @@ class TestUiRoundThree(unittest.TestCase):
         self.assertLess(plain, squared)
 
     def test_split_button_reads_as_one_control(self):
-        """保存 + 可见范围是一颗分体按钮,不是两颗挨着的按钮。下面每条都能单独把它
-        拆成两颗,所以逐条钉住:
-          - 底色:右半跟左半同一个填充色与字色。右半自己描一圈线就成了一颗独立的
-            描边按钮,跟实心的左半拼在一起最割裂;
-          - 缝:左半去掉右边框、右半整颗不描边 —— 两个盒子正好相接,缝里只叠不出
-            两层边框;那条发丝线交给右半自己用 inset 阴影画在填充色上;
-          - 高度:右半 align-self: stretch 跟着行高走(行高由「取消」「保存」这类
-            文字按钮定)。自己算一套内边距就差出几个像素,一眼看出是两颗。
+        """保存 + 可见范围是一颗分体按钮,不是两颗挨着的按钮。三条各自都能把它拆成
+        两颗,所以逐条钉住:底色与字色右半跟左半同一套(右半自己描一圈线就成了一颗
+        独立的描边按钮,跟实心的左半拼在一起最割裂);左半去掉右边框、右半整颗不描边,
+        两个盒子正好相接,缝里叠不出两层边框(那条发丝线交给右半用 inset 阴影画在
+        填充色上);右半 align-self: stretch 跟着行高走,行高由「取消」「保存」这类
+        文字按钮定 —— 自己算一套内边距就差出几个像素,一眼看出是两颗。
         """
         # 基础规则在文件里排在 .aipm-anno__actions 那条之前,index 取到的就是它
         base_vis = _block(self.css, ".aipm-anno__visbtn {")
@@ -738,15 +756,30 @@ class TestUiRoundFour(unittest.TestCase):
         self.assertNotIn("orphansShown", block)
         self.assertIn("setPrefs(showPatch)", block)
 
+    def test_the_eye_hides_the_items_not_the_group(self):
+        """眼睛收走的是这一栏的**内容**,不是这一栏本身:标题、条数与那只眼睛都留在
+        原地(标题变淡)。连标题一起收的话,点过的那只眼睛会跟着标题一起没了 ——
+        它自己就长在标题上,那一栏再也叫不回来。"""
+        block = _block(self.js, "function render()")
+        self.assertNotIn("if (!shown && !draftHere) return;", block)
+        self.assertIn("var hidden = prefs[prefKey(\"show\", g.key)] === false;", block)
+        self.assertLess(
+            block.index("appendChild(groupHead("), block.index("if (hidden ||")
+        )
+
+    def test_a_hidden_column_keeps_its_head_even_when_empty(self):
+        """空栏平时不露头(一页干净的时候不该挂着三行 0),被眼睛收走的那一栏例外:
+        标题与眼睛是唯一的回来路。"""
+        block = _block(self.js, "function render()")
+        self.assertIn("if (visible.length === 0 && !draftHere && !hidden) return;", block)
+
     def test_empty_panel_counts_content_not_chrome(self):
-        """把三栏都用眼睛收走之后必须给一条回来的路。判据不能是 childNodes.length ——
-        排序条与「写一条评论」常驻在列表里,那样会被误判成「还有内容」,于是评论视图
-        下收走唯一一栏就再也打不开了。"""
+        """面板空不空只看真正的内容。判据不能是 childNodes.length —— 排序条与
+        「写一条评论」常驻在列表里,那样会被误判成「还有内容」,评论视图下那句
+        「还没有人…」就永远露不了面。"""
         body = _block(self.js, "function render(")
         self.assertIn("contentCount", body)
         self.assertIn("if (contentCount === 0) {", body)
-        self.assertIn('"show-all"', body)
-        self.assertIn("showPublic: true, showPrivate: true, showLocal: true", body)
         self.assertNotIn("if (els.list.childNodes.length === 0)", body)
 
     # ---- 三类画法 ----
@@ -765,11 +798,50 @@ class TestUiRoundFour(unittest.TestCase):
         self.assertIn("st.icon +", builder)
         self.assertIn('"</button>"', builder)
 
-    def test_three_group_eyes_can_all_be_turned_off(self):
-        """撤掉护栏之后必须留下回来的路,否则面板会变成一个没有出口的空白。"""
-        block = _block(self.js, "function render()")
-        self.assertIn("显示全部批注栏", block)
-        self.assertIn("showPublic: true, showPrivate: true, showLocal: true", block)
+    def test_the_show_all_button_is_gone(self):
+        """「显示全部」是第三轮那颗「回来的路」的补丁 —— 那时三栏收光后面板上只剩
+        一句空白,因为眼睛自己长在被收走的标题上。现在标题一直留着,点哪只眼睛都能
+        回来,那颗按钮没得可走了,不许回潮。"""
+        block = _strip_comments(_block(self.js, "function render()"))
+        self.assertNotIn('"show-all"', block)
+        self.assertNotIn("显示全部", _strip_comments(self.js))
+
+    def test_hiding_a_column_also_takes_its_page_highlights(self):
+        """眼睛收走的那一栏,正文里对应的高亮也跟着收。收的是**画上去的那一笔**,
+        不是那段文字:mark 仍旧裹着原文,只把底色与下划线撤掉 —— display/visibility
+        一类的规则会把正文挖出几个洞,行高也跟着跳。"""
+        mark = _block(self.js, "function markRange(")
+        self.assertIn('setAttribute("data-group", groupOf(anno))', mark)
+        sync = _block(self.js, "function syncGroupVisibility(")
+        self.assertIn('cl.toggle("aipm-anno-hide-" + g, off)', sync)
+        self.assertIn('prefs[prefKey("show", g)] === false', sync)
+        self.assertIn('document.querySelectorAll', sync)
+        render = _block(self.js, "function render()")
+        self.assertIn("syncGroupVisibility();", render)
+        for group in ("public", "private", "local"):
+            rule = _block(
+                self.css,
+                f'.aipm-anno-hide-{group} .aipm-anno-mark[data-group="{group}"]',
+            )
+            self.assertEqual(_decl(rule, "background"), "transparent")
+            self.assertEqual(_decl(rule, "border-bottom-color"), "transparent")
+            self.assertNotIn("display", rule)
+            self.assertNotIn("visibility", rule)
+
+    def test_hidden_highlights_leave_the_tab_order(self):
+        """收走的那几条也不再留在 Tab 序列里:看不见的东西被键盘停在上面,焦点环会
+        凭空画在一段没有任何标记的文字上。aria-label 不能撤 —— 打成 aria-hidden 会
+        把那段正文一起读没了。"""
+        sync = _block(self.js, "function syncGroupVisibility(")
+        self.assertIn('setAttribute("tabindex", off ? "-1" : "0")', sync)
+        self.assertNotIn("aria-hidden", _strip_comments(sync))
+
+    def test_a_hidden_column_takes_its_orphans_with_it(self):
+        """未在正文中定位的那些也属于它原来那一栏,眼睛收走一栏时不许从这里漏回来。"""
+        block = _block(self.js, "function render(")
+        self.assertIn("shownOrphans", block)
+        self.assertIn('prefs[prefKey("show", groupOf(anno))] !== false', block)
+        self.assertNotIn("String(orphans.length)", block)
 
     def test_store_owns_the_style_whitelist(self):
         self.assertIn('ANNO_STYLES = ["underline", "highlight", "both"]', self.store)
@@ -790,36 +862,84 @@ class TestUiRoundFour(unittest.TestCase):
 
     # ---- 悬浮窗 ----
 
-    def test_toolbar_offers_style_colour_and_visibility(self):
+    def test_toolbar_is_one_row_of_style_colour_pen_and_close(self):
+        """一行:画法 / 颜色 / 写批注 / 收起。顺序即视觉顺序。"""
         bar = self.js[self.js.index("toolbar.innerHTML =") :]
         bar = bar[: bar.index("document.body.appendChild(toolbar)")]
         self.assertIn("styleHtml()", bar)
         self.assertIn("swatchHtml()", bar)
-        self.assertIn("visChipsHtml()", bar)
-        self.assertIn("aipm-anno__tb-annotate", bar)
+        self.assertLess(bar.index("styleHtml()"), bar.index("swatchHtml()"))
+        self.assertLess(bar.index("swatchHtml()"), bar.index("aipm-anno__tb-annotate"))
+        self.assertLess(bar.index("aipm-anno__tb-annotate"), bar.index("aipm-anno__tb-cancel"))
+        # 一行:没有第二行的那种行容器
+        self.assertNotIn("aipm-anno__tb-row", bar)
+        self.assertNotIn("aipm-anno__tb-spacer", bar)
 
-    def test_picking_a_colour_creates_the_annotation(self):
-        """「划词后选颜色没反应」的修复:选色即落这条批注。"""
+    def test_toolbar_drops_the_visibility_chips(self):
+        """可见范围不在这条悬浮窗上问了 —— 划词挑颜色是「把这段划出来」,
+        犯不着每次先答一遍给谁看。那个选择留在编辑卡的菜单里。"""
+        self.assertNotIn("visChipsHtml", self.js)
+        self.assertNotIn("aipm-anno__tb-vis", self.js)
+        self.assertNotIn("aipm-anno__tb-vis", self.css)
+        bar = self.js[self.js.index("toolbar.innerHTML =") :]
+        bar = bar[: bar.index("document.body.appendChild(toolbar)")]
+        for vis in ("公开", "私有", "仅本机"):
+            self.assertNotIn(vis, bar)
+
+    def test_the_pen_button_is_icon_only(self):
+        """「写批注」三个字去掉,只留一支笔 —— 但它仍要能被读到、被悬停解释。"""
+        bar = self.js[self.js.index("toolbar.innerHTML =") :]
+        bar = bar[: bar.index("document.body.appendChild(toolbar)")]
+        pen = bar[bar.index("aipm-anno__tb-annotate") :]
+        pen = pen[: pen.index("</button>")]
+        self.assertIn("ICON.pen", pen)
+        self.assertNotIn("<span>", pen)
+        self.assertIn('aria-label="写批注"', pen)
+        self.assertIn('title="写批注"', pen)
+
+    def test_picking_a_colour_highlights_without_opening_the_editor(self):
+        """选色 = 当场落这条高亮:不开面板,也不要一个字。"""
         handler = self.js[self.js.index('toolbar.addEventListener("click"') :]
         handler = handler[: handler.index("\n  /*")]
         swatch_branch = handler[handler.index('closest(".aipm-anno__swatch")') :]
         swatch_branch = swatch_branch[: swatch_branch.index("return;")]
-        self.assertIn("startCreate()", swatch_branch)
+        self.assertIn("quickHighlight()", swatch_branch)
         self.assertIn("store.setLastColor(activeColor)", swatch_branch)
+        self.assertNotIn("startCreate()", swatch_branch)
+        self.assertNotIn("beginEditor", swatch_branch)
 
-    def test_unlogged_public_or_private_goes_to_login(self):
+    def test_quick_highlight_lands_an_empty_body_annotation(self):
+        """纯高亮没有文字,这是服务端明确允许的(annotations.ts 的 allowEmpty),
+        所以这条路没有绕开任何校验。"""
+        fn = _block(self.js, "function quickHighlight()")
+        self.assertIn('submitAnnotation(selectors, "", visibility, false)', fn)
+        self.assertIn("hideToolbar()", fn)
+        self.assertNotIn("beginEditor", fn)
+        self.assertNotIn("openPanel", fn)
+        for vis in ("public", "private", "local"):
+            self.assertNotIn(f'data-vis="{vis}"', fn)
+
+    def test_only_the_pen_opens_the_editor(self):
+        """写字这件事只有笔那条路要。"""
         handler = self.js[self.js.index('toolbar.addEventListener("click"') :]
         handler = handler[: handler.index("\n  /*")]
-        self.assertIn("loginForDraft(draftForLogin())", handler)
+        pen = handler[handler.index("aipm-anno__tb-annotate") :]
+        self.assertIn("startCreate()", pen)
+        self.assertIn("beginEditor", _block(self.js, "function startCreate()"))
 
-    def test_logged_out_local_chip_is_not_locked(self):
-        """未登录时公开/私有挂锁(点了去登录),「仅本机」不挂 ——
-        三片都挂锁会让人以为一条都写不了。"""
-        block = self.js[self.js.index("function syncToolbar()") :]
-        block = block[: block.index("function showToolbar(")]
-        guard = block[block.index('"is-locked"') :]
-        self.assertIn('!== "local"', guard)
-        self.assertIn("isLoggedIn()", guard)
+    def test_quick_highlight_stays_quiet_when_it_works(self):
+        """落上了就是落上了,不再弹一条「已高亮 · 仅本机」:高亮当场画在正文里,
+        看得见,那句话只是把视线从被划的那段拉到屏幕底下去。
+        页面上的 toast 留着给**失败**用 —— 面板没开的时候,面板里那两条提示条
+        都够不着,没有它「没划上」会看起来像「划上了」。"""
+        self.assertNotIn("flash(", _block(self.js, "function quickHighlight()"))
+        self.assertNotIn("VIS_SHORT", self.js, "短标签只剩道贺那句话在用,一并删掉")
+        self.assertIn("aipm-anno__toast", self.css)
+        self.assertIn("aipm-anno__toast", self.js)
+        fn = _block(self.js, "function flash(")
+        self.assertIn("toast.hidden = false", fn)
+        self.assertIn("setTimeout", fn)
+        self.assertIn("flash(text", _block(self.js, "function setHint("))
 
     # ---- 新卡落位 ----
 
@@ -828,20 +948,46 @@ class TestUiRoundFour(unittest.TestCase):
         self.assertIn("draftRank", block)
         self.assertIn("draftRank <= positionKey(anno)", block)
 
-    def test_new_comment_is_pinned_to_the_top(self):
-        """新增评论没有正文位置可依,固定在最上方。"""
+    def test_new_comment_editor_lands_on_the_button_slot(self):
+        """新评论的编辑卡就长在「写一条评论」那颗按钮的位置上 —— 不是另起一张按
+        位置插进分栏里(评论压根没有正文位置),发出去之后也还在这一条上。"""
         block = _block(self.js, "function render()")
-        self.assertIn('panelMode === "comments" ? -Infinity', block)
+        self.assertIn("editorDraft.page === true ? materializeEditor()", block)
+        self.assertIn('"new-comment"', block)
+        # 评论不走 draftSlot:编辑卡在上面那颗按钮的位置上,不参与分组
+        slot = _block(self.js, "function draftSlot()")
+        self.assertIn('if (panelMode === "comments") return null;', slot)
+        # 于是 render 里不再需要「评论钉在最上面」那个特例
+        self.assertNotIn("-Infinity", block)
 
     # ---- 评论排序 ----
 
-    def test_comment_sort_has_three_modes(self):
+    def test_comment_sort_has_two_modes(self):
+        """「热度 / 最新发布 / 最多回复」收成「最热 / 最新」两颗 —— 「最多回复」
+        并进「最热」,因为热度本来就是点赞 + 回复。"""
         sorts = self.js[
             self.js.index("var COMMENT_SORTS = [") : self.js.index("function isPageComment(")
         ]
-        for sid in ("hot", "newest", "mostReplies"):
-            self.assertIn(f'id: "{sid}"', sorts)
-        self.assertIn('COMMENT_SORTS = ["hot", "newest", "mostReplies"]', self.store)
+        self.assertIn('{ id: "hot", label: "最热" }', sorts)
+        self.assertIn('{ id: "newest", label: "最新" }', sorts)
+        self.assertNotIn("mostReplies", sorts)
+        self.assertIn('COMMENT_SORTS = ["hot", "newest"]', self.store)
+        self.assertNotIn("mostReplies", self.store)
+
+    def test_sort_row_carries_no_label(self):
+        """「排序」这个提示语按验收意见去掉 —— 芯片自己写着「最热 / 最新」,
+        语义交给 radiogroup 的 aria-label。"""
+        row = _block(self.js, "function sortRow()")
+        self.assertNotIn("aipm-anno__sort-label", row)
+        self.assertIn('setAttribute("aria-label", "评论排序")', row)
+        self.assertNotIn("aipm-anno__sort-label", self.css)
+
+    def test_most_replies_is_folded_into_hot(self):
+        """两颗芯片背后只有两条分支:最新按时间,最热按热度。"""
+        fn = _block(self.js, "function commentComparator(sort)")
+        self.assertIn('sort === "newest"', fn)
+        self.assertIn("hotOf(b) - hotOf(a)", fn)
+        self.assertNotIn("mostReplies", fn)
 
     def test_hot_is_likes_plus_replies(self):
         self.assertIn("(anno.likeCount || 0) + repliesOf(anno)", _block(self.js, "function hotOf("))
@@ -867,9 +1013,9 @@ class TestUiRoundFour(unittest.TestCase):
     def test_reply_to_a_reply_carries_parent_id(self):
         start = _block(self.js, "function startReply(anno, reply)")
         self.assertIn("parentId: reply ? reply.id : null", start)
-        item = _block(self.js, "function renderItem(anno, isOrphan)")
-        self.assertIn("replyParent === r.id", item)
-        self.assertIn("data-depth", item)
+        box = _block(self.js, "function repliesBox(anno)")
+        self.assertIn("replyParent === r.id", box)
+        self.assertIn("data-depth", box)
 
     def test_replies_go_through_the_reply_endpoint(self):
         """回复**不能**走 PATCH 的整数组 replies —— 那条是「仅作者」的,
@@ -884,8 +1030,7 @@ class TestUiRoundFour(unittest.TestCase):
         can = _block(self.js, "function canReply(")
         self.assertIn("if (isLocal(anno)) return true", can)
         self.assertIn("auth.isLoggedIn()", can)
-        item = _block(self.js, "function renderItem(anno, isOrphan)")
-        self.assertIn("登录后回复", item)
+        self.assertIn("登录后回复", _block(self.js, "function itemActions(anno, isOrphan)"))
 
     def test_reply_deletion_respects_authorship(self):
         can = _block(self.js, "function canDeleteReply(")
@@ -898,8 +1043,8 @@ class TestUiRoundFour(unittest.TestCase):
     # ---- 点赞 ----
 
     def test_like_button_only_on_server_annotations(self):
-        item = _block(self.js, "function renderItem(anno, isOrphan)")
-        self.assertIn("if (!isLocal(anno)) acts.appendChild(likeButton(anno))", item)
+        acts = _block(self.js, "function itemActions(anno, isOrphan)")
+        self.assertIn("if (!isLocal(anno)) acts.appendChild(likeButton(anno))", acts)
         btn = _block(self.js, "function likeButton(")
         self.assertIn("ICON.heart", btn)
         self.assertIn("ICON.heartOutline", btn)
@@ -925,6 +1070,333 @@ class TestUiRoundFour(unittest.TestCase):
         self.assertIn("apply({ color: color })", self.js)
         # 已存卡片把这两个回调接到 patchAnnotation 上,服务端 PATCH 支持 style
         self.assertIn("patchAnnotation(anno, patch);", self.js)
+
+class TestUiRoundFive(unittest.TestCase):
+    """第五轮验收:页头收拢到右侧 / 评论卡另起一套 / 评论编辑卡落在入口按钮上。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    # ---- 页头:账号与关闭贴右边 ----
+
+    def test_head_actions_are_pushed_right_as_one_group(self):
+        """三颗图标按钮各给一个 margin-left:auto 的话,富余空间会被**平摊**成三段
+        —— 智能高亮飘在中间、账号飘在三分之二处,看起来是三颗各管各的散点。auto
+        只能落在这一串的第一颗身上;评论模式下第一颗被藏起来,靠相邻兄弟规则交接。"""
+        head = self.css[self.css.index(".aipm-anno__head .aipm-anno__smart {") :]
+        head = head[: head.index(".aipm-anno__iconbtn {")]
+        self.assertIn("margin-left: auto", head)
+        self.assertIn(".aipm-anno__smart[hidden] + .aipm-anno__account", head)
+        # 账号与关闭自己**不**再各要一份
+        account = self.css[self.css.index(".aipm-anno__head .aipm-anno__smart[hidden]") :]
+        account = account[: account.index(".aipm-anno__iconbtn {")]
+        self.assertNotIn(".aipm-anno__head .aipm-anno__account {", account)
+        self.assertNotIn(".aipm-anno__head .aipm-anno__close {", account)
+        # 顺序即视觉顺序:智能高亮 → 账号 → 关闭
+        panel = self.js[self.js.index("var panel = document.createElement(\"div\");") :]
+        panel = panel[: panel.index("document.body.appendChild(panel)")]
+        order = [panel.index("aipm-anno__smart"), panel.index("aipm-anno__account"), panel.index("aipm-anno__close")]
+        self.assertEqual(order, sorted(order))
+
+    # ---- 评论卡:另起一套骨架 ----
+
+    def test_comment_card_does_not_reuse_the_annotation_skeleton(self):
+        """评论不锚正文,批注卡顶栏那一排(色点、引文、可见范围、角标)在这里全是
+        空的 —— 它要的是另一套:谁、什么时候、说了什么。"""
+        item = _block(self.js, "function renderCommentItem(anno)")
+        self.assertIn("aipm-anno__comment", item)
+        for gone in ("aipm-anno__dotwrap", "aipm-anno__item-quote", "aipm-anno__item-body", "data-color"):
+            self.assertNotIn(gone, item)
+        # 它自己的骨架在 CSS 里另起一块,不复用 .aipm-anno__item 的规则
+        self.assertIn(".aipm-anno__comment {", self.css)
+        self.assertIn(".aipm-anno__cbody {", self.css)
+
+    def test_comment_card_shows_avatar_name_and_time(self):
+        head = _block(self.js, "function commentHead(")
+        self.assertIn("avatarOf(author)", head)
+        self.assertIn("aipm-anno__cname", head)
+        self.assertIn("aipm-anno__ctime", head)
+        self.assertIn("relTime(iso)", head)
+        # 头像缺了要退回首字母,而不是留一块空白
+        avatar = _block(self.js, "function avatarOf(")
+        self.assertIn("avatarUrl", avatar)
+        self.assertIn("is-letter", avatar)
+        self.assertIn("error", avatar)
+        # 时间戳走 <time> 并带完整时间做 title
+        self.assertIn('t.dateTime = iso', head)
+        self.assertIn("t.title = absTime(iso)", head)
+
+    def test_relative_time_falls_back_to_a_date(self):
+        fn = _block(self.js, "function relTime(iso)")
+        for unit in ("刚刚", "分钟前", "小时前", "天前"):
+            self.assertIn(unit, fn)
+        self.assertIn("absTime(iso).slice(0, 10)", fn)
+
+    def test_mine_gets_a_left_line(self):
+        """评论没有颜色那套语言,「这条是我的」只能靠左边线。"""
+        item = _block(self.js, "function renderCommentItem(anno)")
+        self.assertIn('setAttribute("data-mine"', item)
+        self.assertIn("canEdit(anno)", item)
+        rule = self.css[self.css.index('.aipm-anno__comment[data-mine="true"]') :]
+        rule = rule[: rule.index("}")]
+        self.assertIn("border-left-color", rule)
+
+    def test_comment_cards_are_measured_for_peek(self):
+        """抽屉的 peek 高度按「一张卡」算 —— 评论卡得进这条查询,否则评论视图下
+        peek 会掉到占位高度。"""
+        self.assertIn('.aipm-anno__comment"', _block(self.js, "function refreshPeek()"))
+
+    # ---- 评论编辑卡 ----
+
+    def test_comment_editor_shares_the_comment_skeleton(self):
+        """写的时候看到的排版,就是发出去之后的排版。"""
+        fn = _block(self.js, "function buildCommentEditor(")
+        self.assertIn("aipm-anno__comment is-draft", fn)
+        self.assertIn('form.setAttribute("data-editor", "comment")', fn)
+        # 评论没有画法与颜色,那些控件一个都不该在
+        for gone in ("swatchHtml()", "styleHtml()"):
+            self.assertNotIn(gone, fn)
+        self.assertIn("buildVisPicker()", fn)
+
+    def test_comment_placeholder_is_not_the_annotation_one(self):
+        """「写点什么(可留空,只做高亮)」是批注的话 —— 评论既不能留空,也没有
+        高亮可做。"""
+        fn = _block(self.js, "function buildCommentEditor(")
+        self.assertIn("写下你的评论…", fn)
+        self.assertNotIn("写点什么", fn)
+        # 批注那条路原样保留
+        self.assertIn("写点什么(可留空,只做高亮)…", _block(self.js, "function buildEditor("))
+
+    def test_comment_editor_shows_the_range_as_a_badge(self):
+        """「这条会落到哪儿」在评论编辑卡上是右上角的角标,不是并进名字那一行 ——
+        并进去的话未登录时会读成「本机 · 仅本机」,两句各说各的。"""
+        fn = _block(self.js, "function buildCommentEditor(")
+        self.assertIn("visBadge", fn)
+        self.assertIn("head.appendChild(visBadge)", fn)
+        sync = _block(self.js, "function syncComposer()")
+        self.assertIn("if (els.draftVisBadge) {", sync)
+        self.assertIn('els.draftMeta.textContent = me || "本机";', sync)
+        # 批注草稿卡那条路原样保留:它没有角标位置,可见范围并进名字里
+        self.assertIn('(me || "本机") + " · " + label.text', sync)
+
+    def test_comment_card_carries_no_redundant_visibility_flag(self):
+        """这一条在哪个分栏里,分栏标题已经写着;卡片上再标一遍是同一句话说两次。"""
+        item = _block(self.js, "function renderCommentItem(anno)")
+        self.assertNotIn('setAttribute("data-vis"', item)
+        self.assertIn('setAttribute("data-mine"', item)
+        self.assertNotIn(".aipm-anno__comment[data-vis", self.css)
+
+    def test_comment_body_cannot_be_empty(self):
+        fn = _block(self.js, "function submitEditor()")
+        self.assertIn('setHint("评论不能是空的。")', fn)
+        # 批注仍然允许空正文(那就是「只划线不写字」)
+        self.assertNotIn('setHint("批注不能是空的。")', fn)
+
+    def test_editor_dispatch_covers_three_shapes(self):
+        fn = _block(self.js, "function materializeEditor()")
+        self.assertIn("buildReplyEditor(editorDraft)", fn)
+        self.assertIn("isCommentDraft()", fn)
+        self.assertIn("buildCommentEditor(editorDraft)", fn)
+        self.assertIn("buildEditor(editorDraft)", fn)
+        # 只有新评论在全页评论的编辑卡落在那颗按钮的位置上
+        self.assertIn("editorDraft.page === true", _block(self.js, "function render()"))
+
+    def test_login_round_trip_remembers_a_page_comment(self):
+        """编辑到一半去登录,回来要回到同一个位置上 —— 忘了 scope 就会拿不到选区
+        的评论草稿去走批注那条路。"""
+        draft = _block(self.js, "function draftForLogin()")
+        self.assertIn('isCommentDraft() ? "page" : null', draft)
+        restore = _block(self.js, "function maybeRestoreDraft()")
+        self.assertIn('page: draft.scope === "page"', restore)
+
+    # ---- 共用件 ----
+
+    def test_shared_pieces_are_shared(self):
+        """回复区与底部操作链两边长得一样,不该各抄一份 —— 抄一份就会各自漂移。"""
+        item = _block(self.js, "function renderItem(anno, isOrphan)")
+        comment = _block(self.js, "function renderCommentItem(anno)")
+        for shared in ("repliesBox(anno)", "cardTools(anno)", "itemActions(anno,"):
+            self.assertIn(shared, item)
+            self.assertIn(shared.split("(")[0], comment)
+        self.assertEqual(self.js.count("function repliesBox("), 1)
+        self.assertEqual(self.js.count("function itemActions("), 1)
+        self.assertEqual(self.js.count("function cardTools("), 1)
+
+    def test_aria_labels_follow_the_card_type(self):
+        tools = _block(self.js, "function cardTools(")
+        self.assertIn('isPageComment(anno) ? "评论" : "批注"', tools)
+        self.assertIn('"编辑这条" + what', tools)
+        self.assertIn('"删除这条" + what', tools)
+
+
+class TestReplyThreadFollowsItsParent(unittest.TestCase):
+    """楼层按「谁回了谁」排,不是照收到的顺序平铺。
+
+    平铺时后写的那条总落在最末尾:回第一层的那条会排在「顶层第二条」底下,缩进
+    还是一层 —— 读起来就是「回的是顶层第二条」,回复挂到了不是它回的那条名下。
+    回复挨着它回的那条站,缩进才说明得了问题。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+        cls.box = _block(cls.js, "function repliesBox(anno)")
+
+    def test_replies_are_walked_as_a_tree(self):
+        box = self.box
+        self.assertIn("childrenOf", box)
+        self.assertIn("paintReply", box)
+        # 子回复紧跟在父回复后面铺开
+        self.assertIn("paintReply(child, depth + 1)", box)
+        # 顶层:没有父级的、以及父级已经找不到的(悬空 parentId),都从同一个桶里出来
+        self.assertIn('byId[r.parentId] ? r.parentId : ""', box)
+        self.assertIn('childrenOf[""]', box)
+        # 平铺那条老路(照数组顺序 forEach,深度事后另算)整个撤掉
+        self.assertNotIn("depthOf(", box)
+
+    def test_editor_sits_inside_the_floor_it_answers(self):
+        """回某一条回复时,输入框落在那条下面、它已有的回复之前 —— 写的时候看见的
+        位置就是发出去之后的位置(新回复成为它的第一条子回复)。"""
+        box = self.box
+        self.assertIn("if (replyingHere && replyParent === r.id) appendEditor(depth + 1);", box)
+        self.assertLess(
+            box.index("appendEditor(depth + 1)"), box.index("paintReply(child, depth + 1)")
+        )
+        # 回整条批注(不是某条回复)→ 排在整棵树后面
+        self.assertIn("if (replyingHere && replyParent === null) appendEditor(0);", box)
+
+    def test_reply_box_carries_the_depth_it_will_join(self):
+        """回复框跟着它将要成为的那一层缩进 —— 写的时候看见的层次,就是发出去之后
+        的层次。两档与 .aipm-anno__reply 的缩进一致。"""
+        self.assertIn('form.setAttribute("data-depth"', self.box)
+        self.assertIn(
+            "margin-left: .7rem", _block(self.css, '.aipm-anno__replybox[data-depth="1"] {')
+        )
+        self.assertIn(
+            "margin-left: 1.4rem", _block(self.css, '.aipm-anno__replybox[data-depth="2"] {')
+        )
+
+
+class TestReplyAndDeleteAreIcons(unittest.TestCase):
+    """批注卡上的「回复 / 删除」不再写字,改用图标按钮。
+
+    参照 hypothes.is 的卡片:回复是一支回勾箭头、删除是一个垃圾桶、编辑是铅笔 ——
+    这几个动作在所有评论系统里都长着同一张脸,写字只会把一行按钮撑成一行字。
+    名字挪进 title 与 aria-label(图标唯一的可读副本);删除另加一道二次确认 ——
+    图标按钮比文字链好点错,而删掉的东西回不来。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    # ---- 图标按钮这件东西本身 ----
+
+    def test_icon_button_keeps_its_name_in_the_attributes(self):
+        """它没有文字,title 与 aria-label 就是它的名字 —— 少写 aria-label 等于
+        对读屏软件隐身。"""
+        fn = _block(self.js, "function ibtn(")
+        self.assertIn('b.className = "aipm-anno__ibtn"', fn)
+        self.assertIn("b.title = label", fn)
+        self.assertIn('b.setAttribute("aria-label", label)', fn)
+        self.assertIn("b.innerHTML = icon", fn)
+
+    def test_icon_button_has_hover_and_focus_states(self):
+        rule = _block(self.css, ".aipm-anno__ibtn {")
+        self.assertIn("width: 1.4rem", rule)
+        self.assertIn("height: 1.4rem", rule)
+        self.assertIn("fill: currentColor", _block(self.css, ".aipm-anno__ibtn svg {"))
+        self.assertIn(".aipm-anno__ibtn:hover {", self.css)
+        self.assertIn(".aipm-anno__ibtn:focus-visible {", self.css)
+
+    def test_the_old_text_link_tools_are_gone(self):
+        """两颗按钮替掉了旧的 .aipm-anno__item-edit / __item-close,以及回复链上
+        那两条文字链,别留半套。"""
+        for gone in ("aipm-anno__item-edit", "aipm-anno__item-close", "function replyTool("):
+            self.assertNotIn(gone, self.js)
+            self.assertNotIn(gone, self.css)
+
+    # ---- 回复:名字一行,操作固定在右端 ----
+
+    def test_reply_tools_are_icons_not_words(self):
+        box = _block(self.js, "function repliesBox(anno)")
+        self.assertIn("aipm-anno__reply-tools", box)
+        self.assertIn("ICON.reply", box)
+        self.assertIn("ICON.trash", box)
+        for gone in ('"回复"', '"删除"', 'replyTool("回复"', 'replyTool("删除"'):
+            self.assertNotIn(gone, box)
+
+    def test_every_reply_gets_a_head_line_of_its_own(self):
+        """回复排成「头一行 + 正文」。操作按钮挂在这条回复自己的头一行右端,每条
+        回复的按钮因此落在同一个横坐标上 —— 连排时它们跟在正文尾巴后面,一条一个
+        位置,扫下去是散的。"""
+        box = _block(self.js, "function repliesBox(anno)")
+        self.assertIn("aipm-anno__reply-head", box)
+        self.assertIn("aipm-anno__reply-body", box)
+        self.assertIn("relTime(r.createdAt)", box)
+        self.assertIn("display: flex", _block(self.css, ".aipm-anno__reply-head {"))
+
+    def test_reply_tools_are_always_visible(self):
+        """触屏没有 hover。原先那套「平时 opacity .55、悬停才实」在小屏上等于把
+        按钮藏了一半 —— 现在靠一档浅灰压住存在感,不再用 opacity 藏。"""
+        self.assertNotIn("opacity", _block(self.css, ".aipm-anno__reply-tools {"))
+        self.assertNotIn(".aipm-anno__reply:hover .aipm-anno__reply-tools", self.css)
+
+    # ---- 删除:垃圾桶 + 二次确认 ----
+
+    def test_card_delete_is_a_trash_icon_not_a_close(self):
+        """叉写在卡片右上角,点的人多半以为那张卡只是收起来 —— 它却是一按就删。
+        垃圾桶没有第二种读法,也正好跟左边那支铅笔配成一对(编辑 / 删除)。"""
+        tools = _block(self.js, "function cardTools(")
+        self.assertIn("ICON.trash", tools)
+        self.assertNotIn("ICON.close", tools)
+
+    def test_delete_arms_first_and_fires_on_the_second_click(self):
+        fn = _block(self.js, "function armDelete(")
+        self.assertIn('classList.add("is-armed")', fn)
+        self.assertIn("onConfirm()", fn)
+        self.assertIn("ARMED_MS", fn)
+        # 点在别处 = 改主意了;点在自己身上 = 第二次点击,不能当成「别处」
+        self.assertIn('document.addEventListener("click", onDoc, true)', fn)
+        self.assertIn("if (!btn.contains(e.target)) disarm()", fn)
+        # 上了膛的样子得一直亮着,否则看不出这颗按钮已经换了意思
+        self.assertIn("var(--aipm-anno-pink)", _block(self.css, ".aipm-anno__ibtn.is-armed,"))
+
+    def test_both_deletes_go_through_the_same_armed_helper(self):
+        """卡片右上角那颗与回复右端那颗走同一条路 —— 两处各写一遍必然会漂。"""
+        tools = _block(self.js, "function cardTools(")
+        self.assertIn("armDelete(del,", tools)
+        self.assertIn("removeAnnotation(anno)", tools)
+        box = _block(self.js, "function repliesBox(anno)")
+        self.assertIn("armDelete(del,", box)
+        self.assertIn("removeReply(anno, r)", box)
+
+    # ---- 卡片底部那行 ----
+
+    def test_the_bottom_row_reply_is_an_icon_too(self):
+        acts = _block(self.js, "function itemActions(anno, isOrphan)")
+        self.assertIn("iconButton(ICON.reply", acts)
+        self.assertNotIn('actionButton("回复"', acts)
+
+    def test_the_logged_out_reply_keeps_its_hint_in_the_title(self):
+        """未登录看别人的批注,这颗按钮还在,只是名字换成「登录后回复」,点下去先
+        去登录 —— 提示没丢,丢的只是那一行字。"""
+        acts = _block(self.js, "function itemActions(anno, isOrphan)")
+        self.assertIn('"登录后回复"', acts)
+        self.assertIn("auth.loginForDraft(draftForLogin())", acts)
+
+    def test_the_bottom_row_lines_up(self):
+        """图标按钮自带内边距,点赞与文字链跟着它对齐高度,否则一行里一高一低。"""
+        self.assertIn("height: 1.4rem", _block(self.css, ".aipm-anno__like {"))
+        self.assertIn(
+            "height: 1.4rem",
+            _block(self.css, ".aipm-anno__item-actions .aipm-anno__link {"),
+        )
+
 
 class TestSnapAnimationStaysSmooth(unittest.TestCase):
     """三段抽屉吸附必须真的跑完那 240ms,别每帧被量具重置一次。

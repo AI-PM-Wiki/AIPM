@@ -54,7 +54,7 @@
      放在 store 是因为 prefs() 要校验它 —— 面板文件里那份是渲染用的标签与图标。 */
   var ANNO_STYLES = ["underline", "highlight", "both"];
   var DEFAULT_STYLE = "highlight";
-  var COMMENT_SORTS = ["hot", "newest", "mostReplies"];
+  var COMMENT_SORTS = ["hot", "newest"];
   var LOCAL_WARN_BYTES = 3 * 1024 * 1024; // 约 4–5MB 配额下的提前预警线
 
   function QuotaError(message) {
