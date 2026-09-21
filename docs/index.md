@@ -1,65 +1,30 @@
 ---
 title: AI-PM
-template: home.html
 ---
 
-<div class="pm-card-grid">
-  <a class="pm-card" href="pm/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2.2 4.8-4.8 2.2 2.2-4.8z"/></svg>
-    <span class="pm-card__title">产品方法论</span>
-    <span class="pm-card__desc">需求分析、用户研究、产品设计与原型、项目管理与迭代、商业化与增长</span>
-  </a>
-  <a class="pm-card" href="tech/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3M9 9h6v6H9z"/></svg>
-    <span class="pm-card__title">工程与架构</span>
-    <span class="pm-card__desc">开发流程、系统架构、工程术语与 AI-Native 研发流程</span>
-  </a>
-  <a class="pm-card" href="management/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 21c.5-4 2.5-6 6-6s5.5 2 6 6M15 15c3 0 5 2 6 6"/></svg>
-    <span class="pm-card__title">工商管理</span>
-    <span class="pm-card__desc">组织与决策、市场与消费者、战略创新、项目与财务</span>
-  </a>
-  <a class="pm-card" href="business/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21v-6M11 21V8M16 21v-11"/></svg>
-    <span class="pm-card__title">商业与财会</span>
-    <span class="pm-card__desc">金融学、会计学、公司金融、计量经济学等 19 门课</span>
-  </a>
-  <a class="pm-card" href="ai/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3"/></svg>
-    <span class="pm-card__title">AI 基础</span>
-    <span class="pm-card__desc">机器学习地基、大模型、多模态、提示词、RAG、Agent、评估安全与前沿</span>
-  </a>
-  <a class="pm-card" href="practice/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v5.5L4.7 18a2 2 0 001.8 3h11a2 2 0 001.8-3L14 8.5V3"/><path d="M7.5 15h9"/></svg>
-    <span class="pm-card__title">AI 产品实战</span>
-    <span class="pm-card__desc">对话助手、知识库问答、Agent、Copilot、工作流自动化</span>
-  </a>
-  <a class="pm-card" href="tools/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h9M17 8h3"/><circle cx="15" cy="8" r="2"/><path d="M4 16h3M11 16h9"/><circle cx="9" cy="16" r="2"/></svg>
-    <span class="pm-card__title">工具与平台</span>
-    <span class="pm-card__desc">LLM API、开源框架、提示词与评测工具、数据标注</span>
-  </a>
-  <a class="pm-card" href="case/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/></svg>
-    <span class="pm-card__title">学习资源</span>
-    <span class="pm-card__desc">信息源、读书笔记与播客笔记</span>
-  </a>
-  <a class="pm-card" href="job/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-    <span class="pm-card__title">求职专题</span>
-    <span class="pm-card__desc">产品经理岗位类别、协作团队与岗位、真实 JD 样本与求职发展</span>
-  </a>
-  <a class="pm-card" href="vertical/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
-    <span class="pm-card__title">垂直领域</span>
-    <span class="pm-card__desc">网络安全、金融、法律、教育、地球科学、医疗与企业服务的对象、规则与 AI 切入点</span>
-  </a>
-  <a class="pm-card" href="intro/about/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <span class="pm-card__title">关于</span>
-    <span class="pm-card__desc">项目介绍、更新原则、如何参与、格式手册与 FAQ</span>
-  </a>
-</div>
+<section class="pm-ac-masthead">
+  <p class="pm-ac-eyebrow" aria-hidden="true">AI-PM Knowledge Base</p>
+  <h1 class="pm-ac-title">AI-PM</h1>
+  <p class="pm-ac-subtitle">AI-PM 是一个 AI 产品经理知识整合站点，提供有趣又实用的 AI 产品、模型、工具与工作流知识，帮助广大 AI 产品从业者更快更深入地学习与实践</p>
+  <p class="pm-ac-meta"><span>编者 AI-PM Wiki Team</span><span>原则 免费开放 · 持续更新 · 知识自由 · 可验证与可复用</span></p>
+  <p class="pm-ac-actions"><a class="pm-ac-action pm-ac-action--primary" href="#pm-ac-index">开始学习</a><a class="pm-ac-action" href="intro/about/">关于项目</a><button class="pm-ac-action" type="button" onclick='var t=document.getElementById("__search");if(t){if(!t.checked){t.click();}var i=document.querySelector(".md-search__input");if(i){i.focus();}}'>搜索整个知识库</button></p>
+</section>
+
+## 栏目索引
+
+<ol class="pm-ac-index" id="pm-ac-index">
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="pm/"><span class="pm-ac-cat">产品方法论</span><span class="pm-ac-desc">需求分析、用户研究、产品设计与原型、项目管理与迭代、商业化与增长</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="tech/"><span class="pm-ac-cat">工程与架构</span><span class="pm-ac-desc">开发流程、系统架构、工程术语与 AI-Native 研发流程</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="management/"><span class="pm-ac-cat">工商管理</span><span class="pm-ac-desc">组织与决策、市场与消费者、战略创新、项目与财务</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="business/"><span class="pm-ac-cat">商业与财会</span><span class="pm-ac-desc">金融学、会计学、公司金融、计量经济学等 19 门课</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="ai/"><span class="pm-ac-cat">AI 基础</span><span class="pm-ac-desc">机器学习地基、大模型、多模态、提示词、RAG、Agent、评估安全与前沿</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="practice/"><span class="pm-ac-cat">AI 产品实战</span><span class="pm-ac-desc">对话助手、知识库问答、Agent、Copilot、工作流自动化</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="tools/"><span class="pm-ac-cat">工具与平台</span><span class="pm-ac-desc">LLM API、开源框架、提示词与评测工具、数据标注</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="case/"><span class="pm-ac-cat">学习资源</span><span class="pm-ac-desc">信息源、读书笔记与播客笔记</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="job/"><span class="pm-ac-cat">求职专题</span><span class="pm-ac-desc">产品经理岗位类别、协作团队与岗位、真实 JD 样本与求职发展</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="vertical/"><span class="pm-ac-cat">垂直领域</span><span class="pm-ac-desc">网络安全、金融、法律、教育、地球科学、医疗与企业服务的对象、规则与 AI 切入点</span></a></li>
+  <li class="pm-ac-entry"><a class="pm-ac-link" href="intro/about/"><span class="pm-ac-cat">关于</span><span class="pm-ac-desc">项目介绍、更新原则、如何参与、格式手册与 FAQ</span></a></li>
+</ol>
 
 ## 本站的原则
 
