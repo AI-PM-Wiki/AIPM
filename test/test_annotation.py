@@ -39,6 +39,12 @@ def _strip_comments(src: str) -> str:
     return re.sub(r"/\*.*?\*/", "", src, flags=re.S)
 
 
+def _decl(block: str, prop: str) -> str:
+    """Return the value of a rule block's last ``prop:`` declaration."""
+    hits = re.findall(rf"(?:^|[\s;{{]){re.escape(prop)}\s*:\s*([^;]+);", block)
+    return hits[-1].strip() if hits else ""
+
+
 def _block(src: str, marker: str) -> str:
     """Return the brace-balanced block that starts at ``marker``."""
     start = src.index(marker)
@@ -688,6 +694,29 @@ class TestUiRoundThree(unittest.TestCase):
         squared = self.css.index("border-top-right-radius: 0;", save)
         self.assertLess(plain, squared)
 
+    def test_split_button_reads_as_one_control(self):
+        """保存 + 可见范围是一颗分体按钮,不是两颗挨着的按钮。下面每条都能单独把它
+        拆成两颗,所以逐条钉住:
+          - 底色:右半跟左半同一个填充色与字色。右半自己描一圈线就成了一颗独立的
+            描边按钮,跟实心的左半拼在一起最割裂;
+          - 缝:左半去掉右边框、右半整颗不描边 —— 两个盒子正好相接,缝里只叠不出
+            两层边框;那条发丝线交给右半自己用 inset 阴影画在填充色上;
+          - 高度:右半 align-self: stretch 跟着行高走(行高由「取消」「保存」这类
+            文字按钮定)。自己算一套内边距就差出几个像素,一眼看出是两颗。
+        """
+        # 基础规则在文件里排在 .aipm-anno__actions 那条之前,index 取到的就是它
+        base_vis = _block(self.css, ".aipm-anno__visbtn {")
+        row = _block(self.css, ".aipm-anno__actions .aipm-anno__vismenu {")
+        # 从 visbtn 之后切,避开头一条 .aipm-anno__save 是与 cancel 合写的那条
+        after_vis = self.css[self.css.index(".aipm-anno__actions .aipm-anno__visbtn {"):]
+        save = _block(after_vis, ".aipm-anno__actions .aipm-anno__save {")
+        self.assertEqual(_decl(base_vis, "background"), "var(--md-accent-fg-color)")
+        self.assertEqual(_decl(base_vis, "color"), "var(--md-accent-bg-color)")
+        self.assertEqual(_decl(base_vis, "border"), "0")
+        self.assertEqual(_decl(save, "border-right"), "0")
+        self.assertEqual(_decl(row, "align-self"), "stretch")
+        self.assertIn("box-shadow", _block(self.css, ".aipm-anno__actions .aipm-anno__visbtn {"))
+
 
 class TestUiRoundFour(unittest.TestCase):
     """第四轮验收:任意显隐 / 三类画法 / 悬浮窗完整选择 / 评论排序 /
@@ -1025,7 +1054,8 @@ class TestScrimTracksTheFinger(unittest.TestCase):
 
     def test_scrim_transitions_opacity_only(self):
         for css, prefix in ((self.css, "aipm-anno"), (self.chat_css, "aipm-chat")):
-            rule = _block(css, ".%s__scrim {" % prefix)
+            # 只看声明:注释里正解释着为什么不该有 background-color
+            rule = _strip_comments(_block(css, ".%s__scrim {" % prefix))
             self.assertIn("background: rgba(0, 0, 0, .4);", rule)
             self.assertNotIn("background-color", rule)
             self.assertIn('opacity: .5;', _block(css, '.%s__scrim[data-level="half"] {' % prefix))
@@ -1060,7 +1090,10 @@ class TestScrimTracksTheFinger(unittest.TestCase):
         def block(css, prefix):
             start = css.index(".%s__scrim {" % prefix)
             end = css.index("html.", start)
-            return css[start:end].replace(prefix, "aipm-X")
+            # 注释与空行不算分叉,比的是声明本身
+            return re.sub(r"\s+", " ", _strip_comments(css[start:end])).strip().replace(
+                prefix, "aipm-X"
+            )
 
         self.assertEqual(
             block(self.css, "aipm-anno"), block(self.chat_css, "aipm-chat")
