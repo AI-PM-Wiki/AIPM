@@ -1513,3 +1513,714 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   13. 首页 v2 / BRUTAL —— 瑞士朋克 · 可见网格
+       2026-09-21 第二版首页(第一版 6 个方向保留同一骨架只换皮,被否)。
+       本节是**另一套骨架**,不是另一套皮:
+       - hero 是满宽实心色块(亮:纯黑 / 暗:信号色),左对齐、贴边、无圆角无阴影;
+       - 页面主体是一张真实可见的 12 栏网格,竖线贯穿整页(见 .pmb-lines);
+       - 栏目区是 gap:0 + 合并边框的表格网格,靠跨列(span 5/4/3/12)分层级;
+       - 全节零圆角、零阴影、零渐变;唯一信号色 --pmb-signal(酸性黄绿 #D6F32F)。
+       禁用说明:该色在白底上对比度不足,故只用于「黑底上的字/线」或「作为底色 + 黑字」。
+       ---------------------------------------------------------------------------- */
+
+/* 13.0 设计 token + 首页容器
+   容器宽度与站点 .md-grid 同为 61rem,页头/页签与首页网格左右对齐;
+   padding 用同一变量供 hero 内部复用,保证满宽色块内的网格与正文网格严丝合缝。 */
+.md-content__inner:has(.pmb) {
+  --pmb-w: 61rem;
+  --pmb-pad: clamp(18px, 4vw, 40px);
+  --pmb-u: 4px;
+
+  --pmb-signal: #d6f32f;
+
+  --pmb-ink: rgba(0, 0, 0, .92);
+  --pmb-muted: rgba(0, 0, 0, .58);
+  --pmb-faint: rgba(0, 0, 0, .55);   /* 11px 等宽编号/标签,需 ≥ 4.5:1 */
+  --pmb-hair: rgba(0, 0, 0, .09);      /* 贯穿页面的栏线 */
+  --pmb-rule: rgba(0, 0, 0, .20);      /* 网格合并边框 */
+
+  --pmb-hero-bg: #000000;
+  --pmb-hero-fg: #ffffff;
+  --pmb-hero-hair: rgba(255, 255, 255, .11);
+  --pmb-hero-faint: rgba(255, 255, 255, .50);
+  /* 信号色在白底上对比度不足,只能作为「黑底上的字/线」出现;
+     hero 是亮色下唯一的黑底,信号色因此集中用在这里与 CTA 上。 */
+  --pmb-hero-accent: var(--pmb-signal);
+  /* 主题的 .md-typeset a / ul / h2 等(0,1,1)会压过单类选择器(0,1,0),
+     故本节的标签类选择器统一带 [data-md-color-scheme] .md-typeset 前缀(≥0,3,0)。 */
+
+  /* hover 反色:亮色下用信号色,暗色下用纯白 —— 这是两套设计,不是反色 */
+  --pmb-invert-bg: var(--pmb-signal);
+  --pmb-invert-fg: #000000;
+
+  /* 排版模数 11 / 13 / 18 / 26 / 40,级差刻意拉开 */
+  --pmb-t-micro: 11px;
+  --pmb-t-sm: 13px;
+  --pmb-t-md: 18px;
+  --pmb-t-lg: 26px;
+  --pmb-t-xl: 40px;
+
+  --pmb-mono: var(--md-code-font);
+  --pmb-display: "Helvetica Neue", "Arial Black", Inter, -apple-system,
+                 BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+                 "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+
+  /* 本站 root font-size = 20px(Material font 缩放),故 61rem = 1220px,
+     正好等于站点 .md-grid —— 页头/页签与首页网格左右对齐。
+     主题给 .md-content__inner 的 margin/padding 会把这 1220 再切窄,
+     首页一律清零;窄屏所需的左右留白改由 --pmb-gap 提供
+     (宽屏为 0,窄屏等于 --pmb-pad),这样宽屏下网格与页头严格同宽。 */
+  --pmb-gap: 0px;
+
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: pmb-sec 2;   /* hero=01、栏目区=02,故正文小节从 03 起 */
+}
+
+/* 主题另有两条高特异度规则给首页正文加左右 1.2rem 外边距
+   ([dir=ltr] .md-sidebar--primary:not([hidden])~.md-content>.md-content__inner 等,
+   特异度 0,5,0)——首页两侧栏虽被隐藏,但 :not([hidden]) 仍命中,
+   61rem 的网格会被切窄 24px×2,与页头错位。故用同前缀 + :has(.pmb) 压过它(0,6,0)。
+   注:此处依赖主题选择器形态,升级主题时需复核。 */
+[dir] .md-sidebar--primary:not([hidden]) ~ .md-content > .md-content__inner:has(.pmb),
+[dir] .md-sidebar--secondary:not([hidden]) ~ .md-content > .md-content__inner:has(.pmb),
+[dir] .md-content--post > .md-content__inner:has(.pmb) {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* 首页顶到页签下沿:去掉 .md-content__inner::before 的 .4rem 占位与
+   .md-main__inner 的 1.5rem 上边距,让满宽色块真正贴边 */
+[data-md-color-scheme] .md-content__inner:has(.pmb)::before,
+.md-main:has(.pmb) .md-main__inner {
+  display: table;
+  content: none;
+}
+
+.md-main:has(.pmb) .md-main__inner {
+  display: flex;
+  margin-top: 0;
+}
+
+/* 视口窄于 .md-grid(61rem)时,.md-content 不再有额外留白,由 --pmb-gap 兜底 */
+@media screen and (max-width: 1220px) {
+  .md-content__inner:has(.pmb) {
+    --pmb-gap: clamp(16px, 4vw, 40px);
+  }
+}
+
+/* 暗色是第二套设计:hero 反相为信号色块(黑字),正文底色近黑,栏线转白 */
+[data-md-color-scheme="slate"] .md-content__inner:has(.pmb) {
+  --pmb-ink: rgba(255, 255, 255, .94);
+  --pmb-muted: rgba(255, 255, 255, .62);
+  --pmb-faint: rgba(255, 255, 255, .47);
+  --pmb-hair: rgba(255, 255, 255, .13);
+  --pmb-rule: rgba(255, 255, 255, .28);
+
+  --pmb-hero-bg: #d6f32f;
+  --pmb-hero-fg: #000000;
+  --pmb-hero-hair: rgba(0, 0, 0, .16);
+  --pmb-hero-faint: rgba(0, 0, 0, .55);
+  --pmb-hero-accent: #000000;
+
+  --pmb-invert-bg: #ffffff;
+  --pmb-invert-fg: #000000;
+}
+
+/* 首页去掉三栏 chrome:左导航 / 右 toc / 编辑铅笔 / hr + 版权 / 评论区(giscus 空白矩形) */
+.md-main__inner:has(.pmb) > .md-sidebar {
+  display: none;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.pmb) > .md-content__button,
+[data-md-color-scheme] .md-content__inner:has(.pmb) > hr,
+[data-md-color-scheme] .md-content__inner:has(.pmb) > blockquote.page-copyright,
+[data-md-color-scheme] .md-content__inner:has(.pmb) .giscus,
+[data-md-color-scheme] .md-content__inner:has(.pmb) > #__comments,
+[data-md-color-scheme] .md-content__inner:has(.pmb) > p:empty {
+  display: none;
+}
+
+/* 满宽色块会产生 100vw 溢出,横向裁掉(不改 DOM) */
+.md-main:has(.pmb) {
+  overflow-x: clip;
+}
+
+.pmb {
+  position: relative;
+  padding-inline: var(--pmb-gap);
+}
+
+/* 13.1 可见栏线:12 等分的竖线,贯穿整个页面高度。
+   实现方式是容器自身的两层背景(8.3333% 平铺 + 右缘 1px),
+   而不是再往 DOM 里塞 12 个装饰节点 —— 栏线因此能覆盖正文两节,
+   并与 .pmb-grid 的 12 栏共用同一套宽度定义,格子边线与栏线重合。 */
+[data-md-color-scheme] .md-content__inner:has(.pmb) {
+  background-image:
+    linear-gradient(to right, var(--pmb-hair) 0 1px, transparent 1px),
+    linear-gradient(to right, var(--pmb-hair) 0 1px, transparent 1px);
+  background-size: 8.3333333% 100%, 1px 100%;
+  background-position: 0 0, right top;
+  background-repeat: repeat-x, no-repeat;
+}
+
+/* 按 G 亮线:整页栏线转信号色(该色只作为线本身,不承载文字) */
+body[data-pmb-grid="1"] .md-content__inner:has(.pmb) {
+  --pmb-hair: rgba(0, 0, 0, .85);
+  --pmb-hero-hair: rgba(214, 243, 47, .8);
+}
+
+body[data-pmb-grid="1"] [data-md-color-scheme="slate"] .md-content__inner:has(.pmb),
+[data-md-color-scheme="slate"] body[data-pmb-grid="1"] .md-content__inner:has(.pmb) {
+  --pmb-hair: rgba(214, 243, 47, .85);
+}
+
+/* 13.2 等宽标记:编号 / 元信息 / 单位 */
+.pmb-mono {
+  font-family: var(--pmb-mono);
+  font-size: var(--pmb-t-micro);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: .14em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 13.3 hero:满宽实心色块,无圆角无阴影无渐变;内容贴边、左对齐 */
+.pmb-hero {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  background: var(--pmb-hero-bg);
+  color: var(--pmb-hero-fg);
+}
+
+.pmb-hero__in {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 3.4vw, 46px);
+  width: min(100% - 2 * var(--pmb-pad), var(--pmb-w));
+  margin: 0 auto;
+  padding: clamp(22px, 3.2vw, 40px) 0 clamp(20px, 2.6vw, 32px);
+  container-type: inline-size;
+}
+
+/* hero 是同宽的实心色块,自绘一套反相栏线(亮:白线压黑底 / 暗:黑线压信号色) */
+.pmb-hero__in {
+  background-image:
+    linear-gradient(to right, var(--pmb-hero-hair) 0 1px, transparent 1px),
+    linear-gradient(to right, var(--pmb-hero-hair) 0 1px, transparent 1px);
+  background-size: 8.3333333% 100%, 1px 100%;
+  background-position: 0 0, right top;
+  background-repeat: repeat-x, no-repeat;
+}
+
+.pmb-hero__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  align-items: baseline;
+  justify-content: space-between;
+  color: var(--pmb-hero-faint);
+}
+
+.pmb-hero__tag {
+  color: var(--pmb-hero-fg);
+}
+
+.pmb-caret {
+  display: inline-block;
+  width: .5em;
+  height: 1em;
+  margin-left: .5em;
+  vertical-align: -.14em;
+  background: currentColor;
+  animation: pmb-blink 1.15s steps(1, end) infinite;
+}
+
+@keyframes pmb-blink {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+
+/* 字标:左对齐、贴边(bleed)、最重字重、紧字距、压行高。
+   cqw 让字标在任何宽度都恰好撑满 61rem 网格(浏览器不支持则退回 vw)。 */
+[data-md-color-scheme] .md-typeset .pmb-mark {
+  margin: 0;
+  padding: 0;
+  font-family: var(--pmb-display);
+  font-size: clamp(2.9rem, 23vw, 21rem);
+  font-weight: 900;
+  line-height: .78;
+  letter-spacing: -.045em;
+  color: var(--pmb-hero-fg);
+  white-space: nowrap;
+}
+
+@supports (font-size: 1cqw) {
+  [data-md-color-scheme] .md-typeset .pmb-hero__in .pmb-mark {
+    font-size: clamp(2.9rem, 36.4cqw, 24rem);
+  }
+}
+
+.pmb-hero__foot {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: end;
+  gap: 18px 0;
+}
+
+.pmb-lede {
+  grid-column: 1 / span 6;
+  margin: 0;
+  font-size: var(--pmb-t-md);
+  line-height: 1.62;
+  letter-spacing: -.005em;
+  color: var(--pmb-hero-fg);
+  text-wrap: pretty;
+}
+
+[data-md-color-scheme] .md-typeset .pmb-stats {
+  grid-column: 8 / span 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--pmb-hero-faint);
+}
+
+[data-md-color-scheme] .md-typeset .pmb-stats li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+}
+
+[data-md-color-scheme] .md-typeset .pmb-stats b {
+  font-family: var(--pmb-display);
+  font-size: var(--pmb-t-lg);
+  font-weight: 900;
+  letter-spacing: -.01em;
+  color: var(--pmb-hero-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 13.4 CTA:方角硬边,无过渡,hover 瞬时反色 */
+.pmb-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+}
+
+[data-md-color-scheme] .md-typeset .pmb-btn {
+  display: inline-block;
+  padding: 15px 26px;
+  border: 2px solid transparent;
+  border-radius: 0;
+  font-family: var(--pmb-display);
+  font-size: var(--pmb-t-sm);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .08em;
+  text-decoration: none;
+  transition: none;
+}
+
+[data-md-color-scheme] .md-typeset .pmb-btn--solid {
+  background: var(--pmb-invert-bg);
+  color: var(--pmb-invert-fg);
+  border-color: var(--pmb-invert-bg);
+}
+
+[data-md-color-scheme] .md-typeset .pmb-btn--line {
+  background: transparent;
+  color: var(--pmb-hero-fg);
+  border-color: var(--pmb-hero-fg);
+}
+
+[data-md-color-scheme] .md-typeset .pmb-btn--solid:hover,
+[data-md-color-scheme] .md-typeset .pmb-btn--solid:focus-visible {
+  background: var(--pmb-hero-fg);
+  color: var(--pmb-hero-bg);
+  border-color: var(--pmb-hero-fg);
+}
+
+[data-md-color-scheme] .md-typeset .pmb-btn--line:hover,
+[data-md-color-scheme] .md-typeset .pmb-btn--line:focus-visible {
+  background: var(--pmb-hero-fg);
+  color: var(--pmb-hero-bg);
+  border-color: var(--pmb-hero-fg);
+}
+
+[data-md-color-scheme] .md-typeset .pmb-btn:focus-visible {
+  outline: 3px solid var(--pmb-hero-faint);
+  outline-offset: 2px;
+}
+
+.pmb-hint {
+  margin-left: auto;
+  color: var(--pmb-hero-faint);
+}
+
+.pmb-hint b {
+  color: var(--pmb-hero-fg);
+}
+
+/* 13.5 栏目区:合并边框的表格网格 —— gap:0,容器出上/左线,格子出右/下线 */
+.pmb-idx {
+  position: relative;
+  z-index: 1;
+  padding-top: clamp(44px, 6vw, 92px);
+}
+
+.pmb-idx__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 22px;
+  padding-bottom: 12px;
+}
+
+.pmb-idx__tag {
+  color: var(--pmb-faint);
+}
+
+[data-md-color-scheme] .md-typeset .pmb-idx__title {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-family: var(--pmb-display);
+  font-size: var(--pmb-t-lg);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--pmb-ink);
+}
+
+.pmb-idx__count {
+  margin-left: auto;
+  color: var(--pmb-faint);
+}
+
+.pmb-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 0;
+  border-top: 2px solid var(--pmb-ink);
+  /* 外框用 outline 而不是 border-left:border 会吃掉 1px 内容宽度,
+     使 12 栏各自窄 0.08px,到最右一栏就与背景栏线错开约 1px(看起来像重影)。
+     outline 不参与布局,12 栏宽度与背景栏线严格相等。 */
+  outline: 1px solid var(--pmb-rule);
+  outline-offset: -1px;
+}
+
+[data-md-color-scheme] .md-typeset .pmb-cell {
+  grid-column: span var(--pmb-span, 3);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 26px 24px 34px;
+  border-right: 1px solid var(--pmb-rule);
+  border-bottom: 1px solid var(--pmb-rule);
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+  transition: none;
+}
+
+[data-md-color-scheme] .md-typeset .pmb-cell--xl { --pmb-span: 5; }
+[data-md-color-scheme] .md-typeset .pmb-cell--lg { --pmb-span: 4; }
+[data-md-color-scheme] .md-typeset .pmb-cell--md { --pmb-span: 3; }
+[data-md-color-scheme] .md-typeset .pmb-cell--wide { --pmb-span: 12; }
+
+.pmb-cell__no {
+  display: block;
+  color: var(--pmb-faint);
+}
+
+.pmb-cell__t {
+  display: block;
+  font-family: var(--pmb-display);
+  font-weight: 900;
+  line-height: 1.06;
+  letter-spacing: -.025em;
+  color: var(--pmb-ink);
+  text-wrap: balance;
+}
+
+[data-md-color-scheme] .md-typeset .pmb-cell--xl .pmb-cell__t { font-size: var(--pmb-t-xl); }
+[data-md-color-scheme] .md-typeset .pmb-cell--lg .pmb-cell__t { font-size: var(--pmb-t-lg); }
+[data-md-color-scheme] .md-typeset .pmb-cell--md .pmb-cell__t { font-size: var(--pmb-t-md); }
+[data-md-color-scheme] .md-typeset .pmb-cell--wide .pmb-cell__t { font-size: var(--pmb-t-lg); }
+
+.pmb-cell__d {
+  display: block;
+  max-width: 30em;
+  font-size: var(--pmb-t-sm);
+  line-height: 1.65;
+  color: var(--pmb-muted);
+  text-wrap: pretty;
+}
+
+.pmb-cell__go {
+  position: absolute;
+  right: 24px;
+  bottom: 14px;
+  font-size: var(--pmb-t-md);
+  letter-spacing: 0;
+  color: var(--pmb-faint);
+}
+
+/* 「关于」占满 12 栏时改横排:编号 / 标题 / 描述 / 箭头。
+   窄屏下它退化成一格,横排会挤坏,故只在真正跨满 12 栏的宽度区间启用。 */
+@media screen and (min-width: 1101px) {
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide {
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 7rem) minmax(0, 1fr) 2rem;
+    align-items: center;
+    gap: 0 20px;
+    padding: 22px 24px;
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide .pmb-cell__no,
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide .pmb-cell__t,
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide .pmb-cell__d,
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide .pmb-cell__go {
+    position: static;
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide .pmb-cell__go {
+    justify-self: end;
+  }
+}
+
+[data-md-color-scheme] .md-typeset .pmb-cell:hover,
+[data-md-color-scheme] .md-typeset [data-md-color-scheme] .md-typeset .pmb-cell:focus-visible {
+  background: var(--pmb-invert-bg);
+  color: var(--pmb-invert-fg);
+}
+
+[data-md-color-scheme] .md-typeset .pmb-cell:hover .pmb-cell__t,
+[data-md-color-scheme] .md-typeset .pmb-cell:focus-visible .pmb-cell__t,
+[data-md-color-scheme] .md-typeset .pmb-cell:hover .pmb-cell__no,
+[data-md-color-scheme] .md-typeset .pmb-cell:focus-visible .pmb-cell__no,
+[data-md-color-scheme] .md-typeset .pmb-cell:hover .pmb-cell__go,
+[data-md-color-scheme] .md-typeset .pmb-cell:focus-visible .pmb-cell__go {
+  color: var(--pmb-invert-fg);
+}
+
+[data-md-color-scheme] .md-typeset .pmb-cell:hover .pmb-cell__d,
+[data-md-color-scheme] .md-typeset .pmb-cell:focus-visible .pmb-cell__d {
+  color: rgba(0, 0, 0, .74);
+}
+
+.pmb-cell:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: -3px;
+}
+
+/* 13.6 正文两节:重排成出版物式小节 —— 粗横线 + 等宽编号 + 编号列表 */
+[data-md-color-scheme] .md-content__inner:has(.pmb) > h2 {
+  counter-increment: pmb-sec;
+  margin: clamp(56px, 7vw, 104px) 0 0;
+  padding: 22px var(--pmb-gap) 0;
+  border: 0;
+  border-top: 2px solid var(--pmb-ink);
+  font-family: var(--pmb-display);
+  font-size: var(--pmb-t-lg);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  color: var(--pmb-ink);
+}
+
+[data-md-color-scheme] .md-content__inner:has(.pmb) > h2::before {
+  display: block;
+  margin-bottom: 8px;
+  content: "[ 0" counter(pmb-sec) " ]";
+  font-family: var(--pmb-mono);
+  font-size: var(--pmb-t-micro);
+  font-weight: 500;
+  letter-spacing: .16em;
+  color: var(--pmb-faint);
+}
+
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul {
+  list-style: none;
+  max-width: calc(var(--pmb-w) * 8 / 12 + var(--pmb-gap));
+  margin: 0;
+  padding: 0 var(--pmb-gap);
+  counter-reset: pmb-li;
+  border-bottom: 1px solid var(--pmb-rule);
+}
+
+/* 用 padding + 绝对定位编号,而不是把 <li> 变成 grid:
+   第三方脚本(hypothesis.js)会把正文包进 <hypothesis-highlight>,
+   grid 会把每个内联片段当成独立网格项,正文被挤成一字一行。 */
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul > li {
+  counter-increment: pmb-li;
+  position: relative;
+  margin: 0;
+  padding: 18px 0 18px 3.5rem;
+  border-top: 1px solid var(--pmb-rule);
+  font-size: 14px;
+  line-height: 1.78;
+  color: var(--pmb-muted);
+  text-wrap: pretty;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul > li:first-child {
+  border-top: 0;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul > li::before {
+  position: absolute;
+  left: 0;
+  top: 23px;
+  content: counter(pmb-li, decimal-leading-zero);
+  font-family: var(--pmb-mono);
+  font-size: var(--pmb-t-micro);
+  letter-spacing: .1em;
+  color: var(--pmb-faint);
+}
+
+/* 原文是「**免费开放**：内容免费阅读…」——把 <strong> 做成 block 会让全角冒号
+   孤零零落在下一行开头。改成行内酸性标记块:文字一字不改,冒号自然跟在标记后。 */
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul > li > strong {
+  display: inline;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 2px 7px 3px;
+  background: var(--pmb-invert-bg);
+  color: var(--pmb-invert-fg);
+  font-family: var(--pmb-display);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul a {
+  padding-bottom: 1px;
+  border-bottom: 2px solid var(--pmb-ink);
+  color: var(--pmb-ink);
+  font-weight: 700;
+  text-decoration: none;
+  transition: none;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul a:hover,
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul a:focus-visible {
+  border-bottom-color: transparent;
+  background: var(--pmb-invert-bg);
+  color: var(--pmb-invert-fg);
+}
+
+[data-md-color-scheme] .md-content__inner:has(.pmb) > ul a:focus-visible {
+  outline: 3px solid var(--pmb-ink);
+  outline-offset: 2px;
+}
+
+/* 13.7 响应式:每个断点换一套「栏数 + 跨栏」组合,
+   并且刻意让每一行的跨栏之和都等于该断点的栏数 —— 不留空洞。
+   12 栏:5+4+3 | 3+3+3+3 | 4+4+4 | 12
+    6 栏:6 | 3+3 ×5
+    4 栏:4 | 2+2 ×5
+    2 栏:2 | 1+1 ×5                                        */
+@media screen and (max-width: 1100px) {
+  .pmb-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-cell--xl { --pmb-span: 6; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--lg { --pmb-span: 3; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--md { --pmb-span: 3; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide { --pmb-span: 3; }
+}
+
+@media screen and (max-width: 860px) {
+  .pmb-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-cell--xl { --pmb-span: 4; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--lg { --pmb-span: 2; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--md { --pmb-span: 2; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide { --pmb-span: 2; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide .pmb-cell__t { font-size: var(--pmb-t-md); }
+
+  [data-md-color-scheme] .md-typeset .pmb-lede {
+    grid-column: 1 / span 12;
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-stats {
+    grid-column: 1 / span 12;
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .pmb-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-cell--xl { --pmb-span: 2; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--lg { --pmb-span: 1; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--md { --pmb-span: 1; }
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide { --pmb-span: 1; }
+
+  [data-md-color-scheme] .md-typeset .pmb-cell { padding: 20px 16px 28px; }
+
+  [data-md-color-scheme] .md-typeset .pmb-cell--xl .pmb-cell__t { font-size: var(--pmb-t-lg); }
+  [data-md-color-scheme] .md-typeset .pmb-cell--lg .pmb-cell__t { font-size: var(--pmb-t-md); }
+  [data-md-color-scheme] .md-typeset .pmb-cell--wide .pmb-cell__t { font-size: var(--pmb-t-md); }
+
+  [data-md-color-scheme] .md-typeset .pmb-cell__go {
+    right: 16px;
+    font-size: 13px;
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-hero__top {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-cta {
+    gap: 10px;
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-hint {
+    margin-left: 0;
+  }
+
+  [data-md-color-scheme] .md-typeset .pmb-btn {
+    padding: 13px 18px;
+  }
+
+  [data-md-color-scheme] .md-content__inner:has(.pmb) > ul {
+    max-width: none;
+  }
+
+  [data-md-color-scheme] .md-content__inner:has(.pmb) > ul > li {
+    padding-left: 2.5rem;
+  }
+}
+
+/* 13.8 减少动态:光标闪烁是整页唯一动画,reduced-motion 下直接停 */
+@media (prefers-reduced-motion: reduce) {
+  .pmb-caret {
+    animation: none;
+    opacity: 1;
+  }
+}
