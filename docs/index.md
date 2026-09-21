@@ -1,7 +1,53 @@
 ---
 title: AI-PM
-template: home.html
 ---
+
+<!--
+  hero 区(2026-09-21 起不再走主题子模块的 template: home.html,改为本文件直接输出)
+  - 两版引擎 [ 2D | 3D ],默认 3D,控件在 banner 右上角;选择记在 localStorage
+    ("pm-home-engine"),无 WebGL 时自动回退 2D 并禁用 3D 按钮
+  - 两块 canvas 都在这里,可见性只由 CSS 决定(html[data-pm-engine] 放行其一),
+    所以无 JS 时两块都不显示,由 .pm-banner 的静态底图 + 下方品牌文案兜底
+  - 结构与类名的样式在 docs/_static/css/extra.css 第 13 节;
+    调度/切换在 docs/_static/js/home-engine.js,两版视觉在
+    docs/_static/js/home-engine-2d.js、home-engine-3d.js
+
+  注意:site-name / tagline 原先取自 {{ config.site_name }} / {{ config.site_description }},
+  改为内联字面量后,若 mkdocs.yml 改了站点名或描述,这里要同步改。
+-->
+<section class="pm-hero">
+  <p class="pm-hero__eyebrow" aria-hidden="true">AI Product Manager Knowledge Base</p>
+  <div class="pm-banner">
+    <div class="pm-banner__stage" role="img" aria-label="AI-PM 生成式网格:一张被平滑场顶歪的方格纸,一条绘图笔左右扫过并点亮所经的列,5 枚信号方块沿同一个场漂移">
+      <canvas class="pm-banner__canvas pm-banner__canvas--2d" aria-hidden="true"></canvas>
+      <canvas class="pm-banner__canvas pm-banner__canvas--3d" aria-hidden="true"></canvas>
+    </div>
+    <span class="pm-banner__id" aria-hidden="true">AIPM ▸ GRID</span>
+    <span class="pm-banner__stat" data-pm-stat aria-hidden="true">ENGINE 3D ▸ 16×9×7 SHEAF ▸ SCAN 9s</span>
+    <div class="pm-banner__switch" role="group" aria-label="首页视觉引擎">
+      <button type="button" class="pm-switch" data-pm-set="2d" aria-pressed="false">2D</button>
+      <button type="button" class="pm-switch is-on" data-pm-set="3d" aria-pressed="true">3D</button>
+    </div>
+  </div>
+  <div class="pm-hero__brand">
+    <h1 class="site-name">AI-PM</h1>
+    <p class="tagline">AI-PM 是一个 AI 产品经理知识整合站点，提供有趣又实用的 AI 产品、模型、工具与工作流知识，帮助广大 AI 产品从业者更快更深入地学习与实践</p>
+  </div>
+  <div class="pm-hero__cta">
+    <a class="pm-btn pm-btn--primary" href="#pm-home-body">开始学习</a>
+    <a class="pm-btn pm-btn--ghost" href="intro/about/">关于项目</a>
+  </div>
+  <div class="pm-hero__search">
+    <button class="pm-btn pm-btn--search" type="button" onclick='var t=document.getElementById("__search");t&&!t.checked&&t.click(),document.querySelector(".md-search__input")?.focus()'>搜索整个知识库</button>
+  </div>
+</section>
+
+<!-- #pm-home-body 必须是**自闭合**的独立 HTML 块:
+     本项目没有开 md_in_html 扩展,块级标签的原始 HTML 块会一路吞到配对的
+     </div> —— 把 Markdown 写在 <div> 里会原样输出成字面文本(踩过)。
+     所以这里只放一个空标记 div 作锚点,下面两节 Markdown 与它**同级**,
+     extra.css 第 11.9 节用 `.pm-home-body ~ h2` / `~ ul` 兄弟选择器限定作用域。 -->
+<div class="pm-home-body" id="pm-home-body"></div>
 
 <div class="pm-card-grid">
   <a class="pm-card" href="pm/">
