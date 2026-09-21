@@ -327,7 +327,8 @@ class TestSharedPanelContracts(unittest.TestCase):
 
     def test_no_innerHTML_with_server_content(self):
         """批注正文一律 textContent 渲染(存储的 token 在 localStorage,有 XSS 面)。"""
-        self.assertIn("body.textContent = escapeText(anno.body)", self.js)
+        self.assertIn("var bodyText = escapeText(anno.body);", self.js)
+        self.assertIn("body.textContent = bodyText;", self.js)
         self.assertNotIn("innerHTML = anno.body", self.js)
 
     def test_block_ids_use_a_position_counter(self):
@@ -442,16 +443,23 @@ class TestUiReviewRound(unittest.TestCase):
 
     def test_composer_is_a_draft_card(self):
         """编辑区渲染成一张「新批注」卡,复用列表项的骨架与文案规则。"""
-        self.assertIn('class="aipm-anno__draft"', self.js)
+        card = _block(self.js, "function buildEditor(")
+        self.assertIn('"aipm-anno__draft"', card)
+        self.assertIn('"新批注"', card)
         block = _block(self.js, "function syncComposer()")
         self.assertIn("visLabel(", block)
         self.assertIn("els.draft.setAttribute(\"data-color\"", block)
 
     def test_visibility_picker_is_a_menu_right_of_save(self):
-        """三态收进保存键右侧的下拉;未登录点公开/私有走登录引导。"""
-        actions = self.js[self.js.index('class="aipm-anno__actions"') :]
-        actions = actions[: actions.index("</form>")]
-        self.assertLess(actions.index("aipm-anno__save"), actions.index("aipm-anno__vismenu"))
+        """三态收进保存键右侧那颗箭头里(分体按钮);未登录点公开/私有走登录引导。"""
+        card = _block(self.js, "function buildEditor(")
+        self.assertLess(card.index("aipm-anno__save"), card.index("buildVisPicker()"))
+        picker = _block(self.js, "function buildVisPicker(")
+        self.assertIn("aipm-anno__vismenu", picker)
+        for vis in ("public", "private", "local"):
+            self.assertIn(f'data-vis="{vis}"', picker)
+        # 右半颗只有箭头,当前范围由草稿卡的 meta 行说明
+        self.assertIn("ICON.caret", picker)
         handler = _block(self.js, 'els.vislist.addEventListener("click"')
         self.assertIn("loginForDraft(", handler)
         self.assertIn('vis === "public" || vis === "private"', handler)
@@ -460,6 +468,196 @@ class TestUiReviewRound(unittest.TestCase):
         """用户点名删掉的那行提示不许回来。"""
         self.assertNotIn("只会存在这台设备上", self.js)
         self.assertNotIn("用 GitHub 登录后可以保存为公开或私有", self.js)
+
+
+class TestUiRoundThree(unittest.TestCase):
+    """第三轮验收:分栏折叠与筛选 / 全页评论 / 卡片一致性 / 内联编辑卡。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+        cls.store = STORE_JS.read_text(encoding="utf-8")
+
+    # ---- 分栏:折叠与整栏显示是两件事 ----
+
+    def test_group_head_has_a_fold_and_an_eye(self):
+        head = _block(self.js, "function groupHead(")
+        self.assertIn('"fold-group"', head)
+        self.assertIn('"toggle-group"', head)
+        self.assertIn('"aria-expanded"', head)
+        self.assertIn('"aria-pressed"', head)
+
+    def test_both_states_are_persisted(self):
+        """折叠态与「整栏不显示」都落进 prefs,刷新后保持。"""
+        self.assertIn("collapsedLocal:", self.store)
+        self.assertIn("collapsedPrivate:", self.store)
+        self.assertIn("collapsedPublic:", self.store)
+        prefs = _block(self.store, "function prefs()")
+        self.assertIn("showLocal:", prefs)
+        # 默认展开:不是 === true 就当展开
+        self.assertIn("=== true", prefs)
+
+    def test_the_eye_never_removes_the_last_way_back(self):
+        """三栏不能全被眼睛收走 —— 那样连把它们打开的入口都没有了。"""
+        block = self.js[self.js.index('els.list.addEventListener("click"') :]
+        block = block[: block.index("els.account.addEventListener")]
+        self.assertIn("left.length === 0", block)
+        self.assertIn("setPrefs(showPatch)", block)
+
+    # ---- 排序:按正文位置 ----
+
+    def test_the_eye_guard_counts_only_groups_with_content(self):
+        """只在「还有内容、且打开着」的栏会被关光时才拦 —— 空栏关不关都一样,
+        拦它反而让用户没法把面板收干净。"""
+        block = self.js[self.js.index('els.list.addEventListener("click"') :]
+        block = block[: block.index("els.account.addEventListener")]
+        self.assertIn("groupOf(all[i]) === g", block)
+        self.assertIn("orphansShown", block)
+
+    def test_position_key_falls_back_in_three_steps(self):
+        block = _block(self.js, "function positionKey(")
+        self.assertIn("offsetOf(", block)
+        self.assertIn('"TextPositionSelector"', block)
+        self.assertIn("Infinity", block)
+
+    def test_orphans_are_excluded_from_the_sort_key(self):
+        """applyAll 先写 resolved 再 markRange,孤儿两处都在 —— 排序前必须先排除。"""
+        self.assertIn("if (!orphanIds[anno.id])", _block(self.js, "function positionKey("))
+        # orphanIds 由 applyAll 维护,render 只读
+        self.assertIn("orphanIds = {};", _block(self.js, "function applyAll()"))
+
+    def test_list_is_sorted_by_document_position(self):
+        self.assertIn("visible.sort(byPosition)", _block(self.js, "function render()"))
+
+    # ---- 全页评论 ----
+
+    def test_page_comments_are_never_orphans(self):
+        """全页评论本来就没有位置,画不出高亮也不该被打成「未在正文中定位」。"""
+        block = _block(self.js, "function applyAll()")
+        self.assertIn("isPageComment(anno)", block)
+        self.assertIn("continue;", block)
+
+    def test_page_comment_target_carries_the_scope_flag(self):
+        self.assertIn('scope: "page"', _block(self.js, "function submitAnnotation("))
+
+    def test_title_toggles_between_annotations_and_comments(self):
+        block = _block(self.js, "function syncMode()")
+        self.assertIn('"评论"', block)
+        self.assertIn('"批注"', block)
+        self.assertIn("els.smart.hidden", block)
+
+    def test_comment_mode_does_not_offer_text_selection(self):
+        handler = self.js[self.js.index('document.addEventListener("selectionchange"') :]
+        handler = handler[: handler.index("toolbar.addEventListener")]
+        self.assertIn('panelMode === "comments"', handler)
+
+    def test_comment_mode_has_its_own_new_entry(self):
+        """没有划词这个动作,就得有一颗看得见的「写一条评论」。"""
+        self.assertIn('"new-comment"', _block(self.js, "function render()"))
+        self.assertIn("startPageComment()", self.js)
+
+    # ---- 卡片:四个操作各归其位 ----
+
+    def test_card_actions_are_positioned_not_listed(self):
+        item = _block(self.js, "function renderItem(anno, isOrphan)")
+        self.assertIn("aipm-anno__dotwrap", item)
+        self.assertIn('dot.type = "button"', item)
+        self.assertIn("aipm-anno__item-edit", item)
+        self.assertIn("aipm-anno__item-close", item)
+        for gone in ('actionButton("改色"', 'actionButton("删除"', 'actionButton("编辑"'):
+            self.assertNotIn(gone, item)
+
+    def test_recolour_goes_through_the_dot_popover(self):
+        self.assertIn("function toggleColorPop(", self.js)
+        pop = _block(self.js, "function toggleColorPop(")
+        self.assertIn("swatchHtml()", pop)
+        self.assertIn("patchAnnotation(anno, { color: color })", pop)
+        self.assertIn("closeColorPop()", _block(self.js, "function render()"))
+
+    def test_highlight_only_cards_use_a_badge(self):
+        item = _block(self.js, "function renderItem(anno, isOrphan)")
+        self.assertIn('"仅高亮"', item)
+        self.assertNotIn("(只有高亮,没有文字)", self.js)
+
+    # ---- 内联编辑卡 ----
+
+    def test_editor_is_produced_by_render(self):
+        """列表整体重建,编辑器只能现场产出 —— 不能再有面板底部那条常驻表单。"""
+        self.assertIn("materializeEditor()", _block(self.js, "function render()"))
+        shell = self.js[: self.js.index("function render()")]
+        self.assertNotIn("aipm-anno__composer", shell)
+        self.assertNotIn("aipm-anno__input", shell)
+
+    def test_edit_happens_in_place(self):
+        item = _block(self.js, "function renderItem(anno, isOrphan)")
+        self.assertIn('editorDraft.kind === "edit"', item)
+
+    def test_create_editor_is_sorted_like_a_card(self):
+        """新建的批注卡落在它选中那段文字的位置上,而不是钉在面板底部。"""
+        self.assertIn("positionKey({", _block(self.js, "function draftKey()"))
+        self.assertIn("positionKey({", _block(self.js, "function draftKey()"))
+
+    def test_edit_can_change_visibility(self):
+        """服务端批注的可见性可以就地改;本机批注改成公开/私有就是「连这次编辑
+        一起上传」,不能只上传旧正文。"""
+        block = _block(self.js, "function submitEditor()")
+        self.assertIn("patch.visibility", block)
+        self.assertIn("uploadLocal(", block)
+
+    def test_a_draft_remembers_what_it_was_editing(self):
+        """编辑到一半去登录,回来要接着编那一条 —— 当成新建的话草稿没有选区,
+        用户只会撞上「先在正文里选中一段话」。"""
+        draft = _block(self.js, "function draftForLogin()")
+        self.assertIn("resumeId:", draft)
+        self.assertIn("resumeKind:", draft)
+        restore = _block(self.js, "function maybeRestoreDraft()")
+        self.assertIn("draft.resumeId", restore)
+
+    def test_reply_editor_nests_under_its_parent(self):
+        item = _block(self.js, "function renderItem(anno, isOrphan)")
+        self.assertIn('editorDraft.kind === "reply"', item)
+        self.assertIn("aipm-anno__replies", item)
+
+    # ---- 账号 ----
+
+    def test_account_icon_switches_with_login_state(self):
+        block = _block(self.js, "function syncAccountButton()")
+        self.assertIn("ICON.login", block)
+        self.assertIn("aipm-anno__avatar", block)
+        # avatarUrl 是可选字段,缺了要退回登录名首字母
+        self.assertIn("avatarUrl", block)
+        self.assertIn("avatar--letter", block)
+
+    # ---- 移动端 ----
+
+    def test_mobile_opens_the_editor_at_the_tallest_snap(self):
+        """手机上一划词就要写字,抽屉不能停在 peek 那一条上。"""
+        self.assertIn('setSnap("expanded"', _block(self.js, "function beginEditor("))
+
+    def test_peek_height_follows_the_inline_editor(self):
+        """编辑卡搬进列表之后,peek 不能再量那条已经不存在的底部输入区。"""
+        block = _block(self.js, "function refreshPeek()")
+        self.assertIn("els.composer ||", block)
+        self.assertNotIn("els.composer.offsetHeight", block)
+
+    def test_compact_does_not_fade_the_editor(self):
+        self.assertIn(
+            ".aipm-anno.is-compact .aipm-anno__list > *:not(.aipm-anno__composer)",
+            self.css,
+        )
+
+    # ---- 样式 ----
+
+    def test_card_is_a_positioning_context(self):
+        self.assertIn("position: relative;", _block(self.css, ".aipm-anno__item {"))
+
+    def test_split_button_squares_the_touching_corners(self):
+        """分体按钮的圆角必须写在 border-radius 简写之后,否则会被一并重置。"""
+        save = self.css.index(".aipm-anno__actions .aipm-anno__save {")
+        plain = self.css.index("border-radius: .3rem;", save)
+        squared = self.css.index("border-top-right-radius: 0;", save)
+        self.assertLess(plain, squared)
 
 
 if __name__ == "__main__":

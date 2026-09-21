@@ -254,7 +254,12 @@
     return {
       showLocal: p.showLocal !== false,
       showPrivate: p.showPrivate !== false,
-      showPublic: p.showPublic !== false
+      showPublic: p.showPublic !== false,
+      /* 折叠态与「整栏不显示」是两件事:折叠只收起条目、分组标题还留在那儿,
+         眼睛则连标题一起收走。默认都是展开(false)。 */
+      collapsedLocal: p.collapsedLocal === true,
+      collapsedPrivate: p.collapsedPrivate === true,
+      collapsedPublic: p.collapsedPublic === true
     };
   }
 

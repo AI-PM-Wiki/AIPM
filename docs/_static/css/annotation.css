@@ -177,7 +177,9 @@ html.aipm-anno-mode--sheet .aipm-anno[data-snap="expanded"] {
   -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
           mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
 }
-.aipm-anno.is-compact .aipm-anno__list,
+/* compact 淡出的是列表内容,不能连编辑卡一起抹掉 —— 编辑卡现在就长在列表里,
+   整块 opacity:0 会把用户正在写的那几个字也一并藏了。 */
+.aipm-anno.is-compact .aipm-anno__list > *:not(.aipm-anno__composer),
 .aipm-anno.is-compact .aipm-anno__smartbar {
   opacity: 0;
   transition: opacity .12s linear;
@@ -241,9 +243,22 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   height: 1.05rem;
   fill: var(--md-accent-fg-color);
 }
+/* 标题是「批注 ↔ 评论」的切换器,所以它是一颗按钮 —— 按钮要重来一遍重置,
+   否则会带上浏览器默认的边框与底色。悬停给一点底色,让人看得出点得动。 */
 .aipm-anno__title {
+  padding: 0 .3rem;
+  border: 0;
+  border-radius: .25rem;
+  color: inherit;
+  background: transparent;
+  font-family: inherit;
   font-weight: 600;
   font-size: .8125rem;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.aipm-anno__title:hover {
+  background: var(--md-default-fg-color--lightest);
 }
 .aipm-anno__count {
   min-width: 1.2rem;
@@ -305,18 +320,99 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-size: .75rem;
   line-height: 1.7;
 }
-.aipm-anno__group {
-  margin: 1rem 0 .4rem;
+/* 分组头:左边箭头折叠、右边眼睛整栏不显示 —— 两件事分开,别混成一颗开关。 */
+/* 评论模式下的新建入口 —— 那里没有划词这个动作,得有一颗看得见的按钮。 */
+.aipm-anno__newbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  width: 100%;
+  margin: 0 0 .6rem;
+  padding: .5rem;
+  border: 1px dashed var(--aipm-anno-line);
+  border-radius: .3rem;
   color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-family: inherit;
+  font-size: .75rem;
+  cursor: pointer;
+}
+.aipm-anno__newbtn:hover {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+}
+.aipm-anno__newbtn svg {
+  width: .9rem;
+  height: .9rem;
+  fill: currentColor;
+}
+.aipm-anno__group-head {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  margin: 1rem 0 .4rem;
+}
+.aipm-anno__group-fold {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-family: inherit;
   font-size: .6875rem;
   font-weight: 600;
   letter-spacing: .04em;
   text-transform: uppercase;
+  cursor: pointer;
 }
-.aipm-anno__group.is-orphan {
+.aipm-anno__group-fold:hover,
+.aipm-anno__group-eye:hover {
+  color: var(--md-default-fg-color);
+}
+.aipm-anno__group-caret {
+  display: inline-flex;
+  transition: transform .15s ease;
+}
+.aipm-anno__group-caret svg {
+  width: .8rem;
+  height: .8rem;
+  fill: currentColor;
+}
+.aipm-anno__group-head.is-collapsed .aipm-anno__group-caret {
+  transform: rotate(-90deg);
+}
+.aipm-anno__group-title {
+  white-space: nowrap;
+}
+.aipm-anno__group-count {
+  font-weight: 400;
+}
+.aipm-anno__group-eye {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  cursor: pointer;
+}
+.aipm-anno__group-eye svg {
+  width: .9rem;
+  height: .9rem;
+  fill: currentColor;
+}
+.aipm-anno__group-head.is-off .aipm-anno__group-title,
+.aipm-anno__group-head.is-off .aipm-anno__group-count {
+  opacity: .55;
+}
+.aipm-anno__group-head.is-orphan .aipm-anno__group-title {
   color: var(--aipm-anno-pink);
 }
 .aipm-anno__item {
+  position: relative;
   margin-bottom: .5rem;
   padding: .55rem .6rem;
   border: 1px solid var(--aipm-anno-line);
@@ -339,12 +435,63 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   gap: .35rem;
   margin-bottom: .25rem;
 }
+/* 圆点是改色入口,所以它是一颗按钮 —— 但看起来仍是个点。外面那层 wrap 只负责
+   给弹出来的色板当定位锚。 */
+.aipm-anno__dotwrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
 .aipm-anno__dot {
   flex: none;
-  width: .6rem;
-  height: .6rem;
+  width: .7rem;
+  height: .7rem;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
   background: var(--aipm-anno-yellow);
+  cursor: pointer;
+}
+.aipm-anno__dot.is-readonly {
+  cursor: default;
+}
+.aipm-anno__dot:not(.is-readonly):hover {
+  box-shadow: 0 0 0 3px var(--md-default-fg-color--lightest);
+}
+.aipm-anno__colorpop {
+  position: absolute;
+  top: calc(100% + .35rem);
+  left: -.2rem;
+  z-index: 6;
+  display: flex;
+  gap: .2rem;
+  padding: .25rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .35rem;
+  background: var(--md-default-bg-color);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+}
+.aipm-anno__item-edit,
+.aipm-anno__item-close {
+  display: inline-flex;
+  flex: none;
+  padding: 0;
+  border: 0;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  cursor: pointer;
+}
+.aipm-anno__item-edit:hover {
+  color: var(--md-accent-fg-color);
+}
+.aipm-anno__item-close:hover {
+  color: var(--aipm-anno-pink);
+}
+.aipm-anno__item-edit svg,
+.aipm-anno__item-close svg {
+  width: .85rem;
+  height: .85rem;
+  fill: currentColor;
 }
 .aipm-anno__dot[data-color="yellow"] { background: var(--aipm-anno-yellow); }
 .aipm-anno__dot[data-color="green"]  { background: var(--aipm-anno-green); }
@@ -363,6 +510,12 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__spacer {
   flex: 1 1 auto;
+}
+/* 「仅高亮」与「已上传」是状态角标,不是警示 —— 压低一档存在感。 */
+.aipm-anno__badge.is-quiet {
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  border: 1px solid var(--aipm-anno-line);
 }
 .aipm-anno__badge {
   padding: 0 .3rem;
@@ -412,9 +565,6 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__link:hover {
   text-decoration: underline;
-}
-.aipm-anno__link[data-action="delete"]:hover {
-  color: var(--aipm-anno-pink);
 }
 
 /* ----------------------------------------------------------------------------
@@ -483,12 +633,14 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 /* ----------------------------------------------------------------------------
    7. 输入区
    ---------------------------------------------------------------------------- */
+/* 编辑卡长在列表里、与普通卡片同一条流 —— 不再是面板底部那条固定输入区。
+   「写的时候看到的排版,就是发出去之后的排版」。 */
 .aipm-anno__composer {
-  flex: none;
   display: block;
-  padding: .6rem .75rem;
-  margin-bottom: 0;
-  border-top: 1px solid var(--aipm-anno-line);
+  margin: 0 0 .5rem;
+}
+.aipm-anno__composer[data-editor="reply"] {
+  margin: .35rem 0 0;
 }
 /* 草稿卡:与 .aipm-anno__item 同一套骨架,区别只在底色与「新批注」角标 ——
    写的时候看到的排版,就是发出去之后的排版。 */
@@ -675,16 +827,26 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   height: .6rem;
 }
 /* 取消/保存也收一档内边距:主题把根字号放大到 20px,rem 换算比直觉大一档,
-   按键行(341px)要同时塞下五个色块 + 两个按钮 + 可见范围,只能逐项瘦身。 */
-.aipm-anno__actions .aipm-anno__cancel,
-.aipm-anno__actions .aipm-anno__save {
-  padding: .3rem .55rem;
-}
-.aipm-anno__visbtn {
-  padding: .3rem .35rem .3rem .5rem;
-}
+   按键行(341px)要同时塞下五个色块 + 两个按钮 + 分体按钮,只能逐项瘦身。 */
 .aipm-anno__account.is-logged-in {
   color: var(--md-accent-fg-color);
+}
+.aipm-anno__avatar {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  object-fit: cover;
+}
+.aipm-anno__avatar--letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-default-bg-color);
+  background: var(--md-accent-fg-color);
+  font-size: .6875rem;
+  font-weight: 600;
+  line-height: 1;
 }
 .aipm-anno__acct {
   position: absolute;
@@ -739,6 +901,22 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__actions .aipm-anno__save:disabled {
   opacity: .6;
   cursor: progress;
+}
+
+/* 保存与可见范围合成分体按钮:左半是保存,右半只是那颗箭头(当前范围由草稿卡的
+   meta 行说明,不再占按钮上的字)。两颗之间不留缝,相邻的圆角削平 —— 必须写在
+   上面那条 border-radius 简写之后,否则会被它一并重置回去。 */
+.aipm-anno__actions .aipm-anno__vismenu {
+  margin-left: -.3rem;
+}
+.aipm-anno__actions .aipm-anno__visbtn {
+  padding: .3rem .3rem;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.aipm-anno__actions .aipm-anno__save {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 /* ----------------------------------------------------------------------------
