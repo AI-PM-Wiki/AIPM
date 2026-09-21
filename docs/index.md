@@ -1,64 +1,104 @@
 ---
 title: AI-PM
-template: home.html
 ---
 
-<div class="pm-card-grid">
-  <a class="pm-card" href="pm/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2.2 4.8-4.8 2.2 2.2-4.8z"/></svg>
-    <span class="pm-card__title">产品方法论</span>
-    <span class="pm-card__desc">需求分析、用户研究、产品设计与原型、项目管理与迭代、商业化与增长</span>
+<div class="pmb">
+  <section class="pmb-hero">
+    <div class="pmb-hero__in">
+      <div class="pmb-hero__top">
+        <span class="pmb-mono pmb-hero__tag">[ 01 / INDEX ]<i class="pmb-caret" aria-hidden="true"></i></span>
+        <span class="pmb-mono pmb-hero__id">AIPM.AC · EST.2026 · 中文</span>
+      </div>
+      <h1 class="pmb-mark">AI-PM</h1>
+      <div class="pmb-hero__foot">
+        <p class="pmb-lede">AI 产品经理知识整合站。<br>产品、工程、管理、商业、AI 基础与实战，一处读完。</p>
+        <ul class="pmb-stats pmb-mono">
+          <li><b>11</b><span>栏目</span></li>
+          <li><b>04</b><span>原则</span></li>
+          <li><b>CC</b><span>知识自由</span></li>
+        </ul>
+      </div>
+      <div class="pmb-cta">
+        <a class="pmb-btn pmb-btn--solid" href="#pmb-index">开始阅读</a>
+        <a class="pmb-btn pmb-btn--line" href="intro/about/">关于项目</a>
+        <span class="pmb-mono pmb-hint">按 <b>G</b> 显示栏线</span>
+      </div>
+    </div>
+  </section>
+  <section class="pmb-idx" id="pmb-index">
+    <header class="pmb-idx__head">
+      <h2 class="pmb-idx__title"><span class="pmb-mono pmb-idx__tag">[ 02 / SECTIONS ]</span>十一个入口</h2>
+      <span class="pmb-mono pmb-idx__count">11 ENTRIES</span>
+    </header>
+    <div class="pmb-grid">
+  <a class="pmb-cell pmb-cell--xl" href="pm/">
+    <span class="pmb-cell__no pmb-mono">01</span>
+    <span class="pmb-cell__t">产品方法论</span>
+    <span class="pmb-cell__d">需求分析、用户研究、产品设计与原型、项目管理与迭代、商业化与增长</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="tech/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3M9 9h6v6H9z"/></svg>
-    <span class="pm-card__title">工程与架构</span>
-    <span class="pm-card__desc">开发流程、系统架构、工程术语与 AI-Native 研发流程</span>
+  <a class="pmb-cell pmb-cell--lg" href="tech/">
+    <span class="pmb-cell__no pmb-mono">02</span>
+    <span class="pmb-cell__t">工程与架构</span>
+    <span class="pmb-cell__d">开发流程、系统架构、工程术语与 AI-Native 研发流程</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="management/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 21c.5-4 2.5-6 6-6s5.5 2 6 6M15 15c3 0 5 2 6 6"/></svg>
-    <span class="pm-card__title">工商管理</span>
-    <span class="pm-card__desc">组织与决策、市场与消费者、战略创新、项目与财务</span>
+  <a class="pmb-cell pmb-cell--md" href="management/">
+    <span class="pmb-cell__no pmb-mono">03</span>
+    <span class="pmb-cell__t">工商管理</span>
+    <span class="pmb-cell__d">组织与决策、市场与消费者、战略创新、项目与财务</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="business/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21v-6M11 21V8M16 21v-11"/></svg>
-    <span class="pm-card__title">商业与财会</span>
-    <span class="pm-card__desc">金融学、会计学、公司金融、计量经济学等 19 门课</span>
+  <a class="pmb-cell pmb-cell--md" href="business/">
+    <span class="pmb-cell__no pmb-mono">04</span>
+    <span class="pmb-cell__t">商业与财会</span>
+    <span class="pmb-cell__d">金融学、会计学、公司金融、计量经济学等 19 门课</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="ai/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3"/></svg>
-    <span class="pm-card__title">AI 基础</span>
-    <span class="pm-card__desc">机器学习地基、大模型、多模态、提示词、RAG、Agent、评估安全与前沿</span>
+  <a class="pmb-cell pmb-cell--md" href="ai/">
+    <span class="pmb-cell__no pmb-mono">05</span>
+    <span class="pmb-cell__t">AI 基础</span>
+    <span class="pmb-cell__d">机器学习地基、大模型、多模态、提示词、RAG、Agent、评估安全与前沿</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="practice/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v5.5L4.7 18a2 2 0 001.8 3h11a2 2 0 001.8-3L14 8.5V3"/><path d="M7.5 15h9"/></svg>
-    <span class="pm-card__title">AI 产品实战</span>
-    <span class="pm-card__desc">对话助手、知识库问答、Agent、Copilot、工作流自动化</span>
+  <a class="pmb-cell pmb-cell--md" href="practice/">
+    <span class="pmb-cell__no pmb-mono">06</span>
+    <span class="pmb-cell__t">AI 产品实战</span>
+    <span class="pmb-cell__d">对话助手、知识库问答、Agent、Copilot、工作流自动化</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="tools/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h9M17 8h3"/><circle cx="15" cy="8" r="2"/><path d="M4 16h3M11 16h9"/><circle cx="9" cy="16" r="2"/></svg>
-    <span class="pm-card__title">工具与平台</span>
-    <span class="pm-card__desc">LLM API、开源框架、提示词与评测工具、数据标注</span>
+  <a class="pmb-cell pmb-cell--md" href="tools/">
+    <span class="pmb-cell__no pmb-mono">07</span>
+    <span class="pmb-cell__t">工具与平台</span>
+    <span class="pmb-cell__d">LLM API、开源框架、提示词与评测工具、数据标注</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="case/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/></svg>
-    <span class="pm-card__title">学习资源</span>
-    <span class="pm-card__desc">信息源、读书笔记与播客笔记</span>
+  <a class="pmb-cell pmb-cell--lg" href="case/">
+    <span class="pmb-cell__no pmb-mono">08</span>
+    <span class="pmb-cell__t">学习资源</span>
+    <span class="pmb-cell__d">信息源、读书笔记与播客笔记</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="job/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-    <span class="pm-card__title">求职专题</span>
-    <span class="pm-card__desc">产品经理岗位类别、协作团队与岗位、真实 JD 样本与求职发展</span>
+  <a class="pmb-cell pmb-cell--lg" href="job/">
+    <span class="pmb-cell__no pmb-mono">09</span>
+    <span class="pmb-cell__t">求职专题</span>
+    <span class="pmb-cell__d">产品经理岗位类别、协作团队与岗位、真实 JD 样本与求职发展</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="vertical/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
-    <span class="pm-card__title">垂直领域</span>
-    <span class="pm-card__desc">网络安全、金融、法律、教育、地球科学、医疗与企业服务的对象、规则与 AI 切入点</span>
+  <a class="pmb-cell pmb-cell--lg" href="vertical/">
+    <span class="pmb-cell__no pmb-mono">10</span>
+    <span class="pmb-cell__t">垂直领域</span>
+    <span class="pmb-cell__d">网络安全、金融、法律、教育、地球科学、医疗与企业服务的对象、规则与 AI 切入点</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
-  <a class="pm-card" href="intro/about/">
-    <svg class="pm-card__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <span class="pm-card__title">关于</span>
-    <span class="pm-card__desc">项目介绍、更新原则、如何参与、格式手册与 FAQ</span>
+  <a class="pmb-cell pmb-cell--wide" href="intro/about/">
+    <span class="pmb-cell__no pmb-mono">11</span>
+    <span class="pmb-cell__t">关于</span>
+    <span class="pmb-cell__d">项目介绍、更新原则、如何参与、格式手册与 FAQ</span>
+    <span class="pmb-cell__go pmb-mono" aria-hidden="true">▸</span>
   </a>
+    </div>
+  </section>
 </div>
 
 ## 本站的原则
