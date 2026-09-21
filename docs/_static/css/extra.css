@@ -1513,3 +1513,527 @@ div.md-typeset__scrollwrap:has(table[data-review-enabled]) {
     display: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   13. 首页 v2「静纸」(2026-09-21,分支 feature/home-v2-quiet)
+
+   骨架与 v1 无关:v1 是「居中堆叠 hero + 11 个等大卡片 3 列网格」;
+   v2 是「全宽浅横带 hero(字标仅 34px 且靠左上)+ 目次式安静列表」。
+   - 首页不再挂 template: home.html,hero 结构直接写在 docs/index.md 正文;
+     本小节因此完全靠 .qd-* 类名与 :has(.qd-paper) 作用域生效,不依赖模板。
+   - 版心 = .md-content__inner:has(.qd-paper) 自身(暖纸底 + 发丝内框 + 极淡噪点),
+     其内依次是 hero 横带、目次列表,以及两节 markdown 正文(本站的原则 / 现在适合从哪里开始)。
+   - 首页 frontmatter 摘掉左右侧栏(hide: navigation / toc),把版心还给纸面。
+   - 一套排版模数:34 / 20 / 15 / 12 / 10.5 px;间距基准 4px。
+   - 至多一处强调色:苔绿 #4A5D45,只落在印记方块、行号 hover、发丝下划线与焦点环。
+   ---------------------------------------------------------------------------- */
+
+/* 13.1 设计 token(亮 = 暖纸白 / 暗 = 深灰纸;暗色是第二套设计,不是反色) */
+:root {
+  --qd-paper: #F9F6F0;                       /* 暖纸白(#FBFAF7 再暖一档,否则与页面纯白分不出) */
+  --qd-ink: #1A1A18;                         /* 墨 */
+  --qd-ink-2: #4A4A46;                       /* 次级墨 */
+  --qd-ink-3: #6E6D67;                       /* 三级墨(正文对比度 4.98:1) */
+  --qd-line: rgba(26, 26, 24, .10);          /* 行分隔发丝 */
+  --qd-line-strong: rgba(26, 26, 24, .17);   /* 版心框 / 刻度尺 / 下划线 */
+  --qd-accent: #4A5D45;                      /* 苔绿(低饱和,对比度 6.8:1) */
+  --qd-accent-soft: rgba(74, 93, 69, .38);
+  --qd-tick: rgba(26, 26, 24, .21);          /* 刻度:比基线淡一档 */
+  --qd-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter,
+              Georgia, "Songti SC", "Noto Serif SC", serif;
+  --qd-serif-cjk: "Songti SC", "Songti TC", "Noto Serif SC",
+                  "Source Han Serif SC", "Iowan Old Style", Georgia, serif;
+  --qd-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+             "Liberation Mono", monospace;
+  /* 纸纹:内联 SVG feTurbulence 去饱和噪点,data-URI 无外部请求 */
+  --qd-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+[data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
+  --qd-paper: #17181B;                       /* 深灰纸(略偏冷,不发蓝光) */
+  --qd-ink: #E9E7E1;
+  --qd-ink-2: #B3B1AA;
+  --qd-ink-3: #8A8880;
+  --qd-line: rgba(233, 231, 225, .10);
+  --qd-line-strong: rgba(233, 231, 225, .20);
+  --qd-accent: #8FA588;                      /* 暗色提亮苔绿(对比度 6.8:1) */
+  --qd-accent-soft: rgba(143, 165, 136, .45);
+  --qd-tick: rgba(233, 231, 225, .26);
+}
+
+/* 13.2 版心:暖纸底 + 发丝内框 + 极淡噪点层。
+   噪点用 ::before + z-index:-1:靠 13.2 自身的 stacking context(z-index:0)压在纸底之上、
+   正文之下,不覆盖文字。height:auto 必须显式写,覆盖主题
+   .md-content__inner:before 的 height:.4rem。 */
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) {
+  position: relative;
+  z-index: 0;
+  max-width: min(50rem, 76vw);
+  margin: 2.4rem auto 3.2rem;
+  padding: 4.6rem 4.4rem 4.8rem;
+  background-color: var(--qd-paper);
+  border-radius: 0;
+  /* 匡郭:外发丝 + 4px 纸 + 内发丝;内发丝才是版心边界(box-shadow 先画者在上) */
+  box-shadow:
+    inset 0 0 0 1px var(--qd-line-strong),
+    inset 0 0 0 5px var(--qd-paper),
+    inset 0 0 0 6px var(--qd-line);
+}
+
+[data-md-color-scheme] .md-content__inner:has(.qd-paper)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  height: auto;
+  z-index: -1;
+  background-image: var(--qd-noise);
+  background-size: 140px 140px;
+  opacity: .05;
+  pointer-events: none;
+}
+
+[data-md-color-scheme="slate"] .md-content__inner:has(.qd-paper)::before {
+  opacity: .065;
+}
+
+/* 13.3 摘掉 template: home.html 后露出的三样 chrome(CSS 隐藏,DOM 不删) */
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > .md-content__button,
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > hr,
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > blockquote.page-copyright,
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > .giscus,
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > #__comments {
+  display: none;
+}
+
+/* offsets-injection 扩展给顶层 HTML 块套的空 <p>,只关掉版心内的 */
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > p:empty {
+  display: none;
+}
+
+/* 13.4 hero 横带:宽而浅,内容极少,全部左对齐(无一处居中堆叠) */
+[data-md-color-scheme] .md-typeset .qd-hero {
+  display: block;
+  padding-bottom: 3.8rem;
+}
+
+/* 柱(running head):字标靠左上 34px,同行右端一枚 mono 小字 colophon */
+[data-md-color-scheme] .md-typeset .qd-hero__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.4rem;
+}
+
+[data-md-color-scheme] .md-typeset .qd-mark {
+  margin: 0;
+  font-family: var(--qd-serif);
+  font-size: 1.7rem;                          /* 34px —— 本方向的核心决定:字标不巨大 */
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--qd-ink);
+}
+
+[data-md-color-scheme] .md-typeset .qd-colophon {
+  margin: 0;
+  font-family: var(--qd-mono);
+  font-size: .525rem;                         /* 10.5px */
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--qd-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 一行 tagline:15px/1.9,克制的次级墨;max-width 收在 46ch 内不铺满版心 */
+[data-md-color-scheme] .md-typeset .qd-tagline {
+  max-width: 34rem;
+  margin: 2.4rem 0 0;
+  font-size: .75rem;                          /* 15px */
+  line-height: 1.9;
+  color: var(--qd-ink-2);
+  text-wrap: pretty;
+}
+
+/* CTA:两枚 13px 文字链接,无按钮、无底色、无圆角 */
+[data-md-color-scheme] .md-typeset .qd-quick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .9rem;
+  margin: 1.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-md-color-scheme] .md-typeset .qd-quick li {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-md-color-scheme] .md-typeset .qd-quick li + li::before {
+  content: "\00b7";
+  margin-right: .9rem;
+  color: var(--qd-line-strong);
+}
+
+[data-md-color-scheme] .md-typeset .qd-quick a {
+  font-size: .65rem;                          /* 13px */
+  line-height: 1.6;
+  color: var(--qd-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--qd-line-strong);
+  padding-bottom: .16rem;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+[data-md-color-scheme] .md-typeset .qd-quick a:hover,
+[data-md-color-scheme] .md-typeset .qd-quick a:focus-visible {
+  color: var(--qd-accent);
+  border-bottom-color: var(--qd-accent);
+}
+
+/* 13.5 hero 唯一的一处几何细节:一枚 12px 实心印记 + 从它向右延伸的发丝刻度尺
+   (细刻度 8px 一档 3px 高,主刻度 64px 一档 8px 高,全部齐底) */
+[data-md-color-scheme] .md-typeset .qd-hero__foot {
+  display: flex;
+  align-items: flex-end;
+  gap: .7rem;
+  margin-top: 2.2rem;
+}
+
+[data-md-color-scheme] .md-typeset .qd-seal {
+  flex: none;
+  width: .6rem;
+  height: .6rem;                              /* 12px */
+  background-color: var(--qd-accent);
+}
+
+[data-md-color-scheme] .md-typeset .qd-rule {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: .4rem;                              /* 8px 刻度 + 1px 基线 */
+  border-bottom: 1px solid var(--qd-line-strong);   /* 基准发丝:刻度立在它上面 */
+  background-image:
+    linear-gradient(90deg, var(--qd-tick) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--qd-tick) 0 1px, transparent 1px);
+  background-size: .4rem .2rem, 3.2rem .4rem;       /* 细刻度 8px/4px,主刻度 64px/8px */
+  background-position: left bottom, left bottom;
+  background-repeat: repeat-x, repeat-x;
+}
+
+/* 整页唯一的动效:刻度尺自左向右描出(home-quiet.js 挂 .qd-draw;无 JS 则静态呈现) */
+@keyframes qd-rule-draw {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+[data-md-color-scheme] .md-typeset .qd-rule.qd-draw {
+  animation: qd-rule-draw 1100ms cubic-bezier(.22, .7, .2, 1) both;
+}
+
+/* 降低动效:刻度尺不描出(直接完整呈现),hover 位移类过渡一并停掉。
+   选择器必须与上面的动画规则同特异度(0,4,0),否则覆盖不掉。 */
+@media (prefers-reduced-motion: reduce) {
+  [data-md-color-scheme] .md-typeset .qd-rule.qd-draw {
+    animation: none;
+  }
+
+  [data-md-color-scheme] .md-typeset .qd-row::after,
+  [data-md-color-scheme] .md-typeset .qd-quick a,
+  [data-md-color-scheme] .md-typeset .qd-row__num,
+  [data-md-color-scheme] .md-content__inner:has(.qd-paper) > ul > li a {
+    transition: none;
+  }
+}
+
+/* 13.6 目次:安静的双段列表,没有盒子 */
+[data-md-color-scheme] .md-typeset .qd-toc {
+  margin-top: .2rem;
+}
+
+[data-md-color-scheme] .md-typeset .qd-toc__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.6rem;
+}
+
+[data-md-color-scheme] .md-typeset .qd-toc__title {
+  margin: 0;
+  font-family: var(--qd-serif-cjk);
+  font-size: 1rem;                            /* 20px */
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: .16em;
+  color: var(--qd-ink);
+}
+
+[data-md-color-scheme] .md-typeset .qd-meta {
+  font-family: var(--qd-mono);
+  font-size: .525rem;
+  line-height: 1.6;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--qd-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 段标签:10.5px 宽字距小字(「学 习 主 线」),不是标题而是书眉 */
+/* 13.6b 双栏:左栏「学习主线」宽、右栏「参考与专题」窄;
+   两栏各是一条完整列表(不是把一个列表劈成两列),因此长短不齐是两条清单本身的长度差 */
+[data-md-color-scheme] .md-typeset .qd-toc__cols {
+  display: grid;
+  grid-template-columns: 1.42fr 1fr;
+  column-gap: 3.2rem;
+  align-items: start;
+}
+
+[data-md-color-scheme] .md-typeset .qd-col {
+  min-width: 0;
+}
+
+[data-md-color-scheme] .md-typeset .qd-group__label {
+  margin: 2.6rem 0 .5rem;
+  font-size: .525rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: .3em;
+  color: var(--qd-ink-2);
+}
+
+[data-md-color-scheme] .md-typeset .qd-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-md-color-scheme] .md-typeset .qd-row {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--qd-line);
+}
+
+/* hover:强调色发丝下划线自左滑入,原位不发丝被替换(无盒子、无位移、无投影) */
+[data-md-color-scheme] .md-typeset .qd-row::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background-color: var(--qd-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 190ms cubic-bezier(.22, .7, .2, 1);
+}
+
+[data-md-color-scheme] .md-typeset .qd-row:hover::after,
+[data-md-color-scheme] .md-typeset .qd-row:focus-within::after {
+  transform: scaleX(1);
+}
+
+[data-md-color-scheme] .md-typeset .qd-row__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+[data-md-color-scheme] .md-typeset .qd-row__num {
+  font-family: var(--qd-mono);
+  font-size: .525rem;
+  line-height: 1.6;
+  letter-spacing: .06em;
+  color: var(--qd-ink-3);
+  font-variant-numeric: tabular-nums;
+  transition: color 160ms ease;
+}
+
+[data-md-color-scheme] .md-typeset .qd-row:hover .qd-row__num,
+[data-md-color-scheme] .md-typeset .qd-row:focus-within .qd-row__num {
+  color: var(--qd-accent);
+}
+
+/* 学习主线:六行,行距慷慨,标题与描述分两行 */
+[data-md-color-scheme] .md-typeset .qd-list--lead .qd-row__link {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  column-gap: 1rem;
+  align-items: baseline;
+  padding: 1.15rem 0 1.3rem;
+}
+
+[data-md-color-scheme] .md-typeset .qd-list--lead .qd-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  min-width: 0;
+}
+
+[data-md-color-scheme] .md-typeset .qd-list--lead .qd-row__title {
+  font-size: .75rem;                          /* 15px */
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: .01em;
+  color: var(--qd-ink);
+}
+
+[data-md-color-scheme] .md-typeset .qd-list--lead .qd-row__desc {
+  font-size: .6rem;                           /* 12px */
+  line-height: 1.9;
+  color: var(--qd-ink-3);
+  text-wrap: pretty;
+}
+
+/* 参考与专题:五行,紧凑索引,「标题 —— 描述」同行 */
+[data-md-color-scheme] .md-typeset .qd-list--index .qd-row__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: .5rem;
+  row-gap: .2rem;
+  padding: 1.2rem 0 1.3rem;
+}
+
+[data-md-color-scheme] .md-typeset .qd-list--index .qd-row__title {
+  font-size: .6rem;                           /* 12px */
+  font-weight: 600;
+  line-height: 1.7;
+  color: var(--qd-ink);
+}
+
+[data-md-color-scheme] .md-typeset .qd-list--index .qd-row__desc {
+  font-size: .6rem;
+  line-height: 1.7;
+  color: var(--qd-ink-3);
+}
+
+[data-md-color-scheme] .md-typeset .qd-list--index .qd-row__desc::before {
+  content: "\2014\2014";
+  margin-right: .35rem;
+  color: var(--qd-line-strong);
+}
+
+/* 13.7 目次之后的两节 markdown 正文:与版心同一套语言,不是另起一套 wiki 样式 */
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > h2 {
+  margin: 4.2rem 0 1.4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--qd-line-strong);
+  font-family: var(--qd-serif-cjk);
+  font-size: 1rem;                            /* 20px */
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: .06em;
+  color: var(--qd-ink);
+}
+
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > ul > li {
+  margin: 0;
+  padding: .95rem 0 1rem;
+  border-bottom: 1px solid var(--qd-line);
+  font-size: .65rem;                          /* 13px */
+  line-height: 1.9;
+  color: var(--qd-ink-2);
+  text-wrap: pretty;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > ul > li:last-child {
+  border-bottom: 0;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > ul > li strong {
+  font-family: var(--qd-serif-cjk);
+  font-size: .75rem;                          /* 15px 宋体术语 */
+  font-weight: 400;
+  letter-spacing: .02em;
+  color: var(--qd-ink);
+}
+
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > ul > li a {
+  color: var(--qd-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--qd-line-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: .28em;
+  transition: color 160ms ease, text-decoration-color 160ms ease;
+}
+
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > ul > li a:hover,
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) > ul > li a:focus-visible {
+  color: var(--qd-accent);
+  text-decoration-color: var(--qd-accent);
+}
+
+/* 13.8 焦点环:苔绿细环,仅键盘可见 */
+[data-md-color-scheme] .md-content__inner:has(.qd-paper) a:focus-visible {
+  outline: 2px solid var(--qd-accent);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+/* 13.9 响应式:1440 / 1024 / 768 / 390 四档,断点处不是简单堆叠 */
+@media screen and (max-width: 1219px) {
+  [data-md-color-scheme] .md-content__inner:has(.qd-paper) {
+    padding: 3.6rem 3.4rem 3.8rem;
+  }
+}
+
+/* 1100 以下收成单栏:双栏在 1024 会把右栏压到 240px 上下,「标题 —— 描述」会碎成三行 */
+@media screen and (max-width: 1099px) {
+  [data-md-color-scheme] .md-content__inner:has(.qd-paper) {
+    padding: 2.8rem 2.2rem 3rem;
+  }
+
+  [data-md-color-scheme] .md-typeset .qd-toc__cols {
+    grid-template-columns: 1fr;
+    row-gap: 0;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  [data-md-color-scheme] .md-content__inner:has(.qd-paper) {
+    max-width: 100%;
+    margin: 1.2rem .8rem 2rem;
+    padding: 2.4rem 1.4rem 2.6rem;
+  }
+
+  [data-md-color-scheme] .md-typeset .qd-hero__head {
+    display: block;
+  }
+
+  [data-md-color-scheme] .md-typeset .qd-colophon {
+    margin-top: .9rem;
+    text-align: left;
+  }
+
+  [data-md-color-scheme] .md-typeset .qd-mark {
+    font-size: 1.4rem;                        /* 28px */
+  }
+
+  [data-md-color-scheme] .md-typeset .qd-list--lead .qd-row__link {
+    grid-template-columns: 1.9rem minmax(0, 1fr);
+    column-gap: .6rem;
+  }
+
+  [data-md-color-scheme] .md-content__inner:has(.qd-paper) > h2 {
+    margin-top: 3rem;
+  }
+}
+
+/* 13.10 若环境不支持 :has(),版心退化为普通正文列(内容仍完整可读) */
+@supports not selector(:has(*)) {
+  .md-content__inner {
+    padding-bottom: 2rem;
+  }
+}
