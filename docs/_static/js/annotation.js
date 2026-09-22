@@ -600,7 +600,9 @@
   smartClose.innerHTML = ICON.close;
   smartClose.addEventListener("click", function () {
     /* 只收条子,不撤结果:高亮建议还缓存在 suggestCache 里,再点页头的 ✨ 原地
-       摆回来,既不重新请求,也不会撞上冷却。 */
+       摆回来,既不重新请求,也不会撞上冷却。记下「这一页被关过」,免得换页回来
+       时又被自动摆出来。 */
+    smartbarDismissed = pagePath();
     setSmartbar("", "");
   });
 
@@ -3815,8 +3817,23 @@
      ================================================================ */
   var suggestCache = {};
   var cooldownUntil = 0;
+  /* 条子当前说的是哪一页。instant 导航只换内容容器,面板与条子都留在原地 ——
+     不记这一笔,换页后条子会继续挂上一页的回执(用户验收意见:「通知不会随着
+     页面切换而切换」)。 */
+  var smartbarPage = null;
+  /* 用户亲手关掉条子的那一页。换页时条子要跟着换(见 syncSmartbar),但**用户
+     自己关掉的**不能再自作主张弹回来 —— 这两件事都表现为「条子不见了」,得分开记。 */
+  var smartbarDismissed = null;
 
-  function extractBlocks() {
+  /**
+   * 抽本页的候选块。
+   *
+   * `includeMarked` 为真时连已经划过高亮的块也一并返回 —— 换页回来重建建议条时
+   * 要按块 id 把 Range 重绑到当前 DOM 上(见 withLiveBlocks),落过高亮的块若被
+   * 跳过,它在建议里就「不存在」,一条已落过一半的页面会被显示成「本页没有值得
+   * 高亮的地方」。送去判分那条路照旧不带它(已高亮的段落不必再判一次)。
+   */
+  function extractBlocks(includeMarked) {
     var root = contentRoot();
     var nodes = root.querySelectorAll(BLOCK_SELECTOR);
     var out = [];
@@ -3832,7 +3849,7 @@
       // 映射,而服务端同页缓存是按页面内容哈希共享的 —— 那样 id 会错配到别的段落。
       // 位置序号只依赖 DOM 顺序,各客户端一致。
       var id = "b" + seq++;
-      if (el.querySelector("mark.aipm-anno-mark")) continue;
+      if (!includeMarked && el.querySelector("mark.aipm-anno-mark")) continue;
       /* 页脚那一段(「发现错误?想一起完善?…本页面的全部内容在…协议下提供」,
          partials/comments.html)是主题模板文字,不是页面正文 —— 站内正文索引按
          page.content 建,里面没有它,送去判分只会被服务端按「不属于该页」退掉。
@@ -3956,8 +3973,11 @@
     if (!text) {
       els.smartbar.hidden = true;
       els.smartbar.textContent = "";
+      smartbarPage = null;
       return;
     }
+    smartbarPage = pagePath();
+    smartbarDismissed = null;
     els.smartbar.hidden = false;
     els.smartbar.setAttribute("data-kind", kind || "");
     /* 正文得单独包一层:直接写 textContent 的话,它是一个**匿名 flex 项**,
@@ -3973,8 +3993,45 @@
 
   function sourceLabel(source) {
     if (source === "jev") return "Jev";
-    if (source === "llm") return "Claude";
+    if (source === "llm") return "备用模型";
     return "规则";
+  }
+
+  /**
+   * 条子上那半句「来源」。
+   *
+   * 一律以服务端回的**模型 id** 为准(jev-1.13.0 / deepseek-flash …):写死
+   * provider 名字会撒谎 —— 兜底那一路是个可配的 Anthropic 兼容端点,线上指到
+   * DeepSeek 时,条子上却印着「来源 Claude」,后面还跟着一个 deepseek-flash,
+   * 自相矛盾(用户验收意见里那张图)。只有拿不到模型 id 时才退回 provider 名。
+   */
+  function judgeLabel(payload) {
+    return payload.model ? String(payload.model) : sourceLabel(payload.judge);
+  }
+
+  /**
+   * 把 payload 里的块 Range 重绑到**当前**这份 DOM 上。
+   *
+   * payload 可能来自缓存(甚至是上一页的缓存),里面的 Range 指向早已脱离文档的
+   * 旧节点 —— 拿它去落高亮会落到虚空中。块 id 是文档里的位置序号,同页同内容时
+   * 稳定(见 extractBlocks),所以按 id 重绑即可。绑不上的块(页面改了、块被删了)
+   * 直接丢掉:宁可不给这条建议,也不要落在错段落上。
+   */
+  function withLiveBlocks(payload) {
+    var live = {};
+    extractBlocks(true).forEach(function (b) {
+      live[b.id] = b.range;
+    });
+    var blocks = [];
+    (payload.blocks || []).forEach(function (b) {
+      if (live[b.id]) blocks.push({ id: b.id, text: b.text, range: live[b.id] });
+    });
+    var out = {};
+    for (var k in payload) {
+      if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k];
+    }
+    out.blocks = blocks;
+    return out;
   }
 
   /** 本页由智能高亮落下的「仅本机」批注(带 origin 标记,刷新后仍认得出)。 */
@@ -4008,23 +4065,71 @@
     });
   }
 
+  /** 服务端 degraded 的理由 → 人话。未知理由按「服务暂时不可用」兜底(宁可多说)。 */
+  var REASON_TEXT = {
+    not_in_page: "不属于本页正文",
+    no_answer: "服务没给这一段结论",
+    budget_exhausted: "今日预算已用完",
+    over_page_limit: "超出每页建议上限",
+    not_worth: "不值得高亮",
+    below_threshold: "不值得高亮",
+    too_short: "过短",
+    unreadable: "纯符号或数字",
+    code: "代码块",
+    navigation: "导航与目录",
+    duplicate: "与本页其他段落重复",
+    rate_limited: "服务被限流",
+    timeout: "服务超时",
+    shape: "服务返回的格式读不懂",
+    unavailable: "服务暂时不可用"
+  };
+
+  /* 上面这些里,「本来就不该给建议」的那几种:不计进「没能判定」。 */
+  var DELIBERATE_SKIP = {
+    too_short: 1,
+    unreadable: 1,
+    code: 1,
+    navigation: 1,
+    duplicate: 1,
+    not_worth: 1,
+    below_threshold: 1,
+    over_page_limit: 1
+  };
+
+  function reasonLabel(reason) {
+    var code = String(reason || "").split(":")[0];
+    return REASON_TEXT[code] || "服务暂时不可用";
+  }
+
   /**
    * 智能高亮条只有两态:还能落 → 「全部高亮(N)」,已经落过 → 「全部关闭(N)」。
    * 建议不在这里逐条罗列(用户验收意见:一条条列出来太吵),落库后它们就是
    * 面板列表里普通的「仅本机」条目,和手写的批注一样可以编辑、改色、上传。
    */
-  function renderSuggestions(payload) {
+  function renderSuggestions(payload, page) {
+    payload = withLiveBlocks(payload);
+    smartbarPage = page || pagePath();
+    smartbarDismissed = null;
     els.smartbar.hidden = false;
     els.smartbar.setAttribute("data-kind", "result");
     els.smartbar.textContent = "";
 
     var head = document.createElement("div");
     head.className = "aipm-anno__smart-head";
-    var parts = ["智能高亮 · 来源 " + sourceLabel(payload.judge)];
-    if (payload.fallbackFrom) parts.push("(由 " + sourceLabel(payload.fallbackFrom) + " 回退)");
-    if (payload.model) parts.push(payload.model);
-    if (payload.cached) parts.push("缓存");
-    head.textContent = parts.join(" ");
+    /* 逐段 append 而不是拼一个字符串:括号里那截要能**整体换行**(见 CSS 的
+       .aipm-anno__smart-why),整句写成一串文本时,窄面板下会断在「不可」和「用」
+       之间。文本节点一律用 createTextNode / textContent 拼,不拼 HTML 字符串。 */
+    head.appendChild(document.createTextNode("智能高亮 · " + judgeLabel(payload)));
+    // 回退现在只在主选真失败时发生(超时/限流/HTTP/形状),所以这句是陈述事实的
+    if (payload.fallbackFrom) {
+      var why = document.createElement("span");
+      why.className = "aipm-anno__smart-why";
+      why.textContent = "(" + sourceLabel(payload.fallbackFrom) + " 不可用)";
+      head.appendChild(document.createTextNode(" "));
+      head.appendChild(why);
+    }
+    if (payload.cached) head.appendChild(document.createTextNode(" 缓存"));
+    head.title = head.textContent;
     els.smartbar.appendChild(head);
 
     var applied = smartAnnos();
@@ -4051,11 +4156,32 @@
     }
     els.smartbar.appendChild(btn);
 
-    if (payload.degraded && payload.degraded.length) {
+    /* 「N 段未判定」只在**真出了问题**时才说。过短、纯符号、代码块、导航目录、
+       与本页其他段落重复、「不值得高亮」、超出每页上限 —— 这些都是刻意不给建议的
+       段落,数量还随页面结构浮动(首页随手一判就有十来个)。把它们计成一个
+       「10 段未判定」摆出来,只会让人以为功能坏了(用户验收意见:「10 段未判定
+       又是什么鬼」)。真正的失败才提示,原因摊在 tooltip 里。 */
+    var misses = {};
+    var missTotal = 0;
+    (payload.degraded || []).forEach(function (d) {
+      var code = String(d.reason || "").split(":")[0];
+      if (!code || DELIBERATE_SKIP[code]) return;
+      misses[code] = (misses[code] || 0) + 1;
+      missTotal++;
+    });
+    var missCodes = Object.keys(misses);
+    if (missCodes.length > 0) {
       var note = document.createElement("span");
       note.className = "aipm-anno__smart-note";
-      note.textContent = payload.degraded.length + " 段未判定";
-      note.title = "这些段落是代码、导航、页面模板文字,或已超出本次预算,没有给出建议。";
+      note.textContent = missTotal + " 段没能判定";
+      note.title =
+        "这些段落没拿到结论:" +
+        missCodes
+          .map(function (c) {
+            return reasonLabel(c) + (misses[c] > 1 ? " ×" + misses[c] : "");
+          })
+          .join("、") +
+        "。";
       els.smartbar.appendChild(note);
     }
     els.smartbar.appendChild(smartClose);
@@ -4427,9 +4553,32 @@
   /* ================================================================
      换页 / 视口 / 启动
      ================================================================ */
+  /**
+   * 换页时把建议条/通知对齐到新页。
+   *
+   * instant 导航换的是内容容器,面板和条子都留在原地 —— 不管它,新页面上会继续
+   * 挂着上一页的回执(「全部高亮(12)」说的其实是上一页)。这里:新页有缓存就把
+   * 自己那条结果摆出来(块 Range 由 renderSuggestions 重绑到当前 DOM),没有就
+   * 收起;用户自己关掉的条子(点过叉)不再自作主张弹回来。
+   */
+  function syncSmartbar() {
+    var page = pagePath();
+    if (smartbarPage === page && !els.smartbar.hidden) return;
+    /* 这一页上用户亲手关过:收着,别弹回来。换到没关过的页面则照常处理 ——
+       「关掉」是对那一页说的,不是对整站说的。 */
+    if (smartbarDismissed === page) return;
+    var cached = suggestCache[page];
+    if (cached) {
+      renderSuggestions(cached, page);
+    } else if (!els.smartbar.hidden) {
+      setSmartbar("", "");
+    }
+  }
+
   function onPageChange() {
     mountEntry();
     hideToolbar();
+    syncSmartbar();
     invalidate();
     /* 高亮要在页面打开的那一刻就看得见(hypothes.is 也是这样):不依赖面板是否
        打开。面板只是列表的容器,不是高亮的前置条件 —— 之前只在 open 时加载,
