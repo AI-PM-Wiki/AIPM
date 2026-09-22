@@ -116,6 +116,10 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.59,16.59L10,18l6,-6 -6,-6 -1.41,1.41L13.17,12z"/></svg>',
     pen:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z"/></svg>',
+    /* 评论列表那一边的头图标:一颗对话气泡。批注是在正文某一段上写字,评论是对
+       整个页面说话,面板头上的图标得跟着当前那一份列表走(见 syncMode)。 */
+    comment:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20,2H4c-1.1,0 -2,0.9 -2,2v18l4,-4h14c1.1,0 2,-0.9 2,-2V4c0,-1.1 -0.9,-2 -2,-2z"/></svg>',
     close:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,6.4L17.6,5L12,10.6L6.4,5L5,6.4L10.6,12L5,17.6L6.4,19L12,13.4L17.6,19L19,17.6L13.4,12L19,6.4z"/></svg>',
     spark:
@@ -577,6 +581,7 @@
     toolbar: toolbar,
     grip: panel.querySelector(".aipm-anno__grip"),
     head: panel.querySelector(".aipm-anno__head"),
+    headIcon: panel.querySelector(".aipm-anno__head-icon"),
     title: panel.querySelector(".aipm-anno__title"),
     titleLabel: panel.querySelector(".aipm-anno__title-label"),
     count: panel.querySelector(".aipm-anno__count"),
@@ -4241,12 +4246,16 @@
 
       只改 label span 的 textContent:按钮里还有那颗双向箭头,整颗重写 innerHTML
       会把图标一起抹掉。aria 三件套跟着当前模式走 —— 读屏听到的应该是**点下去
-      会发生什么**(切到评论),而不是一句恒定的「切换批注与评论」。 */
+      会发生什么**(切到评论),而不是一句恒定的「切换批注与评论」。
+
+      头上的图标跟着模式一起换:批注是笔,评论是对话气泡。它在标题按钮外面,
+      整颗 span 重写 innerHTML,里面没有别的东西要留。 */
   function syncMode() {
     var isComments = panelMode === "comments";
     var label = isComments ? "评论" : "批注";
     var hint = isComments ? "切回批注(锚在正文某一段上)" : "切到评论(对整页说话)";
     els.titleLabel.textContent = label;
+    els.headIcon.innerHTML = isComments ? ICON.comment : ICON.pen;
     els.title.title = hint;
     els.title.setAttribute("aria-label", hint);
     els.title.setAttribute("aria-pressed", isComments ? "true" : "false");
