@@ -49,6 +49,7 @@
   var K_DRAFT = "aipm-anno-draft";
   var K_LAST_COLOR = "aipm-anno-last-color";
   var K_PREFS = "aipm-anno-prefs";
+  var K_SMART = "aipm-anno-smart";
 
   /* 批注的画法(与颜色正交):只划线 / 只高亮 / 两者都要。
      放在 store 是因为 prefs() 要校验它 —— 面板文件里那份是渲染用的标签与图标。 */
@@ -284,6 +285,37 @@
     writeJson(K_PREFS, Object.assign(prefs(), patch));
   }
 
+  /* ---- 智能高亮:这一页的自动判分用掉没有 ----
+
+     默认开启之后,「进页面自动判一次」得留痕:不留的话,用户把自动写下的高亮删掉、
+     或者点了「全部关闭」,下一次进这一页又会被加回来 —— 他的手动结果被默认设置推翻。
+     记的是页面路径 → 用掉的时间。
+
+     与批注分开存:那一页的批注可以被删光,这一笔要留着,不然「删光了」与「从没判过」
+     就分不出来。也不跟着导出 / 导入走 —— 它是这台设备上的账,不是批注数据。 */
+
+  function smartState() {
+    var s = readJson(K_SMART, null);
+    if (!s || typeof s !== "object" || !s.pages || typeof s.pages !== "object") {
+      return { version: 1, pages: {} };
+    }
+    return s;
+  }
+
+  function smartDone(page) {
+    return Object.prototype.hasOwnProperty.call(smartState().pages, page);
+  }
+
+  function markSmartDone(page) {
+    var state = smartState();
+    state.pages[page] = new Date().toISOString();
+    try {
+      writeJson(K_SMART, state);
+    } catch (e) {
+      /* 存储满了也要让这一页照常读下去:这一笔记不上,顶多下次进来再判一遍 */
+    }
+  }
+
   /* ---- 导出 / 导入 ---- */
 
   function exportPayload() {
@@ -350,6 +382,9 @@
     setLastColor: setLastColor,
     prefs: prefs,
     setPrefs: setPrefs,
+
+    smartDone: smartDone,
+    markSmartDone: markSmartDone,
 
     exportPayload: exportPayload,
     importPayload: importPayload

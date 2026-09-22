@@ -376,6 +376,89 @@ class TestRegenerateIsAdminOnly(unittest.TestCase):
         self.assertLess(cache, block.index("this.semaphore.acquire("))
 
 
+class TestSmartHighlightIsOnByDefault(unittest.TestCase):
+    """issue #102:进一个页面就自动判一次,写下的批注署名是生成它的模型型号。
+
+    两条容易悄悄回退的约定:
+    - 自动判分一页只跑一次,跑过就记一笔 —— 用户删掉、或者整批关掉之后,不能被
+      「默认开启」加回来;
+    - 自动那条不动界面、失败不出声,拿到的建议直接写成「仅本机」高亮。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.store = STORE_JS.read_text(encoding="utf-8")
+
+    def test_a_new_page_is_judged_without_being_asked(self):
+        self.assertIn("autoSmart();", _block(self.js, "function onPageChange("))
+        auto = _block(self.js, "function autoSmart()")
+        self.assertIn("smartHighlight({ auto: true })", auto)
+        # 页内已有这一页的结果就直接复用,不再问服务端
+        self.assertIn("if (suggestCache[page]) return;", auto)
+
+    def test_the_automatic_pass_happens_once_per_page(self):
+        auto = _block(self.js, "function autoSmart()")
+        self.assertIn("store.smartDone(page)", auto)
+        self.assertIn("store.markSmartDone(page)", _block(self.js, "function applySmart(payload)"))
+        self.assertIn(
+            "store.markSmartDone(pagePath())", _block(self.js, "function revertSmart(payload)")
+        )
+
+    def test_the_record_outlives_the_annotations(self):
+        """用户把自动写下的高亮删光之后,「删光了」与「从没判过」必须分得出来 ——
+        这一笔记在批注数据之外的另一个键上。"""
+        self.assertIn('var K_SMART = "aipm-anno-smart";', self.store)
+        self.assertIn("s.pages", _block(self.store, "function smartState()"))
+        self.assertIn("state.pages[page]", _block(self.store, "function markSmartDone(page)"))
+        self.assertIn(
+            "Object.prototype.hasOwnProperty.call(smartState().pages, page)",
+            _block(self.store, "function smartDone(page)"),
+        )
+        # 它是这台设备上的账,不跟着导出 / 导入走
+        self.assertNotIn("smartState", _block(self.store, "function exportPayload()"))
+        self.assertNotIn("smartState", _block(self.store, "function importPayload(text)"))
+
+    def test_the_record_never_touches_the_network(self):
+        for fn in ("smartDone", "markSmartDone"):
+            self.assertNotIn("fetch(", _block(self.store, f"function {fn}("))
+
+    def test_the_automatic_pass_leaves_the_panel_alone_and_stays_quiet(self):
+        """点 ✨ 才动界面、才把失败念出来;自动那条是后台动作。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("var auto = !!(opts && opts.auto);", block)
+        self.assertIn("var say = auto ? function () {} : setSmartbar;", block)
+        # 面板切模式、叫出面板、撤选区都只对点击成立
+        ui = block[block.index("if (!auto) {") : block.index("if (smartBusy) return;")]
+        self.assertIn("revealPanel();", ui)
+        self.assertIn("clearSelection();", ui)
+        self.assertNotIn("setSmartbar(", _block(self.js, "function autoSmart()"))
+
+    def test_the_automatic_pass_lands_what_it_found(self):
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("if (auto) applySmart(res.body);", block)
+
+    def test_a_stale_answer_lands_on_no_page(self):
+        """判分要几秒,回来时人可能已经在别的页面上 —— 块 id 是位置序号,
+        两页的 b0 是两段文字,照着写下去就是错位的高亮。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("if (pagePath() !== page) {", block)
+        self.assertLess(
+            block.index("suggestCache[page] = res.body;"),
+            block.index("if (pagePath() !== page) {"),
+            "结果先记账(回到那一页还能重绑),再判能不能往当前这份 DOM 上画",
+        )
+        # 换页比判分快的时候,新页别因为「上一页还在判」就一直空着
+        self.assertIn("autoSmart();", block)
+
+    def test_the_smart_annotations_are_signed_with_the_model_id(self):
+        """署名写生成它的那个模型型号,不写「本机」。"""
+        block = _block(self.js, "function applySmart(payload)")
+        self.assertIn("var who = judgeLabel(payload);", block)
+        self.assertNotIn("本机", block)
+        self.assertNotIn("auth.user()", block)
+
+
 class TestThreeVisibilities(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
