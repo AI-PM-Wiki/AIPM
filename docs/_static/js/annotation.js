@@ -941,9 +941,13 @@
     return p;
   }
 
+  /* 页面标题:送智能高亮判分时当页面的名字用。主页的页首 h1 是 AI-PM-WIKI
+     字标(整块 SVG,没有文字节点),取不到文字就回落到 document.title,
+     否则会把空标题丢给模型。 */
   function pageTitle() {
     var h = document.querySelector(".md-content h1") || document.querySelector("h1");
-    return (h ? h.textContent : document.title || "").trim();
+    var text = (h && h.textContent ? h.textContent : "").trim();
+    return text || (document.title || "").trim();
   }
 
   /* 未登录一律只能落本机(服务端那两条路都要 token);登录后按用户在悬浮窗里选的那个
