@@ -2,6 +2,18 @@
 description: AI-PM 站点介绍：面向 AI 产品从业者和学习者，梳理产品方法、工程架构、AI 能力、实战工具、商业财会、学习资源、求职专题与垂直领域，并说明项目技术、更新原则与参与方式
 ---
 
+<div class="pm-wordmark">
+<svg viewBox="0 0 60 6" role="img" aria-label="AI-PM-WIKI"
+ shape-rendering="crispEdges" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+  <g class="pm-wordmark__shadow" transform="translate(1 1)">
+    <path d="M1 0h3v1h-3z M0 1h1v1h-1z M4 1h1v1h-1z M0 2h5v1h-5z M0 3h1v1h-1z M4 3h1v1h-1z M0 4h1v1h-1z M4 4h1v1h-1z M6 0h5v1h-5z M8 1h1v1h-1z M8 2h1v1h-1z M8 3h1v1h-1z M6 4h5v1h-5z M18 0h4v1h-4z M18 1h1v1h-1z M22 1h1v1h-1z M18 2h4v1h-4z M18 3h1v1h-1z M18 4h1v1h-1z M24 0h1v1h-1z M28 0h1v1h-1z M24 1h2v1h-2z M27 1h2v1h-2z M24 2h1v1h-1z M26 2h1v1h-1z M28 2h1v1h-1z M24 3h1v1h-1z M28 3h1v1h-1z M24 4h1v1h-1z M28 4h1v1h-1z M36 0h1v1h-1z M40 0h1v1h-1z M36 1h1v1h-1z M40 1h1v1h-1z M36 2h1v1h-1z M38 2h1v1h-1z M40 2h1v1h-1z M36 3h2v1h-2z M39 3h2v1h-2z M36 4h1v1h-1z M40 4h1v1h-1z M42 0h5v1h-5z M44 1h1v1h-1z M44 2h1v1h-1z M44 3h1v1h-1z M42 4h5v1h-5z M48 0h1v1h-1z M52 0h1v1h-1z M48 1h1v1h-1z M51 1h1v1h-1z M48 2h3v1h-3z M48 3h1v1h-1z M51 3h1v1h-1z M48 4h1v1h-1z M52 4h1v1h-1z M54 0h5v1h-5z M56 1h1v1h-1z M56 2h1v1h-1z M56 3h1v1h-1z M54 4h5v1h-5z"/>
+    <path d="M13 2h3v1h-3z M31 2h3v1h-3z" fill="var(--pm-dive-sonar)"/>
+  </g>
+  <path d="M1 0h3v1h-3z M0 1h1v1h-1z M4 1h1v1h-1z M0 2h5v1h-5z M0 3h1v1h-1z M4 3h1v1h-1z M0 4h1v1h-1z M4 4h1v1h-1z M6 0h5v1h-5z M8 1h1v1h-1z M8 2h1v1h-1z M8 3h1v1h-1z M6 4h5v1h-5z M18 0h4v1h-4z M18 1h1v1h-1z M22 1h1v1h-1z M18 2h4v1h-4z M18 3h1v1h-1z M18 4h1v1h-1z M24 0h1v1h-1z M28 0h1v1h-1z M24 1h2v1h-2z M27 1h2v1h-2z M24 2h1v1h-1z M26 2h1v1h-1z M28 2h1v1h-1z M24 3h1v1h-1z M28 3h1v1h-1z M24 4h1v1h-1z M28 4h1v1h-1z M36 0h1v1h-1z M40 0h1v1h-1z M36 1h1v1h-1z M40 1h1v1h-1z M36 2h1v1h-1z M38 2h1v1h-1z M40 2h1v1h-1z M36 3h2v1h-2z M39 3h2v1h-2z M36 4h1v1h-1z M40 4h1v1h-1z M42 0h5v1h-5z M44 1h1v1h-1z M44 2h1v1h-1z M44 3h1v1h-1z M42 4h5v1h-5z M48 0h1v1h-1z M52 0h1v1h-1z M48 1h1v1h-1z M51 1h1v1h-1z M48 2h3v1h-3z M48 3h1v1h-1z M51 3h1v1h-1z M48 4h1v1h-1z M52 4h1v1h-1z M54 0h5v1h-5z M56 1h1v1h-1z M56 2h1v1h-1z M56 3h1v1h-1z M54 4h5v1h-5z"/>
+  <path d="M13 2h3v1h-3z M31 2h3v1h-3z" fill="var(--pm-dive-sonar)"/>
+</svg>
+</div>
+
 ## 关于本项目
 
 **AI-PM**（AI Product Manager）是一个面向 AI 产品从业者、学习者与协作者的中文知识站点。站点不只整理模型知识，也关注产品判断、工程协作、评测迭代、商业化与求职实践。
@@ -67,8 +79,16 @@ AI 领域的变化速度不同。本站按两类内容维护：
     评论区由 [giscus](https://giscus.app/zh-CN) 驱动，利用 [Discussions](https://github.com/AI-PM-Wiki/AIPM/discussions) 实现。
 
 ???+ note "网页批注"
-    页面批注和文字高亮由 [Hypothesis](https://web.hypothes.is/) 提供，本项目不保存 Hypothesis 批注，也不提供本站批注账号。
+    页面批注和文字高亮由本站自建服务提供，入口在页面右上角（搜索框与 GitHub 图标右侧）：贴着浏览器右边缘的那颗是批注面板开关，它左边那颗是「智能高亮」。选中正文里的任意一段话，就会浮出颜色选择条。
 
-    使用批注功能时，页面 URL、选中文本、批注内容和必要的请求信息可能发送到 Hypothesis 相关服务；登录方式、可见范围、保存期限和具体数据处理以其官方说明为准。
+    **批注分三种，存放位置和可见范围各不相同：**
 
-    不使用批注功能时，页面正文仍可正常阅读。
+    -   **公开**：存在本站服务器，任何访客无需登录即可阅读。创建需要 GitHub 登录，只有作者本人能改、能删。
+    -   **私有**：同样存在本站服务器，但只有作者本人登录后可见。**换一台设备登录同一个 GitHub 账号也能看到**，其他人读不到，也不会知道它存在。
+    -   **仅本机**：不登录也能创建和编辑，**只存在这台设备的浏览器里，绝不上传**。换设备、清浏览器缓存就会丢失，可以导出 JSON 自行备份。
+
+    登录用 GitHub 账号授权，站点只读取你的公开用户名与头像（`read:user`），不索取邮箱，也不建立独立账号体系。登录状态是一枚保存在浏览器里的凭据，不使用第三方 Cookie。
+
+    页头右上角那颗「智能高亮」由模型判断页面里哪些段落值得划线、该用哪种颜色。使用该功能时，**该页面的正文片段会发送到模型服务**（用于判分的 TypeSafe 与 Anthropic）；结果只作建议，点「全部高亮」整批落下后才写入批注（「全部关闭」整批撤回）。这个功能不需要登录，也可以完全不使用。
+
+    站点会记录批注内容与作者用户名，用于展示和归属判定。除此之外不收集其他个人信息。不使用批注功能时，页面正文仍可正常阅读。
