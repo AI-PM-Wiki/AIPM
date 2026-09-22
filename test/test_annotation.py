@@ -281,10 +281,13 @@ class TestJudgeDegradation(unittest.TestCase):
 class TestHeadIconClick(unittest.TestCase):
     """面板页头那支笔点下去做什么,看身份(issue #97 与 #103)。
 
-    两条容易悄悄回退的约定:
+    三条容易悄悄回退的约定:
     - 默认仍是缓存优先,只有重新生成这一条路跳过页内那层缓存;
     - 重新生成要认人:站长走重新生成,其余人换一份列表;服务端另有一道闸
       (未登录 401、非站长 403)拦住伪造的请求 —— 判分一次就是一次真金白银的调用。
+      站长按登录名也认得出:服务端比站点旧的那段窗口里,签发会话与 /api/auth/me
+      都还没有 admin 标记;
+    - 服务端不认 refresh 时(照旧读缓存)要说明白,不能把旧结论摆成新一轮结果。
     """
 
     @classmethod
@@ -328,6 +331,49 @@ class TestHeadIconClick(unittest.TestCase):
         # 监听器常驻,身份却会变 —— 每次点击都要重新问一遍
         self.assertIn('els.headIcon.addEventListener("click", headIconAction)', self.js)
 
+    def test_the_owner_is_recognised_by_name_too(self):
+        """站长不能只认服务端回的 admin 标记:站点合并进 main 就上线,批注服务要等
+        重建容器,中间那段窗口里签发会话与 /api/auth/me 都还没有这个字段 —— 只认它
+        的话,站长在这段窗口里被当成普通访客,页头那颗图标退回「换一份列表」(线上
+        报回来的就是这个现象)。"""
+        block = _block(self.auth, "function isAdmin()")
+        self.assertIn("session.admin === true", block)
+        self.assertIn("ADMIN_LOGINS.indexOf(login.toLowerCase())", block)
+        # 名单是空的也不该崩:没有登录态时连名单都不看
+        self.assertIn("if (session === null) return false;", block)
+
+    def test_the_owner_list_lines_up_with_the_server_default(self):
+        """名单是服务端 ADMIN_LOGINS 的同名副本,两头都按小写比 —— GitHub 回的 login
+        首字母大小写未必与配置里写的一致(HuangYincan / huangyincan 是同一个人)。"""
+        names = re.findall(r'var ADMIN_LOGINS = \[(.*?)\]', self.auth, flags=re.S)
+        self.assertEqual(len(names), 1)
+        entries = re.findall(r'"([^"]+)"', names[0])
+        self.assertTrue(entries)
+        self.assertEqual(entries, [n.lower() for n in entries])
+        for login in entries:
+            self.assertIn(f"ADMIN_LOGINS: z.string().default('{login}')", self._server_file("config.ts"))
+
+    def test_the_owner_click_regenerates_in_both_lists(self):
+        """页头只有这一颗图标,批注那份列表与评论那份列表共用它。站长点它到哪一份
+        列表上都是重新生成 —— 判据里不许掺「现在看的是哪一份」。"""
+        handler = _block(self.js, "function headIconAction()")
+        self.assertNotIn("panelMode", handler)
+        self.assertLess(
+            handler.index("auth.isAdmin()"),
+            handler.index("smartHighlight({ refresh: true })"),
+        )
+
+    def test_a_refresh_the_server_would_not_take_is_said_out_loud(self):
+        """服务端比站点旧时不认 refresh(那个字段被丢掉,照旧读缓存),回包里于是带
+        cached:true —— 真判过的结果从不带这个标记。把这份旧结论当成新一轮结果摆出来
+        等于撒谎,所以条子上要写明它没有重新判分。"""
+        block = _block(self.js, "function renderSuggestions(")
+        self.assertIn("if (refreshed && payload.cached)", block)
+        self.assertIn("服务端没有重新判分", block)
+        # 判据落在「重新生成这一条路」上:普通读缓存不带这个提示
+        caller = _block(self.js, "function smartHighlight(")
+        self.assertIn("{ refreshed: refresh }", caller)
+
     def test_the_head_icon_label_says_what_the_click_does(self):
         block = _block(self.js, "function syncHeadIcon()")
         self.assertIn("auth.isAdmin()", block)
@@ -343,14 +389,28 @@ class TestHeadIconClick(unittest.TestCase):
         那枚图标自身的尺寸与配色由 TestHeadIconTellsTheTwoListsApart 盯着。"""
         self.assertNotIn(".aipm-anno__head-icon.is-regenerate", self.css)
 
+    def test_a_click_during_the_automatic_pass_is_queued_not_dropped(self):
+        """自动判分要跑几秒,这几秒里页头那颗图标仍然点得动。那一下不能丢(站长点
+        了却什么都没发生),也不能并着发第二笔(旧那一份结果会落在新的上面):排一笔
+        待办,等手上那一笔收尾再发,连点几下合并成一次。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn('if (!refresh || smartInFlight !== "auto") return;', block)
+        self.assertIn("pendingRefresh = pagePath();", block)
+        self.assertIn(".then(drainPendingRefresh);", block)
+        queue = _block(self.js, "function drainPendingRefresh()")
+        self.assertIn("smartHighlight({ refresh: true });", queue)
+        # 排的是哪一页就冲哪一页发:等的过程里翻页,那一笔不再替他花出去
+        self.assertIn("if (pagePath() !== page) return;", queue)
+
     def test_the_two_head_icon_entries_do_not_double_spend(self):
         """一次重新生成就是一轮判分;连点两下不该各走一遍「缓存未命中」。
         换列表那一半与判分无关,所以它不跟着判分变淡 —— 变淡只发生在智能高亮
-        那颗按钮身上(它带 disabled 可表达)。"""
+        那颗按钮身上(它带 disabled 可表达);自动判分那条不占它,站长在那几秒里
+        照样点得动页头那颗图标。"""
         block = _block(self.js, "function setSmartBusy(")
-        self.assertIn("smartBtn.disabled = on", block)
+        self.assertIn('smartBtn.disabled = kind !== null && kind !== "auto";', block)
         self.assertNotIn("headIcon", block)
-        self.assertIn("if (smartBusy) return;", _block(self.js, "function smartHighlight("))
+        self.assertIn("if (smartInFlight !== null) {", _block(self.js, "function smartHighlight("))
 
     def test_the_head_icon_state_follows_the_login(self):
         """未登录 → 登录 → 退出登录这条来回里,标记必须跟着身份走。"""
@@ -466,7 +526,7 @@ class TestSmartHighlightIsOnByDefault(unittest.TestCase):
         self.assertIn("var auto = !!(opts && opts.auto);", block)
         self.assertIn("var say = auto ? function () {} : setSmartbar;", block)
         # 面板切模式、叫出面板、撤选区都只对点击成立
-        ui = block[block.index("if (!auto) {") : block.index("if (smartBusy) return;")]
+        ui = block[block.index("if (!auto) {") : block.index("if (smartInFlight !== null) {")]
         self.assertIn("revealPanel();", ui)
         self.assertIn("clearSelection();", ui)
         self.assertNotIn("setSmartbar(", _block(self.js, "function autoSmart()"))
@@ -687,6 +747,30 @@ class TestSmartHighlightBlockSources(unittest.TestCase):
             skipped, numbered, "模板文字的过滤必须在编号之后(与已高亮块同一条理由)"
         )
 
+    def test_judging_sends_the_whole_page(self):
+        """判分的结果要写回服务端那一页的缓存格,而那一格只有页面粒度 ——
+        cacheKey 是页面 + 内容哈希 + judge + 色板,不含这一次送了哪些块。所以三条
+        来路(自动、✨、重新生成)送出去的都得是这一页**全部**可判定块:跳过已高亮的
+        块会送出一份子集,写进缓存的就是缺段的结论,后面进这一页的人(身上没有标记,
+        送来的是整页)命中的正是它。全部块都已高亮时也要发 —— 判分这条路只看正文,
+        不看已经划了多少;结论回来时按块挡着,已有的那几笔不再添(见 freshSuggestions)。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("var blocks = extractBlocks(true);", block)
+
+    def test_the_automatic_pass_only_asks_whether_anything_is_left(self):
+        """自动那一笔的闸问的是「这一页还有没有没划过的地方」—— 与送出去的那一份
+        (整页)是两个问题:每一块都已经有高亮覆盖的页面,判一遍也添不上什么。"""
+        auto = _block(self.js, "function autoSmart()")
+        self.assertIn("if (extractBlocks().length === 0) return;", auto)
+
+    def test_the_page_cache_has_no_block_dimension(self):
+        """上面那条的前提,钉在服务端那一侧:同页缓存按页面 + 内容哈希 + judge +
+        色板分格。哪天它按块集合分格了,前端就不必为这一条送整页。"""
+        service = self._server_source(self.highlight_path, "private cacheKey(")
+        key = _block(service, "private cacheKey(")
+        self.assertIn("contentHash", key)
+        self.assertNotIn("blocks", key)
+
     def _server_source(self, path, marker):
         """读子模块里服务端的源码;修复还没随 gitlink 同步进来时跳过。
 
@@ -766,7 +850,7 @@ class TestSmartbarNoticeScope(unittest.TestCase):
             self.assertIn(reason, deliberate, f"{reason} 是刻意跳过,不该计进未判定")
         for reason in ("not_in_page", "no_answer", "budget_exhausted"):
             self.assertNotIn(reason, deliberate, f"{reason} 是真失败,必须报出来")
-        block = _block(self.js, "function renderSuggestions(payload, page)")
+        block = _block(self.js, "function renderSuggestions(payload, page, opts)")
         self.assertIn("DELIBERATE_SKIP[code]", block)
         self.assertIn("段没能判定", block)
         self.assertNotIn('" 段未判定"', self.js)
@@ -795,14 +879,14 @@ class TestSmartbarNoticeScope(unittest.TestCase):
         # 有新内容要显示时,「关过」的记号清掉
         self.assertIn("smartbarDismissed = null;", _block(self.js, "function setSmartbar(text, kind)"))
         self.assertIn(
-            "smartbarDismissed = null;", _block(self.js, "function renderSuggestions(payload, page)")
+            "smartbarDismissed = null;", _block(self.js, "function renderSuggestions(payload, page, opts)")
         )
 
     def test_fallback_parenthetical_wraps_as_one_piece(self):
         """「(Jev 不可用)」整体换行,不能断在「不可」和「用」之间。"""
         why = _block(self.css, ".aipm-anno__smart-why {")
         self.assertIn("white-space: nowrap", why)
-        render = _block(self.js, "function renderSuggestions(payload, page)")
+        render = _block(self.js, "function renderSuggestions(payload, page, opts)")
         self.assertIn('why.className = "aipm-anno__smart-why";', render)
         self.assertIn("createTextNode", render, "逐段 append 文本节点")
         self.assertNotIn("innerHTML =", render, "不拼 HTML 字符串")
@@ -813,7 +897,7 @@ class TestSmartbarNoticeScope(unittest.TestCase):
         block = _block(self.js, "function withLiveBlocks(payload)")
         self.assertIn("extractBlocks(true)", block, "已落过高亮的块也要取到(否则它会「不存在」)")
         self.assertIn("out.blocks = blocks;", block)
-        render = _block(self.js, "function renderSuggestions(payload, page)")
+        render = _block(self.js, "function renderSuggestions(payload, page, opts)")
         self.assertIn("payload = withLiveBlocks(payload);", render)
 
     def test_smartbar_records_which_page_it_describes(self):
@@ -821,7 +905,7 @@ class TestSmartbarNoticeScope(unittest.TestCase):
         block = _block(self.js, "function setSmartbar(text, kind)")
         self.assertIn("smartbarPage = pagePath();", block)
         self.assertIn("smartbarPage = null;", block)
-        render = _block(self.js, "function renderSuggestions(payload, page)")
+        render = _block(self.js, "function renderSuggestions(payload, page, opts)")
         self.assertIn("smartbarPage = page || pagePath();", render)
 
 
@@ -982,20 +1066,28 @@ class TestUiRoundThree(unittest.TestCase):
         block = _block(self.js, "function syncMode()")
         self.assertIn('"评论"', block)
         self.assertIn('"批注"', block)
-        # 智能高亮按钮不在面板里了,不随模式显隐;跟着模式一起收的是它那条回执
+        # 智能高亮按钮不在面板里了,不随模式显隐;它那条回执按页走,也不跟着模式收
         self.assertNotIn("aipm-anno__smart", block)
-        self.assertIn('setSmartbar("", "")', block)
+        self.assertNotIn("setSmartbar", block)
 
     def test_smart_button_is_not_hidden_by_the_panel_mode(self):
         """按钮站在面板外面,显隐就不该再跟着面板里的模式走 —— 面板关着的时候用户
         看不见当前是哪一份列表,一颗「有时在、有时不在」的页头按钮就是没来由的
-        闪烁。所以它一直可见,点击时自己把面板切回批注模式并叫出来。"""
+        闪烁。所以它一直可见,点击时把面板叫出来、回执摆在智能高亮条上。"""
         block = _block(self.js, "function smartHighlight(")
-        self.assertIn('panelMode = "annotations"', block)
         self.assertIn("revealPanel()", block)
         self.assertNotIn("smartBtn.hidden", self.js)
         # 面板里的 iconbtn 不再有需要 [hidden] 收回的那一颗,规则随之删掉
         self.assertNotIn(".aipm-anno__iconbtn[hidden]", self.css)
+
+    def test_the_regeneration_leaves_the_list_alone(self):
+        """判的是正文,面板里当前是「批注」还是「评论」与它无关 —— 回执(智能高亮条
+        与那两颗「全部高亮 / 全部关闭」)长在面板里、不跟着列表换。所以判分这一条路
+        不切列表:站长在评论那一份里点页头那颗图标,判完之后人还在评论里。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertNotIn("panelMode", _strip_comments(block))
+        # 切列表只此两处:标题那颗胶囊与划词落批注;判分这一条路不在其中
+        self.assertNotIn("togglePanelMode()", block)
 
     def test_comment_mode_still_offers_the_selection_toolbar(self):
         """在评论视图里划词也要出悬浮窗(第三轮验收第 6 条),而且落了批注要切回
