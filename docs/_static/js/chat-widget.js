@@ -37,7 +37,8 @@
     (right/bottom),JS 只写 transform,所以「松手回原位」= 清掉 inline transform
     交回 CSS 过渡 —— JS 不需要知道锚点在哪,锚点被别的面板改(批注面板停靠时让位,
     annotation.css)也照样成立。跟手期间不做布局测量;拖拽超过 4px 才算拖拽,并抑制
-    随后的 click(拖完不该顺带开面板);回弹动画未落定时再按住,接着当前位置继续
+    随后的 click(拖完不该顺带开面板);位移径向限位在 20px 内(只许离开原位一点点,
+    到边即停,且保证整颗仍在视口内);回弹动画未落定时再按住,接着当前位置继续
     (不跳);拖拽中按横向位移轻微侧倾,松手回正
   - 从 peek 直接发问会自动升到 half(否则回答落在面板可视区之外看不见)
   - 消息操作:每条 AI 回答气泡下方提供常驻「复制」「重新生成」(不随
@@ -1107,29 +1108,24 @@
   }
 
   /* ================================================================
-     FAB 拖拽:按住跟手,松手弹回原位(issue #72)
+     FAB 拖拽:按住跟手(限位内),松手弹回原位(issue #72)
      外观/位置一律照旧,这里只加交互。锚点在 CSS(right/bottom),这里只写
      transform —— 于是「回原位」就是清掉 inline transform、把 transform 交回
      CSS,不需要在 JS 里记锚点坐标(锚点还会被别的面板改:批注面板停靠时给 FAB
-     让位,见 annotation.css)。位移一律按指针增量算,跟手期间不做布局测量。
+     让位,见 annotation.css)。位移一律按指针增量算,跟手期间不做布局测量,也不
+     量视口:位移被径向夹在 DRAG_MAX(20px)内,而锚点离视口边至少 25px。
      ================================================================ */
   const DRAG_SLOP = 4;            // px:超过才算拖拽,之内仍是「点了一下」
-  const DRAG_MARGIN = 8;          // px:拖到视口边缘保留的间隙(免得拖出去再点不到)
+  const DRAG_MAX = 20;            // px:离原位的最大位移(限位半径,四面八方一样远)
   const DRAG_LIFT = 1.04;         // 拎起来时略微放大(静息 1 / hover 1.05)
-  const DRAG_TILT_MAX = 4;        // deg:跟手时按横向位移侧倾的上限
-  const DRAG_TILT_PER_PX = .035;  // deg/px:侧倾斜率(拖 114px 到上限)
+  const DRAG_TILT_MAX = 3;        // deg:拉到限位时的侧倾(按横向位移取比例)
   const DRAG_BACK_MS = 460;       // 与 CSS --aipm-chat-drag-back 一致
 
-  let drag = null;                // {id, x0, y0, ox, oy, homeL, homeT, w, h, moved}
+  let drag = null;                // {id, x0, y0, ox, oy, moved}
   let dragReturn = 0;             // 回弹收尾定时器(清 is-returning)
   let dragSwallow = false;        // 这一段指针序列拖过了 → 随后那次 click 不算数
 
   const dragClamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-
-  /* 视口尺寸:用 clientWidth/Height 而不是 innerWidth/Height —— fixed 元素的
-     坐标原点是「去掉滚动条后的那块视口」,两者得配对 */
-  const dragVw = () => document.documentElement.clientWidth;
-  const dragVh = () => document.documentElement.clientHeight;
 
   /* 写 inline transform:位移相对锚点(静息 0,0),并带上拎起与侧倾的姿态 */
   const dragPlace = (x, y, scale, tilt) => {
@@ -1157,20 +1153,7 @@
     const m = dragMatrix();
     const ox = m ? m.m41 : 0;
     const oy = m ? m.m42 : 0;
-    const r = fab.getBoundingClientRect();
-    drag = {
-      id: e.pointerId,
-      x0: e.clientX,
-      y0: e.clientY,
-      ox: ox,
-      oy: oy,
-      /* 锚点在视口里的位置 = 当前位置减去已写的位移;回弹途中按住也算得对 */
-      homeL: r.left - ox,
-      homeT: r.top - oy,
-      w: fab.offsetWidth,                                      // 布局尺寸,不含缩放
-      h: fab.offsetHeight,
-      moved: false,
-    };
+    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, ox: ox, oy: oy, moved: false };
     fab.setPointerCapture(e.pointerId);
   });
 
@@ -1184,13 +1167,21 @@
       d.moved = true;
       fab.classList.add("is-dragging");                        // 过渡让位,开始跟手
     }
-    /* 夹在视口内:胶囊不能被拖出屏幕外(拖出去就再也点不到了) */
-    const x = dragClamp(d.ox + dx, DRAG_MARGIN - d.homeL,
-                        dragVw() - DRAG_MARGIN - d.w - d.homeL);
-    const y = dragClamp(d.oy + dy, DRAG_MARGIN - d.homeT,
-                        dragVh() - DRAG_MARGIN - d.h - d.homeT);
-    /* 侧倾只按横向位移:往哪边拖就往哪边倾一点,像被拎着走 */
-    dragPlace(x, y, DRAG_LIFT, dragClamp(x * DRAG_TILT_PER_PX, -DRAG_TILT_MAX, DRAG_TILT_MAX));
+    /* 限位:只许离开原位一点点 —— 把「相对锚点的位移」径向夹进 DRAG_MAX 的圆里,
+       四面八方一样远,到边就跟着指针一起停住。锚点本身离视口边至少 1.25rem
+       (25px),限位圆比它小,所以胶囊永远整颗留在屏幕内,不必再单独夹视口
+       (于是也不需要量视口尺寸)*/
+    let x = d.ox + dx;
+    let y = d.oy + dy;
+    const dist = Math.hypot(x, y);
+    if (dist > DRAG_MAX) {
+      const k = DRAG_MAX / dist;
+      x *= k;
+      y *= k;
+    }
+    /* 侧倾只按横向位移:往哪边拖就往哪边倾一点,像被拎着走(横向拉满 = 倾满) */
+    dragPlace(x, y, DRAG_LIFT,
+              dragClamp(x / DRAG_MAX * DRAG_TILT_MAX, -DRAG_TILT_MAX, DRAG_TILT_MAX));
   });
 
   const dragRelease = (e) => {

@@ -448,9 +448,10 @@ class TestChatWidgetEntryDrag(unittest.TestCase):
 
     def test_drag_tilts_then_returns_upright(self):
         """按/拖态的侧倾只写在跟手那一帧里,松手把 transform 交回 CSS 即回正。"""
-        self.assertIn("const DRAG_TILT_MAX = 4;", self.js)
+        self.assertIn("const DRAG_TILT_MAX = 3;", self.js)
         self.assertIn("rotate(", self.js)
-        self.assertIn("dragClamp(x * DRAG_TILT_PER_PX, -DRAG_TILT_MAX, DRAG_TILT_MAX)", self.js)
+        # 横向拉满限位 = 倾满,侧倾跟着位移而不是跟时间
+        self.assertIn("x / DRAG_MAX * DRAG_TILT_MAX", self.js)
         # 侧倾不进 CSS 的静息态
         self.assertNotIn("rotate(", self._rule(".aipm-chat__fab"))
 
@@ -463,11 +464,22 @@ class TestChatWidgetEntryDrag(unittest.TestCase):
         self.assertIn("if (dragSwallow) {", self.js)
         self.assertIn("dragSwallow = false;", self.js)
 
-    def test_drag_never_leaves_the_viewport(self):
-        self.assertIn("const DRAG_MARGIN = 8;", self.js)
-        self.assertIn("dragClamp(", self.js)
-        self.assertIn("document.documentElement.clientWidth", self.js)
-        self.assertIn("document.documentElement.clientHeight", self.js)
+    def test_drag_is_leashed_to_the_anchor(self):
+        """限位:只能离开原位一点点,不能到处飞。
+
+        位移是「相对锚点」的向量,径向夹进 DRAG_MAX 的圆 —— 四面八方一样远,
+        且限位半径小于锚点离视口边的距离(1.25rem),所以胶囊永远整颗在屏内。
+        """
+        self.assertIn("const DRAG_MAX = 20;", self.js)
+        self.assertIn("Math.hypot(x, y)", self.js)
+        self.assertIn("if (dist > DRAG_MAX) {", self.js)
+        self.assertIn("const k = DRAG_MAX / dist;", self.js)
+        # 限位半径必须明显小于锚点边距,否则贴边时会推出屏幕
+        anchor_px = 1.25 * 20  # 站点根字号 20px
+        self.assertLess(20, anchor_px)
+        # 限位取代了原来的视口夹取(不再需要量视口)
+        self.assertNotIn("DRAG_MARGIN", self.js)
+        self.assertNotIn("dragVw", self.js)
 
     def test_reduced_motion_also_kills_the_spring_back(self):
         block = self._media("(prefers-reduced-motion: reduce)")
