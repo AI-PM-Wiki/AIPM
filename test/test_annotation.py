@@ -2857,6 +2857,69 @@ class TestSmartbarNotificationsCanBeDismissed(unittest.TestCase):
         self.assertIn(".aipm-anno__smart-close:focus-visible", self.css)
 
 
+class TestHeadIconTellsTheTwoListsApart(unittest.TestCase):
+    """面板头上那颗图标得说明眼下是哪一份列表(AIPM-9)。
+
+    批注锚在正文某一段上,评论对整页说话 —— 两份列表共用同一个面板,头图标跟着
+    当前那一份走:批注是笔,评论是对话气泡。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def _icon_map(self):
+        """ICON 表那一段源码。"""
+        src = self.js[self.js.index("var ICON = {") :]
+        return src[: src.index("\n  };")]
+
+    def test_the_shell_opens_on_the_pen(self):
+        """首屏那一份列表是批注,静态外壳里先摆笔 —— 它和默认的 panelMode 同值,
+        不会先画一颗气泡再被 syncMode() 翻回去。"""
+        shell = self.js[
+            self.js.index("panel.innerHTML =") : self.js.index("document.body.appendChild(panel)")
+        ]
+        head = shell[shell.index("aipm-anno__head-icon") :]
+        head = head[: head.index("aipm-anno__title")]
+        self.assertIn("ICON.pen", head)
+        self.assertIn('var panelMode = "annotations"', self.js)
+
+    def test_switching_lists_swaps_the_head_icon(self):
+        """两个模式的所有入口都走 syncMode(),换图标写在这里就够。"""
+        block = _block(self.js, "function syncMode()")
+        self.assertIn("els.headIcon.innerHTML = isComments ? ICON.comment : ICON.pen", block)
+        # 换的是那颗 span。写 els.head.innerHTML 会把标题按钮、条数徽章、账号与
+        # 关闭按钮一起抹掉,面板的头就秃了。
+        self.assertNotIn("els.head.innerHTML", self.js)
+
+    def test_the_comment_glyph_is_a_bubble_of_the_same_family(self):
+        """气泡与同表其余图标一样:24 方格坐标系里的实心路径、对读屏隐藏。
+        头图标是纯装饰,「这份列表是评论」由标题按钮上的字与 aria-pressed 说。"""
+        icons = self._icon_map()
+        self.assertIn("\n    comment:\n", icons)
+        bubble = icons[icons.index("\n    comment:") :]
+        bubble = bubble[: bubble.index("\n    close:")]
+        self.assertIn('viewBox="0 0 24 24"', bubble)
+        self.assertIn('aria-hidden="true"', bubble)
+        self.assertIn("<path d=", bubble)
+        self.assertNotIn("stroke", bubble)
+
+    def test_one_rule_paints_whichever_glyph_is_inside(self):
+        """两颗图标共用 .aipm-anno__head-icon svg 这一条:尺寸与配色写在选择器上,
+        换图标不带动头部排版。"""
+        rule = _block(self.css, ".aipm-anno__head-icon svg {")
+        self.assertEqual(_decl(rule, "width"), _decl(rule, "height"))
+        self.assertIn("fill: var(--md-accent-fg-color)", rule)
+
+    def test_the_pen_still_marks_the_write_annotation_button(self):
+        """笔没有从别处消失:工具栏上那颗「写批注」还是它。"""
+        toolbar = self.js[self.js.index('var toolbar = document.createElement("div")') :]
+        toolbar = toolbar[: toolbar.index("document.body.appendChild(toolbar)")]
+        button = toolbar[toolbar.index("aipm-anno__tb-annotate") :]
+        self.assertIn("ICON.pen", button)
+
+
 if __name__ == "__main__":
     unittest.main()
 
