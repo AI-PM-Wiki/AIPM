@@ -587,7 +587,24 @@
     smartbar: panel.querySelector(".aipm-anno__smartbar"),
     list: panel.querySelector(".aipm-anno__list"),
     logout: panel.querySelector(".aipm-anno__logout")
-  };  /* 页头入口按钮(位置与样式沿用 issue #67:页头右上角、贴浏览器右边缘) */
+  };
+  /* 通知条右端那颗「关掉它」。它**不进 panel.innerHTML** —— 通知的正文是用
+     textContent 整段重写的,写在壳子里的节点下一次就被抹掉了。所以它是一个常驻
+     节点:每次重画(setSmartbar / renderSuggestions)再 appendChild 回来。
+     appendChild 一个已在树上的节点只是把它挪到队尾,不克隆,也就不会重复。 */
+  var smartClose = document.createElement("button");
+  smartClose.type = "button";
+  smartClose.className = "aipm-anno__smart-close";
+  smartClose.title = "关闭通知";
+  smartClose.setAttribute("aria-label", "关闭通知");
+  smartClose.innerHTML = ICON.close;
+  smartClose.addEventListener("click", function () {
+    /* 只收条子,不撤结果:高亮建议还缓存在 suggestCache 里,再点页头的 ✨ 原地
+       摆回来,既不重新请求,也不会撞上冷却。 */
+    setSmartbar("", "");
+  });
+
+  /* 页头入口按钮(位置与样式沿用 issue #67:页头右上角、贴浏览器右边缘) */
   var entry = document.createElement("button");
   entry.type = "button";
   entry.className = "md-header__button md-icon aipm-anno-entry";
@@ -3933,7 +3950,15 @@
     }
     els.smartbar.hidden = false;
     els.smartbar.setAttribute("data-kind", kind || "");
-    els.smartbar.textContent = text;
+    /* 正文得单独包一层:直接写 textContent 的话,它是一个**匿名 flex 项**,
+       最小宽度绑在内容上 —— 长通知会把自己撑到内容宽,把右端那颗关闭按钮顶出
+       条子外面,点不着(见 CSS 里 .aipm-anno__smart-text 的 min-width:0)。 */
+    els.smartbar.textContent = "";
+    var line = document.createElement("span");
+    line.className = "aipm-anno__smart-text";
+    line.textContent = text;
+    els.smartbar.appendChild(line);
+    els.smartbar.appendChild(smartClose);
   }
 
   function sourceLabel(source) {
@@ -4023,6 +4048,7 @@
       note.title = "这些段落是代码、导航或已超出本次预算,没有给出建议。";
       els.smartbar.appendChild(note);
     }
+    els.smartbar.appendChild(smartClose);
   }
 
   /** 全开:一次性把余下的建议落成「仅本机」。已高亮的块跳过,不重复落。 */

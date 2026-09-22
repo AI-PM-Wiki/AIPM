@@ -2482,6 +2482,74 @@ class TestTheFloatingToolbarNeverStrands(unittest.TestCase):
         self.assertIn("pendingSelection = { range: range", handler)
 
 
+class TestSmartbarNotificationsCanBeDismissed(unittest.TestCase):
+    """通知条自己能收(issue #88)。
+
+    条子上的报错/进行中原本只能等下一次通知把它顶掉 —— 报错会一直挂在那儿,而
+    「正在分析…」跑到一半不想等了也没有出路。右端补一颗关闭按钮。
+
+    几条容易回退的契约:
+    - 按钮是**常驻节点**,不能写进 panel.innerHTML —— 条子正文是 textContent 整段
+      重写的,写进壳子里的节点第一次重画就被摘掉,留下的引用指向孤儿,挂不回来;
+    - 每一次重画(纯文字 / 结果条)都得把它 appendChild 回去;
+    - 收起条子 ≠ 撤销结果:建议缓存不动,再点 ✨ 原地回来;
+    - 正文要可缩(min-width:0),否则长通知会把自己撑到内容宽,把按钮顶出去。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def test_the_button_is_one_persistent_node(self):
+        """常驻的那一个,不是每次现造的 —— 也就不能写在 panel.innerHTML 里。"""
+        shell = self.js[
+            self.js.index("panel.innerHTML =") : self.js.index("document.body.appendChild(panel)")
+        ]
+        self.assertNotIn("aipm-anno__smart-close", shell, "按钮又写回外壳里了")
+        self.assertEqual(
+            self.js.count('className = "aipm-anno__smart-close"'), 1, "关闭按钮被造了不止一个"
+        )
+        decl = self.js[self.js.index('var smartClose = document.createElement("button")') :]
+        decl = decl[: decl.index("setSmartbar")]
+        self.assertIn("ICON.close", decl)
+        self.assertIn('setAttribute("aria-label"', decl)
+
+    def test_every_repaint_puts_the_button_back(self):
+        """两处重画都要挂回去:textContent 一清,按钮就跟着没了。"""
+        self.assertIn("appendChild(smartClose)", _block(self.js, "function setSmartbar(text, kind)"))
+        self.assertIn(
+            "appendChild(smartClose)", _block(self.js, "function renderSuggestions(payload)")
+        )
+
+    def test_dismissing_only_hides_the_strip(self):
+        """收起不等于撤销:缓存留着,再点 ✨ 原地摆回来,不重新请求、不撞冷却。"""
+        handler = self.js[self.js.index("smartClose.addEventListener") :]
+        handler = _strip_comments(handler[: handler.index("});")])
+        self.assertIn('setSmartbar("", "")', handler)
+        self.assertNotIn("suggestCache", handler)
+        self.assertNotIn("localRemove", handler)
+
+    def test_the_message_can_shrink_so_the_button_never_gets_pushed_out(self):
+        """flex 行里不给 min-width:0,长通知就撑到内容宽,把关闭按钮顶到条子外面 ——
+        通知越长越关不掉,正好反了。"""
+        rule = _block(self.css, ".aipm-anno__smart-text {")
+        self.assertEqual(_decl(rule, "flex"), "1 1 auto")
+        self.assertEqual(_decl(rule, "min-width"), "0")
+        # 报错文案是让人读完的,换行而不是省略号收尾
+        self.assertEqual(_decl(rule, "text-overflow"), "")
+
+    def test_the_button_is_muted_until_hovered(self):
+        """它站在条子上而不是页头,颜色跟着 data-kind 走(warn 粉 / busy 灰),
+        压的只是不透明度。"""
+        rule = _block(self.css, ".aipm-anno__smart-close {")
+        self.assertEqual(_decl(rule, "flex"), "none")
+        self.assertEqual(_decl(rule, "color"), "inherit")
+        self.assertLess(float(_decl(rule, "opacity")), 1)
+        self.assertIn(".aipm-anno__smart-close:hover", self.css)
+        self.assertIn(".aipm-anno__smart-close:focus-visible", self.css)
+
+
 if __name__ == "__main__":
     unittest.main()
 
