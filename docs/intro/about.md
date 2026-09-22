@@ -2,6 +2,18 @@
 description: AI-PM 站点介绍：面向 AI 产品从业者和学习者，梳理产品方法、工程架构、AI 能力、实战工具、商业财会、学习资源、求职专题与垂直领域，并说明项目技术、更新原则与参与方式
 ---
 
+<div class="pm-wordmark">
+<svg viewBox="0 0 60 6" role="img" aria-label="AI-PM-WIKI"
+ shape-rendering="crispEdges" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+  <g class="pm-wordmark__shadow" transform="translate(1 1)">
+    <path d="M1 0h3v1h-3z M0 1h1v1h-1z M4 1h1v1h-1z M0 2h5v1h-5z M0 3h1v1h-1z M4 3h1v1h-1z M0 4h1v1h-1z M4 4h1v1h-1z M6 0h5v1h-5z M8 1h1v1h-1z M8 2h1v1h-1z M8 3h1v1h-1z M6 4h5v1h-5z M18 0h4v1h-4z M18 1h1v1h-1z M22 1h1v1h-1z M18 2h4v1h-4z M18 3h1v1h-1z M18 4h1v1h-1z M24 0h1v1h-1z M28 0h1v1h-1z M24 1h2v1h-2z M27 1h2v1h-2z M24 2h1v1h-1z M26 2h1v1h-1z M28 2h1v1h-1z M24 3h1v1h-1z M28 3h1v1h-1z M24 4h1v1h-1z M28 4h1v1h-1z M36 0h1v1h-1z M40 0h1v1h-1z M36 1h1v1h-1z M40 1h1v1h-1z M36 2h1v1h-1z M38 2h1v1h-1z M40 2h1v1h-1z M36 3h2v1h-2z M39 3h2v1h-2z M36 4h1v1h-1z M40 4h1v1h-1z M42 0h5v1h-5z M44 1h1v1h-1z M44 2h1v1h-1z M44 3h1v1h-1z M42 4h5v1h-5z M48 0h1v1h-1z M52 0h1v1h-1z M48 1h1v1h-1z M51 1h1v1h-1z M48 2h3v1h-3z M48 3h1v1h-1z M51 3h1v1h-1z M48 4h1v1h-1z M52 4h1v1h-1z M54 0h5v1h-5z M56 1h1v1h-1z M56 2h1v1h-1z M56 3h1v1h-1z M54 4h5v1h-5z"/>
+    <path d="M13 2h3v1h-3z M31 2h3v1h-3z" fill="var(--pm-dive-sonar)"/>
+  </g>
+  <path d="M1 0h3v1h-3z M0 1h1v1h-1z M4 1h1v1h-1z M0 2h5v1h-5z M0 3h1v1h-1z M4 3h1v1h-1z M0 4h1v1h-1z M4 4h1v1h-1z M6 0h5v1h-5z M8 1h1v1h-1z M8 2h1v1h-1z M8 3h1v1h-1z M6 4h5v1h-5z M18 0h4v1h-4z M18 1h1v1h-1z M22 1h1v1h-1z M18 2h4v1h-4z M18 3h1v1h-1z M18 4h1v1h-1z M24 0h1v1h-1z M28 0h1v1h-1z M24 1h2v1h-2z M27 1h2v1h-2z M24 2h1v1h-1z M26 2h1v1h-1z M28 2h1v1h-1z M24 3h1v1h-1z M28 3h1v1h-1z M24 4h1v1h-1z M28 4h1v1h-1z M36 0h1v1h-1z M40 0h1v1h-1z M36 1h1v1h-1z M40 1h1v1h-1z M36 2h1v1h-1z M38 2h1v1h-1z M40 2h1v1h-1z M36 3h2v1h-2z M39 3h2v1h-2z M36 4h1v1h-1z M40 4h1v1h-1z M42 0h5v1h-5z M44 1h1v1h-1z M44 2h1v1h-1z M44 3h1v1h-1z M42 4h5v1h-5z M48 0h1v1h-1z M52 0h1v1h-1z M48 1h1v1h-1z M51 1h1v1h-1z M48 2h3v1h-3z M48 3h1v1h-1z M51 3h1v1h-1z M48 4h1v1h-1z M52 4h1v1h-1z M54 0h5v1h-5z M56 1h1v1h-1z M56 2h1v1h-1z M56 3h1v1h-1z M54 4h5v1h-5z"/>
+  <path d="M13 2h3v1h-3z M31 2h3v1h-3z" fill="var(--pm-dive-sonar)"/>
+</svg>
+</div>
+
 ## 关于本项目
 
 **AI-PM**（AI Product Manager）是一个面向 AI 产品从业者、学习者与协作者的中文知识站点。站点不只整理模型知识，也关注产品判断、工程协作、评测迭代、商业化与求职实践。

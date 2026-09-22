@@ -605,6 +605,25 @@ blockquote.page-copyright i.md-icon {
   border: 2px solid #ffffff;
 }
 
+/* 6.8 页首字标:AI-PM-WIKI 矢量像素 wordmark(内联 SVG,字形为 59x5 网格,
+   fill=currentColor 随主题;crispEdges 保证像素边缘不糊;
+   硬投影为右下偏移 1 格的同色副本,强度由 .pm-wordmark__shadow 的 opacity 控制) */
+.md-typeset .pm-wordmark {
+  margin: .1rem 0 1.8rem;
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset .pm-wordmark__shadow {
+  opacity: .26;
+}
+
+.md-typeset .pm-wordmark > svg {
+  display: block;
+  width: 100%;
+  max-width: 30rem;
+  height: auto;
+}
+
 /* ----------------------------------------------------------------------------
    7. 评论区与 404 页:纯色卡片,无玻璃
    ---------------------------------------------------------------------------- */
