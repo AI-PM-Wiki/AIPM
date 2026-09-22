@@ -436,11 +436,11 @@ class TestSharedPanelContracts(unittest.TestCase):
 class TestSmartHighlightBlockSources(unittest.TestCase):
     """issue #87:送去判分的块必须是「站内正文索引里找得到的文字」。
 
-    前端按 DOM 抽块,抽到的未必都是页面正文 —— 主题模板塞进 article 的首页 hero
-    眉题与口号(home.html)、每页页脚的版权与「编辑此页」行(partials/comments.html)
-    都不在索引里(索引按 page.content 建),原文送去只会被服务端判为「不属于该页」。
-    而服务端那条 400 会整批判死:用户看到的正是「智能高亮失败:块 b0 的文本不属于
-    该页面(not_in_page)」——首页的第一块就是 hero 眉题。
+    前端按 DOM 抽块,抽到的未必都是页面正文 —— 主题模板塞进 article 的页脚版权行
+    (partials/comments.html)就不在索引里(索引按 page.content 建),原文送去只会被
+    服务端判为「不属于该页」。而服务端那条 400 会整批判死:改之前每一页都有一块
+    验不过,首页的 hero 眉题更是第一块,用户看到的就是「智能高亮失败:块 b0 的文本
+    不属于该页面(not_in_page)」。
 
     两侧各钉一条:前端把模板块挡在编号之后(保住 id→段落映射,服务端同页缓存按页面
     内容哈希共享),服务端逐块给结论、只丢验不过的块并降级,一块都验不过才 400。
@@ -454,34 +454,46 @@ class TestSmartHighlightBlockSources(unittest.TestCase):
 
     def test_template_chrome_is_not_sent_as_a_block(self):
         block = _block(self.js, "function extractBlocks(")
-        self.assertIn('el.closest(".pm-hero, .page-copyright")', block)
+        self.assertIn('el.closest(".page-copyright")', block)
 
     def test_chrome_filter_runs_after_numbering(self):
         """模板块要占一个编号但不送出:改编号会让别人缓存里的建议落到错段落。"""
         block = _block(self.js, "function extractBlocks(")
         numbered = block.index('var id = "b" + seq++;')
-        skipped = block.index('el.closest(".pm-hero, .page-copyright")')
+        skipped = block.index('el.closest(".page-copyright")')
         self.assertGreater(
             skipped, numbered, "模板文字的过滤必须在编号之后(与已高亮块同一条理由)"
         )
 
-    @unittest.skipUnless(SERVER_ANNOTATIONS_TS.exists(), "annotation-server 子模块未检出")
+    def _server_source(self, path, marker):
+        """读子模块里服务端的源码;修复还没随 gitlink 同步进来时跳过。
+
+        子模块 gitlink 由 Bump Submodules 工作流每 6h 从子模块 main 同步一次:
+        在这条修复合入子模块 main 之前,这里读到的还是旧代码。跳过的理由必须写明,
+        免得「测试绿了」被当成「服务端也有这条修复」。
+        """
+        if not path.exists():
+            self.skipTest("annotation-server 子模块未检出")
+        src = path.read_text(encoding="utf-8")
+        if marker not in src:
+            self.skipTest(f"{path.name} 尚未同步到含 {marker} 的 commit")
+        return src
+
     def test_server_decodes_index_entities(self):
         """索引是构建期 html.escape 过的:不解码,含 < > & 引号 撇号的段落全验不过。"""
-        src = self.index_store_path.read_text(encoding="utf-8")
+        src = self._server_source(self.index_store_path, "normalizeIndexText")
         block = _block(src, "export function normalizeIndexText(")
         self.assertIn("decodeEntities(", block)
         self.assertIn("stripIndexTags(", block)
 
-    @unittest.skipUnless(SERVER_ANNOTATIONS_TS.exists(), "annotation-server 子模块未检出")
     def test_server_drops_unverifiable_blocks_instead_of_rejecting_the_batch(self):
-        src = self.index_store_path.read_text(encoding="utf-8")
-        block = _block(src, "export function verifyBlocks(")
+        index_store = self._server_source(self.index_store_path, "normalizeIndexText")
+        block = _block(index_store, "export function verifyBlocks(")
         self.assertIn("accepted", block)
         self.assertIn("rejected", block)
         self.assertNotIn("reason: 'not_in_page' };", block)
 
-        service = self.highlight_path.read_text(encoding="utf-8")
+        service = self._server_source(self.highlight_path, "verdict.accepted.length === 0")
         guard = _block(service, "if (verdict.accepted.length === 0)")
         self.assertIn("blocks_not_in_page", guard, "一块都验不过才 400")
         self.assertIn(

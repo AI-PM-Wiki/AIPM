@@ -3816,12 +3816,12 @@
       // 位置序号只依赖 DOM 顺序,各客户端一致。
       var id = "b" + seq++;
       if (el.querySelector("mark.aipm-anno-mark")) continue;
-      /* 主题模板塞在 article 里的两处文字不是页面正文:首页 hero 的眉题与口号
-         (home.html)、每页页脚的版权与「编辑此页」行(partials/comments.html)。
-         站内正文索引是按 page.content 建的,索引里没有它们 —— 送去判分只会被服务端
-         按「不属于该页」退掉。判断同样放在编号之后,理由与上面那条一样:id↔段落的
-         映射不随这次改动漂移,否则别人缓存里的建议会落到错的段落上。 */
-      if (el.closest(".pm-hero, .page-copyright")) continue;
+      /* 页脚那一段(「发现错误?想一起完善?…本页面的全部内容在…协议下提供」,
+         partials/comments.html)是主题模板文字,不是页面正文 —— 站内正文索引按
+         page.content 建,里面没有它,送去判分只会被服务端按「不属于该页」退掉。
+         判断放在编号之后,理由与上面那条一样:id↔段落的映射不随这次改动漂移,
+         否则别人缓存里的建议会落到错的段落上。 */
+      if (el.closest(".page-copyright")) continue;
       var text = (el.textContent || "").replace(/\s+/g, " ").trim();
       if (!text) continue;
       var clipped = text.length > MAX_BLOCK_CHARS ? text.slice(0, MAX_BLOCK_CHARS) : text;
