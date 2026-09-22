@@ -3925,31 +3925,38 @@
    *
    * `opts.refresh` 是站长在面板页头那支笔上点的「重新生成」:跳过这两层缓存、
    * 让服务端重新判分并覆盖它那份缓存(见 syncHeadIcon)。
+   *
+   * `opts.auto` 是进页面时自己跑的那一条(见 autoSmart):不动界面、失败不出声、
+   * 拿到的建议直接写成「仅本机」高亮。
    */
   function smartHighlight(opts) {
     var refresh = !!(opts && opts.refresh);
-    /* 判的是正文,评论模式下没有正文可判。按钮挂在页头上一直可见,所以这里不再是
-       「够到也白搭地返回」,而是把面板切回批注模式 —— 用户点的是「给这一页划线」,
-       回执(智能高亮条与那两颗「全部高亮 / 全部关闭」)也长在批注那一份列表里。 */
-    if (panelMode !== "annotations") {
-      panelMode = "annotations";
-      editorDraft = null;
-      composerSelection = null;
-      syncMode();
-      render();
+    var auto = !!(opts && opts.auto);
+    if (!auto) {
+      /* 判的是正文,评论模式下没有正文可判。按钮挂在页头上一直可见,所以这里不再是
+        「够到也白搭地返回」,而是把面板切回批注模式 —— 用户点的是「给这一页划线」,
+        回执(智能高亮条与那两颗「全部高亮 / 全部关闭」)也长在批注那一份列表里。 */
+      if (panelMode !== "annotations") {
+        panelMode = "annotations";
+        editorDraft = null;
+        composerSelection = null;
+        syncMode();
+        render();
+      }
+      /* 回执落在面板里的智能高亮条上,面板关着的话点了等于没反应 —— 先把它叫出来。
+         移动端还得多一步:抽屉停在 peek 那一条上时,智能高亮条是被 .is-compact
+         压成 opacity:0 的,得展开到第三段才看得见(与写批注那条路一致)。 */
+      revealPanel();
+      /* 选区也一并撤掉:这一条判的是整页正文,跟用户手上选中的那一段无关,而它接下来
+         要往正文里插一整批 <mark> —— DOM 一动,浏览器再报一次 selectionchange,选区
+         还在正文里的话,刚收起的悬浮窗又会被摆回面板前面(见 clearSelection)。 */
+      clearSelection();
+      if (mode === "sheet") setSnap("expanded", false);
     }
-    /* 回执落在面板里的智能高亮条上,面板关着的话点了等于没反应 —— 先把它叫出来。
-       移动端还得多一步:抽屉停在 peek 那一条上时,智能高亮条是被 .is-compact
-       压成 opacity:0 的,得展开到第三段才看得见(与写批注那条路一致)。 */
-    revealPanel();
-    /* 选区也一并撤掉:这一条判的是整页正文,跟用户手上选中的那一段无关,而它接下来
-       要往正文里插一整批 <mark> —— DOM 一动,浏览器再报一次 selectionchange,选区
-       还在正文里的话,刚收起的悬浮窗又会被摆回面板前面(见 clearSelection)。 */
-    clearSelection();
-    if (mode === "sheet") setSnap("expanded", false);
     if (smartBusy) return;
     var now = Date.now();
     if (now < cooldownUntil) {
+      if (auto) return;
       setSmartbar(
         "刚请求过,请等 " + Math.ceil((cooldownUntil - now) / 1000) + " 秒后再试。",
         "warn"
@@ -3958,21 +3965,28 @@
     }
     var page = pagePath();
     if (!refresh && suggestCache[page]) {
-      renderSuggestions(suggestCache[page]);
+      /* 自动那条不在这里摆结果:这一页的缓存结果归 syncSmartbar 管(换页回来也走它)。 */
+      if (!auto) renderSuggestions(suggestCache[page]);
       return;
     }
     var blocks = extractBlocks();
     if (blocks.length === 0) {
+      if (auto) return;
       setSmartbar("这一页没有可判定的正文。", "warn");
       return;
     }
-    setSmartbar(
-      refresh
-        ? "正在重新生成…(共 " + blocks.length + " 段)"
-        : "正在分析这一页…(共 " + blocks.length + " 段)",
-      "busy"
-    );
-    setSmartBusy(true);
+    if (!auto) {
+      setSmartbar(
+        refresh
+          ? "正在重新生成…(共 " + blocks.length + " 段)"
+          : "正在分析这一页…(共 " + blocks.length + " 段)",
+        "busy"
+      );
+    }
+    /* 自动那条只占住 smartBusy,不动页头那颗按钮:用户点它的时候面板照常打开,
+       判分回来结果就摆在条子上,比一颗按不动的按钮说得清楚。 */
+    if (auto) smartBusy = true;
+    else setSmartBusy(true);
     store
       .request("/api/highlight/suggest", {
         method: "POST",
@@ -3993,17 +4007,21 @@
         }
       })
       .then(function (res) {
-        setSmartBusy(false);
+        if (auto) smartBusy = false;
+        else setSmartBusy(false);
+        /* 自动判分是后台动作,失败不该往用户眼前摆条子 —— 那是他点 ✨ 时才要的回执。
+           服务端没配密钥这种真的不可用仍要收掉按钮,与手动那条路同一个状态。 */
+        var say = auto ? function () {} : setSmartbar;
         /* 服务端那两道路闸(未登录 / 不是站长)。界面上这颗笔只对站长可点,所以走到
            这里通常意味着会话在这中间过期了 —— 如实说一句,别把 403 念成「失败」。 */
         if (res.status === 401 || res.status === 403) {
-          setSmartbar("重新生成仅限站长使用,请重新登录后再试。", "warn");
+          say("重新生成仅限站长使用,请重新登录后再试。", "warn");
           return;
         }
         if (res.status === 429) {
           var retry = res.headers && res.headers.get ? Number(res.headers.get("retry-after")) : 0;
           cooldownUntil = Date.now() + (retry > 0 ? retry * 1000 : 30000);
-          setSmartbar(
+          say(
             (res.body && res.body.message) || "请求过于频繁,请稍后再试。",
             "warn"
           );
@@ -4014,14 +4032,14 @@
              - not_configured 是服务端没配判分密钥,重试永远不会好 → 停掉按钮;
              - 其余(片全挂 / 排队满)是暂时性的 → 按 Retry-After 冷却,按钮留着。 */
           if (res.body && res.body.error === "highlight_not_configured") {
-            setSmartbar("智能高亮未启用(服务端缺少判分密钥),批注功能不受影响。", "warn");
+            say("智能高亮未启用(服务端缺少判分密钥),批注功能不受影响。", "warn");
             smartBtn.disabled = true;
             return;
           }
           var retry503 =
             res.headers && res.headers.get ? Number(res.headers.get("retry-after")) : 0;
           cooldownUntil = Date.now() + (retry503 > 0 ? retry503 * 1000 : 30000);
-          setSmartbar(
+          say(
             (res.body && res.body.message) || "智能高亮暂时不可用,请稍后再试。",
             "warn"
           );
@@ -4030,16 +4048,53 @@
         if (!res.ok) {
           // status 0 = 请求根本没发出去(断网/被拦截),别把 0 当状态码念给用户听
           if (res.status === 0) {
-            setSmartbar("网络异常,连不上智能高亮服务,请检查网络后重试。", "warn");
+            say("网络异常,连不上智能高亮服务,请检查网络后重试。", "warn");
             return;
           }
-          setSmartbar("智能高亮失败:" + ((res.body && res.body.message) || res.status), "warn");
+          say("智能高亮失败:" + ((res.body && res.body.message) || res.status), "warn");
           return;
         }
         res.body.blocks = blocks;
         suggestCache[page] = res.body;
-        renderSuggestions(res.body);
+        /* 判完时人可能已经换到别的页了。结果留在缓存里(回到那一页时按块 id 重绑即可),
+           绝不能往手上这一页的 DOM 上画 —— 块 id 是位置序号,两页的 b0 是两段文字。
+           这一页还没人管过的话,在这里补一次自动判分。 */
+        if (pagePath() !== page) {
+          autoSmart();
+          return;
+        }
+        if (auto) applySmart(res.body);
+        else renderSuggestions(res.body);
       });
+  }
+
+  /**
+   * 进一个页面就自动判一次(issue #102)。
+   *
+   * 页内没有这一页的结果时,让服务端判一遍 —— 它那份同页缓存命中就直接复用,没有
+   * 就生成并缓存下来,拿回的建议当场写成「仅本机」高亮。用户不必先去点页头那颗 ✨。
+   *
+   * 四道闸,任一命中就不跑:
+   *   - 这一页的自动判分已经用过了(store.smartDone:判成过,或者用户把这一页整批
+   *     关掉过、删光过),往后归用户自己决定;
+   *   - 本次会话里已经判过(结果就在 suggestCache 里);
+   *   - 有请求在飞:一次判分要几秒,连着换页会同时点着好几笔;
+   *   - 还在冷却期里(服务端限流、预算用完)。
+   */
+  function autoSmart() {
+    if (smartBusy) return;
+    if (Date.now() < cooldownUntil) return;
+    var page = pagePath();
+    if (store.smartDone(page)) return;
+    if (suggestCache[page]) return;
+    /* 这一页已经有智能高亮(用户手动点过,或者默认开启之前留下的):记下自动判分
+       已经用过,不再判一遍、也不再写一遍 —— 他删掉那些高亮之后也不该被加回来。 */
+    if (smartAnnos().length > 0) {
+      store.markSmartDone(page);
+      return;
+    }
+    if (extractBlocks().length === 0) return;
+    smartHighlight({ auto: true });
   }
 
   function setSmartbar(text, kind) {
@@ -4260,7 +4315,12 @@
     els.smartbar.appendChild(smartClose);
   }
 
-  /** 全开:一次性把余下的建议落成「仅本机」。已高亮的块跳过,不重复落。 */
+  /**
+   * 全开:一次性把余下的建议落成「仅本机」。已高亮的块跳过,不重复落。
+   *
+   * 署名写**判分用的那个模型型号**(服务端回的 model id,jev-1.13.0 / deepseek-flash…):
+   * 这些批注说的是模型的判断,署名要指出是哪一次判断给的。
+   */
   function applySmart(payload) {
     var byId = {};
     (payload.blocks || []).forEach(function (b) {
@@ -4269,7 +4329,7 @@
     var fresh = freshSuggestions(payload);
     var page = pagePath();
     var now = new Date().toISOString();
-    var who = auth && auth.isLoggedIn() && auth.user() ? auth.user().login : "本机";
+    var who = judgeLabel(payload);
     var added = 0;
     fresh.forEach(function (s) {
       var block = byId[s.id];
@@ -4293,6 +4353,9 @@
         setHint(err.message);
       }
     });
+    /* 这一页的自动判分就此用掉(见 autoSmart):往后增加、改色、删除都归用户,
+       自动那条不再插手。 */
+    store.markSmartDone(page);
     refreshLocal();
     renderSuggestions(payload);
   }
@@ -4302,6 +4365,9 @@
     smartAnnos().forEach(function (a) {
       store.localRemove(a.page, a.id);
     });
+    /* 关掉是用户对这一页的答复:记下来,下次进这一页不再自动判、不再自动写。
+       不记的话「全部关闭」换页回来就被「默认开启」推翻了。 */
+    store.markSmartDone(pagePath());
     refreshLocal();
     renderSuggestions(payload);
   }
@@ -4678,6 +4744,8 @@
        打开。面板只是列表的容器,不是高亮的前置条件 —— 之前只在 open 时加载,
        结果是刷新后页面上光秃秃的,别人的公开批注要等用户先点开面板才浮现。 */
     ensureAnnotationsLoaded();
+    /* 智能高亮默认开着:这一页没判过就自动判一次,建议当场写成「仅本机」高亮。 */
+    autoSmart();
   }
 
   if (typeof document$ !== "undefined" && document$.subscribe) {
