@@ -72,12 +72,26 @@
   }
 
   /**
-   * 站长标记。服务端在签发会话与 /api/auth/me 里一并回带,前端只用它决定面板页头
-   * 那支笔要不要做成「重新生成智能高亮」的开关(见 annotation.js 的 syncHeadIcon)。
-   * 真正的闸在服务端 —— 这里返回 true 也只说明按钮摆得出来。
+   * 站长名单:服务端 ADMIN_LOGINS 的同名副本(那边默认 huangyincan)。
+   *
+   * 站点前端与服务端分开部署 —— 站点合并进 main 就上线,服务端要等重建容器,
+   * 中间那段窗口里签发会话与 /api/auth/me 都还没有 admin 标记。只认服务端那一个
+   * 来源的话,站长在这段窗口里被当成普通访客,页头那颗图标于是退回「换一份列表」。
+   * 按小写比:GitHub 回的 login 首字母大小写未必与配置里写的一致。
+   */
+  var ADMIN_LOGINS = ["huangyincan"];
+
+  /**
+   * 站长标记。服务端回的 admin 是权威那一份(它认的是线上配置的 ADMIN_LOGINS),
+   * 名单是它缺席时的第二来源。前端只用它决定面板页头那支笔要不要做成「重新生成
+   * 智能高亮」的开关(见 annotation.js 的 syncHeadIcon)。真正的闸在服务端 ——
+   * 这里返回 true 也只说明按钮摆得出来。
    */
   function isAdmin() {
-    return session !== null && session.admin === true;
+    if (session === null) return false;
+    if (session.admin === true) return true;
+    var login = session.user && session.user.login;
+    return typeof login === "string" && ADMIN_LOGINS.indexOf(login.toLowerCase()) !== -1;
   }
 
   function onChange(cb) {
