@@ -81,6 +81,46 @@
 }
 
 /* ----------------------------------------------------------------------------
+   2.1 拖拽交互(issue #72):按住跟手拖走,松手弹回右下角原位
+   外观与位置一律照旧(见上,原文照搬,逐像素不变)—— 这一节只加交互:
+   - 锚点仍是上面的 right/bottom,所以 JS 只写 transform;松手清掉 inline
+     transform 就回到原位,JS 不需要知道锚点坐标,锚点被别的面板改(批注面板
+     停靠时给 FAB 让位,见 annotation.css)也照样成立
+   - 跟手期间过渡必须让位(带 !important:annotation.css 的让位规则为 right/
+     bottom 写了整条 transition 列表,选择器比这里更具体),否则胶囊慢半拍追指针
+   - 按/拖态与静息态同一套语言:同色系、同圆角(999px 不变)、同阴影家族,只是
+     抬起一点、跟手时按横向位移轻微侧倾(像被拎着走);松手由弹簧缓动吸回原位,
+     略带过冲 —— 时长与 JS 的 DRAG_BACK_MS 对齐
+   ---------------------------------------------------------------------------- */
+:root {
+  --aipm-chat-drag-back: .46s;
+  --aipm-chat-drag-spring: cubic-bezier(.22, 1.3, .36, 1);
+}
+/* 交互属性:触屏上从胶囊起手的滑动归拖拽(不滚页面),长按也不弹系统菜单/选区。
+   will-change 只写在拖拽态:常驻会把胶囊提成合成层,层里的文字会丢掉次像素
+   抗锯齿 —— 静息态就不再与改前逐像素一致了(实测 36 个像素的差别全来自这里) */
+.aipm-chat__fab {
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.aipm-chat__fab.is-dragging {
+  cursor: grabbing;
+  will-change: transform;
+  /* 拎起来的反馈:比 hover 再抬一档的投影(同阴影家族,只是更深) */
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .3);
+  transition: none !important;
+}
+/* 松手回弹:JS 清掉 inline transform 把 transform 交回 CSS,这条过渡负责把胶囊
+   「吸」回原位(时长 / 缓动见 --aipm-chat-drag-*) */
+.aipm-chat__fab.is-returning {
+  transition: transform var(--aipm-chat-drag-back) var(--aipm-chat-drag-spring) !important;
+}
+
+/* ----------------------------------------------------------------------------
    3. 遮罩(浮层 / 抽屉半开、近全屏;peek 与桌面停靠不显示)
    ---------------------------------------------------------------------------- */
 .aipm-chat__scrim {
@@ -907,6 +947,8 @@ html.aipm-chat-mode--sheet .aipm-chat__composer {
    ---------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .aipm-chat__fab,
+  /* 回弹那条规则带 !important 且选择器更具体(2 类),得在这里同样点名才压得住 */
+  .aipm-chat__fab.is-returning,
   .aipm-chat,
   .aipm-chat__scrim,
   .md-header,

@@ -1,7 +1,8 @@
 /*
   AI-PM 文档问答 Agent 助手(chat-widget.js,2026-09-20)
 
-  形态:右下角扁平胶囊按钮(图标 + 「询问助手」引导语)。点开后按视口宽度分三态:
+  形态:右下角扁平胶囊按钮(图标 + 「询问助手」引导语)。按住可拖拽(有互动感),
+  松手弹回右下角原位 —— 拖拽只改手感,不改入口的位置与样式。点开后按视口宽度分三态:
   - 桌面停靠(≥1200px):面板 fixed 贴视口右侧(320–420px),整个 MkDocs 页面
     (页头 + 左侧 nav + 正文 + TOC)整体保留并收窄 —— 页面与面板是两个独立的
     布局区域、两个独立滚动容器;TOC 不再被替换或隐藏
@@ -32,6 +33,12 @@
   - 与后端契约:POST {message, history} → text/event-stream,帧事件
     ready / sources / delta / done / error;预校验失败返回纯 JSON(400/403/
     413/429/503),映射中文提示(429 附 Retry-After 重试时间)
+  - FAB 可拖拽(issue #72):外观与位置一律照旧,加的只是交互。锚点在 CSS
+    (right/bottom),JS 只写 transform,所以「松手回原位」= 清掉 inline transform
+    交回 CSS 过渡 —— JS 不需要知道锚点在哪,锚点被别的面板改(批注面板停靠时让位,
+    annotation.css)也照样成立。跟手期间不做布局测量;拖拽超过 4px 才算拖拽,并抑制
+    随后的 click(拖完不该顺带开面板);回弹动画未落定时再按住,接着当前位置继续
+    (不跳);拖拽中按横向位移轻微侧倾,松手回正
   - 从 peek 直接发问会自动升到 half(否则回答落在面板可视区之外看不见)
   - 消息操作:每条 AI 回答气泡下方提供常驻「复制」「重新生成」(不随
     hover 显隐);重新生成截断该轮之后的历史并重发其上方那条用户消息
@@ -113,6 +120,7 @@
   const TRASH_ICON =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6v12zM19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z"/></svg>';
 
+  /* FAB:外观与位置照旧(图标 + 引导语胶囊);可拖拽见文末「FAB 拖拽」一节 */
   const fab = document.createElement("button");
   fab.type = "button";
   fab.className = "aipm-chat__fab";
@@ -1099,9 +1107,116 @@
   }
 
   /* ================================================================
+     FAB 拖拽:按住跟手,松手弹回原位(issue #72)
+     外观/位置一律照旧,这里只加交互。锚点在 CSS(right/bottom),这里只写
+     transform —— 于是「回原位」就是清掉 inline transform、把 transform 交回
+     CSS,不需要在 JS 里记锚点坐标(锚点还会被别的面板改:批注面板停靠时给 FAB
+     让位,见 annotation.css)。位移一律按指针增量算,跟手期间不做布局测量。
+     ================================================================ */
+  const DRAG_SLOP = 4;            // px:超过才算拖拽,之内仍是「点了一下」
+  const DRAG_MARGIN = 8;          // px:拖到视口边缘保留的间隙(免得拖出去再点不到)
+  const DRAG_LIFT = 1.04;         // 拎起来时略微放大(静息 1 / hover 1.05)
+  const DRAG_TILT_MAX = 4;        // deg:跟手时按横向位移侧倾的上限
+  const DRAG_TILT_PER_PX = .035;  // deg/px:侧倾斜率(拖 114px 到上限)
+  const DRAG_BACK_MS = 460;       // 与 CSS --aipm-chat-drag-back 一致
+
+  let drag = null;                // {id, x0, y0, ox, oy, homeL, homeT, w, h, moved}
+  let dragReturn = 0;             // 回弹收尾定时器(清 is-returning)
+  let dragSwallow = false;        // 这一段指针序列拖过了 → 随后那次 click 不算数
+
+  const dragClamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+
+  /* 视口尺寸:用 clientWidth/Height 而不是 innerWidth/Height —— fixed 元素的
+     坐标原点是「去掉滚动条后的那块视口」,两者得配对 */
+  const dragVw = () => document.documentElement.clientWidth;
+  const dragVh = () => document.documentElement.clientHeight;
+
+  /* 写 inline transform:位移相对锚点(静息 0,0),并带上拎起与侧倾的姿态 */
+  const dragPlace = (x, y, scale, tilt) => {
+    fab.style.transform = "translate3d(" + x + "px," + y + "px,0)" +
+      (tilt ? " rotate(" + tilt + "deg)" : "") +
+      (scale && scale !== 1 ? " scale(" + scale + ")" : "");
+  };
+
+  /* 当前实际落在 FAB 上的位移(回弹途中被按住时要用它接着走,不能跳回起点) */
+  const dragMatrix = () => {
+    const t = getComputedStyle(fab).transform;
+    if (!t || t === "none") return null;
+    try {
+      return new DOMMatrixReadOnly(t);
+    } catch (err) {
+      return null;
+    }
+  };
+
+  fab.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;   // 只跟主键
+    dragSwallow = false;                                       // 新手势,重新计
+    clearTimeout(dragReturn);
+    fab.classList.remove("is-returning");
+    const m = dragMatrix();
+    const ox = m ? m.m41 : 0;
+    const oy = m ? m.m42 : 0;
+    const r = fab.getBoundingClientRect();
+    drag = {
+      id: e.pointerId,
+      x0: e.clientX,
+      y0: e.clientY,
+      ox: ox,
+      oy: oy,
+      /* 锚点在视口里的位置 = 当前位置减去已写的位移;回弹途中按住也算得对 */
+      homeL: r.left - ox,
+      homeT: r.top - oy,
+      w: fab.offsetWidth,                                      // 布局尺寸,不含缩放
+      h: fab.offsetHeight,
+      moved: false,
+    };
+    fab.setPointerCapture(e.pointerId);
+  });
+
+  fab.addEventListener("pointermove", (e) => {
+    const d = drag;
+    if (!d || e.pointerId !== d.id) return;
+    const dx = e.clientX - d.x0;
+    const dy = e.clientY - d.y0;
+    if (!d.moved) {
+      if (Math.abs(dx) < DRAG_SLOP && Math.abs(dy) < DRAG_SLOP) return;
+      d.moved = true;
+      fab.classList.add("is-dragging");                        // 过渡让位,开始跟手
+    }
+    /* 夹在视口内:胶囊不能被拖出屏幕外(拖出去就再也点不到了) */
+    const x = dragClamp(d.ox + dx, DRAG_MARGIN - d.homeL,
+                        dragVw() - DRAG_MARGIN - d.w - d.homeL);
+    const y = dragClamp(d.oy + dy, DRAG_MARGIN - d.homeT,
+                        dragVh() - DRAG_MARGIN - d.h - d.homeT);
+    /* 侧倾只按横向位移:往哪边拖就往哪边倾一点,像被拎着走 */
+    dragPlace(x, y, DRAG_LIFT, dragClamp(x * DRAG_TILT_PER_PX, -DRAG_TILT_MAX, DRAG_TILT_MAX));
+  });
+
+  const dragRelease = (e) => {
+    const d = drag;
+    if (!d || e.pointerId !== d.id) return;
+    drag = null;
+    if (fab.hasPointerCapture(e.pointerId)) fab.releasePointerCapture(e.pointerId);
+    if (!d.moved) return;                                      // 只是一下点击:交给 click
+    dragSwallow = true;
+    fab.classList.remove("is-dragging");
+    fab.classList.add("is-returning");
+    fab.style.transform = "";                                  // 交回 CSS:回正 + 吸回原位
+    dragReturn = setTimeout(() => fab.classList.remove("is-returning"), DRAG_BACK_MS);
+  };
+  fab.addEventListener("pointerup", dragRelease);
+  fab.addEventListener("pointercancel", dragRelease);
+
+  /* ================================================================
      交互(打开 / 关闭 / Escape / 焦点环)
      ================================================================ */
   els.fab.addEventListener("click", () => {
+    /* 刚拖过的那一下不算数:松手弹回不是「点击」 */
+    if (dragSwallow) {
+      dragSwallow = false;
+      return;
+    }
     /* 走注册表而不是直接 openPanel:批注面板开着时点 FAB 是「切到助手」,
        两个面板占同一块屏幕区域,不能同时存在 */
     if (SHARED) SHARED.claim("chat");

@@ -789,7 +789,7 @@ extra:
   # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
   chat_agent:
     enabled: true
-    version: 24
+    version: 26
   # 自建批注系统前端(注入由 hooks/annotation.py 完成):
   # 取代原先嵌入的 hypothes.is 客户端;enabled 关闭后不再注入
   annotation:
