@@ -124,6 +124,11 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,6.4L17.6,5L12,10.6L6.4,5L5,6.4L10.6,12L5,17.6L6.4,19L12,13.4L17.6,19L19,17.6L13.4,12L19,6.4z"/></svg>',
     spark:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,9l1.25,-2.75L23,5l-2.75,-1.25L19,1l-1.25,2.75L15,5l2.75,1.25L19,9z M11.5,9.5L9,4L6.5,9.5L1,12l5.5,2.5L9,20l2.5,-5.5L17,12L11.5,9.5z M19,15l-1.25,2.75L15,19l2.75,1.25L19,23l1.25,-2.75L23,19l-2.75,-1.25L19,15z"/></svg>',
+    /* 送进对话用的是助手那颗四角星(与 chat-widget 的 FAB 同一张脸):点它不会
+       落下任何批注,只是把这段文字摆到对话框上方 —— 用「发送」的图形会让人以为
+       点完就发出去了。 */
+    ask:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,9l1.25,-2.75L23,5l-2.75,-1.25L19,1l-1.25,2.75L15,5l2.75,1.25L19,9z M11.5,9.5L9,4L6.5,9.5L1,12l5.5,2.5L9,20l2.5,-5.5L17,12L11.5,9.5z M19,15l-1.25,2.75L15,19l2.75,1.25L19,23l1.25,-2.75L23,19l-2.75,-1.25L19,15z"/></svg>',
     check:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9,16.2L4.8,12l-1.4,1.4L9,19L21,7l-1.4,-1.4L9,16.2z"/></svg>',
     trash:
@@ -535,9 +540,11 @@
   var toolbar = document.createElement("div");
   toolbar.className = "aipm-anno__toolbar";
   toolbar.hidden = true;
-  /* 一行:挑画法、挑颜色,然后笔 = 写批注、叉 = 收起。可见范围不在这一行 ——
-     划词挑个颜色就是「把这段划出来」,犯不着每次先答一遍给谁看;真要选范围的人
-     走笔那条路,编辑卡里还留着那个菜单(见 buildVisPicker)。 */
+  /* 一行:挑画法、挑颜色,然后笔 = 写批注、星 = 送进对话、叉 = 收起。可见范围不在
+     这一行 —— 划词挑个颜色就是「把这段划出来」,犯不着每次先答一遍给谁看;真要选
+     范围的人走笔那条路,编辑卡里还留着那个菜单(见 buildVisPicker)。
+     「送进对话」贴着笔放:两者都是「对着刚划的这段做点什么」,一个落在页面上,
+     一个落进对话框。 */
   toolbar.innerHTML =
     '<div class="aipm-anno__tb-group" role="radiogroup" aria-label="批注画法">' +
     styleHtml() +
@@ -548,6 +555,9 @@
     "</div>" +
     '<button type="button" class="aipm-anno__tb-annotate" title="写批注" aria-label="写批注">' +
     ICON.pen +
+    "</button>" +
+    '<button type="button" class="aipm-anno__tb-ask" title="问助手" aria-label="问助手">' +
+    ICON.ask +
     "</button>" +
     '<button type="button" class="aipm-anno__tb-cancel" title="取消" aria-label="取消">' +
     ICON.close +
@@ -2182,6 +2192,7 @@
     acts.className = "aipm-anno__item-actions";
     /* 点赞:本机批注没有服务端可言,不显示。 */
     if (!isLocal(anno)) acts.appendChild(likeButton(anno));
+    acts.appendChild(askButton(anno));
     if (isLocal(anno) && !store.serverIdOf(anno.id) && auth && auth.isLoggedIn()) {
       acts.appendChild(
         actionButton("上传为公开", "upload-public", function () {
@@ -2202,6 +2213,26 @@
       );
     }
     return acts;
+  }
+
+  /**
+   * 「问助手」:把这条批注送进对话。
+   *
+   * 仅本机的批注上这颗按钮**按不动**,悬停里说明理由 —— 它的承诺是「只在那台
+   * 设备上」,而语境会随提问发到问答后端、再进入模型上下文。按钮留着比整颗消失
+   * 更容易理解:旁边那两颗「上传为公开 / 上传为私有」正好是「想让它出去」的那条路,
+   * 走完那条路,这颗星就亮起来了。
+   */
+  function askButton(anno) {
+    if (!isLocal(anno)) {
+      return actionButton("问助手", "ask", function () {
+        askAssistant(annotationContext(anno));
+      });
+    }
+    var b = actionButton("问助手", "ask-local", function () {});
+    b.disabled = true;
+    b.title = "仅本机的批注不会离开这台设备;想跟助手讨论它,先上传为公开或私有。";
+    return b;
   }
 
   /**
@@ -2757,6 +2788,10 @@
     }
     if (e.target.closest(".aipm-anno__tb-annotate")) {
       startCreate();
+      return;
+    }
+    if (e.target.closest(".aipm-anno__tb-ask")) {
+      askAboutSelection();
     }
   });
 
@@ -3309,9 +3344,94 @@
     submitAnnotation(selectors, "", visibility, false);
   }
 
+  /* ================================================================
+     送进对话(与 AI 助手面板互通)
+     ----------------------------------------------------------------
+     两条入口:划选后悬浮窗上的星、批注卡上的「问助手」。两条路都只做一件事 ——
+     把「正在读的东西」交给助手面板,由它摆进语境条,用户随后在对话框里提问。
+     面板自己不构造语境的形状:那件事在 context-item.js,连同去重与「仅本机不出
+     本机」那道边界。这里是唯一的调用点,也就没有第二条能绕开边界的路。
+     ================================================================ */
+
+  /** 语境条目模块(与助手面板共用;缺失时这条路整条不可用,不做降级)。 */
+  var ctxItem = window.__aipmContext || null;
+
+  /**
+   * 把一条语境交给助手面板并把它打开。
+   *
+   * 失败要说出来:语境条满了(最多 CONTEXT_MAX_ITEMS 条)或助手面板没加载时,
+   * 按钮点下去什么都不发生,用户只会以为坏了。
+   */
+  function askAssistant(item) {
+    if (item === null) return;
+    var chat = window.__aipmChat;
+    if (ctxItem === null || !chat || typeof chat.attachContext !== "function") {
+      flash("问答助手未加载,这段内容送不进对话。", "warn");
+      return;
+    }
+    var res = chat.attachContext(item);
+    if (res && res.ok) {
+      chat.open();
+      return;
+    }
+    flash(
+      res && res.code === "context_full"
+        ? "对话里最多放 " + ctxItem.MAX_ITEMS + " 条语境,先去对话框上方去掉一条。"
+        : "这段内容送不进对话。",
+      "warn"
+    );
+  }
+
+  /** 悬浮窗那条路:刚划的这段原文。 */
+  function askAboutSelection() {
+    if (!pendingSelection) return;
+    var item =
+      ctxItem === null
+        ? null
+        : ctxItem.forSelection({
+            page: pagePath(),
+            title: pageTitle(),
+            quote: pendingSelection.range.toString(),
+            selectors: pendingSelection.selectors
+          });
+    hideToolbar();
+    /* 这里与「写批注」一样是**已经落地**的动作(视线要转到对话框去),
+       选区留着只会把悬浮窗再招回来(见 clearSelection)。 */
+    clearSelection();
+    askAssistant(item);
+  }
+
+  /**
+   * 这条批注划的是哪段话。优先取正文里已经锚好的那一段 —— quoteOf 在没有
+   * TextQuoteSelector 时会回落成「字符 12–40」这种位置描述,那是给卡片看的标签,
+   * 不是原文;把它当引文送进对话,模型会把它当成一句真说过的话去理解。
+   */
+  function annotatedText(anno) {
+    var range = resolved[anno.id];
+    if (range) {
+      var text = range.toString().trim();
+      if (text) return text;
+    }
+    var fallback = quoteOf(anno);
+    return /^字符 \d+–\d+$/.test(fallback) ? "" : fallback;
+  }
+
+  /** 卡片那条路:这一条批注的引文与正文。仅本机的批注在这里拿不到语境(见 forAnnotation)。 */
+  function annotationContext(anno) {
+    if (ctxItem === null) return null;
+    return ctxItem.forAnnotation({
+      page: anno.page || pagePath(),
+      title: pageTitle(),
+      id: anno.id,
+      quote: annotatedText(anno),
+      body: anno.body || "",
+      color: anno.color,
+      visibility: anno.visibility
+    });
+  }
+
   /** 全页评论:不需要选区,整条针对这一页。 */
-  function startPageComment() {
-    composerSelection = null;
+  function startPageComment() {    composerSelection = null;
     beginEditor({ kind: "create", page: true });
   }
 

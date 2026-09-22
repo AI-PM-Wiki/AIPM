@@ -1587,9 +1587,10 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   width: 1.35rem;
   height: 1.35rem;
 }
-/* 笔 = 写批注,叉 = 收起。两颗都与画法那几个一般大(1.6rem),排成一条整齐的行;
-   笔有底色,因为它是这一行里唯一「会开面板」的那个动作。 */
+/* 笔 = 写批注,星 = 送进对话,叉 = 收起。三颗都与画法那几个一般大(1.6rem),
+   排成一条整齐的行;笔是主色,因为它是这一行里唯一「会开面板」的那个动作。 */
 .aipm-anno__tb-annotate,
+.aipm-anno__tb-ask,
 .aipm-anno__tb-cancel {
   display: inline-flex;
   align-items: center;
@@ -1605,17 +1606,23 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 /* 笔和「收起」是悬浮窗上的两格,跟旁边那三颗画法芯片同一种写法:静息透明、
    悬停才起一层浅底。笔原来铺一整块主色,是这条工具条上唯一一处实心块,比旁边
-   表示选中的芯片还抢眼 —— 主次交给图标本身就够了:笔是主色,叉是正文色。 */
+   表示选中的芯片还抢眼 —— 主次交给图标本身就够了:笔是主色,叉是正文色。
+   星(送进对话)也走正文色:它不落在这一页上,不该与笔争主次。 */
 .aipm-anno__tb-annotate {
   margin-left: .2rem;
   color: var(--md-accent-fg-color);
   background: transparent;
 }
+.aipm-anno__tb-ask {
+  margin-left: .1rem;
+}
 .aipm-anno__tb-annotate:hover,
+.aipm-anno__tb-ask:hover,
 .aipm-anno__tb-cancel:hover {
   background: var(--md-default-fg-color--lightest);
 }
 .aipm-anno__tb-annotate svg,
+.aipm-anno__tb-ask svg,
 .aipm-anno__tb-cancel svg {
   width: 1rem;
   height: 1rem;
@@ -1631,6 +1638,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   }
   .aipm-anno__toolbar .aipm-anno__tb-style,
   .aipm-anno__tb-annotate,
+  .aipm-anno__tb-ask,
   .aipm-anno__tb-cancel {
     width: 1.4rem;
     height: 1.4rem;

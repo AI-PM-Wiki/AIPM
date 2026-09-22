@@ -30,9 +30,14 @@
   - 移动/浮层的系统返回:打开时 pushState 一条自家记录,返回键按
     expanded→half→peek→关闭 逐级回退(回退后补回记录,始终保持一条);
     从 UI 关闭时仅在自家记录仍是栈顶时 history.back(),避免连带退掉用户点开的文档页
-  - 与后端契约:POST {message, history} → text/event-stream,帧事件
+  - 与后端契约:POST {message, history, context?} → text/event-stream,帧事件
     ready / sources / delta / done / error;预校验失败返回纯 JSON(400/403/
     413/429/503),映射中文提示(429 附 Retry-After 重试时间)
+  - 语境(与批注面板互通):批注面板点「问助手」调 window.__aipmChat.attachContext(item),
+    条目落在输入条上方的语境条里,随下一次提问以 body.context 发出。条目的构造与
+    去重在 context-item.js(同一条来源连着送两次只有一条),「仅本机」的批注在那里
+    就不会成为语境。语境条里的条目一直留到被逐条移除或换了页 —— 追问同一段话
+    不必每次重新送一遍
   - FAB 可拖拽(issue #72):外观与位置一律照旧,加的只是交互。锚点在 CSS
     (right/bottom),JS 只写 transform,所以「松手回原位」= 清掉 inline transform
     交回 CSS 过渡 —— JS 不需要知道锚点在哪,锚点被别的面板改(批注面板停靠时让位,
@@ -70,6 +75,14 @@
   const HISTORY_MAX = 20;              // localStorage 条数上限
   const HISTORY_SEND = 8;              // 每次请求携带的最近历史条数
   const ATTACH_MAX = 4;                // 附件个数上限(纯 UI)
+
+  /* 语境条目(批注面板送来):构造、去重与「仅本机不出本机」那道边界都在
+     context-item.js。它必须排在 panel-shared.js 之前(mkdocs.yml extra_javascript),
+     缺了它整条互通路径不可用 —— 与 SHARED 一样按硬失败处理,不做降级。 */
+  const CTX = window.__aipmContext || null;
+  if (CTX === null) {
+    console.error("[aipm-chat] context-item.js 未加载:批注面板送不进语境");
+  }
 
   /* 断点:≥75em(1200px)桌面停靠 / ≥48em 且 <1200px 浮层 / <48em 底部抽屉 */
   const MQ_DOCK = window.matchMedia("(min-width: 75em)");
@@ -161,6 +174,7 @@
     "</header>" +
     '<div class="aipm-chat__msgs" role="log" aria-live="polite"></div>' +
     '<form class="aipm-chat__composer">' +
+      '<div class="aipm-chat__ctxbar" hidden></div>' +
       '<div class="aipm-chat__attachbar" hidden></div>' +
       '<textarea class="aipm-chat__input" rows="1" placeholder="提出问题…" aria-label="提问"></textarea>' +
       '<div class="aipm-chat__inputrow">' +
@@ -178,6 +192,7 @@
   els.head = panel.querySelector(".aipm-chat__head");
   els.composer = panel.querySelector(".aipm-chat__composer");
   els.attachbar = panel.querySelector(".aipm-chat__attachbar");
+  els.ctxbar = panel.querySelector(".aipm-chat__ctxbar");
   els.input = panel.querySelector(".aipm-chat__input");
   els.send = panel.querySelector(".aipm-chat__send");
   els.clear = panel.querySelector(".aipm-chat__clear");
@@ -292,8 +307,13 @@
       const arr = JSON.parse(raw);
       if (!Array.isArray(arr)) return;
       for (const m of arr.slice(-HISTORY_MAX))
-        if (m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-          history.push({ role: m.role, content: m.content });
+        if (m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string") {
+          const rec = { role: m.role, content: m.content };
+          /* 语境随用户消息一起恢复:重新生成那一轮时要按原样重发,
+             少了它就会答成另一个问题 */
+          if (m.role === "user") rec.context = sanitizeCtx(m.context);
+          history.push(rec);
+        }
     } catch (e) { /* 坏数据直接忽略 */ }
   };
 
@@ -345,7 +365,7 @@
     if (d) d.remove();
   };
 
-  const addUserBubble = (text, files) => {
+  const addUserBubble = (text, files, context) => {
     const wrap = document.createElement("div");
     wrap.className = "aipm-chat__msg aipm-chat__msg--user";
     const bubble = document.createElement("div");
@@ -354,6 +374,26 @@
     body.className = "aipm-chat__text";
     body.textContent = text; // 用户输入按纯文本展示(已由 textContent 转义)
     bubble.appendChild(body);
+    /* 随这条提问一起发出去的语境:气泡上原样留一份。这样回头翻会话时看得见
+       「当时是拿哪段话问的」—— 语境在提问之后就离开了输入条,不在这里留痕
+       就只剩回答里的转述可查。 */
+    if (context && context.length) {
+      const box = document.createElement("div");
+      box.className = "aipm-chat__ctx-inline";
+      for (const item of context) {
+        const row = document.createElement("div");
+        row.className = "aipm-chat__ctx-row";
+        const kind = document.createElement("span");
+        kind.className = "aipm-chat__ctx-kind";
+        kind.textContent = CTX ? CTX.labelOf(item) : "";
+        const quote = document.createElement("span");
+        quote.className = "aipm-chat__ctx-text";
+        quote.textContent = CTX ? CTX.excerptOf(item) : "";
+        row.append(kind, quote);
+        box.appendChild(row);
+      }
+      bubble.appendChild(box);
+    }
     if (files && files.length) {
       const chips = document.createElement("div");
       chips.className = "aipm-chat__files";
@@ -792,15 +832,15 @@
     t.regen.onclick = () => regenerate(t.wrap);
   };
 
-  /* 重新生成:截断该回答之后的历史,重发其上方那条用户消息 */
+  /* 重新生成:截断该回答之后的历史,重发其上方那条用户消息(连同它当时的语境) */
   const regenerate = (aiWrap) => {
     if (streaming) return;
     let prev = aiWrap.previousElementSibling;
     while (prev && !prev.classList.contains("aipm-chat__msg--user"))
       prev = prev.previousElementSibling;
     const idx = prev && prev.getAttribute("data-hidx");
-    const content = idx != null && history[+idx] ? history[+idx].content : null;
-    if (content == null) return;
+    const rec = idx != null && history[+idx] ? history[+idx] : null;
+    if (rec == null) return;
     history.length = +idx + 1;
     persist();
     let n = prev.nextElementSibling;
@@ -809,7 +849,7 @@
       n.remove();
       n = nx;
     }
-    runTurn(content);
+    runTurn(rec.content, rec.context || []);
   };
 
   /* ================================================================
@@ -830,8 +870,8 @@
   };
 
   /* 一轮问答:用户消息已入 history(由 postUser / regenerate 负责),
-     这里只负责 AI 气泡与流式接收 */
-  const runTurn = async (message) => {
+     这里只负责 AI 气泡与流式接收。context 是这一轮随行的语境条目。 */
+  const runTurn = async (message, context) => {
     const myTurn = ++turnSeq;             // 捕获本 turn 令牌:清空/新 turn 后本 turn 失效
     const ctx = { acc: "", sourceList: [], sourceSeen: new Set(), requestId: null };
     const t = addAiBubble();
@@ -845,8 +885,13 @@
 
     const body = {
       message,
-      history: history.slice(0, -1).slice(-HISTORY_SEND), // 最近轮次(不含本条)
+      // 最近的轮次(不含本条);语境不进 history —— 它是随行的,不是对话内容
+      history: history.slice(0, -1).slice(-HISTORY_SEND)
+        .map((m) => ({ role: m.role, content: m.content })),
     };
+    /* 没有语境时不带这个字段:请求体与加这条通路之前逐字相同 */
+    const wire = CTX && context && context.length ? CTX.toPayload(context) : [];
+    if (wire.length) body.context = wire;
 
     /* 收尾统一出口:失效 turn(清空/新 turn 后)不再写 history/DOM,
        避免"只有回答、没有对应问题"的孤儿历史;但流式状态必须复位,
@@ -964,19 +1009,20 @@
     if (mode === "sheet" && open && snap === "peek") setSnap("half");
   };
 
-  /* 用户消息入 history + 渲染气泡(附件以 [附件] 文本附注进消息体) */
-  const postUser = (text, files) => {
+  /* 用户消息入 history + 渲染气泡(语境按条列出,附件以 [附件] 文本附注进消息体) */
+  const postUser = (text, files, context) => {
     let sent = text;
     if (files && files.length) {
       const note = files.map((f) => `${f.name}(${f.size != null ? fmtSize(f.size) : "?"})`).join(", ");
       sent = text ? `${text}\n\n[附件] ${note}` : `[附件] ${note}`;
     }
-    history.push({ role: "user", content: sent });
-    const wrap = addUserBubble(text, files);
+    const ctxItems = context && context.length ? context.slice() : [];
+    history.push({ role: "user", content: sent, context: ctxItems });
+    const wrap = addUserBubble(text, files, ctxItems);
     wrap.setAttribute("data-hidx", history.length - 1);
     persist();
     raiseForSend();
-    runTurn(sent);
+    runTurn(sent, ctxItems);
   };
 
   const submit = () => {
@@ -988,7 +1034,7 @@
     const files = attachments.slice();
     attachments = [];
     renderAttach();
-    postUser(text, files);
+    postUser(text, files, pendingCtx);
   };
 
   /* ================================================================
@@ -1054,6 +1100,73 @@
     els.composer.classList.remove("is-dragover");
     addFiles(e.dataTransfer && e.dataTransfer.files);
   });
+
+  /* ================================================================
+     语境(与批注面板互通)
+     ----------------------------------------------------------------
+     批注面板点「问助手」→ window.__aipmChat.attachContext(item) → 条目落到输入条
+     上方这条语境条里,随下一次提问以 body.context 发出去。条目的形状、去重与
+     「仅本机不出本机」那道边界都在 context-item.js,这里只负责摆与发。
+
+     条目一直留到被逐条移除:追问同一段话不必每次重新送一遍。语境是**看着的
+     东西**,不是一次性的动作 —— 它在语境条上一直可见,发出去的与看到的是同一份。
+     ================================================================ */
+  let pendingCtx = [];
+
+  const renderCtx = () => {
+    els.ctxbar.textContent = "";
+    for (const item of pendingCtx) {
+      const chip = document.createElement("span");
+      chip.className = "aipm-chat__ctx-chip";
+      chip.setAttribute("data-kind", item.kind);
+      const label = document.createElement("span");
+      label.className = "aipm-chat__ctx-kind";
+      label.textContent = CTX ? CTX.labelOf(item) : "";
+      const text = document.createElement("span");
+      text.className = "aipm-chat__ctx-text";
+      text.textContent = CTX ? CTX.excerptOf(item) : "";
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "aipm-chat__ctx-x";
+      rm.title = "移除这条语境";
+      rm.setAttribute("aria-label", "移除语境:" + text.textContent);
+      rm.textContent = "×";
+      rm.addEventListener("click", () => {
+        pendingCtx = CTX.remove(pendingCtx, item.id);
+        renderCtx();
+        updateSendState();
+      });
+      chip.append(label, text, rm);
+      chip.title = label.textContent + ":" + text.textContent;
+      els.ctxbar.appendChild(chip);
+    }
+    els.ctxbar.hidden = pendingCtx.length === 0;
+  };
+
+  /* localStorage 里的语境可能来自旧版本或被手工改坏:只收形态对得上的条目,
+     坏条目丢掉,别让整轮提问卡在取字段上。 */
+  const sanitizeCtx = (list) => {
+    if (!Array.isArray(list)) return [];
+    return list.filter(
+      (it) => it && typeof it.id === "string" && typeof it.page === "string" &&
+        (it.kind === "selection" || it.kind === "annotation")
+    );
+  };
+
+  /**
+   * 批注面板的入口。返回 {ok} 或 {ok:false, code} —— 语境条满了要让人知道,
+   * 不然点下去什么都不发生。话由调用方(批注面板的 toast)去说,这里不弹窗。
+   *
+   * 语境不参与发送按钮的可用性:提问必须有文字,光有语境发不出去。
+   */
+  const attachContext = (item) => {
+    if (CTX === null) return { ok: false, code: "unavailable" };
+    const res = CTX.upsert(pendingCtx, item);
+    if (!res.ok) return res;
+    pendingCtx = res.items;
+    renderCtx();
+    return res;
+  };
 
   /* ================================================================
      视口 / 软键盘
@@ -1341,7 +1454,7 @@
     history.forEach((m, i) => {
       if (m.role === "user") {
         // 附件形态不持久化:恢复时按存入 history 的完整文本展示
-        const wrap = addUserBubble(m.content, []);
+        const wrap = addUserBubble(m.content, [], m.context || []);
         wrap.setAttribute("data-hidx", i);
       } else {
         const t = addAiBubble();
@@ -1365,4 +1478,20 @@
       isOpen: () => open
     });
   }
+
+  /* 批注面板送语境的入口(调用方见 annotation.js 的 askAssistant)。
+     开面板走共享注册表的 claim:它与点 FAB 是同一条路 —— 先关掉批注面板再开助手,
+     两个面板在同一块屏幕区域里互斥。注册表不在时退回直接开。 */
+  window.__aipmChat = {
+    attachContext: (item) => {
+      const res = attachContext(item);
+      if (!res.ok) return res;
+      if (SHARED) SHARED.claim("chat");
+      else openPanel();
+      raiseForSend();          // 抽屉停在页面优先态时升到半开,语境条与输入条才露出来
+      els.input.focus();
+      return res;
+    },
+    isOpen: () => open
+  };
 })();

@@ -469,6 +469,14 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__attachbar {
   width: 100%;
   padding: .55rem .6rem .15rem;
 }
+/* 语境条同一条窄条里排在附件之上(来源先说,附件后说) */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__ctxbar,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__ctxbar,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
+  order: -2;
+  width: 100%;
+  padding: .55rem .6rem 0;
+}
 
 /* ----------------------------------------------------------------------------
    7. 消息区(常驻免责条 / 空态 / 气泡 / 操作行)
@@ -790,6 +798,84 @@ html.aipm-chat-mode--sheet .aipm-chat__composer {
 }
 .aipm-chat__attachbar[hidden] {
   display: none;
+}
+/* 语境条(批注面板送进来的「正在读的东西」):附件条上面那一排。
+   与附件 chips 同一套几何,差别在它装的是**正在读的内容**而不是待发的文件 ——
+   左边那格写清来源(选中文字 / 批注 · 公开),右边那格是被引的原文。 */
+.aipm-chat__ctxbar {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  padding: .55rem .7rem 0;
+}
+.aipm-chat__ctxbar[hidden] {
+  display: none;
+}
+.aipm-chat__ctx-chip,
+.aipm-chat__ctx-row {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  max-width: 100%;
+  font-size: .72rem;
+  line-height: 1.45;
+}
+.aipm-chat__ctx-chip {
+  padding: .25rem .3rem .25rem .45rem;
+  border-radius: .4rem;
+  /* 左侧一道主色竖条:语境与右端可移除的附件不是一回事,它说的是「我在读什么」 */
+  border: 1px solid var(--md-accent-fg-color--transparent);
+  border-left: 2px solid var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+.aipm-chat__ctx-kind {
+  flex: none;
+  color: var(--md-accent-fg-color);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.aipm-chat__ctx-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--md-default-fg-color--light);
+}
+.aipm-chat__ctx-x {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-size: .8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease;
+}
+.aipm-chat__ctx-x:hover {
+  color: #e5484d;
+  background: rgba(229, 72, 77, .12);
+}
+/* 气泡里那一份:这条提问当时带着哪段语境。整行可折、不做省略 ——
+   回头看会话时它就是要被读全的。 */
+.aipm-chat__ctx-inline {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  margin-top: .4rem;
+  padding-top: .35rem;
+  border-top: 1px dashed var(--md-default-fg-color--lightest);
+  font-size: .72rem;
+}
+.aipm-chat__ctx-inline .aipm-chat__ctx-text {
+  white-space: normal;
 }
 .aipm-chat__attach-chip {
   display: inline-flex;
