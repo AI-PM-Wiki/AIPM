@@ -1,0 +1,283 @@
+"""锁住图表语境(chart-context.js)的取源与安全边界。
+
+这个文件碰 DOM、发请求、解析 SVG,没法在 node 里跑 —— 行为由真实浏览器验证,
+这里锁的是那些**改一处就会静默失效**的形状:取源从哪儿来、取不到时写什么、
+不可信的 SVG 走哪条路进、以及那道「不执行任何来自页面的东西」的边界。
+
+容易在改动中悄悄回退的几条:
+
+- **mermaid 的源码要在渲染把它换掉之前收下来**。主题渲染一张图是
+  `el.replaceWith(host)`:换下来的 `<pre>` 上源码还在,换上去的 `<div>` 是个
+  空壳(SVG 在它的 closed shadow root 里,外面读不到)。收源的观察者因此必须
+  同时看 removedNodes 与 addedNodes,并且只在一条记录内部配对。
+- **取不到内容写一句说明,而不是不造条目**。三种图各有一条兜底路径,兜底文案
+  里要有位置、种类与原因 —— 它是这条语境唯一的可读内容。
+- **不可信的 SVG 不执行**。SVG 是正文的一部分,和别的正文一样由作者提供。取源
+  只走 fetch 拿文本 + DOMParser 解析成惰性文档读字,读到的字符串以文本形式进
+  语境;解析出来的节点从不插入本文档。这个文件里唯一一处 innerHTML 写的是自己
+  定义的那颗图标常量。
+- **样式与脚本成对注册**。少一处注册,按钮就没有样式或者整段不加载。
+"""
+
+from __future__ import annotations
+
+import re
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CONFIG = ROOT / "mkdocs.yml"
+CHART_JS = ROOT / "docs" / "_static" / "js" / "chart-context.js"
+CHART_CSS = ROOT / "docs" / "_static" / "css" / "chart-context.css"
+CTX_JS = ROOT / "docs" / "_static" / "js" / "context-item.js"
+CHAT_JS = ROOT / "docs" / "_static" / "js" / "chat-widget.js"
+
+
+def _strip_comments(src: str) -> str:
+    return re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+
+
+class TestChartContextAssets(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.config = CONFIG.read_text(encoding="utf-8")
+        cls.raw = CHART_JS.read_text(encoding="utf-8")
+        cls.js = _strip_comments(cls.raw)
+        cls.css = _strip_comments(CHART_CSS.read_text(encoding="utf-8"))
+
+    def test_assets_are_registered_with_cache_versions(self):
+        scripts = self.config[self.config.index("extra_javascript:") :]
+        self.assertIn("_static/js/chart-context.js?v=1", scripts)
+        self.assertIn("_static/css/chart-context.css?v=1", scripts)
+        entries = [e.split("?", 1)[0] for e in re.findall(r"-\s*'([^']+)'", scripts)]
+        self.assertLess(
+            entries.index("_static/js/context-item.js"),
+            entries.index("_static/js/chart-context.js"),
+            "chart-context.js 读 __aipmContext,必须排在 context-item.js 之后",
+        )
+
+    def test_missing_dependencies_skip_the_whole_module(self):
+        """共享件缺失时整条不做:摆一颗点了没反应的按钮比不摆更糟。"""
+        head = self.js[: self.js.index("function contentRoot()")]
+        self.assertIn("var CTX = window.__aipmContext || null", head)
+        self.assertIn("if (CTX === null) return", head)
+        self.assertIn(r"/\.netlify\.app$/i.test(location.hostname)", head)
+
+    def test_instant_navigation_subscription_is_guarded(self):
+        self.assertRegex(
+            self.js,
+            r'if \(typeof document\$ !== "undefined" && document\$ && document\$\.subscribe\) \{\s*'
+            r"document\$\.subscribe\(",
+        )
+
+    def test_entry_button_sits_in_its_own_positioned_box(self):
+        self.assertIn('box.className = "aipm-chart"', self.js)
+        self.assertIn('btn.className = "aipm-chart__ask"', self.js)
+        fn = self.js[self.js.index("function enhance(el)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("parent.insertBefore(box, el)", fn)
+        self.assertIn("box.appendChild(el)", fn, "容器要包住这张图,按钮才有定位的参照")
+        self.assertIn("box.appendChild(askButton(el))", fn)
+        self.assertIn("el.setAttribute(READY_ATTR", fn, "重复扫描要认得出来,不然会套第二层")
+
+        ask = self.css[self.css.index(".aipm-chart__ask {") :]
+        self.assertIn("position: absolute", ask)
+        self.assertIn("left: .4rem", ask, "贴在左下角,避开 mermaid-zoom 右下角的放大按钮")
+        self.assertIn(".aipm-chart:hover > .aipm-chart__ask", self.css)
+        self.assertIn("@media (hover: none)", self.css, "触摸设备上按钮要一直可见")
+        self.assertIn(".aipm-chart__toast", self.css)
+
+    def test_button_swallows_the_click_before_the_link(self):
+        """图常常本身就是个链接,按钮落在链接里面 —— 不拦下这一下会把页面带走。"""
+        fn = self.js[self.js.index("function askButton(el)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("event.preventDefault()", fn)
+        self.assertIn("event.stopPropagation()", fn)
+        self.assertIn('btn.title = "问助手:把这张图送进对话"', fn)
+        self.assertIn('btn.setAttribute("aria-label"', fn)
+
+
+class TestChartSourceCapture(unittest.TestCase):
+    """mermaid 的源码在渲染替换掉它之前收下来。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = _strip_comments(CHART_JS.read_text(encoding="utf-8"))
+
+    def test_source_is_read_off_the_removed_block_and_paired_in_record(self):
+        fn = self.js[self.js.index("function absorbMermaidSources(records)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("records[r].removedNodes", fn, "源码在被换下来的那个游离节点上")
+        self.assertIn("records[r].addedNodes", fn, "要配到换上去的宿主上")
+        self.assertIn("mermaidSource.set(fresh[i], text)", fn)
+        self.assertNotIn("push", fn, "配对只在一条记录内部做,不跨记录攒队列")
+
+    def test_rendered_and_unrendered_blocks_are_told_apart(self):
+        fn = self.js[self.js.index("function holdsSource(node)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn('node.tagName === "PRE"', fn)
+        self.assertIn('node.querySelector("code")', fn)
+
+    def test_registry_is_keyed_on_the_live_element(self):
+        self.assertIn("var mermaidSource = new WeakMap()", self.js)
+
+    def test_only_rendered_hosts_are_wrapped(self):
+        """`div.mermaid` 这个限定把还在源码形态的 `<pre class="mermaid">` 排除在外。"""
+        fn = self.js[self.js.index("function chartElements()") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn('querySelectorAll("div.mermaid, img")', fn)
+
+    def test_observer_collects_sources_and_wraps_new_charts(self):
+        obs = self.js[self.js.index("new MutationObserver(") :]
+        self.assertIn("absorbMermaidSources(records)", obs)
+        self.assertIn("scheduleScan()", obs)
+        self.assertIn("observe(document.body, { childList: true, subtree: true })", obs)
+
+
+class TestChartSourceFidelity(unittest.TestCase):
+    """三种图各读到什么,以及读完什么时写什么。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.raw = CHART_JS.read_text(encoding="utf-8")
+        cls.js = _strip_comments(cls.raw)
+
+    def _fn(self, head: str) -> str:
+        body = self.js[self.js.index(head) :]
+        return body[: body.index("\n  }") + 4]
+
+    def test_mermaid_sends_its_source(self):
+        fn = self._fn("function readChart(el)")
+        self.assertIn("mermaidSource.get(el)", fn, "mermaid 送给模型的是它的源码")
+        self.assertIn('chart: "mermaid"', fn)
+        self.assertIn("key: source", fn, "同一段源码 = 同一张图,连点两次只有一条语境")
+
+    def test_svg_is_fetched_same_origin_and_parsed_as_an_inert_document(self):
+        fn = self._fn("function readImage(img)")
+        self.assertIn("sameOriginSvgUrl(img)", fn, "跨域的图不取")
+        self.assertIn("fetch(svg.href", fn)
+        self.assertIn("svgLabels(markup)", fn)
+
+        guard = self._fn("function sameOriginSvgUrl(img)")
+        self.assertIn("url.origin !== location.origin", guard)
+        self.assertIn('endsWith(".svg")', guard)
+
+        parse = self._fn("function svgLabels(markup)")
+        self.assertIn('new DOMParser().parseFromString(markup, "image/svg+xml")', parse)
+        self.assertIn('doc.querySelectorAll("title, desc, text")', parse)
+        self.assertIn('doc.querySelector("parsererror")', parse, "不是 SVG 时返回空,交给兜底")
+
+    def test_raster_images_send_the_alt_text(self):
+        fn = self._fn("function readImage(img)")
+        self.assertIn("altTextOf(img)", fn)
+        self.assertIn('chart: "image"', fn)
+        self.assertIn("key: img.src", fn)
+
+    def test_every_path_has_a_written_fallback(self):
+        """取不到任何文字时写一句说明 —— 它是这条语境唯一的可读内容。"""
+        missing = self._fn("function missingText(chart, ordinal, why)")
+        self.assertIn("chartName(chart)", missing)
+        self.assertIn("为什么", self.raw, "兜底文案要说清哪一张、什么图、为什么没有内容")
+
+        for why in ("源码没有取到", "图里的文字没有取到", "作者没有写替代文本"):
+            self.assertIn(why, self.js, f"缺少这条兜底:{why}")
+
+        read = self._fn("function readChart(el)")
+        self.assertIn("readImage(el)", read)
+        self.assertIn("missingText(\"mermaid\"", read)
+        self.assertIn('key: "by-position:" + ordinal', read, "源码没收上来时按位置认这张图")
+
+    def test_source_is_never_empty(self):
+        """每条返回都用 `||` 兜住:forChart 见空 source 不造条目,按钮就白点了。"""
+        image = self._fn("function readImage(img)")
+        self.assertEqual(
+            image.count("|| missingText("),
+            2,
+            "位图与 SVG 各要有一处兜底",
+        )
+        self.assertIn('labels || alt || missingText("svg"', image)
+
+
+class TestUntrustedSvgIsNeverExecuted(unittest.TestCase):
+    """图是作者写的,和其它正文一样不可信。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.raw = CHART_JS.read_text(encoding="utf-8")
+        cls.js = _strip_comments(cls.raw)
+
+    def test_no_html_parsing_sink_takes_page_content(self):
+        for sink in ("outerHTML", "insertAdjacentHTML", "importNode", "adoptNode", "createContextualFragment"):
+            self.assertNotIn(sink, self.js, f"图表内容不得经过 {sink}")
+
+        assignments = re.findall(r"\.innerHTML\s*=\s*([^;]+);", self.js)
+        self.assertEqual(
+            assignments,
+            ["ASK_ICON"],
+            f"这个文件里唯一的 innerHTML 写自己定义的那颗图标;实际:{assignments}",
+        )
+
+    def test_svg_is_parsed_inert_and_only_text_leaves_it(self):
+        fn = self.js[self.js.index("function svgLabels(markup)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn('parseFromString(markup, "image/svg+xml")', fn, "解析成惰性文档:脚本不跑、事件不触发、外链不加载")
+        self.assertIn("textContent", fn)
+        self.assertNotIn("appendChild", fn, "解析出来的节点从不进本文档")
+
+    def test_source_text_reaches_the_dom_as_text(self):
+        """兜底文案与取到的文字经 textContent 摆上语境条,不经过任何解析。"""
+        chat = _strip_comments(CHAT_JS.read_text(encoding="utf-8"))
+        fn = chat[chat.index("const renderCtx = ()") :]
+        fn = fn[: fn.index("\n  };") + 5]
+        self.assertIn("text.textContent = CTX ? CTX.excerptOf(item) : \"\"", fn)
+
+
+class TestChartHandsOffThroughTheSharedContract(unittest.TestCase):
+    """形状、去重与那道边界都在 context-item.js,这里不自己拼条目。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = _strip_comments(CHART_JS.read_text(encoding="utf-8"))
+        cls.ctx = _strip_comments(CTX_JS.read_text(encoding="utf-8"))
+
+    def test_context_is_built_in_exactly_one_place(self):
+        self.assertEqual(self.js.count("CTX.forChart("), 1, "图表语境的构造只允许有一处")
+
+    def test_chart_module_never_builds_or_sends_an_item_itself(self):
+        for forbidden in ("CTX.upsert(", "CTX.toPayload(", "CTX.forSelection(", "CTX.forAnnotation("):
+            self.assertNotIn(forbidden, self.js, f"chart-context.js 不该自己碰 {forbidden}")
+
+    def test_handoff_goes_through_the_chat_panel_export(self):
+        fn = self.js[self.js.index("function handOff(found)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("window.__aipmChat", fn)
+        self.assertIn("chat.attachContext(item)", fn)
+
+    def test_chat_panel_members_used_here_are_all_exported(self):
+        api = _strip_comments(CHAT_JS.read_text(encoding="utf-8"))
+        api = api[api.index("window.__aipmChat = {") :]
+        api = api[: api.index("\n  };") + 5]
+        exported = set(re.findall(r"^\s+(\w+):\s", api, flags=re.M))
+        used = set(re.findall(r"\bchat\.(\w+)", self.js))
+        self.assertTrue(exported, "没解析出 window.__aipmChat 导出的成员")
+        self.assertLessEqual(used, exported, f"chart-context.js 用了没导出的成员:{sorted(used - exported)}")
+
+    def test_failures_are_reported_not_swallowed(self):
+        """语境条满了、面板没挂上,按钮点下去都不该毫无动静。"""
+        fn = self.js[self.js.index("function handOff(found)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("flash(", fn)
+        self.assertIn('res.code === "context_full"', fn)
+        self.assertIn("CTX.MAX_ITEMS", fn)
+
+    def test_the_two_front_end_modules_agree_on_the_chart_kinds(self):
+        js_kinds = re.search(r"var CHART_KINDS = \[([^\]]*)\]", self.ctx).group(1)
+        js_kinds = [k.strip().strip('"') for k in js_kinds.split(",")]
+        ts_kinds = re.search(r"CHART_KINDS = \[([^\]]*)\]", (ROOT / "agent-server" / "src" / "context.ts").read_text(encoding="utf-8")).group(1)
+        ts_kinds = [k.strip().strip("'") for k in ts_kinds.split(",")]
+        self.assertEqual(js_kinds, ts_kinds, "前后端对「哪些种类算图表」必须给出同一个答案")
+
+
+if __name__ == "__main__":
+    unittest.main()

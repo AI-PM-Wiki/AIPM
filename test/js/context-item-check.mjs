@@ -22,7 +22,7 @@ const check = (name, cond, detail = '') => {
 };
 
 check('模块挂在 window 上', CTX !== null && typeof CTX === 'object');
-check('导出的入口齐全', ['forSelection', 'forAnnotation', 'isDeliverable', 'sanitize', 'upsert', 'remove', 'toPayload'].every((k) => typeof CTX[k] === 'function'));
+check('导出的入口齐全', ['forSelection', 'forAnnotation', 'forChart', 'isDeliverable', 'sanitize', 'upsert', 'remove', 'toPayload'].every((k) => typeof CTX[k] === 'function'));
 
 /* ---- 划选 ---- */
 {
@@ -131,6 +131,92 @@ check('导出的入口齐全', ['forSelection', 'forAnnotation', 'isDeliverable'
   check('语境条:满了仍能刷新已有条目', refreshAtFull.ok === true && refreshAtFull.added === false && refreshAtFull.items.length === CTX.MAX_ITEMS);
 
   check('语境条:null 条目被拒', CTX.upsert([], null).ok === false);
+}
+
+/* ---- 图表 ---- */
+{
+  const base = { page: '/ai/rag/', title: '检索增强生成', chart: 'mermaid', source: 'flowchart TB\n    a --> b', key: 'flowchart TB\n    a --> b' };
+
+  const mermaid = CTX.forChart(base);
+  check('图表: 造出条目', mermaid !== null && mermaid.kind === 'chart');
+  check('图表: 种类与取到的文字都在', mermaid.chart === 'mermaid' && mermaid.source === 'flowchart TB\n    a --> b');
+  check('图表: 引文与正文是空的(那是另外两种才有的)', mermaid.quote === '' && mermaid.body === '');
+  check('图表: 可见范围固定公开', mermaid.visibility === 'public');
+  check('图表: 标签写明是图与种类', CTX.labelOf(mermaid) === '图表 · Mermaid 图', CTX.labelOf(mermaid));
+  check('图表: 摘要取的是取到的文字', CTX.excerptOf(mermaid) === 'flowchart TB a --> b', CTX.excerptOf(mermaid));
+
+  const mermaidAgain = CTX.forChart(base);
+  check('图表: 同一段源码 → 同一个 id(连点两次不会排两条)', mermaidAgain.id === mermaid.id, mermaid.id);
+
+  const other = CTX.forChart({ ...base, source: 'pie title 占比\n    "a" : 60', key: 'pie title 占比\n    "a" : 60' });
+  check('图表: 另一张图 → 另一个 id', other.id !== mermaid.id);
+
+  const svg = CTX.forChart({ ...base, chart: 'svg', key: '/ai/rag/images/flow.svg' });
+  check('图表: SVG 可用', svg !== null && svg.chart === 'svg');
+  check('图表: 同页两张不同来源的图 id 不同', svg.id !== mermaid.id);
+  check('图表: SVG 的标签', CTX.labelOf(svg) === '图表 · SVG 图', CTX.labelOf(svg));
+
+  const image = CTX.forChart({ ...base, chart: 'image', key: '/ai/rag/images/x.png' });
+  check('图表: 位图可用', image !== null && image.chart === 'image');
+  check('图表: 位图的标签', CTX.labelOf(image) === '图表 · 图片', CTX.labelOf(image));
+
+  check('图表: 认不出的种类 → 不造条目', CTX.forChart({ ...base, chart: 'jpg' }) === null);
+  check('图表: 种类缺失 → 不造条目', CTX.forChart({ ...base, chart: undefined }) === null);
+  check('图表: 取到的文字为空 → 不造条目', CTX.forChart({ ...base, source: '   ' }) === null);
+  check('图表: 没有来源标识 → 不造条目(去重无从谈起)', CTX.forChart({ ...base, key: '' }) === null);
+  check('图表: page 缺失 → 不造条目', CTX.forChart({ ...base, page: '' }) === null);
+
+  const overlong = CTX.forChart({ ...base, source: 'x'.repeat(9000) });
+  check('图表: 超长内容按上限截断', overlong.source.length === CTX.LIMITS.source, String(overlong.source.length));
+
+  const wire = CTX.toPayload([mermaid]);
+  check('图表: 出网带上种类与内容', wire[0].chart === 'mermaid' && wire[0].source.startsWith('flowchart TB'));
+  check('图表: 出网不再额外带别的字段', ['kind', 'page', 'title', 'quote', 'prefix', 'suffix', 'body', 'color', 'chart', 'source', 'visibility'].every((k) => k in wire[0]) && Object.keys(wire[0]).length === 11, JSON.stringify(Object.keys(wire[0])));
+
+  /* 另外两种不出网时,图表那两个字段是空串 —— 服务端的 schema 有它们,缺省也是空串。 */
+  const selectionWire = CTX.toPayload([CTX.forSelection({ page: '/ai/rag/', quote: '一段话。', selectors: [] })]);
+  check('非图表: 出网时种类与内容留空串', selectionWire[0].chart === '' && selectionWire[0].source === '');
+
+  /* 同一份列表里混着三种,各自保留各自的 id 与顺序。 */
+  const mixed = [CTX.forSelection({ page: '/ai/rag/', quote: '一段话。', selectors: [] }), mermaid, svg];
+  const kept = CTX.sanitize(mixed);
+  check('恢复: 三种条目一起过,一条不少', kept.length === 3, `len=${kept.length}`);
+  check('恢复: 图表的种类与内容一起回来', kept[1].chart === 'mermaid' && kept[1].source.startsWith('flowchart TB'));
+}
+
+/* ---- 「仅本机」这道边界对图表同样成立 ----
+   图表这边前端永远写 public(正文里的图没有三态一说),但边界不能因此少判一次:
+   手工拼的、或从旧数据里恢复出来的 local 条目,一样不许进语境条、不许出网。 */
+{
+  const local = {
+    id: 'chart:/ai/rag/#mermaid:zzz',
+    kind: 'chart',
+    page: '/ai/rag/',
+    title: '检索增强生成',
+    quote: '',
+    prefix: '',
+    suffix: '',
+    body: '',
+    color: '',
+    chart: 'mermaid',
+    source: 'flowchart TB\n    a --> b',
+    visibility: 'local'
+  };
+
+  check('仅本机图表: 过不了 isDeliverable', CTX.isDeliverable(local) === false);
+  const put = CTX.upsert([], local);
+  check('仅本机图表: 进不了语境条', put.ok === false && put.code === 'invalid_context' && put.items.length === 0);
+  check('仅本机图表: 从 localStorage 恢复时被丢掉', CTX.sanitize([local]).length === 0);
+  check('仅本机图表: 出网那一道也发不出去', CTX.toPayload([local]).length === 0);
+
+  /* 形状补全但可见范围是 local:挡住它的必须是可见范围那条,而不是形状那条。 */
+  const shaped = { ...local, visibility: 'public' };
+  check('同一条改回公开就收得下(证明挡它的是可见范围那一条)', CTX.isDeliverable(shaped) === true);
+
+  const noSource = { ...shaped, source: '' };
+  check('公开但内容为空: 一样过不了(服务端也会拒)', CTX.isDeliverable(noSource) === false);
+  const badKind = { ...shaped, chart: 'jpg' };
+  check('公开但种类不认识: 一样过不了', CTX.isDeliverable(badKind) === false);
 }
 
 /* ---- 出网形态 ---- */

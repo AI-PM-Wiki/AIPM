@@ -85,7 +85,7 @@ class TestContextItemModule(unittest.TestCase):
         )
 
     def test_exports_the_shared_entry_points(self):
-        for name in ("forSelection", "forAnnotation", "isDeliverable", "sanitize", "upsert", "remove", "toPayload"):
+        for name in ("forSelection", "forAnnotation", "forChart", "isDeliverable", "sanitize", "upsert", "remove", "toPayload"):
             self.assertIn(f"{name}: {name}", self.src, f"window.__aipmContext 未导出 {name}")
 
     def test_limits_match_the_server_side(self):
@@ -94,7 +94,7 @@ class TestContextItemModule(unittest.TestCase):
             (key, int(value))
             for key, value in re.findall(r"(\w+): (\d+)", re.search(r"var LIMITS = (\{[^}]*\})", self.src).group(1))
         )
-        self.assertEqual(len(js_limits), 6, f"前端的 LIMITS 少了解析不出的项:{js_limits}")
+        self.assertEqual(len(js_limits), 7, f"前端的 LIMITS 少了解析不出的项:{js_limits}")
         for key, value in js_limits.items():
             self.assertIn(f"{key}: {value}", ts, f"服务端 CONTEXT_LIMITS.{key} 与前端不一致")
         js_max = int(re.search(r"var MAX_ITEMS = (\d+)", self.src).group(1))
@@ -110,16 +110,21 @@ class TestContextItemModule(unittest.TestCase):
         """条目要经过四个容器:构造、进条、恢复、出网。判断只写一份。"""
         fn = self.src[self.src.index("function isDeliverable(item)") :]
         fn = fn[: fn.index("\n  }") + 4]
-        self.assertIn('item.visibility === "public" || item.visibility === "private"', fn)
+        self.assertIn('item.visibility !== "public" && item.visibility !== "private"', fn)
+        self.assertIn("CHART_KINDS.indexOf(item.chart)", fn, "图表的形状规则也收在这一份判断里")
 
         for head, name in (
             ("function upsert(list, item)", "upsert"),
             ("function sanitize(list)", "sanitize"),
             ("function toPayload(list)", "toPayload"),
+            ("function forChart(", "forChart"),
         ):
             body = self.src[self.src.index(head) :]
             body = body[: body.index("\n  }") + 4]
-            self.assertIn("isDeliverable", body, f"{name} 没有过 isDeliverable")
+            if name == "forChart":
+                self.assertIn("CHART_KINDS.indexOf(chart)", body, "构造那一步也要认种类")
+            else:
+                self.assertIn("isDeliverable", body, f"{name} 没有过 isDeliverable")
 
     def test_upsert_refreshes_in_place(self):
         fn = self.src[self.src.index("function upsert(") :]
@@ -293,6 +298,15 @@ class TestServerAcceptsContext(unittest.TestCase):
         self.assertIn("z.enum(['public', 'private'])", _squash(item))
         self.assertNotIn("'local'", item, "「仅本机」不该有进服务端的取值")
 
+    def test_chart_kind_is_part_of_the_schema(self):
+        """图表是第三种 kind:字段、枚举与长度都要与前端同源。"""
+        item = self.srv[self.srv.index("const ContextItemSchema") :]
+        item = item[: item.index("const ChatBodySchema")]
+        self.assertIn("z.enum(['selection', 'annotation', 'chart'])", _squash(item))
+        self.assertIn("chart: z.enum(['', ...CHART_KINDS]).default('')", _squash(item))
+        self.assertIn("source: z.string().max(CONTEXT_LIMITS.source).default('')", _squash(item))
+        self.assertIn("source: 4000", self.ctx, "CONTEXT_LIMITS 缺 source")
+
     def test_kind_rule_is_enforced_by_the_schema(self):
         """按 kind 的必填字段挂在同一个 schema 上,漏不出 schema 之外。"""
         schema = self.srv[self.srv.index("const ContextItemSchema") :]
@@ -303,8 +317,27 @@ class TestServerAcceptsContext(unittest.TestCase):
 
         rule = self.ctx[self.ctx.index("export function contextItemProblem(") :]
         rule = rule[: rule.index("\n}") + 2]
+        self.assertIn("item.kind === 'chart'", rule)
+        self.assertIn("CHART_KINDS as readonly string[]).includes(item.chart)", _squash(rule))
+        self.assertIn("item.source.trim().length > 0", rule)
         self.assertIn("item.kind === 'selection'", rule)
         self.assertIn("quote.length > 0 || body.length > 0", _squash(rule))
+
+    def test_chart_renderer_says_what_the_model_has(self):
+        """模型看不到图,得知道自己手里是源码、是图里的字,还是一句说明。"""
+        labels = self.ctx[self.ctx.index("const CHART_LABEL") :]
+        labels = labels[: labels.index("};") + 2]
+        self.assertIn("源码见下", labels)
+        self.assertIn("图形本身没有送过来", labels)
+        self.assertIn("看不到图像内容", labels)
+
+        fn = self.ctx[self.ctx.index("function renderItem(") :]
+        fn = fn[: fn.index("\n}") + 2]
+        chart_branch = fn[fn.index("if (item.kind === 'chart')") :]
+        chart_branch = chart_branch[: chart_branch.index("return lines.join") + len("return lines.join")]
+        self.assertIn("CHART_LABEL[chart]", chart_branch)
+        self.assertIn("CHART_TEXT_LABEL[chart]", chart_branch)
+        self.assertNotIn("原文:", chart_branch, "图表这一段提前返回,不走引文与批注那两行")
 
     def test_schema_and_http_checks_are_wired(self):
         """schema 一层的断言在 src/context-http-check.ts,挂成 npm 脚本免得住坏。"""
@@ -312,6 +345,7 @@ class TestServerAcceptsContext(unittest.TestCase):
         self.assertIn("ChatBodySchema.safeParse", script)
         self.assertIn("createApp", script)
         self.assertIn("visibility: 'local'", script)
+        self.assertIn("chart: 'mermaid'", script, "图表那几条也要在自检里")
         scripts = json.loads(_read(AGENT_SERVER / "package.json"))["scripts"]
         self.assertIn("context-check", scripts)
 
