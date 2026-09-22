@@ -433,6 +433,76 @@ class TestSharedPanelContracts(unittest.TestCase):
         self.assertIn('e.target.closest("button")', self.js)
 
 
+class TestSmartHighlightBlockSources(unittest.TestCase):
+    """issue #87:送去判分的块必须是「站内正文索引里找得到的文字」。
+
+    前端按 DOM 抽块,抽到的未必都是页面正文 —— 主题模板塞进 article 的页脚版权行
+    (partials/comments.html)就不在索引里(索引按 page.content 建),原文送去只会被
+    服务端判为「不属于该页」。而服务端那条 400 会整批判死:改之前每一页都有一块
+    验不过,首页的 hero 眉题更是第一块,用户看到的就是「智能高亮失败:块 b0 的文本
+    不属于该页面(not_in_page)」。
+
+    两侧各钉一条:前端把模板块挡在编号之后(保住 id→段落映射,服务端同页缓存按页面
+    内容哈希共享),服务端逐块给结论、只丢验不过的块并降级,一块都验不过才 400。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.index_store_path = ROOT / "annotation-server" / "src" / "index-store.ts"
+        cls.highlight_path = ROOT / "annotation-server" / "src" / "highlight" / "index.ts"
+
+    def test_template_chrome_is_not_sent_as_a_block(self):
+        block = _block(self.js, "function extractBlocks(")
+        self.assertIn('el.closest(".page-copyright")', block)
+
+    def test_chrome_filter_runs_after_numbering(self):
+        """模板块要占一个编号但不送出:改编号会让别人缓存里的建议落到错段落。"""
+        block = _block(self.js, "function extractBlocks(")
+        numbered = block.index('var id = "b" + seq++;')
+        skipped = block.index('el.closest(".page-copyright")')
+        self.assertGreater(
+            skipped, numbered, "模板文字的过滤必须在编号之后(与已高亮块同一条理由)"
+        )
+
+    def _server_source(self, path, marker):
+        """读子模块里服务端的源码;修复还没随 gitlink 同步进来时跳过。
+
+        子模块 gitlink 由 Bump Submodules 工作流每 6h 从子模块 main 同步一次:
+        在这条修复合入子模块 main 之前,这里读到的还是旧代码。跳过的理由必须写明,
+        免得「测试绿了」被当成「服务端也有这条修复」。
+        """
+        if not path.exists():
+            self.skipTest("annotation-server 子模块未检出")
+        src = path.read_text(encoding="utf-8")
+        if marker not in src:
+            self.skipTest(f"{path.name} 尚未同步到含 {marker} 的 commit")
+        return src
+
+    def test_server_decodes_index_entities(self):
+        """索引是构建期 html.escape 过的:不解码,含 < > & 引号 撇号的段落全验不过。"""
+        src = self._server_source(self.index_store_path, "normalizeIndexText")
+        block = _block(src, "export function normalizeIndexText(")
+        self.assertIn("decodeEntities(", block)
+        self.assertIn("stripIndexTags(", block)
+
+    def test_server_drops_unverifiable_blocks_instead_of_rejecting_the_batch(self):
+        index_store = self._server_source(self.index_store_path, "normalizeIndexText")
+        block = _block(index_store, "export function verifyBlocks(")
+        self.assertIn("accepted", block)
+        self.assertIn("rejected", block)
+        self.assertNotIn("reason: 'not_in_page' };", block)
+
+        service = self._server_source(self.highlight_path, "verdict.accepted.length === 0")
+        guard = _block(service, "if (verdict.accepted.length === 0)")
+        self.assertIn("blocks_not_in_page", guard, "一块都验不过才 400")
+        self.assertIn(
+            "const degraded: DegradedBlock[] = rejected.map(",
+            service,
+            "被丢掉的块要进 degraded,不能静默吞掉",
+        )
+
+
 @unittest.skipUnless(SERVER_ANNOTATIONS_TS.exists(), "annotation-server 子模块未检出")
 class TestServerSideVisibilityRules(unittest.TestCase):
     """前后端同一条边界:服务端也不接受「仅本机」。"""
@@ -2480,6 +2550,74 @@ class TestTheFloatingToolbarNeverStrands(unittest.TestCase):
         handler = handler[: handler.index("toolbar.addEventListener")]
         self.assertIn("showToolbar(range)", handler)
         self.assertIn("pendingSelection = { range: range", handler)
+
+
+class TestSmartbarNotificationsCanBeDismissed(unittest.TestCase):
+    """通知条自己能收(issue #88)。
+
+    条子上的报错/进行中原本只能等下一次通知把它顶掉 —— 报错会一直挂在那儿,而
+    「正在分析…」跑到一半不想等了也没有出路。右端补一颗关闭按钮。
+
+    几条容易回退的契约:
+    - 按钮是**常驻节点**,不能写进 panel.innerHTML —— 条子正文是 textContent 整段
+      重写的,写进壳子里的节点第一次重画就被摘掉,留下的引用指向孤儿,挂不回来;
+    - 每一次重画(纯文字 / 结果条)都得把它 appendChild 回去;
+    - 收起条子 ≠ 撤销结果:建议缓存不动,再点 ✨ 原地回来;
+    - 正文要可缩(min-width:0),否则长通知会把自己撑到内容宽,把按钮顶出去。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def test_the_button_is_one_persistent_node(self):
+        """常驻的那一个,不是每次现造的 —— 也就不能写在 panel.innerHTML 里。"""
+        shell = self.js[
+            self.js.index("panel.innerHTML =") : self.js.index("document.body.appendChild(panel)")
+        ]
+        self.assertNotIn("aipm-anno__smart-close", shell, "按钮又写回外壳里了")
+        self.assertEqual(
+            self.js.count('className = "aipm-anno__smart-close"'), 1, "关闭按钮被造了不止一个"
+        )
+        decl = self.js[self.js.index('var smartClose = document.createElement("button")') :]
+        decl = decl[: decl.index("setSmartbar")]
+        self.assertIn("ICON.close", decl)
+        self.assertIn('setAttribute("aria-label"', decl)
+
+    def test_every_repaint_puts_the_button_back(self):
+        """两处重画都要挂回去:textContent 一清,按钮就跟着没了。"""
+        self.assertIn("appendChild(smartClose)", _block(self.js, "function setSmartbar(text, kind)"))
+        self.assertIn(
+            "appendChild(smartClose)", _block(self.js, "function renderSuggestions(payload)")
+        )
+
+    def test_dismissing_only_hides_the_strip(self):
+        """收起不等于撤销:缓存留着,再点 ✨ 原地摆回来,不重新请求、不撞冷却。"""
+        handler = self.js[self.js.index("smartClose.addEventListener") :]
+        handler = _strip_comments(handler[: handler.index("});")])
+        self.assertIn('setSmartbar("", "")', handler)
+        self.assertNotIn("suggestCache", handler)
+        self.assertNotIn("localRemove", handler)
+
+    def test_the_message_can_shrink_so_the_button_never_gets_pushed_out(self):
+        """flex 行里不给 min-width:0,长通知就撑到内容宽,把关闭按钮顶到条子外面 ——
+        通知越长越关不掉,正好反了。"""
+        rule = _block(self.css, ".aipm-anno__smart-text {")
+        self.assertEqual(_decl(rule, "flex"), "1 1 auto")
+        self.assertEqual(_decl(rule, "min-width"), "0")
+        # 报错文案是让人读完的,换行而不是省略号收尾
+        self.assertEqual(_decl(rule, "text-overflow"), "")
+
+    def test_the_button_is_muted_until_hovered(self):
+        """它站在条子上而不是页头,颜色跟着 data-kind 走(warn 粉 / busy 灰),
+        压的只是不透明度。"""
+        rule = _block(self.css, ".aipm-anno__smart-close {")
+        self.assertEqual(_decl(rule, "flex"), "none")
+        self.assertEqual(_decl(rule, "color"), "inherit")
+        self.assertLess(float(_decl(rule, "opacity")), 1)
+        self.assertIn(".aipm-anno__smart-close:hover", self.css)
+        self.assertIn(".aipm-anno__smart-close:focus-visible", self.css)
 
 
 if __name__ == "__main__":

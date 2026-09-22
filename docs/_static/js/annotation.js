@@ -587,7 +587,24 @@
     smartbar: panel.querySelector(".aipm-anno__smartbar"),
     list: panel.querySelector(".aipm-anno__list"),
     logout: panel.querySelector(".aipm-anno__logout")
-  };  /* 页头入口按钮(位置与样式沿用 issue #67:页头右上角、贴浏览器右边缘) */
+  };
+  /* 通知条右端那颗「关掉它」。它**不进 panel.innerHTML** —— 通知的正文是用
+     textContent 整段重写的,写在壳子里的节点下一次就被抹掉了。所以它是一个常驻
+     节点:每次重画(setSmartbar / renderSuggestions)再 appendChild 回来。
+     appendChild 一个已在树上的节点只是把它挪到队尾,不克隆,也就不会重复。 */
+  var smartClose = document.createElement("button");
+  smartClose.type = "button";
+  smartClose.className = "aipm-anno__smart-close";
+  smartClose.title = "关闭通知";
+  smartClose.setAttribute("aria-label", "关闭通知");
+  smartClose.innerHTML = ICON.close;
+  smartClose.addEventListener("click", function () {
+    /* 只收条子,不撤结果:高亮建议还缓存在 suggestCache 里,再点页头的 ✨ 原地
+       摆回来,既不重新请求,也不会撞上冷却。 */
+    setSmartbar("", "");
+  });
+
+  /* 页头入口按钮(位置与样式沿用 issue #67:页头右上角、贴浏览器右边缘) */
   var entry = document.createElement("button");
   entry.type = "button";
   entry.className = "md-header__button md-icon aipm-anno-entry";
@@ -941,9 +958,13 @@
     return p;
   }
 
+  /* 页面标题:送智能高亮判分时当页面的名字用。主页的页首 h1 是 AI-PM-WIKI
+     字标(整块 SVG,没有文字节点),取不到文字就回落到 document.title,
+     否则会把空标题丢给模型。 */
   function pageTitle() {
     var h = document.querySelector(".md-content h1") || document.querySelector("h1");
-    return (h ? h.textContent : document.title || "").trim();
+    var text = (h && h.textContent ? h.textContent : "").trim();
+    return text || (document.title || "").trim();
   }
 
   /* 未登录一律只能落本机(服务端那两条路都要 token);登录后按用户在悬浮窗里选的那个
@@ -3812,6 +3833,12 @@
       // 位置序号只依赖 DOM 顺序,各客户端一致。
       var id = "b" + seq++;
       if (el.querySelector("mark.aipm-anno-mark")) continue;
+      /* 页脚那一段(「发现错误?想一起完善?…本页面的全部内容在…协议下提供」,
+         partials/comments.html)是主题模板文字,不是页面正文 —— 站内正文索引按
+         page.content 建,里面没有它,送去判分只会被服务端按「不属于该页」退掉。
+         判断放在编号之后,理由与上面那条一样:id↔段落的映射不随这次改动漂移,
+         否则别人缓存里的建议会落到错的段落上。 */
+      if (el.closest(".page-copyright")) continue;
       var text = (el.textContent || "").replace(/\s+/g, " ").trim();
       if (!text) continue;
       var clipped = text.length > MAX_BLOCK_CHARS ? text.slice(0, MAX_BLOCK_CHARS) : text;
@@ -3933,7 +3960,15 @@
     }
     els.smartbar.hidden = false;
     els.smartbar.setAttribute("data-kind", kind || "");
-    els.smartbar.textContent = text;
+    /* 正文得单独包一层:直接写 textContent 的话,它是一个**匿名 flex 项**,
+       最小宽度绑在内容上 —— 长通知会把自己撑到内容宽,把右端那颗关闭按钮顶出
+       条子外面,点不着(见 CSS 里 .aipm-anno__smart-text 的 min-width:0)。 */
+    els.smartbar.textContent = "";
+    var line = document.createElement("span");
+    line.className = "aipm-anno__smart-text";
+    line.textContent = text;
+    els.smartbar.appendChild(line);
+    els.smartbar.appendChild(smartClose);
   }
 
   function sourceLabel(source) {
@@ -4020,9 +4055,10 @@
       var note = document.createElement("span");
       note.className = "aipm-anno__smart-note";
       note.textContent = payload.degraded.length + " 段未判定";
-      note.title = "这些段落是代码、导航或已超出本次预算,没有给出建议。";
+      note.title = "这些段落是代码、导航、页面模板文字,或已超出本次预算,没有给出建议。";
       els.smartbar.appendChild(note);
     }
+    els.smartbar.appendChild(smartClose);
   }
 
   /** 全开:一次性把余下的建议落成「仅本机」。已高亮的块跳过,不重复落。 */
