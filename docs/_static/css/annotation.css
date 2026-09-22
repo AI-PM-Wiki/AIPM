@@ -1115,17 +1115,25 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__smartbar[data-kind="busy"] {
   color: var(--md-default-fg-color--light);
 }
-/* 标题行吃掉剩余宽度、省略号收尾;开关、「N 段未判定」与右端的关闭按钮不参与
-   收缩 —— 四者必须挤在一行里(验收意见:建议不要一条条列出来)。 */
+/* 标题行吃掉剩余宽度;开关、「N 段没能判定」与右端的关闭按钮不参与收缩 ——
+   它们必须挤在一行里(验收意见:建议不要一条条列出来)。
+   标题行**换行、不省略**:它写的是「谁判的」(模型 id)与「是不是缓存」,截掉
+   尾巴就成了半句(实测窄面板下截成「智能高亮 · 来源 Claude (由 Jev 回退) deep」),
+   而条子上的字是给人读完的 —— 与下面 .aipm-anno__smart-text 同一条理由,宁可
+   让条子长高一行。min-width:0 仍然要留:flex 行里不给它,标题会把自己撑到内容
+   宽,把右端的关闭按钮顶出条子外面。 */
 .aipm-anno__smart-head {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
   color: var(--md-default-fg-color--light);
   font-size: .6875rem;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
+/* 括号里那截(「(Jev 不可用)」)整体换行:让断行落在括号前,而不是断在
+   「不可」与「用」之间 —— 它是一句话,不该被劈成两截。 */
+.aipm-anno__smart-why {
+  white-space: nowrap;
+}
+
 /* 纯文字通知(报错 / 进行中)紧接着也占掉剩余宽度,但它**换行而不省略**:
    「请求过于频繁,请稍后再试(服务端限流窗口 60 秒,单页最多 5 次)。」这种句子
    截掉尾巴就白报了 —— 通知是让人读完的,宁可让条子长高一行(条子变高本来也是
@@ -1159,8 +1167,10 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   cursor: default;
 }
 .aipm-anno__smart-note {
-  flex: none;
-  white-space: nowrap;
+  /* 可缩、可换行:它只有「N 段没能判定」几个字,不抢宽度,但也不能因为不缩而
+     把关闭按钮挤出条子(flex 行里的老问题,同 .aipm-anno__smart-text)。 */
+  flex: 0 1 auto;
+  min-width: 0;
   color: var(--md-default-fg-color--light);
   font-size: .6875rem;
 }
