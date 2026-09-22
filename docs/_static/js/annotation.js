@@ -493,6 +493,8 @@
     '<button type="button" class="aipm-anno__grip" aria-label="调整批注面板高度">' +
     '<span class="aipm-anno__grip-bar"></span></button>' +
     '<header class="aipm-anno__head">' +
+    /* 这一枚是面板的标记,只有站长手上才多一重身份:它是「重新生成智能高亮」的
+       触发点(见 syncHeadIcon)。 */
     '<span class="aipm-anno__head-icon">' +
     ICON.pen +
     "</span>" +
@@ -577,6 +579,7 @@
     toolbar: toolbar,
     grip: panel.querySelector(".aipm-anno__grip"),
     head: panel.querySelector(".aipm-anno__head"),
+    headIcon: panel.querySelector(".aipm-anno__head-icon"),
     title: panel.querySelector(".aipm-anno__title"),
     titleLabel: panel.querySelector(".aipm-anno__title-label"),
     count: panel.querySelector(".aipm-anno__count"),
@@ -3817,6 +3820,10 @@
      ================================================================ */
   var suggestCache = {};
   var cooldownUntil = 0;
+  /* 判分请求进行中。页头那颗按钮靠 disabled 挡住连点,面板页头那支笔没有 disabled
+     可言,所以这里另记一笔 —— 重新生成一次就是一轮真金白银的 provider 调用,连点
+     两下会让第二下也走一遍「缓存未命中」,多花一次钱。 */
+  var smartBusy = false;
   /* 条子当前说的是哪一页。instant 导航只换内容容器,面板与条子都留在原地 ——
      不记这一笔,换页后条子会继续挂上一页的回执(用户验收意见:「通知不会随着
      页面切换而切换」)。 */
@@ -3870,7 +3877,53 @@
     return out;
   }
 
-  function smartHighlight() {
+  /** 判分进行中时两颗入口一起收:页头那颗按钮用 disabled,面板页头那支笔用 is-busy。 */
+  function setSmartBusy(on) {
+    smartBusy = on;
+    smartBtn.disabled = on;
+    els.headIcon.classList.toggle("is-busy", on);
+  }
+
+  /**
+   * 站长(服务端 ADMIN_LOGINS)多一项「重新生成智能高亮」,触发点就是面板页头那支
+   * 笔 —— 它平时只是一枚图标,对站长才是一颗开关。
+   *
+   * 身份决定要不要补上按钮的那套属性:是 → role + tabindex + 标题,并带上
+   * .aipm-anno__iconbtn 与 is-regenerate(命中区、悬停底色与焦点圈见
+   * annotation.css);否 → 逐个撤掉。未登录 → 登录 → 退出登录这条来回里标记必须
+   * 跟着身份走,否则非站长手上会留下一颗点下去必然 403 的按钮。
+   *
+   * 「不是站长」不用 disabled 表达:disabled 说的是「按不动」,这里要说的是
+   * 「这颗图标不是按钮」。
+   */
+  function syncHeadIcon() {
+    var on = !!(auth && auth.isAdmin && auth.isAdmin());
+    els.headIcon.classList.toggle("is-regenerate", on);
+    els.headIcon.classList.toggle("aipm-anno__iconbtn", on);
+    if (on) {
+      els.headIcon.setAttribute("role", "button");
+      els.headIcon.setAttribute("tabindex", "0");
+      els.headIcon.title = "重新生成智能高亮(重新判分并覆盖本页缓存)";
+      els.headIcon.setAttribute("aria-label", "重新生成智能高亮");
+    } else {
+      els.headIcon.removeAttribute("role");
+      els.headIcon.removeAttribute("tabindex");
+      els.headIcon.removeAttribute("title");
+      els.headIcon.removeAttribute("aria-label");
+    }
+  }
+
+  /**
+   * 判这一页的正文。
+   *
+   * 默认先读缓存:页内已有的那份结果(本次会话点过一次)直接摆回来,服务端那层
+   * 同页缓存也照样命中 —— 一次判分的结果不该因为第二次点而被重算一遍。
+   *
+   * `opts.refresh` 是站长在面板页头那支笔上点的「重新生成」:跳过这两层缓存、
+   * 让服务端重新判分并覆盖它那份缓存(见 syncHeadIcon)。
+   */
+  function smartHighlight(opts) {
+    var refresh = !!(opts && opts.refresh);
     /* 判的是正文,评论模式下没有正文可判。按钮挂在页头上一直可见,所以这里不再是
        「够到也白搭地返回」,而是把面板切回批注模式 —— 用户点的是「给这一页划线」,
        回执(智能高亮条与那两颗「全部高亮 / 全部关闭」)也长在批注那一份列表里。 */
@@ -3890,6 +3943,7 @@
        还在正文里的话,刚收起的悬浮窗又会被摆回面板前面(见 clearSelection)。 */
     clearSelection();
     if (mode === "sheet") setSnap("expanded", false);
+    if (smartBusy) return;
     var now = Date.now();
     if (now < cooldownUntil) {
       setSmartbar(
@@ -3899,7 +3953,7 @@
       return;
     }
     var page = pagePath();
-    if (suggestCache[page]) {
+    if (!refresh && suggestCache[page]) {
       renderSuggestions(suggestCache[page]);
       return;
     }
@@ -3908,11 +3962,19 @@
       setSmartbar("这一页没有可判定的正文。", "warn");
       return;
     }
-    setSmartbar("正在分析这一页…(共 " + blocks.length + " 段)", "busy");
-    smartBtn.disabled = true;
+    setSmartbar(
+      refresh
+        ? "正在重新生成…(共 " + blocks.length + " 段)"
+        : "正在分析这一页…(共 " + blocks.length + " 段)",
+      "busy"
+    );
+    setSmartBusy(true);
     store
       .request("/api/highlight/suggest", {
         method: "POST",
+        /* 重新生成要认人:服务端只放站长过,所以这一条得带上会话。普通判分匿名即可,
+           未登录时 token() 为 null,请求头里不带 Authorization —— 与今天一样。 */
+        token: auth && auth.token ? auth.token() : null,
         body: {
           page: page,
           title: pageTitle(),
@@ -3922,11 +3984,18 @@
           blocks: blocks.map(function (b) {
             return { id: b.id, text: b.text };
           }),
-          judge: "auto"
+          judge: "auto",
+          refresh: refresh
         }
       })
       .then(function (res) {
-        smartBtn.disabled = false;
+        setSmartBusy(false);
+        /* 服务端那两道路闸(未登录 / 不是站长)。界面上这颗笔只对站长可点,所以走到
+           这里通常意味着会话在这中间过期了 —— 如实说一句,别把 403 念成「失败」。 */
+        if (res.status === 401 || res.status === 403) {
+          setSmartbar("重新生成仅限站长使用,请重新登录后再试。", "warn");
+          return;
+        }
         if (res.status === 429) {
           var retry = res.headers && res.headers.get ? Number(res.headers.get("retry-after")) : 0;
           cooldownUntil = Date.now() + (retry > 0 ? retry * 1000 : 30000);
@@ -4394,7 +4463,24 @@
     }
   }
 
-  smartBtn.addEventListener("click", smartHighlight);
+  smartBtn.addEventListener("click", function () {
+    smartHighlight();
+  });
+
+  /* 面板页头那支笔:站长点它是「重新生成」(见 syncHeadIcon),其余时候点它没有
+     任何反应。用 click + keydown 两条而不是把它换成 <button> —— 它同时是这面板的
+     图标,换成按钮之后非站长那边还得为 disabled 与焦点补一套只对站长有意义的样式。
+     两条都先问一遍身份:监听器常驻,身份却是会变的。 */
+  function headIconRegenerate() {
+    if (!(auth && auth.isAdmin && auth.isAdmin())) return;
+    smartHighlight({ refresh: true });
+  }
+  els.headIcon.addEventListener("click", headIconRegenerate);
+  els.headIcon.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    headIconRegenerate();
+  });
 
   /* ================================================================
      面板 ↔ 正文:两头的定位
@@ -4641,11 +4727,13 @@
   if (auth) {
     auth.ready().then(function () {
       syncComposer();
+      syncHeadIcon();
       if (auth.isLoggedIn()) invalidate();
       if (open) ensureAnnotationsLoaded();
     });
     auth.onChange(function () {
       syncComposer();
+      syncHeadIcon();
     });
   }
 

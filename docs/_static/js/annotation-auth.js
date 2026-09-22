@@ -71,6 +71,15 @@
     return session !== null;
   }
 
+  /**
+   * 站长标记。服务端在签发会话与 /api/auth/me 里一并回带,前端只用它决定面板页头
+   * 那支笔要不要做成「重新生成智能高亮」的开关(见 annotation.js 的 syncHeadIcon)。
+   * 真正的闸在服务端 —— 这里返回 true 也只说明按钮摆得出来。
+   */
+  function isAdmin() {
+    return session !== null && session.admin === true;
+  }
+
   function onChange(cb) {
     listeners.push(cb);
     return function () {
@@ -103,7 +112,7 @@
       .request("/api/auth/session", { method: "POST", body: { code: code } })
       .then(function (res) {
         if (!res.ok || !res.body || !res.body.token) return false;
-        writeSession({ token: res.body.token, user: res.body.user });
+        writeSession({ token: res.body.token, user: res.body.user, admin: res.body.admin === true });
         /* 换到 token 之后这个 code 已作废;如服务端因异常仍留着,过期也只有 60 秒 */
         return true;
       });
@@ -127,7 +136,11 @@
                 return null;
               }
               if (res.ok && res.body && res.body.user) {
-                writeSession({ token: session.token, user: res.body.user });
+                writeSession({
+                  token: session.token,
+                  user: res.body.user,
+                  admin: res.body.admin === true
+                });
                 return res.body.user;
               }
               // 网络不可达(0)时保留本地会话,不要因为后端临时挂了就把人踢下线
@@ -180,6 +193,7 @@
     token: token,
     user: user,
     isLoggedIn: isLoggedIn,
+    isAdmin: isAdmin,
     onChange: onChange,
     login: login,
     loginForDraft: loginForDraft,

@@ -280,6 +280,22 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   height: 1.05rem;
   fill: var(--md-accent-fg-color);
 }
+/* 站长手上那支笔是「重新生成智能高亮」的开关(见 syncHeadIcon):它多带一个
+   .aipm-anno__iconbtn,于是命中区、悬停底色与账号、关闭两颗是同一档。
+   fill 要单独再写一条 —— 图标按钮那条通用规则吃的是 currentColor,而笔是强调色。 */
+.aipm-anno__head-icon.is-regenerate svg {
+  fill: var(--md-accent-fg-color);
+}
+.aipm-anno__head-icon.is-regenerate:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
+}
+/* 重新生成进行中。页头那颗按钮有 disabled 可表达,这支笔没有,用透明度顶上。
+   带 .is-regenerate 才生效:不是站长时它只是一枚图标,不该跟着判分一起变淡。 */
+.aipm-anno__head-icon.is-regenerate.is-busy {
+  cursor: progress;
+  opacity: .45;
+}
 /* 标题是「批注 ↔ 评论」的切换器,所以它是一颗按钮 —— 但按钮得在**不悬停**的
    时候也看得出来。原先只有一条 :hover 底色,那等于把「这里能点」这句话只讲给
    鼠标听:触屏没有悬停,键盘更是什么都看不见。
