@@ -7,12 +7,12 @@
 
   三件事分成三层,各自的失败方式不同:
 
-  1. **取源**(readChart):把这张图里能读的文字读出来。mermaid 读它的源码 ——
-     模型读源码比看一张栅格化后的图有用得多;SVG 读图里写的那些字;位图读不到
-     像素,只取作者写的替代文本。三条路都可能一无所获,那时写的是一句说明:
-     第几张、什么图、为什么没有内容。**例句本身也是内容**,语境因此仍然立得住
-     —— 模型知道用户在指哪一张,可以反问;换成「取不到就不造条目」,按钮点下去
-     什么都没发生,而用户并不知道是为什么。
+  1. **取源**(readChart):把这张图里能读的东西读出来。mermaid 读它的源码 ——
+     模型读源码比看一张栅格化后的图有用得多;SVG 读图里写的那些字;位图把**图像
+     本身**取回来(base64),作者写的替代文本一并留着。三条路都可能一无所获,那时
+     写的是一句说明:第几张、什么图、为什么没有内容。**例句本身也是内容**,语境
+     因此仍然立得住 —— 模型知道用户在指哪一张,可以反问;换成「取不到就不造条目」,
+     按钮点下去什么都没发生,而用户并不知道是为什么。
   2. **规范化**:交给 context-item.js 的 forChart,由它管形状、去重与「仅本机不出
      本机」那道边界。这个文件不自己拼条目,也就不可能绕开那道边界。
   3. **交接**:交给助手面板的 attachContext。失败(语境条满了、面板没挂上)由
@@ -36,6 +36,18 @@
   事件属性不触发、外链不加载;读出来的字符串也只以文本形式进语境(经 textContent
   摆上语境条),解析出来的节点从不插入本文档。这个文件里唯一一处 innerHTML 写的
   是自己定义的那颗图标常量,任何来自页面的字符串都不经过它。
+
+  ── 位图:图像本身 ──
+
+  位图取的是**图像本身**,不只是作者写的替代文本 —— 图里的文字与结构只有像素里
+  才有。取一张图的字节要过三道,任何一道不过就退回只带文字说明的那条路:
+
+  - **来源**:只取同源的地址。跨域的图 fetch 被 CORS 挡下,也超出「读者正在看的
+    这一页」;
+  - **类型**:认的只有 PNG / JPEG / WebP / GIF,按**字节开头**判定 —— 服务器说的
+    content-type 由服务器给,和正文一样不可信,只用来在读字节之前挡掉明显不是图
+    的东西;
+  - **体积**:超过 CTX.IMAGE_MAX_BYTES 的不取,不把一条语境变成几百 KB 的请求体。
 */
 (function () {
   "use strict";
@@ -157,13 +169,56 @@
     return (img.getAttribute("alt") || "").replace(/\s+/g, " ").trim();
   }
 
-  /** 同源的 SVG 地址才取:跨域的图 fetch 会被 CORS 挡下,也超出「读者正在看的
-      这一页」。返回 null 表示这张图不走 SVG 那条路。 */
+  /** 同源的地址才取:跨域的图 fetch 会被 CORS 挡下,也超出「读者正在看的这一页」。
+      返回 null 表示这张图不取字节。 */
+  function sameOriginUrl(src) {
+    if (!src) return null;
+    var url = new URL(src);
+    return url.origin === location.origin ? url : null;
+  }
+
   function sameOriginSvgUrl(img) {
-    if (!img.src) return null;
-    var url = new URL(img.src);
-    if (url.origin !== location.origin) return null;
-    return url.pathname.toLowerCase().endsWith(".svg") ? url : null;
+    var url = sameOriginUrl(img.src);
+    return url !== null && url.pathname.toLowerCase().endsWith(".svg") ? url : null;
+  }
+
+  /** 服务器说的类型只当个前置筛子:不是图像就不必把字节读进来。真正定种类的是
+      字节本身(见 sniffImageType)。 */
+  function looksLikeRaster(res) {
+    var type = (res.headers.get("content-type") || "").toLowerCase().split(";")[0].trim();
+    return type === "" || CTX.RASTER_TYPES.indexOf(type) >= 0;
+  }
+
+  /**
+   * 字节开头认出这是什么图。认的是内容,不是服务器说的那个头 —— 头由服务器给,
+   * 和正文一样不可信。认不出返回 null,由调用方回落到替代文本。
+   *
+   * 四种的签名:PNG 的 89 50 4E 47、JPEG 的 FF D8 FF、GIF 的 "GIF8"、
+   * WebP 的 "RIFF" + 四字节长度 + "WEBP"。
+   */
+  function sniffImageType(bytes) {
+    if (bytes.length < 12) return null;
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "image/png";
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+    if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return "image/gif";
+    if (
+      bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+    ) {
+      return "image/webp";
+    }
+    return null;
+  }
+
+  /* btoa 收的是字符,一次 apply 五十万个码元会把调用栈撑爆 —— 分块拼。 */
+  var B64_CHUNK = 0x8000;
+
+  function base64Of(bytes) {
+    var parts = [];
+    for (var i = 0; i < bytes.length; i += B64_CHUNK) {
+      parts.push(String.fromCharCode.apply(null, bytes.subarray(i, i + B64_CHUNK)));
+    }
+    return btoa(parts.join(""));
   }
 
   function isSvgResponse(res) {
@@ -197,21 +252,58 @@
   }
 
   /**
-   * 读一张位图或 SVG。
+   * 读一张位图:把**图像本身**取回来(base64),作者写的替代文本一并留着。
+   *
+   * 三道限制都在这里,任何一道不过就退回只带文字说明的那条路(与这条通路原本的
+   * 行为一致):
+   *   - **来源**:只取同源的地址;
+   *   - **类型**:content-type 先挡一道,字节开头再认一道;
+   *   - **体积**:超过 CTX.IMAGE_MAX_BYTES 的不取。
    *
    * key 用图片地址:同一张图送两次只有一条语境,页面上两张不同的图各是一条。
    */
-  function readImage(img) {
+  function readRaster(img) {
     var ordinal = ordinalOf(img);
-    var alt = altTextOf(img);
-    var svg = sameOriginSvgUrl(img);
-    if (svg === null) {
-      return Promise.resolve({
-        chart: "image",
-        source: alt || missingText("image", ordinal, "作者没有写替代文本"),
-        key: img.src
+    var text = altTextOf(img) || missingText("image", ordinal, "作者没有写替代文本");
+    var url = sameOriginUrl(img.src);
+    if (url === null) return Promise.resolve({ chart: "image", source: text, key: img.src });
+    /* 取的是同一张已经显示在页面上的图的地址,同源。失败不是异常,是这条路本来
+       就有的一种结果(图换了地方、服务器不给这个类型、字节认不出来),退回替代
+       文本即可 —— fetch 的第二个回调接住它,不额外包一层。 */
+    return fetch(url.href, { credentials: "same-origin" })
+      .then(
+        function (res) {
+          return res.ok && looksLikeRaster(res) ? res.arrayBuffer() : null;
+        },
+        function () {
+          return null;
+        }
+      )
+      .then(function (buf) {
+        if (buf === null || buf.byteLength === 0 || buf.byteLength > CTX.IMAGE_MAX_BYTES) return null;
+        var bytes = new Uint8Array(buf);
+        var mediaType = sniffImageType(bytes);
+        if (mediaType === null) return null;
+        return {
+          chart: "image",
+          source: text,
+          key: img.src,
+          mediaType: mediaType,
+          imageData: base64Of(bytes)
+        };
+      })
+      .then(function (got) {
+        return got === null ? { chart: "image", source: text, key: img.src } : got;
       });
-    }
+  }
+
+  /**
+   * 读一张图,返回 {chart, source, key},位图另带 mediaType 与 imageData。
+   * source 一定非空 —— 取不到写说明。
+   */
+  function readImage(img) {
+    var svg = sameOriginSvgUrl(img);
+    if (svg === null) return readRaster(img);
     /* 取的是同一张已经显示在页面上的图的地址,同源。失败不是异常,是这条路本来
        就有的一种结果(图换了地方、服务器不给这个类型),退回替代文本即可 ——
        fetch 的第二个回调接住它,不额外包一层。 */
@@ -228,14 +320,15 @@
         var labels = markup === "" ? "" : svgLabels(markup);
         return {
           chart: "svg",
-          source: labels || alt || missingText("svg", ordinal, "图里的文字没有取到"),
+          source: labels || altTextOf(img) || missingText("svg", ordinalOf(img), "图里的文字没有取到"),
           key: img.src
         };
       });
   }
 
   /**
-   * 读一张图,返回 {chart, source, key}。source 一定非空 —— 取不到写说明。
+   * 读一张图,返回 {chart, source, key},位图另带 mediaType 与 imageData。
+   * source 一定非空 —— 取不到写说明。
    *
    * mermaid 的 key 是它的源码:同一页上同一张图(连点两次、或者两张一模一样的
    * 图各点一次)只有一条语境。源码没收上来时退回按位置认,那也认得出「还是这张」。
@@ -291,7 +384,9 @@
       title: pageTitle(),
       chart: found.chart,
       source: found.source,
-      key: found.key
+      key: found.key,
+      mediaType: found.mediaType,
+      imageData: found.imageData
     });
     var res = chat.attachContext(item);
     if (res && res.ok) return;

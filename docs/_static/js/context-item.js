@@ -11,9 +11,10 @@
   追加,同一条来源连点两次就排出一串重复条目,而删其中一条又会把同 id 的其余条目
   一起删掉。
 
-  图表的**取源**(把 mermaid 源码 / SVG 里的文字 / 位图的替代文本读出来)要碰 DOM
-  与网络,在 chart-context.js;这里只负责把取到的文字规范化成条目 —— 与另外两种
-  一样,它是一个纯函数,不碰 DOM、不读时钟。
+  图表的**取源**(把 mermaid 源码 / SVG 里的文字 / 位图本身读出来)要碰 DOM 与
+  网络,在 chart-context.js;这里只负责把取到的东西规范化成条目 —— 与另外两种
+  一样,它是一个纯函数,不碰 DOM、不读时钟。位图那份图像(base64)也只在这里判
+  形状:类型认不认识、与内容是否成对、有没有超出尺寸。
 
   三态里的「仅本机」**不进语境**:它的承诺是「只在那台设备上」,而语境会随提问
   发到问答后端、再进入模型上下文。判断只有 isDeliverable 一份,条目每进一个容器
@@ -31,7 +32,16 @@
      判断必须一致,否则客户端放行、服务端拒收,用户看到的是「发出去没反应」。
      chart 的取值是三个枚举值,长度由服务端的 z.enum 管,不占这里的额度。 */
   var MAX_ITEMS = 4;
-  var LIMITS = { page: 512, title: 200, quote: 4000, body: 4000, source: 4000, edge: 200, color: 32 };
+  var LIMITS = {
+    page: 512,
+    title: 200,
+    quote: 4000,
+    body: 4000,
+    source: 4000,
+    edge: 200,
+    color: 32,
+    imageData: 699052
+  };
   var EXCERPT_MAX = 96;
 
   var VISIBILITY_LABEL = { public: "公开", private: "仅自己可见" };
@@ -39,6 +49,14 @@
   /* 图表种类。与服务端 ContextItemSchema 的 chart 枚举同一组取值。 */
   var CHART_KINDS = ["mermaid", "svg", "image"];
   var CHART_LABEL = { mermaid: "Mermaid 图", svg: "SVG 图", image: "图片" };
+
+  /* 位图能送进对话的四种格式 —— 与服务端 RASTER_MEDIA_TYPES、模型 API 认的那一组
+     同一份取值。取源那一步按**字节本身**认出种类,这里按这份名单收下。 */
+  var RASTER_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+
+  /* 原图字节上限,正好对应 LIMITS.imageData(base64 是它的 4/3 倍):取源那一步按
+     字节判,进容器这一步按字符判,两道用的是同一个尺寸。 */
+  var IMAGE_MAX_BYTES = 524288;
 
   function clip(text, max) {
     var s = typeof text === "string" ? text : "";
@@ -113,6 +131,26 @@
     return "chart:" + page + "#" + chart + ":" + hash(key);
   }
 
+  /**
+   * 一张位图带的那份图像:媒体类型与 base64 内容。
+   *
+   * 两者**同给同空**。都不给是正常的一种:图取不到(跨域、类型不对、太大、请求
+   * 失败)时退回只有文字说明的那条路,与这条通路原本的行为一致。给了却不成对、
+   * 种类不认识、内容空或者超长 —— 那是构造方写错了,返回 null 让调用方不造条目。
+   *
+   * 只认识 RASTER_TYPES 那四种:模型 API 收的就是这四种,mermaid 与 SVG 走的是
+   * 文字那条路,不从这里过。
+   */
+  function chartImage(chart, mediaType, data) {
+    var type = typeof mediaType === "string" ? mediaType : "";
+    var body = typeof data === "string" ? data : "";
+    if (type === "" && body === "") return { mediaType: "", data: "" };
+    if (chart !== "image") return null;
+    if (RASTER_TYPES.indexOf(type) < 0) return null;
+    if (body === "" || body.length > LIMITS.imageData) return null;
+    return { mediaType: type, data: body };
+  }
+
   function labelOf(item) {
     if (item.kind === "selection") return "选中文字";
     if (item.kind === "chart") return "图表 · " + (CHART_LABEL[item.chart] || "图");
@@ -131,7 +169,8 @@
    *
    * 形状齐、kind 认识、可见范围是那两档可以出网的取值 —— 「仅本机」卡在最后一条
    * 上。图表另有一条:取到的文字不能是空的,一条没东西可读的图表语境摆进对话框
-   * 只会让模型以为用户指向了某张它看不见的图,而它连图是什么都不知道。
+   * 只会让模型以为用户指向了某张它看不见的图,而它连图是什么都不知道。位图那份
+   * 图像内容也在这一份判断里过一遍:类型与内容同给同空、类型是认得的那四种。
    *
    * 判断只写这一份,条目每进一个容器都过它:构造、进语境条、从 localStorage
    * 回来、出网。于是「这里要不要判一次 local」不必在每个入口各想一遍,加一处入口
@@ -146,6 +185,7 @@
     if (item.kind === "chart") {
       if (CHART_KINDS.indexOf(item.chart) < 0) return false;
       if (typeof item.source !== "string" || item.source === "") return false;
+      if (chartImage(item.chart, item.mediaType, item.imageData) === null) return false;
     }
     return true;
   }
@@ -206,10 +246,14 @@
    * 正文里的一张图。
    *
    * source 是**已经从图上取出来的文字**,不是图的地址:mermaid 是它的源码,
-   * SVG 是图里写的那些字,位图是作者写的替代文本。取源那一步(含取不到时的回落)
-   * 在 chart-context.js —— 它要读 DOM、要发一次同源请求,做不到纯函数。
+   * SVG 是图里写的那些字,位图是作者写的替代文本(取到图像内容时它仍留在原处,
+   * 与图像一并送给模型)。取源那一步(含取不到时的回落)在 chart-context.js ——
+   * 它要读 DOM、要发请求、要认字节,做不到纯函数。
    *
-   * key 是这张图的来源标识,只用来算 id。两者都由调用方给:这里不认识 DOM,
+   * 位图另有 mediaType 与 imageData:**图像本身**。取不到时两者都是空串,这条
+   * 语境就只剩 source 那段文字 —— 与这条通路原本的行为一致。
+   *
+   * key 是这张图的来源标识,只用来算 id。以上都由调用方给:这里不认识 DOM,
    * 也就无从判断某张图「应该」是哪一张。
    *
    * source 为空时不造条目 —— 那时模型看到的只有「用户在读某页上的一张图」,
@@ -225,6 +269,8 @@
     if (source === "") return null;
     var key = typeof input.key === "string" ? input.key : "";
     if (key === "") return null;
+    var image = chartImage(chart, input.mediaType, input.imageData);
+    if (image === null) return null;
     return {
       id: chartId(page, chart, key),
       kind: "chart",
@@ -237,6 +283,8 @@
       color: "",
       chart: chart,
       source: source,
+      mediaType: image.mediaType,
+      imageData: image.data,
       visibility: "public"
     };
   }
@@ -287,9 +335,17 @@
    *
    * 这是条目离开浏览器前的最后一道:过不了 isDeliverable 的一条都不发。语境条与
    * 请求体因此不会出现分歧 —— 看不到的东西也发不出去。
+   *
+   * 位图那份图像(base64,可能几百 KB)也在这条路上一起出去:它就是「把这张图送
+   * 进对话」这句话的全部内容。没有它时两个字段都是空串,请求体与这条通路之前
+   * 逐字相同。
    */
   function toPayload(list) {
     return list.filter(isDeliverable).map(function (item) {
+      var image =
+        item.kind === "chart"
+          ? chartImage(item.chart, item.mediaType, item.imageData)
+          : { mediaType: "", data: "" };
       return {
         kind: item.kind,
         page: item.page,
@@ -301,6 +357,8 @@
         color: item.color,
         chart: item.kind === "chart" ? item.chart : "",
         source: item.kind === "chart" ? item.source : "",
+        mediaType: image.mediaType,
+        imageData: image.data,
         visibility: item.visibility
       };
     });
@@ -311,6 +369,8 @@
     LIMITS: LIMITS,
     CHART_KINDS: CHART_KINDS,
     CHART_LABEL: CHART_LABEL,
+    RASTER_TYPES: RASTER_TYPES,
+    IMAGE_MAX_BYTES: IMAGE_MAX_BYTES,
     normalizePage: normalizePage,
     labelOf: labelOf,
     excerptOf: excerptOf,

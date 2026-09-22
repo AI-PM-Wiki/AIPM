@@ -48,7 +48,7 @@ class TestChartContextAssets(unittest.TestCase):
 
     def test_assets_are_registered_with_cache_versions(self):
         scripts = self.config[self.config.index("extra_javascript:") :]
-        self.assertIn("_static/js/chart-context.js?v=1", scripts)
+        self.assertIn("_static/js/chart-context.js?v=2", scripts)
         self.assertIn("_static/css/chart-context.css?v=1", scripts)
         entries = [e.split("?", 1)[0] for e in re.findall(r"-\s*'([^']+)'", scripts)]
         self.assertLess(
@@ -159,20 +159,67 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn("fetch(svg.href", fn)
         self.assertIn("svgLabels(markup)", fn)
 
-        guard = self._fn("function sameOriginSvgUrl(img)")
-        self.assertIn("url.origin !== location.origin", guard)
-        self.assertIn('endsWith(".svg")', guard)
+        guard = self._fn("function sameOriginUrl(src)")
+        self.assertIn("url.origin === location.origin", guard)
+        self.assertIn("if (!src) return null", guard, "没有 src 的图连 URL 都拼不出来")
+
+        svg_guard = self._fn("function sameOriginSvgUrl(img)")
+        self.assertIn("sameOriginUrl(img.src)", svg_guard)
+        self.assertIn('endsWith(".svg")', svg_guard)
 
         parse = self._fn("function svgLabels(markup)")
         self.assertIn('new DOMParser().parseFromString(markup, "image/svg+xml")', parse)
         self.assertIn('doc.querySelectorAll("title, desc, text")', parse)
         self.assertIn('doc.querySelector("parsererror")', parse, "不是 SVG 时返回空,交给兜底")
 
-    def test_raster_images_send_the_alt_text(self):
-        fn = self._fn("function readImage(img)")
-        self.assertIn("altTextOf(img)", fn)
+    def test_raster_images_send_the_image_itself(self):
+        """位图送的是图像本身,不只是替代文本 —— 图里的文字与结构只在像素里。"""
+        fn = self._fn("function readRaster(img)")
+        self.assertIn("altTextOf(img)", fn, "替代文本留着,和图像一并送")
         self.assertIn('chart: "image"', fn)
         self.assertIn("key: img.src", fn)
+        self.assertIn("res.arrayBuffer()", fn, "取的是字节,不是文字")
+        self.assertIn("CTX.IMAGE_MAX_BYTES", fn, "体积那一关")
+        self.assertIn("sniffImageType(bytes)", fn, "种类按字节开头认")
+        self.assertIn("base64Of(bytes)", fn)
+        self.assertIn("mediaType: mediaType", fn)
+        self.assertIn("imageData: base64Of(bytes)", fn)
+
+    def test_raster_fetch_is_limited_in_source_type_and_size(self):
+        """三道限制:来源(同源)、类型(四种之一,按字节)、体积(≤ 上限)。"""
+        read = self._fn("function readRaster(img)")
+        self.assertIn("sameOriginUrl(img.src)", read, "来源:跨域不取")
+        self.assertIn("looksLikeRaster(res)", read, "类型:先按 content-type 筛一道")
+
+        sniff = self._fn("function sniffImageType(bytes)")
+        for sig in ("0x89", "0xd8", "0x46", "0x52"):
+            self.assertIn(sig, sniff, f"字节签名里少了 {sig}")
+        for kind in ("image/png", "image/jpeg", "image/gif", "image/webp"):
+            self.assertIn(kind, sniff)
+        self.assertIn("return null", sniff, "认不出就返回 null,由调用方回落")
+
+        header = self._fn("function looksLikeRaster(res)")
+        self.assertIn("content-type", header)
+        self.assertIn("CTX.RASTER_TYPES.indexOf(type) >= 0", header)
+
+        self.assertIn(
+            "if (buf === null || buf.byteLength === 0 || buf.byteLength > CTX.IMAGE_MAX_BYTES) return null;",
+            read,
+        )
+
+    def test_base64_is_built_in_chunks(self):
+        """五十万个码元一次 apply 会把调用栈撑爆,分块拼。"""
+        fn = self._fn("function base64Of(bytes)")
+        self.assertIn("B64_CHUNK", fn)
+        self.assertIn("String.fromCharCode.apply(null, bytes.subarray(i, i + B64_CHUNK))", fn)
+        self.assertIn('btoa(parts.join(""))', fn)
+
+    def test_failing_any_limit_falls_back_to_the_written_text(self):
+        """三道里任何一道不过,都退回只带文字说明的那条路 —— 与原本的行为一致。"""
+        fn = self._fn("function readRaster(img)")
+        self.assertIn('var text = altTextOf(img) || missingText("image", ordinal, "作者没有写替代文本")', fn)
+        self.assertEqual(fn.count("mediaType:"), 1, "只有取到图像的那一条分支带 mediaType")
+        self.assertIn('got === null ? { chart: "image", source: text, key: img.src } : got', fn)
 
     def test_every_path_has_a_written_fallback(self):
         """取不到任何文字时写一句说明 —— 它是这条语境唯一的可读内容。"""
@@ -191,12 +238,12 @@ class TestChartSourceFidelity(unittest.TestCase):
     def test_source_is_never_empty(self):
         """每条返回都用 `||` 兜住:forChart 见空 source 不造条目,按钮就白点了。"""
         image = self._fn("function readImage(img)")
+        self.assertIn('labels || altTextOf(img) || missingText("svg"', image)
         self.assertEqual(
-            image.count("|| missingText("),
-            2,
-            "位图与 SVG 各要有一处兜底",
+            self._fn("function readRaster(img)").count("|| missingText("),
+            1,
+            "位图那条兜底",
         )
-        self.assertIn('labels || alt || missingText("svg"', image)
 
 
 class TestUntrustedSvgIsNeverExecuted(unittest.TestCase):
@@ -253,6 +300,34 @@ class TestChartHandsOffThroughTheSharedContract(unittest.TestCase):
         fn = fn[: fn.index("\n  }") + 4]
         self.assertIn("window.__aipmChat", fn)
         self.assertIn("chat.attachContext(item)", fn)
+
+    def test_handoff_carries_the_image_through(self):
+        """取源取到的图像内容要一路交给 forChart —— 少带一个字段,位图那半边就白取。"""
+        fn = self.js[self.js.index("function handOff(found)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        for field in ("mediaType: found.mediaType", "imageData: found.imageData"):
+            self.assertIn(field, fn)
+
+    def test_the_two_front_end_modules_agree_on_the_raster_types(self):
+        js_types = re.search(r"var RASTER_TYPES = \[([^\]]*)\]", self.ctx).group(1)
+        js_types = [t.strip().strip('"') for t in js_types.split(",")]
+        ts_src = (ROOT / "agent-server" / "src" / "context.ts").read_text(encoding="utf-8")
+        ts_types = re.search(r"RASTER_MEDIA_TYPES = \[([^\]]*)\]", ts_src).group(1)
+        ts_types = [t.strip().strip("'") for t in ts_types.split(",")]
+        self.assertEqual(js_types, ts_types, "前后端对「哪些格式算位图」必须给出同一个答案")
+        self.assertEqual(
+            sorted(js_types),
+            ["image/gif", "image/jpeg", "image/png", "image/webp"],
+            "模型 API 收的就是这四种",
+        )
+
+    def test_the_two_front_end_modules_agree_on_the_image_size(self):
+        """前端按字节判、后端按 base64 字符判,两处说的是同一个尺寸 —— 对不上就会
+        出现「前端放行、后端拒收」。"""
+        ts_src = (ROOT / "agent-server" / "src" / "context.ts").read_text(encoding="utf-8")
+        chars = int(re.search(r"imageData: ([\d_]+)", ts_src).group(1).replace("_", ""))
+        js_bytes = int(re.search(r"var IMAGE_MAX_BYTES = (\d+)", self.ctx).group(1))
+        self.assertEqual(chars, (js_bytes + 2) // 3 * 4, "base64 上限与原始字节上限对不上")
 
     def test_chat_panel_members_used_here_are_all_exported(self):
         api = _strip_comments(CHAT_JS.read_text(encoding="utf-8"))

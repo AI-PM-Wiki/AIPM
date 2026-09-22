@@ -18,6 +18,11 @@ dependencies = [
 [dependency-groups]
 dev = [
 ]
+# 浏览器用例(test/browser/)要的那一份。单独一组,不进 `uv sync` 的默认安装:
+# 默认门禁是零浏览器依赖的,只有跑那几个用例时才需要 `uv sync --group browser`。
+browser = [
+    "playwright==1.61.0",
+]
 
 [tool.uv.pip]
 index-url = "https://pypi.org/simple"

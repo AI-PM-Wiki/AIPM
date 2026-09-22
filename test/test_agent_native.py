@@ -94,9 +94,11 @@ class TestContextItemModule(unittest.TestCase):
             (key, int(value))
             for key, value in re.findall(r"(\w+): (\d+)", re.search(r"var LIMITS = (\{[^}]*\})", self.src).group(1))
         )
-        self.assertEqual(len(js_limits), 7, f"前端的 LIMITS 少了解析不出的项:{js_limits}")
+        self.assertEqual(len(js_limits), 8, f"前端的 LIMITS 少了解析不出的项:{js_limits}")
+        # 服务端可以写千位分隔(699_052),比对时先去掉
+        ts_digits = ts.replace("_", "")
         for key, value in js_limits.items():
-            self.assertIn(f"{key}: {value}", ts, f"服务端 CONTEXT_LIMITS.{key} 与前端不一致")
+            self.assertIn(f"{key}: {value}", ts_digits, f"服务端 CONTEXT_LIMITS.{key} 与前端不一致")
         js_max = int(re.search(r"var MAX_ITEMS = (\d+)", self.src).group(1))
         self.assertIn(f"CONTEXT_MAX_ITEMS = {js_max}", ts)
 
@@ -231,6 +233,21 @@ class TestChatPanelConsumesContext(unittest.TestCase):
         self.assertIn("SHARED.claim(\"chat\")", api, "开面板要跟点 FAB 走同一条互斥路")
         self.assertIn("isOpen:", api)
 
+    def test_history_persistence_sheds_image_payload_before_the_conversation(self):
+        """位图的 base64 有几百 KB,历史写多了会撞上 localStorage 配额。
+
+        撞上时先写第二遍:**只去掉图像内容**。整条会话都不存是最后一种情形,不是
+        第一反应 —— 聊过什么比那一轮的图重要。动态验证在
+        test/browser/check_chart_flow.py 的 test_quota_pressure_keeps_the_conversation。
+        """
+        fn = self.js[self.js.index("const persist = ()") :]
+        fn = fn[: fn.index("\n  };") + 5]
+        self.assertEqual(fn.count("localStorage.setItem"), 2, "要写两遍:原样一遍,去掉图像一遍")
+        self.assertIn("mediaType: \"\", imageData: \"\"", _squash(fn))
+        self.assertIn("HISTORY_MAX", fn, "两遍都只存最近这些条")
+        first = fn[: fn.index("} catch")]
+        self.assertIn("return", first, "第一遍写成就不必走第二遍")
+
     def test_send_carries_context(self):
         post = self.js[self.js.index("const postUser = (text, files, context)") :]
         post = post[: post.index("\n  };") + 5]
@@ -319,25 +336,66 @@ class TestServerAcceptsContext(unittest.TestCase):
         rule = rule[: rule.index("\n}") + 2]
         self.assertIn("item.kind === 'chart'", rule)
         self.assertIn("CHART_KINDS as readonly string[]).includes(item.chart)", _squash(rule))
-        self.assertIn("item.source.trim().length > 0", rule)
+        self.assertIn("item.source.trim().length === 0", rule, "图表要有取到的文字")
+        self.assertIn("item.chart !== 'image'", rule, "只有位图能带图像内容")
+        self.assertIn("RASTER_MEDIA_TYPES as readonly string[]).includes(item.mediaType)", _squash(rule))
+        self.assertIn("mediaType 与 imageData 要么都给,要么都不给", rule)
         self.assertIn("item.kind === 'selection'", rule)
         self.assertIn("quote.length > 0 || body.length > 0", _squash(rule))
 
     def test_chart_renderer_says_what_the_model_has(self):
-        """模型看不到图,得知道自己手里是源码、是图里的字,还是一句说明。"""
+        """模型看不到图,得知道自己手里是源码、是图里的字、图像本身,还是一句说明。"""
         labels = self.ctx[self.ctx.index("const CHART_LABEL") :]
         labels = labels[: labels.index("};") + 2]
         self.assertIn("源码见下", labels)
         self.assertIn("图形本身没有送过来", labels)
         self.assertIn("看不到图像内容", labels)
 
+        # 位图那一行随图像在不在而变:取到了还说「看不到图像内容」会把模型引偏。
+        line = self.ctx[self.ctx.index("function chartTypeLine(") :]
+        line = line[: line.index("\n}") + 2]
+        self.assertIn("item.imageData === ''", line)
+        self.assertIn("CHART_LABEL.image", line)
+        self.assertIn("位图(图像本身随本消息一起送过来)", line)
+
         fn = self.ctx[self.ctx.index("function renderItem(") :]
         fn = fn[: fn.index("\n}") + 2]
         chart_branch = fn[fn.index("if (item.kind === 'chart')") :]
         chart_branch = chart_branch[: chart_branch.index("return lines.join") + len("return lines.join")]
-        self.assertIn("CHART_LABEL[chart]", chart_branch)
+        self.assertIn("chartTypeLine(item)", chart_branch)
         self.assertIn("CHART_TEXT_LABEL[chart]", chart_branch)
+        self.assertIn("本消息附带的第 ${imageIndex} 张图", chart_branch, "几张图时要指明谁是谁")
         self.assertNotIn("原文:", chart_branch, "图表这一段提前返回,不走引文与批注那两行")
+
+    def test_bitmap_reaches_the_model_as_an_image_block(self):
+        """位图那条通路的后半段:图像要变成模型请求里的一条 image 内容块。
+
+        前端那半段(文件字节 → 语境条目 → 请求体)由浏览器用例证明;这里锁的是
+        服务端这半段的接线 —— 挑出图像、拼成内容块、交给 query(),一样都不能少。
+        """
+        images = self.ctx[self.ctx.index("export function contextImages(") :]
+        images = images[: images.index("\n}") + 2]
+        self.assertIn("item.kind === 'chart' && item.imageData !== ''", images)
+        self.assertIn("{ mediaType: item.mediaType as RasterMediaType, data: item.imageData }", _squash(images))
+
+        prompt = self.agent[self.agent.index("export function buildPromptInput(") :]
+        prompt = prompt[: prompt.index("\n}") + 2]
+        self.assertIn("contextImages(context)", prompt)
+        self.assertIn("if (images.length === 0) return text", _squash(prompt), "没有图像时逐字回到那串文字")
+        self.assertIn("media_type: image.mediaType", prompt)
+        self.assertIn("data: image.data", prompt)
+        self.assertIn("type: 'base64'", prompt)
+        self.assertIn("parent_tool_use_id: null", prompt)
+        self.assertIn("buildPromptInput(", self.agent, "buildAgentOptions 走的是这条拼装")
+
+        # 真跑一轮的断言在 npm run image-check 里 —— 假模型 API + 真 SDK,证明模型
+        # 收到的请求里确实有那条 base64,而不是我们自己的中间变量。
+        script = _read(AGENT_SERVER / "src" / "image-model-check.ts")
+        self.assertIn("ANTHROPIC_BASE_URL", script)
+        self.assertIn("runAgent(", script)
+        self.assertIn("type === 'image'", script)
+        scripts = json.loads(_read(AGENT_SERVER / "package.json"))["scripts"]
+        self.assertIn("image-check", scripts)
 
     def test_schema_and_http_checks_are_wired(self):
         """schema 一层的断言在 src/context-http-check.ts,挂成 npm 脚本免得住坏。"""
@@ -346,8 +404,25 @@ class TestServerAcceptsContext(unittest.TestCase):
         self.assertIn("createApp", script)
         self.assertIn("visibility: 'local'", script)
         self.assertIn("chart: 'mermaid'", script, "图表那几条也要在自检里")
+        self.assertIn("mediaType: 'image/png'", script, "位图那几条也要在自检里")
         scripts = json.loads(_read(AGENT_SERVER / "package.json"))["scripts"]
         self.assertIn("context-check", scripts)
+
+    def test_browser_suite_stays_out_of_the_default_gate(self):
+        """浏览器用例要真 Chromium,不能落进 `uv run python3 -m unittest` 的发现范围:
+        默认门禁是零浏览器依赖的。文件名不以 `test_` 开头就进不去 —— 这条锁住它。"""
+        browser_dir = ROOT / "test" / "browser"
+        modules = sorted(p.name for p in browser_dir.glob("*.py"))
+        self.assertIn("harness.py", modules)
+        self.assertIn("run.py", modules)
+        self.assertIn("check_chart_flow.py", modules)
+        self.assertIn("check_cache_upgrade.py", modules)
+        for name in modules:
+            self.assertFalse(
+                name.startswith("test_"),
+                f"{name} 会被默认发现收进去,浏览器依赖就进了零依赖门禁",
+            )
+        self.assertIn("discover", _read(browser_dir / "run.py"))
 
     def test_context_reaches_the_agent(self):
         self.assertIn("context: parsed.context", self.srv)

@@ -159,6 +159,7 @@ check('导出的入口齐全', ['forSelection', 'forAnnotation', 'forChart', 'is
   const image = CTX.forChart({ ...base, chart: 'image', key: '/ai/rag/images/x.png' });
   check('图表: 位图可用', image !== null && image.chart === 'image');
   check('图表: 位图的标签', CTX.labelOf(image) === '图表 · 图片', CTX.labelOf(image));
+  check('图表: 位图没有图像内容时两个字段都是空串', image.mediaType === '' && image.imageData === '');
 
   check('图表: 认不出的种类 → 不造条目', CTX.forChart({ ...base, chart: 'jpg' }) === null);
   check('图表: 种类缺失 → 不造条目', CTX.forChart({ ...base, chart: undefined }) === null);
@@ -171,17 +172,66 @@ check('导出的入口齐全', ['forSelection', 'forAnnotation', 'forChart', 'is
 
   const wire = CTX.toPayload([mermaid]);
   check('图表: 出网带上种类与内容', wire[0].chart === 'mermaid' && wire[0].source.startsWith('flowchart TB'));
-  check('图表: 出网不再额外带别的字段', ['kind', 'page', 'title', 'quote', 'prefix', 'suffix', 'body', 'color', 'chart', 'source', 'visibility'].every((k) => k in wire[0]) && Object.keys(wire[0]).length === 11, JSON.stringify(Object.keys(wire[0])));
+  check('图表: 出网不再额外带别的字段', ['kind', 'page', 'title', 'quote', 'prefix', 'suffix', 'body', 'color', 'chart', 'source', 'mediaType', 'imageData', 'visibility'].every((k) => k in wire[0]) && Object.keys(wire[0]).length === 13, JSON.stringify(Object.keys(wire[0])));
 
-  /* 另外两种不出网时,图表那两个字段是空串 —— 服务端的 schema 有它们,缺省也是空串。 */
+  /* 另外两种不出网时,图表那几个字段是空串 —— 服务端的 schema 有它们,缺省也是空串。 */
   const selectionWire = CTX.toPayload([CTX.forSelection({ page: '/ai/rag/', quote: '一段话。', selectors: [] })]);
-  check('非图表: 出网时种类与内容留空串', selectionWire[0].chart === '' && selectionWire[0].source === '');
+  check('非图表: 出网时种类与内容留空串', selectionWire[0].chart === '' && selectionWire[0].source === '' && selectionWire[0].mediaType === '' && selectionWire[0].imageData === '');
 
   /* 同一份列表里混着三种,各自保留各自的 id 与顺序。 */
   const mixed = [CTX.forSelection({ page: '/ai/rag/', quote: '一段话。', selectors: [] }), mermaid, svg];
   const kept = CTX.sanitize(mixed);
   check('恢复: 三种条目一起过,一条不少', kept.length === 3, `len=${kept.length}`);
   check('恢复: 图表的种类与内容一起回来', kept[1].chart === 'mermaid' && kept[1].source.startsWith('flowchart TB'));
+}
+
+/* ---- 位图那份图像 ----
+   位图送进对话的是**图像本身**:base64 的字节与它的媒体类型。取源那一步
+   (chart-context.js)已经把来源、类型、体积筛过一遍,这里判的是形状 —— 类型认不
+   认识、与内容是否成对、有没有超出尺寸。 */
+{
+  const base = { page: '/ai/rag/', title: '检索增强生成', chart: 'image', source: '页面上的第 1 张图(位图, 作者没有写替代文本)。', key: '/ai/rag/images/x.png' };
+  const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+  const withImage = CTX.forChart({ ...base, mediaType: 'image/png', imageData: PNG });
+  check('位图: 带图像内容时造得出条目', withImage !== null && withImage.mediaType === 'image/png' && withImage.imageData === PNG);
+  check('位图: 同一张图带不带图像内容都是同一个 id(原位刷新)', withImage.id === CTX.forChart(base).id);
+
+  check('位图: 只给类型不给图像 → 不造条目', CTX.forChart({ ...base, mediaType: 'image/png' }) === null);
+  check('位图: 只给图像不给类型 → 不造条目', CTX.forChart({ ...base, imageData: PNG }) === null);
+  check('位图: 类型不在那四种里 → 不造条目', CTX.forChart({ ...base, mediaType: 'image/tiff', imageData: PNG }) === null);
+  check('位图: 格式名大小写不对 → 不造条目', CTX.forChart({ ...base, mediaType: 'IMAGE/PNG', imageData: PNG }) === null);
+  check('位图: 图像内容为空串 → 不造条目', CTX.forChart({ ...base, mediaType: 'image/png', imageData: '' }) === null);
+  check('位图: 图像内容超上限 → 不造条目', CTX.forChart({ ...base, mediaType: 'image/png', imageData: 'A'.repeat(CTX.LIMITS.imageData + 1) }) === null);
+  check('位图: 刚好到上限 → 收下', CTX.forChart({ ...base, mediaType: 'image/png', imageData: 'A'.repeat(CTX.LIMITS.imageData) }) !== null);
+  check('位图: 四种格式都收', CTX.RASTER_TYPES.every((t) => CTX.forChart({ ...base, mediaType: t, imageData: PNG }) !== null), CTX.RASTER_TYPES.join(','));
+  check('位图: 认得的就是那四种', CTX.RASTER_TYPES.length === 4 && CTX.RASTER_TYPES.includes('image/webp'));
+
+  check('非位图: Mermaid 图带图像 → 不造条目', CTX.forChart({ page: '/ai/rag/', chart: 'mermaid', source: 'flowchart TB', key: 'k', mediaType: 'image/png', imageData: PNG }) === null);
+  check('非位图: SVG 图带图像 → 不造条目', CTX.forChart({ page: '/ai/rag/', chart: 'svg', source: '图里的字', key: 'k', mediaType: 'image/png', imageData: PNG }) === null);
+
+  /* 恢复与出网:图像跟着条目一起走,一个字节都不少。 */
+  const restored = CTX.sanitize([withImage]);
+  check('位图: 从 localStorage 恢复时图像原样回来', restored.length === 1 && restored[0].imageData === PNG && restored[0].mediaType === 'image/png');
+
+  const wire = CTX.toPayload([withImage]);
+  check('位图: 出网时图像原样带出', wire[0].mediaType === 'image/png' && wire[0].imageData === PNG, JSON.stringify(wire[0]).slice(0, 80));
+
+  /* 手工拼的坏形状:恢复与出网这两道自己也要判,不能只靠构造函数。 */
+  const badShaped = { ...withImage, mediaType: 'image/tiff' };
+  check('位图: 手工拼的坏类型恢复时被丢掉', CTX.sanitize([badShaped]).length === 0);
+  check('位图: 手工拼的坏类型出网时被丢掉', CTX.toPayload([badShaped]).length === 0);
+  const halfPair = { ...withImage, imageData: '' };
+  check('位图: 手工拼的半对字段出网时被丢掉', CTX.toPayload([halfPair]).length === 0);
+  const oversized = { ...withImage, imageData: 'A'.repeat(CTX.LIMITS.imageData + 1) };
+  check('位图: 手工拼的超限内容出网时被丢掉', CTX.toPayload([oversized]).length === 0);
+
+  /* 「仅本机」与图像无关:带图像也一样进不来、出不去。 */
+  const localWithImage = { ...withImage, visibility: 'local' };
+  check('仅本机: 带图像的位图一样过不了 isDeliverable', CTX.isDeliverable(localWithImage) === false);
+  check('仅本机: 带图像的位图进不了语境条', CTX.upsert([], localWithImage).code === 'invalid_context');
+  check('仅本机: 带图像的位图恢复时被丢掉', CTX.sanitize([localWithImage]).length === 0);
+  check('仅本机: 带图像的位图出网时被丢掉', CTX.toPayload([localWithImage]).length === 0);
 }
 
 /* ---- 「仅本机」这道边界对图表同样成立 ----
@@ -225,7 +275,7 @@ check('导出的入口齐全', ['forSelection', 'forAnnotation', 'forChart', 'is
   const wire = CTX.toPayload([item]);
   check('出网:一条一条地转', wire.length === 1);
   check('出网:内部 id 不进请求体', !('id' in wire[0]), JSON.stringify(Object.keys(wire[0])));
-  check('出网:字段与后端 schema 对齐', ['kind', 'page', 'title', 'quote', 'prefix', 'suffix', 'body', 'color', 'visibility'].every((k) => k in wire[0]));
+  check('出网:字段与后端 schema 对齐', ['kind', 'page', 'title', 'quote', 'prefix', 'suffix', 'body', 'color', 'chart', 'source', 'mediaType', 'imageData', 'visibility'].every((k) => k in wire[0]));
   check('出网:可见范围原样带出', wire[0].visibility === 'private');
   check('出网:空列表 → 空数组', CTX.toPayload([]).length === 0);
 }

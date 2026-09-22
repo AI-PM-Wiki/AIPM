@@ -294,10 +294,28 @@
   let turnSeq = 0;          // turn 级令牌:runTurn 捕获自增值;清空/新 turn 使在飞 turn 失效
   let attachments = [];     // [{name, size, type}] 纯 UI 附件
 
+  /* 语境里的位图带着几百 KB 的 base64,历史写多了会撞上 localStorage 的配额
+     (浏览器通常每个 origin 5 MB)。撞上时不该整条会话都不存:先照原样写一遍,
+     写不下就**只去掉图像内容**再写一次 —— 聊过什么留着,那一轮「重新生成」时
+     图重发不了,但这段对话还在。两次都写不下就与加图像之前一样:这一次不存。 */
   const persist = () => {
+    const tail = () => history.slice(-HISTORY_MAX);
     try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-HISTORY_MAX)));
-    } catch (e) { /* 隐私模式等场景静默 */ }
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(tail()));
+      return;
+    } catch (e) { /* 多半是配额满了,去掉图像再试一次 */ }
+    try {
+      const lean = tail().map((m) =>
+        m.context && m.context.length
+          ? Object.assign({}, m, {
+              context: m.context.map((item) =>
+                Object.assign({}, item, { mediaType: "", imageData: "" })
+              )
+            })
+          : m
+      );
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(lean));
+    } catch (e) { /* 还是写不下:这一次不存(隐私模式等场景同样静默) */ }
   };
 
   const restore = () => {

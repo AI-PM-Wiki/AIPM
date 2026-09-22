@@ -789,7 +789,7 @@ extra:
   # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
   chat_agent:
     enabled: true
-    version: 31
+    version: 32
   # 自建批注系统前端(注入由 hooks/annotation.py 完成):
   # 取代原先嵌入的 hypothes.is 客户端;enabled 关闭后不再注入
   annotation:
@@ -816,10 +816,10 @@ extra_javascript:
   - '_static/js/mermaid-zoom.js?v=4'
   # 面板共享件（互斥注册表 + 三段抽屉的拖拽吸附）：
   # AI 助手面板与批注面板都用它，且必须排在 hooks 追加的两个面板脚本之前
-  - '_static/js/context-item.js?v=2'
+  - '_static/js/context-item.js?v=3'
   # 图表语境（正文里的 mermaid / 图片 → 对话）：只读 context-item.js 与助手面板的
   # 公开入口，排在两者之间，与 hooks 追加的面板脚本无依赖关系
-  - '_static/js/chart-context.js?v=1'
+  - '_static/js/chart-context.js?v=2'
   - '_static/js/panel-shared.js?v=1'
 extra_css:
   - '_static/css/extra.css?v=40'
