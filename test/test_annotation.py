@@ -747,14 +747,21 @@ class TestSmartHighlightBlockSources(unittest.TestCase):
             skipped, numbered, "模板文字的过滤必须在编号之后(与已高亮块同一条理由)"
         )
 
-    def test_regenerate_sends_the_whole_page(self):
-        """重新生成的结果要写回服务端那一页的缓存格,而那一格只有页面粒度 ——
-        cacheKey 是页面 + 内容哈希 + judge + 色板,不含这一次送了哪些块。所以它
-        送出去的必须是这一页**全部**可判定块:跳过已高亮的块会送出一份子集,写进
-        缓存的就是缺段的结论,后面进这一页的人(身上没有标记,送来的是整页)命中的
-        正是它。全部块都已高亮时也要发 —— 判分这条路只看正文,不看已经划了多少。"""
+    def test_judging_sends_the_whole_page(self):
+        """判分的结果要写回服务端那一页的缓存格,而那一格只有页面粒度 ——
+        cacheKey 是页面 + 内容哈希 + judge + 色板,不含这一次送了哪些块。所以三条
+        来路(自动、✨、重新生成)送出去的都得是这一页**全部**可判定块:跳过已高亮的
+        块会送出一份子集,写进缓存的就是缺段的结论,后面进这一页的人(身上没有标记,
+        送来的是整页)命中的正是它。全部块都已高亮时也要发 —— 判分这条路只看正文,
+        不看已经划了多少;结论回来时按块挡着,已有的那几笔不再添(见 freshSuggestions)。"""
         block = _block(self.js, "function smartHighlight(")
-        self.assertIn("var blocks = refresh ? extractBlocks(true) : extractBlocks();", block)
+        self.assertIn("var blocks = extractBlocks(true);", block)
+
+    def test_the_automatic_pass_only_asks_whether_anything_is_left(self):
+        """自动那一笔的闸问的是「这一页还有没有没划过的地方」—— 与送出去的那一份
+        (整页)是两个问题:每一块都已经有高亮覆盖的页面,判一遍也添不上什么。"""
+        auto = _block(self.js, "function autoSmart()")
+        self.assertIn("if (extractBlocks().length === 0) return;", auto)
 
     def test_the_page_cache_has_no_block_dimension(self):
         """上面那条的前提,钉在服务端那一侧:同页缓存按页面 + 内容哈希 + judge +

@@ -23,9 +23,12 @@ import {
   currentList,
   defaultRespond,
   els,
+  localAnnos,
   receipt,
+  savedState,
   sessionFor,
   settle,
+  SMART_KEY,
   suggests,
   switchList
 } from "./annotation-harness.mjs";
@@ -270,11 +273,12 @@ const SUGGEST_BOTH = {
 };
 
 /** 起一页,并且真的跑进页面的自动判分(装上 `document$`,见 harness 的 instant)。 */
-async function autoPage({ login = "HuangYincan", respond, suggest } = {}) {
+async function autoPage({ login = "HuangYincan", respond, suggest, storage = null } = {}) {
   const ctx = boot({
     instant: true,
     session: sessionFor(login),
-    respond: respond || defaultRespond({ login, suggest })
+    respond: respond || defaultRespond({ login, suggest }),
+    storage
   });
   await settle(ctx.w);
   return ctx;
@@ -317,6 +321,181 @@ test("这一页每一块都已高亮:重新生成仍发出请求", async () => {
     sent[0].body.blocks.map((b) => b.id),
     ["b0", "b1"]
   );
+});
+
+/* ================================================================
+   判分那一整条路送的都是同一份:这一页**全部**可判定块
+   ----------------------------------------------------------------
+   自动那一笔、✨、重新生成,三条来路写的是服务端同页缓存里同一格(见上一节),
+   所以缺段的子集从哪一条路进去都是一样的后果。读缓存仍是默认:只有站长的重新
+   生成带 refresh:true,其余两条照旧先读页内那份、再让服务端读它那份。
+   ================================================================ */
+
+/**
+ * 服务端判分:请求里送了哪几块,就回哪几块的建议(线上那台就是这么回的 —— 没送
+ * 出去的块它不会凭空给结论)。其余请求照 defaultRespond 走。
+ *
+ * 回包压后一拍:判分在线上要跑几秒,这一页自己的批注在这之前早就加载、画好了
+ * (见 ensureAnnotationsLoaded)。不压后的话,「批注画好了没有」就取决于两个请求
+ * 谁先回来 —— 那是测试台里的掷骰子,不是线上的次序。
+ */
+function judgeBlocks({ login = "SomeoneElse" } = {}) {
+  const base = defaultRespond({ login });
+  return (req) => {
+    if (req.path !== "/api/highlight/suggest") return base(req);
+    return new Promise((resolve) =>
+      setTimeout(
+        () =>
+          resolve({
+            status: 200,
+            body: {
+              blocks: [],
+              suggestions: (req.body.blocks || []).map((b) => ({
+                id: b.id,
+                color: "yellow",
+                text: ""
+              })),
+              judge: "rules",
+              model: "judge-model",
+              degraded: []
+            }
+          }),
+        0
+      )
+    );
+  };
+}
+
+/** 手写那一笔的正文 —— 用它把「已高亮的那一块」与后面新添的那一笔区分开。 */
+const HANDWRITTEN = "这一笔是我自己划的";
+
+/** 把一条智能高亮写下的批注抄成手写的样子:去掉 origin,写上人写的话。 */
+function asHandwritten(anno) {
+  const next = { ...anno, body: HANDWRITTEN };
+  delete next.origin;
+  return next;
+}
+
+test("✨ 判分:页面上已有智能高亮时,送的也是全部可判定块", async () => {
+  /* 上一轮自动判分写了一块,这一页那份账留在设备上 */
+  const first = await autoPage({ suggest: SUGGEST_FIRST });
+  assert.equal(markedBlocks(first.w).length, 1, "自动判分写了一块高亮");
+
+  /* 换一次会话回到同一页:正文上那一笔还在,页内那份会话缓存随着页面没了 */
+  const { w, requests } = boot({
+    instant: true,
+    session: sessionFor("SomeoneElse"),
+    respond: judgeBlocks(),
+    storage: savedState(first.w)
+  });
+  await settle(w);
+  assert.equal(markedBlocks(w).length, 1, "进页面时这一页已经有高亮");
+  requests.length = 0;
+
+  click(w, els(w).smartBtn);
+  await settle(w);
+
+  const sent = suggests(requests);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].body.refresh, false, "普通判分走的仍是读缓存那条路");
+  assert.equal(sent[0].headers.Authorization, "Bearer tok-test");
+  assert.deepEqual(
+    sent[0].body.blocks.map((b) => b.id),
+    ["b0", "b1"],
+    "已高亮的那一块也要送 —— 少送一块,服务端那份整页缓存就缺一段"
+  );
+});
+
+test("✨ 判分:块上已有手写高亮时,「全部高亮」不重复叠加", async () => {
+  /* 借上一轮自动判分写下的那一笔拿到真的位置选择器,再把它抄成手写的 */
+  const first = await autoPage({ suggest: SUGGEST_FIRST });
+  const [smart] = localAnnos(first.w);
+  assert.ok(smart, "上一轮写过一条,选择器由 app 自己算出来");
+
+  /* 回到这一页:正文上那一笔还在(手写的),这一页的自动判分用过了 */
+  const { w, requests } = await boot({
+    instant: true,
+    session: sessionFor("SomeoneElse"),
+    respond: judgeBlocks(),
+    storage: savedState(first.w, { local: [asHandwritten(smart)] })
+  });
+  await settle(w);
+  const own = w.document.querySelectorAll('mark.aipm-anno-mark[data-anno-id="' + smart.id + '"]');
+  assert.equal(own.length, 1, "进页面时 b0 上已经有一笔手写高亮");
+  requests.length = 0;
+
+  click(w, els(w).smartBtn);
+  await settle(w);
+
+  const sent = suggests(requests);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].body.refresh, false, "普通判分走的仍是读缓存那条路");
+  assert.deepEqual(
+    sent[0].body.blocks.map((b) => b.id),
+    ["b0", "b1"],
+    "已划过的那一块也要送 —— 少送一块,服务端那份整页缓存就缺一段"
+  );
+
+  /* 服务端两块都给了结论,但已经划过的那一块不算「还能添」的:条子上只报剩下的一块 */
+  assert.equal(els(w).smartToggle.textContent, "全部高亮(1)");
+
+  click(w, els(w).smartToggle);
+  await settle(w);
+
+  /* 多一条也画不出第二笔(markRange 跳过已在高亮里的文字),只会在面板里多一条
+     「未在正文中定位」—— 所以那一块根本不该再多一条。 */
+  assert.equal(
+    localAnnos(w).filter((a) => a.body === HANDWRITTEN).length,
+    1,
+    "手写那一笔还是一条"
+  );
+  assert.equal(localAnnos(w).filter((a) => a.origin === "smart").length, 1);
+  assert.equal(localAnnos(w).length, 2, "手写那一笔 + 新添的这一笔");
+  assert.deepEqual(markedBlocks(w).sort(), ["第一段正", "第二段正"]);
+  const still = w.document.querySelectorAll('mark.aipm-anno-mark[data-anno-id="' + smart.id + '"]');
+  assert.equal(still.length, 1, "手写那一笔没有被盖掉,也没有被复制");
+  assert.equal(still[0].textContent, "第一段正文,智能高亮要判的就是这些段落。");
+});
+
+/*
+  自动那一笔走的是同一条判分路(同一个 extractBlocks(true)),一并锁住:进页面判的
+  是整页,已划过的那一块不在结论里。它红不起来那一下说明白:自动那一笔在进页面时
+  就算块,而这一页自己的批注要等加载回来才画上 —— 那一刻算出来的本来就是整页,与
+  这一行改没改无关。判分在线上要跑几秒,等结论回来时批注早就画好了,所以按块挡住
+  这一挡是真在起作用的(见 judgeBlocks 为什么压后一拍)。
+*/
+test("自动判分:块上已有手写高亮时,判回来的结论不重复叠加", async () => {
+  const first = await autoPage({ suggest: SUGGEST_FIRST });
+  const [smart] = localAnnos(first.w);
+  assert.ok(smart, "上一轮写过一条,选择器由 app 自己算出来");
+
+  /* 这一页的自动判分没用过 —— 自动那一笔照常跑 */
+  const { w, requests } = await autoPage({
+    login: "SomeoneElse",
+    respond: judgeBlocks(),
+    storage: savedState(first.w, { drop: [SMART_KEY], local: [asHandwritten(smart)] })
+  });
+
+  const sent = suggests(requests);
+  assert.equal(sent.length, 1, "还有没划过的地方,自动判分照常跑");
+  assert.equal(sent[0].body.refresh, false);
+  assert.deepEqual(
+    sent[0].body.blocks.map((b) => b.id),
+    ["b0", "b1"],
+    "自动那一笔送的同样是整页"
+  );
+
+  assert.equal(
+    localAnnos(w).filter((a) => a.body === HANDWRITTEN).length,
+    1,
+    "手写那一笔还是一条"
+  );
+  assert.equal(localAnnos(w).filter((a) => a.origin === "smart").length, 1);
+  assert.equal(localAnnos(w).length, 2, "手写那一笔 + 新添的这一笔");
+  assert.deepEqual(markedBlocks(w).sort(), ["第一段正", "第二段正"]);
+  const own = w.document.querySelectorAll('mark.aipm-anno-mark[data-anno-id="' + smart.id + '"]');
+  assert.equal(own.length, 1, "手写那一笔没有被盖掉,也没有被复制");
+  assert.equal(own[0].textContent, "第一段正文,智能高亮要判的就是这些段落。");
 });
 
 /* ================================================================

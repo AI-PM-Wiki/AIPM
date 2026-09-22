@@ -3848,8 +3848,10 @@
    * `includeMarked` 为真时连已经划过高亮的块也一并返回 —— 换页回来重建建议条时
    * 要按块 id 把 Range 重绑到当前 DOM 上(见 withLiveBlocks),落过高亮的块若被
    * 跳过,它在建议里就「不存在」,一条已落过一半的页面会被显示成「本页没有值得
-   * 高亮的地方」。「重新生成」那一条也带它:整页重判的结论要写回服务端那一页的
-   * 缓存格,缺了已高亮的那几块就是一份缺段的整页结果(见 smartHighlight)。
+   * 高亮的地方」。判分那一整条路(自动、✨、重新生成)同样带着它:判完的结论要
+   * 写回服务端那一页的缓存格,缺了已高亮的那几块就是一份缺段的整页结果(见
+   * smartHighlight)。不带它的只剩 autoSmart 那一道闸 —— 那是在问「这一页还有
+   * 没有没划过的地方要判」。
    */
   function extractBlocks(includeMarked) {
     var root = contentRoot();
@@ -3975,13 +3977,14 @@
       if (!auto) renderSuggestions(suggestCache[page]);
       return;
     }
-    /* 重新生成送的是这一页**全部**可判定块 —— 与第一次判分送的那一份逐块相同。
+    /* 判分一律送这一页**全部**可判定块,三条来路(自动、✨、重新生成)送的是同一份。
        跳过已落过高亮的块会送出一份**子集**,而服务端那份同页缓存只有页面粒度
        (它的 key 是页面 + 内容哈希 + judge + 色板,不含这一次送了哪些块),判完照
        原样覆盖整页那一格:漏掉的那几段在缓存里从此没有结论,后面进这一页的人身上
-       没有标记、送来的是整页,命中的却是这份缺段的结果。全部块都已高亮时照样要发,
-       「点下去什么都不会发生」的按钮比一次重判更糟。 */
-    var blocks = refresh ? extractBlocks(true) : extractBlocks();
+       没有标记、送来的是整页,命中的却是这份缺段的结果。已经划过的那几块照送不误
+       —— 结论回来时按块挡着,已有的那几笔不再添(见 freshSuggestions)。全部块都已
+       高亮时也要发,「点下去什么都不会发生」的按钮比一次重判更糟。 */
+    var blocks = extractBlocks(true);
     if (blocks.length === 0) {
       if (auto) return;
       setSmartbar("这一页没有可判定的正文。", "warn");
@@ -4119,6 +4122,9 @@
       store.markSmartDone(page);
       return;
     }
+    /* 这一页的每一块都已经有高亮了(手写的、别人公开的、本机剩下的):判一遍
+       也添不上什么,不必花这笔钱。这里问的是「还有没有没划过的地方」,所以不带
+       已高亮的块 —— 与送出去的那一份(整页,见 smartHighlight)是两个问题。 */
     if (extractBlocks().length === 0) return;
     smartHighlight({ auto: true });
   }

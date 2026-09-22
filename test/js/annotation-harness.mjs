@@ -55,8 +55,12 @@ const PAGE = `<!doctype html><html><body>
  * 页面发一次」的 observable)。站点头部的并入逻辑订阅它,进页面时的自动判分
  * (见 autoSmart)就挂在这一条上;jsdom 里没有这个全局,不装的话那条路根本不跑。
  * 它按 mkdocs-material 的接口行为:订阅时先发当前这一份,之后每次换页再发。
+ *
+ * `storage` 是脚本跑起来**之前**写进 localStorage 的键值 —— 上一轮留在这台设备上
+ * 的状态(「仅本机」批注、用掉的自动判分……)。键名与原样的一份数据都由调用方给,
+ * 测试不自己拼批注对象:位置选择器是 app 自己算出来的东西。
  */
-export function boot({ session, respond, instant = false } = {}) {
+export function boot({ session, respond, instant = false, storage = null } = {}) {
   const dom = new JSDOM(PAGE, {
     url: "https://aipm.ac/ai/pm/",
     runScripts: "dangerously",
@@ -104,6 +108,11 @@ export function boot({ session, respond, instant = false } = {}) {
     }));
   };
 
+  if (storage) {
+    for (const key of Object.keys(storage)) {
+      if (storage[key] !== null) w.localStorage.setItem(key, storage[key]);
+    }
+  }
   if (session !== null) {
     w.localStorage.setItem("aipm-anno-auth", JSON.stringify(session));
   }
@@ -160,7 +169,8 @@ export const els = (w) => {
     list: doc.querySelector(".aipm-anno__title-label"),
     headIcon: doc.querySelector(".aipm-anno__head-icon"),
     smartBtn: doc.querySelector(".aipm-anno-smart"),
-    smartbar: doc.querySelector(".aipm-anno__smartbar")
+    smartbar: doc.querySelector(".aipm-anno__smartbar"),
+    smartToggle: doc.querySelector(".aipm-anno__smart-toggle")
   };
 };
 
@@ -186,4 +196,42 @@ export function receipt(w) {
 
 export function suggests(requests) {
   return requests.filter((r) => r.path === "/api/highlight/suggest");
+}
+
+/** 页面路径:app 的 pagePath 就是 location.pathname(这里起的是这一页)。 */
+export const PAGE_PATH = "/ai/pm/";
+
+/** 存在本机的那两笔账:批注,与「这一页的自动判分已经用过了」。 */
+export const LOCAL_KEY = "aipm-anno-local";
+export const SMART_KEY = "aipm-anno-smart";
+
+/** 「本机批注」那一格在存储里的形状(与 app 自己写的那份一致)。 */
+function localState(list) {
+  return JSON.stringify({ version: 1, pages: { [PAGE_PATH]: list } });
+}
+
+/**
+ * 抄一份这台设备上留下的状态,交给下一个页面的 `boot({ storage })` —— 造出
+ * 「换一次会话回到同一页」:正文上还留着上一轮的高亮,而页内那份会话缓存
+ * (suggestCache)随着页面一起没了。
+ *
+ * `drop` 里的键不抄(整份抄过去就是原样回到同一页;去掉 SMART_KEY 才是「这一页
+ * 的自动判分还没用过」);`local` 给定时换掉本机批注那一格。
+ */
+export function savedState(w, { drop = [], local = null } = {}) {
+  const out = {};
+  for (const key of [LOCAL_KEY, SMART_KEY]) {
+    if (drop.includes(key)) continue;
+    out[key] = w.localStorage.getItem(key);
+  }
+  if (local) out[LOCAL_KEY] = localState(local);
+  return out;
+}
+
+/** 本机保存的批注列表(app 存在 localStorage 里的那一份,多出一条在这里看得见)。 */
+export function localAnnos(w) {
+  const raw = w.localStorage.getItem(LOCAL_KEY);
+  const all = raw ? JSON.parse(raw) : null;
+  const list = all && all.pages ? all.pages[PAGE_PATH] : null;
+  return Array.isArray(list) ? list : [];
 }
