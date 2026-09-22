@@ -493,11 +493,12 @@
     '<button type="button" class="aipm-anno__grip" aria-label="调整批注面板高度">' +
     '<span class="aipm-anno__grip-bar"></span></button>' +
     '<header class="aipm-anno__head">' +
-    /* 这一枚是面板的标记,只有站长手上才多一重身份:它是「重新生成智能高亮」的
-       触发点(见 syncHeadIcon)。 */
-    '<span class="aipm-anno__head-icon">' +
+    /* 这一枚是面板的标记,也是一颗按钮:站长点它是「重新生成智能高亮」,其余人点
+       它换一份列表(见 syncHeadIcon)。所以它是真 <button> —— 键盘与焦点圈都不必
+       自己补,面板那条「按钮不吞正文选区」的规则也一并盖到它。 */
+    '<button type="button" class="aipm-anno__head-icon aipm-anno__iconbtn">' +
     ICON.pen +
-    "</span>" +
+    "</button>" +
     /* 标题即「批注 ↔ 评论」的切换器:它同时是当前模式的指示。但它首先是**按钮**,
        而按钮得在不悬停的时候就看得出来 —— 悬停底色只帮得到鼠标,触屏没有悬停。
        所以正面是一颗带边框的胶囊:左边写当前模式(syncMode() 改的就是这个 span),
@@ -3877,40 +3878,34 @@
     return out;
   }
 
-  /** 判分进行中时两颗入口一起收:页头那颗按钮用 disabled,面板页头那支笔用 is-busy。 */
+  /** 判分进行中时页头那颗按钮收起来 —— 一次判分就是一轮 provider 调用,连点两下
+      会让第二下也走一遍「缓存未命中」。面板页头那支笔不受影响:它换列表那一半
+      与判分无关,重新生成那一半由 smartBusy 自己挡(见 smartHighlight)。 */
   function setSmartBusy(on) {
     smartBusy = on;
     smartBtn.disabled = on;
-    els.headIcon.classList.toggle("is-busy", on);
   }
 
   /**
-   * 站长(服务端 ADMIN_LOGINS)多一项「重新生成智能高亮」,触发点就是面板页头那支
-   * 笔 —— 它平时只是一枚图标,对站长才是一颗开关。
+   * 面板页头那支笔点下去做什么,看身份:
+   *   站长(服务端 ADMIN_LOGINS)→ 重新生成智能高亮(跳过两层缓存重新判分);
+   *   其余人 → 在「批注 / 评论」两份列表之间切换,与标题那颗胶囊同一件事。
    *
-   * 身份决定要不要补上按钮的那套属性:是 → role + tabindex + 标题,并带上
-   * .aipm-anno__iconbtn 与 is-regenerate(命中区、悬停底色与焦点圈见
-   * annotation.css);否 → 逐个撤掉。未登录 → 登录 → 退出登录这条来回里标记必须
-   * 跟着身份走,否则非站长手上会留下一颗点下去必然 403 的按钮。
-   *
-   * 「不是站长」不用 disabled 表达:disabled 说的是「按不动」,这里要说的是
-   * 「这颗图标不是按钮」。
+   * 两条路都不改这颗按钮的形与位,所以身份不写进样式,只写进它的标题与 aria ——
+   * 读屏与悬停提示说的都该是「点下去会发生什么」。身份是会变的(未登录 → 登录 →
+   * 退出登录),所以每次都要按当下的身份重写一遍。
    */
   function syncHeadIcon() {
-    var on = !!(auth && auth.isAdmin && auth.isAdmin());
-    els.headIcon.classList.toggle("is-regenerate", on);
-    els.headIcon.classList.toggle("aipm-anno__iconbtn", on);
-    if (on) {
-      els.headIcon.setAttribute("role", "button");
-      els.headIcon.setAttribute("tabindex", "0");
-      els.headIcon.title = "重新生成智能高亮(重新判分并覆盖本页缓存)";
-      els.headIcon.setAttribute("aria-label", "重新生成智能高亮");
-    } else {
-      els.headIcon.removeAttribute("role");
-      els.headIcon.removeAttribute("tabindex");
-      els.headIcon.removeAttribute("title");
-      els.headIcon.removeAttribute("aria-label");
+    var admin = !!(auth && auth.isAdmin && auth.isAdmin());
+    var label = admin ? "重新生成智能高亮(重新判分并覆盖本页缓存)" : modeSwitchHint();
+    els.headIcon.title = label;
+    els.headIcon.setAttribute("aria-label", label);
+    if (admin) {
+      els.headIcon.removeAttribute("aria-pressed");
+      return;
     }
+    /* 换列表那一半是开关,状态跟着当前模式走 —— 与标题那颗胶囊同一套 aria。 */
+    els.headIcon.setAttribute("aria-pressed", panelMode === "comments" ? "true" : "false");
   }
 
   /**
@@ -4306,6 +4301,22 @@
      面板外壳:模式切换 / 账号 / 分组折叠与显示
      ================================================================ */
 
+  /** 点下去会发生什么(相对当前模式而言的反向动作)。标题那颗胶囊与面板页头那支
+      笔共用这一份措辞 —— 两处说的是同一件事,不该各写一句。 */
+  function modeSwitchHint() {
+    return panelMode === "comments" ? "切回批注(锚在正文某一段上)" : "切到评论(对整页说话)";
+  }
+
+  /** 换一份列表:批注 ↔ 评论。两个入口(标题、页头那支笔)共用这一条。 */
+  function togglePanelMode() {
+    panelMode = panelMode === "comments" ? "annotations" : "comments";
+    // 换模式等于换了一份列表,正在写的那张卡不该跨模式跟过去
+    editorDraft = null;
+    composerSelection = null;
+    syncMode();
+    render();
+  }
+
   /** 标题就是模式开关 —— 它写着什么,列表里就是什么。
 
       只改 label span 的 textContent:按钮里还有那颗双向箭头,整颗重写 innerHTML
@@ -4314,25 +4325,20 @@
   function syncMode() {
     var isComments = panelMode === "comments";
     var label = isComments ? "评论" : "批注";
-    var hint = isComments ? "切回批注(锚在正文某一段上)" : "切到评论(对整页说话)";
+    var hint = modeSwitchHint();
     els.titleLabel.textContent = label;
     els.title.title = hint;
     els.title.setAttribute("aria-label", hint);
     els.title.setAttribute("aria-pressed", isComments ? "true" : "false");
+    /* 页头那支笔的措辞跟着模式走(它写的是「切到评论」还是「切回批注」)。 */
+    syncHeadIcon();
     /* 智能高亮条长在批注那一份列表里(它说的「全部高亮」就是正文里的划线),
        切到评论就把残留的那一条收掉。按钮本身不跟着藏 —— 它在页头上,点击时会把
        面板切回批注模式(见 smartHighlight)。 */
     if (isComments) setSmartbar("", "");
   }
 
-  els.title.addEventListener("click", function () {
-    panelMode = panelMode === "comments" ? "annotations" : "comments";
-    // 换模式等于换了一份列表,正在写的那张卡不该跨模式跟过去
-    editorDraft = null;
-    composerSelection = null;
-    syncMode();
-    render();
-  });
+  els.title.addEventListener("click", togglePanelMode);
 
   /* 分组头:箭头折叠、眼睛整栏不显示。两件事都写进 prefs,刷新后保持。 */
   els.list.addEventListener("click", function (e) {
@@ -4467,20 +4473,16 @@
     smartHighlight();
   });
 
-  /* 面板页头那支笔:站长点它是「重新生成」(见 syncHeadIcon),其余时候点它没有
-     任何反应。用 click + keydown 两条而不是把它换成 <button> —— 它同时是这面板的
-     图标,换成按钮之后非站长那边还得为 disabled 与焦点补一套只对站长有意义的样式。
-     两条都先问一遍身份:监听器常驻,身份却是会变的。 */
-  function headIconRegenerate() {
-    if (!(auth && auth.isAdmin && auth.isAdmin())) return;
-    smartHighlight({ refresh: true });
+  /* 面板页头那支笔:站长点它是「重新生成」,其余人点它换一份列表(身份那半边见
+     syncHeadIcon)。监听器常驻,身份却是会变的,所以每次点击都重新问一遍。 */
+  function headIconAction() {
+    if (auth && auth.isAdmin && auth.isAdmin()) {
+      smartHighlight({ refresh: true });
+      return;
+    }
+    togglePanelMode();
   }
-  els.headIcon.addEventListener("click", headIconRegenerate);
-  els.headIcon.addEventListener("keydown", function (e) {
-    if (e.key !== "Enter" && e.key !== " ") return;
-    e.preventDefault();
-    headIconRegenerate();
-  });
+  els.headIcon.addEventListener("click", headIconAction);
 
   /* ================================================================
      面板 ↔ 正文:两头的定位

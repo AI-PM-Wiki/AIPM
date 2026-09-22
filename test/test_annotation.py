@@ -278,13 +278,13 @@ class TestJudgeDegradation(unittest.TestCase):
         self.assertIn("suggestCache[page]", self.js)
 
 
-class TestRegenerateIsAdminOnly(unittest.TestCase):
-    """站长在面板页头那支笔上点「重新生成」。
+class TestHeadIconClick(unittest.TestCase):
+    """面板页头那支笔点下去做什么,看身份(issue #97 与 #103)。
 
     两条容易悄悄回退的约定:
     - 默认仍是缓存优先,只有重新生成这一条路跳过页内那层缓存;
-    - 重新生成要认人:前端只对站长把图标做成开关,服务端另有一道闸(未登录 401、
-      非站长 403),两处缺一不可 —— 判分一次就是一次真金白银的调用。
+    - 重新生成要认人:站长走重新生成,其余人换一份列表;服务端另有一道闸
+      (未登录 401、非站长 403)拦住伪造的请求 —— 判分一次就是一次真金白银的调用。
     """
 
     @classmethod
@@ -300,7 +300,7 @@ class TestRegenerateIsAdminOnly(unittest.TestCase):
             self.skipTest("annotation-server 子模块未检出")
         return path.read_text(encoding="utf-8")
 
-    # ---- 前端 ----
+    # ---- 前端:缓存优先与重新生成 ----
 
     def test_the_page_cache_is_read_first_unless_refreshing(self):
         block = _block(self.js, "function smartHighlight(")
@@ -311,34 +311,43 @@ class TestRegenerateIsAdminOnly(unittest.TestCase):
         self.assertIn("refresh: refresh", block)
         self.assertIn("auth.token()", block)
 
-    def test_the_head_icon_becomes_a_button_only_for_the_admin(self):
+    # ---- 前端:那支笔 ----
+
+    def test_the_head_icon_is_a_real_button_for_everyone(self):
+        """两种身份点它都有事发生,所以它常驻按钮语义 —— 键盘与焦点圈不必自己补。"""
+        self.assertIn(
+            '<button type="button" class="aipm-anno__head-icon aipm-anno__iconbtn">', self.js
+        )
+        self.assertNotIn('<span class="aipm-anno__head-icon">', self.js)
+
+    def test_the_head_icon_branches_on_identity(self):
+        handler = _block(self.js, "function headIconAction()")
+        self.assertIn("auth.isAdmin()", handler)
+        self.assertIn("smartHighlight({ refresh: true })", handler)
+        self.assertIn("togglePanelMode()", handler)
+        # 监听器常驻,身份却会变 —— 每次点击都要重新问一遍
+        self.assertIn('els.headIcon.addEventListener("click", headIconAction)', self.js)
+
+    def test_the_head_icon_label_says_what_the_click_does(self):
         block = _block(self.js, "function syncHeadIcon()")
         self.assertIn("auth.isAdmin()", block)
-        self.assertIn('classList.toggle("is-regenerate", on)', block)
-        # 命中区与悬停底色沿用面板里那族图标按钮,不另起一套
-        self.assertIn('classList.toggle("aipm-anno__iconbtn", on)', block)
+        self.assertIn("modeSwitchHint()", block)
+        self.assertIn('setAttribute("aria-label", label)', block)
+        # 换列表那一半是开关,aria-pressed 跟着当前模式
+        self.assertIn('setAttribute("aria-pressed"', block)
         # 「不是站长」不能用 disabled 表达:那说的是「按不动」
         self.assertNotIn("disabled", block)
 
-    def test_the_head_icon_is_wired_to_both_input_paths(self):
-        self.assertIn('els.headIcon.addEventListener("click", headIconRegenerate)', self.js)
-        self.assertIn('els.headIcon.addEventListener("keydown"', self.js)
-        self.assertIn("smartHighlight({ refresh: true })", self.js)
-        # 监听器常驻,身份却会变 —— 每次触发都要重新问一遍
-        handler = _block(self.js, "function headIconRegenerate()")
-        self.assertIn("auth.isAdmin()", handler)
-
-    def test_the_head_icon_keeps_its_shape_for_everyone_else(self):
-        """面板的标记不为站长换图形、也不为站长换位置:多出来的只有命中区与悬停底色。"""
-        self.assertIn('class="aipm-anno__head-icon"', self.js)
-        rule = _block(self.css, ".aipm-anno__head-icon.is-regenerate svg")
+    def test_the_head_icon_only_restyles_nothing_about_identity(self):
+        """身份不写进样式:两条路都不改这颗按钮的形与位,只改它说什么。"""
+        rule = _block(self.css, ".aipm-anno__head-icon.aipm-anno__iconbtn svg")
         self.assertIn("var(--md-accent-fg-color)", rule)
+        self.assertNotIn(".aipm-anno__head-icon.is-regenerate", self.css)
 
-    def test_the_two_entry_points_do_not_double_spend(self):
+    def test_the_two_head_icon_entries_do_not_double_spend(self):
         """一次重新生成就是一轮判分;连点两下不该各走一遍「缓存未命中」。"""
         block = _block(self.js, "function setSmartBusy(")
         self.assertIn("smartBtn.disabled = on", block)
-        self.assertIn('els.headIcon.classList.toggle("is-busy", on)', block)
         self.assertIn("if (smartBusy) return;", _block(self.js, "function smartHighlight("))
 
     def test_the_head_icon_state_follows_the_login(self):
@@ -374,6 +383,32 @@ class TestRegenerateIsAdminOnly(unittest.TestCase):
         cache = block.index("raw.refresh !== true")
         self.assertLess(cache, block.index("this.limiter.tryAcquire(ipKey)"))
         self.assertLess(cache, block.index("this.semaphore.acquire("))
+
+    # ---- 前端:换一份列表(普通用户那条路) ----
+
+    def test_both_switchers_go_through_one_helper(self):
+        """标题那颗胶囊与页头那支笔换的是同一份列表,不该各写一遍换法。"""
+        block = _block(self.js, "function togglePanelMode()")
+        self.assertIn('panelMode === "comments" ? "annotations" : "comments"', block)
+        self.assertIn("syncMode();", block)
+        self.assertIn("render();", block)
+        # 在编辑卡里写了一半的草稿不该跨模式跟过去
+        self.assertIn("editorDraft = null;", block)
+        # 换法只此一处:两个入口都从这里走,不再有人自己写一遍取反
+        self.assertEqual(self.js.count('panelMode === "comments" ? "annotations" : "comments"'), 1)
+        self.assertIn('els.title.addEventListener("click", togglePanelMode)', self.js)
+
+    def test_the_switchers_share_one_wording(self):
+        """两处说的都是「点下去会发生什么」,措辞只有一份。"""
+        hint = _block(self.js, "function modeSwitchHint()")
+        self.assertIn('panelMode === "comments"', hint)
+        self.assertIn("切回批注", hint)
+        self.assertIn("切到评论", hint)
+        self.assertIn("var hint = modeSwitchHint();", _block(self.js, "function syncMode()"))
+
+    def test_the_head_icon_says_which_way_it_switches(self):
+        """换模式之后那支笔的措辞要跟着走 —— 它写的是「切到评论」还是「切回批注」。"""
+        self.assertIn("syncHeadIcon();", _block(self.js, "function syncMode()"))
 
 
 class TestThreeVisibilities(unittest.TestCase):
