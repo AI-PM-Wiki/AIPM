@@ -265,17 +265,235 @@ class TestJudgeDegradation(unittest.TestCase):
 
     def test_unavailable_degrades_without_breaking_annotations(self):
         """503 时只禁用智能高亮按钮,批注主功能不受影响。"""
-        block = _block(self.js, "function smartHighlight()")
+        block = _block(self.js, "function smartHighlight(")
         self.assertIn("res.status === 503", block)
         self.assertIn("smartBtn.disabled = true", block)
 
     def test_rate_limit_cooldown(self):
-        block = _block(self.js, "function smartHighlight()")
+        block = _block(self.js, "function smartHighlight(")
         self.assertIn("res.status === 429", block)
         self.assertIn("cooldownUntil", block)
 
     def test_same_page_result_is_reused(self):
         self.assertIn("suggestCache[page]", self.js)
+
+
+class TestHeadIconClick(unittest.TestCase):
+    """面板页头那支笔点下去做什么,看身份(issue #97 与 #103)。
+
+    两条容易悄悄回退的约定:
+    - 默认仍是缓存优先,只有重新生成这一条路跳过页内那层缓存;
+    - 重新生成要认人:站长走重新生成,其余人换一份列表;服务端另有一道闸
+      (未登录 401、非站长 403)拦住伪造的请求 —— 判分一次就是一次真金白银的调用。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+        cls.auth = AUTH_JS.read_text(encoding="utf-8")
+        cls.server_src = ROOT / "annotation-server" / "src"
+
+    def _server_file(self, rel):
+        path = self.server_src / rel
+        if not path.exists():  # pragma: no cover - 子模块未检出
+            self.skipTest("annotation-server 子模块未检出")
+        return path.read_text(encoding="utf-8")
+
+    # ---- 前端:缓存优先与重新生成 ----
+
+    def test_the_page_cache_is_read_first_unless_refreshing(self):
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("if (!refresh && suggestCache[page])", block)
+
+    def test_refresh_rides_along_with_the_session(self):
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("refresh: refresh", block)
+        self.assertIn("auth.token()", block)
+
+    # ---- 前端:那支笔 ----
+
+    def test_the_head_icon_is_a_real_button_for_everyone(self):
+        """两种身份点它都有事发生,所以它常驻按钮语义 —— 键盘与焦点圈不必自己补。"""
+        self.assertIn(
+            '<button type="button" class="aipm-anno__head-icon aipm-anno__iconbtn">', self.js
+        )
+        self.assertNotIn('<span class="aipm-anno__head-icon">', self.js)
+
+    def test_the_head_icon_branches_on_identity(self):
+        handler = _block(self.js, "function headIconAction()")
+        self.assertIn("auth.isAdmin()", handler)
+        self.assertIn("smartHighlight({ refresh: true })", handler)
+        self.assertIn("togglePanelMode()", handler)
+        # 监听器常驻,身份却会变 —— 每次点击都要重新问一遍
+        self.assertIn('els.headIcon.addEventListener("click", headIconAction)', self.js)
+
+    def test_the_head_icon_label_says_what_the_click_does(self):
+        block = _block(self.js, "function syncHeadIcon()")
+        self.assertIn("auth.isAdmin()", block)
+        self.assertIn("modeSwitchHint()", block)
+        self.assertIn('setAttribute("aria-label", label)', block)
+        # 换列表那一半是开关,aria-pressed 跟着当前模式
+        self.assertIn('setAttribute("aria-pressed"', block)
+        # 「不是站长」不能用 disabled 表达:那说的是「按不动」
+        self.assertNotIn("disabled", block)
+
+    def test_no_identity_styling_is_written_into_the_stylesheet(self):
+        """身份不出现在样式里:两条路共用同一副外观,分开的只有点击去向与措辞。
+        那枚图标自身的尺寸与配色由 TestHeadIconTellsTheTwoListsApart 盯着。"""
+        self.assertNotIn(".aipm-anno__head-icon.is-regenerate", self.css)
+
+    def test_the_two_head_icon_entries_do_not_double_spend(self):
+        """一次重新生成就是一轮判分;连点两下不该各走一遍「缓存未命中」。
+        换列表那一半与判分无关,所以它不跟着判分变淡 —— 变淡只发生在智能高亮
+        那颗按钮身上(它带 disabled 可表达)。"""
+        block = _block(self.js, "function setSmartBusy(")
+        self.assertIn("smartBtn.disabled = on", block)
+        self.assertNotIn("headIcon", block)
+        self.assertIn("if (smartBusy) return;", _block(self.js, "function smartHighlight("))
+
+    def test_the_head_icon_state_follows_the_login(self):
+        """未登录 → 登录 → 退出登录这条来回里,标记必须跟着身份走。"""
+        self.assertIn("syncHeadIcon();", _block(self.js, "auth.onChange(function ()"))
+        self.assertIn("syncHeadIcon();", self.js[self.js.index("auth.ready().then(") :])
+
+    def test_the_admin_flag_comes_from_the_server(self):
+        self.assertIn("isAdmin: isAdmin", self.auth)
+        self.assertIn("res.body.admin === true", self.auth)
+
+    # ---- 服务端 ----
+
+    def test_the_refresh_flag_is_gated_at_the_route(self):
+        block = _block(self._server_file("server.ts"), "async function handleSuggest(")
+        self.assertIn("parsed.data.refresh", block)
+        self.assertIn("login_required", block)
+        self.assertIn("isAdmin(actor, config.adminLogins)", block)
+        self.assertIn("forbidden", block)
+
+    def test_the_admin_list_is_configurable(self):
+        self.assertIn("ADMIN_LOGINS", self._server_file("config.ts"))
+        self.assertIn(
+            "export function isAdmin(actor: Author, adminLogins: string[])",
+            self._server_file("annotations.ts"),
+        )
+
+    def test_refresh_skips_the_cache_but_not_the_guardrails(self):
+        """绕开的是缓存那一层。限流、并发与预算仍在它后面 —— 重新生成照样要花钱,
+        不该因为它是站长点的就放过护栏。"""
+        block = _block(self._server_file("highlight/index.ts"), "async suggest(")
+        self.assertIn("raw.refresh !== true", block)
+        cache = block.index("raw.refresh !== true")
+        self.assertLess(cache, block.index("this.limiter.tryAcquire(ipKey)"))
+        self.assertLess(cache, block.index("this.semaphore.acquire("))
+
+    # ---- 前端:换一份列表(普通用户那条路) ----
+
+    def test_both_switchers_go_through_one_helper(self):
+        """标题那颗胶囊与页头那支笔换的是同一份列表,不该各写一遍换法。"""
+        block = _block(self.js, "function togglePanelMode()")
+        self.assertIn('panelMode === "comments" ? "annotations" : "comments"', block)
+        self.assertIn("syncMode();", block)
+        self.assertIn("render();", block)
+        # 在编辑卡里写了一半的草稿不该跨模式跟过去
+        self.assertIn("editorDraft = null;", block)
+        # 换法只此一处:两个入口都从这里走,不再有人自己写一遍取反
+        self.assertEqual(self.js.count('panelMode === "comments" ? "annotations" : "comments"'), 1)
+        self.assertIn('els.title.addEventListener("click", togglePanelMode)', self.js)
+
+    def test_the_switchers_share_one_wording(self):
+        """两处说的都是「点下去会发生什么」,措辞只有一份。"""
+        hint = _block(self.js, "function modeSwitchHint()")
+        self.assertIn('panelMode === "comments"', hint)
+        self.assertIn("切回批注", hint)
+        self.assertIn("切到评论", hint)
+        self.assertIn("var hint = modeSwitchHint();", _block(self.js, "function syncMode()"))
+
+    def test_the_head_icon_says_which_way_it_switches(self):
+        """换模式之后那支笔的措辞要跟着走 —— 它写的是「切到评论」还是「切回批注」。"""
+        self.assertIn("syncHeadIcon();", _block(self.js, "function syncMode()"))
+
+
+class TestSmartHighlightIsOnByDefault(unittest.TestCase):
+    """issue #102:进一个页面就自动判一次,写下的批注署名是生成它的模型型号。
+
+    两条容易悄悄回退的约定:
+    - 自动判分一页只跑一次,跑过就记一笔 —— 用户删掉、或者整批关掉之后,不能被
+      「默认开启」加回来;
+    - 自动那条不动界面、失败不出声,拿到的建议直接写成「仅本机」高亮。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.store = STORE_JS.read_text(encoding="utf-8")
+
+    def test_a_new_page_is_judged_without_being_asked(self):
+        self.assertIn("autoSmart();", _block(self.js, "function onPageChange("))
+        auto = _block(self.js, "function autoSmart()")
+        self.assertIn("smartHighlight({ auto: true })", auto)
+        # 页内已有这一页的结果就直接复用,不再问服务端
+        self.assertIn("if (suggestCache[page]) return;", auto)
+
+    def test_the_automatic_pass_happens_once_per_page(self):
+        auto = _block(self.js, "function autoSmart()")
+        self.assertIn("store.smartDone(page)", auto)
+        self.assertIn("store.markSmartDone(page)", _block(self.js, "function applySmart(payload)"))
+        self.assertIn(
+            "store.markSmartDone(pagePath())", _block(self.js, "function revertSmart(payload)")
+        )
+
+    def test_the_record_outlives_the_annotations(self):
+        """用户把自动写下的高亮删光之后,「删光了」与「从没判过」必须分得出来 ——
+        这一笔记在批注数据之外的另一个键上。"""
+        self.assertIn('var K_SMART = "aipm-anno-smart";', self.store)
+        self.assertIn("s.pages", _block(self.store, "function smartState()"))
+        self.assertIn("state.pages[page]", _block(self.store, "function markSmartDone(page)"))
+        self.assertIn(
+            "Object.prototype.hasOwnProperty.call(smartState().pages, page)",
+            _block(self.store, "function smartDone(page)"),
+        )
+        # 它是这台设备上的账,不跟着导出 / 导入走
+        self.assertNotIn("smartState", _block(self.store, "function exportPayload()"))
+        self.assertNotIn("smartState", _block(self.store, "function importPayload(text)"))
+
+    def test_the_record_never_touches_the_network(self):
+        for fn in ("smartDone", "markSmartDone"):
+            self.assertNotIn("fetch(", _block(self.store, f"function {fn}("))
+
+    def test_the_automatic_pass_leaves_the_panel_alone_and_stays_quiet(self):
+        """点 ✨ 才动界面、才把失败念出来;自动那条是后台动作。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("var auto = !!(opts && opts.auto);", block)
+        self.assertIn("var say = auto ? function () {} : setSmartbar;", block)
+        # 面板切模式、叫出面板、撤选区都只对点击成立
+        ui = block[block.index("if (!auto) {") : block.index("if (smartBusy) return;")]
+        self.assertIn("revealPanel();", ui)
+        self.assertIn("clearSelection();", ui)
+        self.assertNotIn("setSmartbar(", _block(self.js, "function autoSmart()"))
+
+    def test_the_automatic_pass_lands_what_it_found(self):
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("if (auto) applySmart(res.body);", block)
+
+    def test_a_stale_answer_lands_on_no_page(self):
+        """判分要几秒,回来时人可能已经在别的页面上 —— 块 id 是位置序号,
+        两页的 b0 是两段文字,照着写下去就是错位的高亮。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("if (pagePath() !== page) {", block)
+        self.assertLess(
+            block.index("suggestCache[page] = res.body;"),
+            block.index("if (pagePath() !== page) {"),
+            "结果先记账(回到那一页还能重绑),再判能不能往当前这份 DOM 上画",
+        )
+        # 换页比判分快的时候,新页别因为「上一页还在判」就一直空着
+        self.assertIn("autoSmart();", block)
+
+    def test_the_smart_annotations_are_signed_with_the_model_id(self):
+        """署名写生成它的那个模型型号,不写「本机」。"""
+        block = _block(self.js, "function applySmart(payload)")
+        self.assertIn("var who = judgeLabel(payload);", block)
+        self.assertNotIn("本机", block)
+        self.assertNotIn("auth.user()", block)
 
 
 class TestThreeVisibilities(unittest.TestCase):
@@ -772,7 +990,7 @@ class TestUiRoundThree(unittest.TestCase):
         """按钮站在面板外面,显隐就不该再跟着面板里的模式走 —— 面板关着的时候用户
         看不见当前是哪一份列表,一颗「有时在、有时不在」的页头按钮就是没来由的
         闪烁。所以它一直可见,点击时自己把面板切回批注模式并叫出来。"""
-        block = _block(self.js, "function smartHighlight()")
+        block = _block(self.js, "function smartHighlight(")
         self.assertIn('panelMode = "annotations"', block)
         self.assertIn("revealPanel()", block)
         self.assertNotIn("smartBtn.hidden", self.js)
@@ -2643,7 +2861,7 @@ class TestTheFloatingToolbarNeverStrands(unittest.TestCase):
     def test_the_smart_highlight_does_not_leave_it_hanging_over_the_panel(self):
         """✨ 判的是整页正文,跟手上选中那一段无关,接下来还要往正文里插一整批
         <mark> —— 选区留着的话,DOM 一动又会把浮窗摆回面板前面。"""
-        fn = _block(self.js, "function smartHighlight()")
+        fn = _block(self.js, "function smartHighlight(")
         self.assertIn("revealPanel()", fn)
         self.assertIn("clearSelection()", fn)
 
@@ -2722,6 +2940,69 @@ class TestSmartbarNotificationsCanBeDismissed(unittest.TestCase):
         self.assertLess(float(_decl(rule, "opacity")), 1)
         self.assertIn(".aipm-anno__smart-close:hover", self.css)
         self.assertIn(".aipm-anno__smart-close:focus-visible", self.css)
+
+
+class TestHeadIconTellsTheTwoListsApart(unittest.TestCase):
+    """面板头上那颗图标得说明眼下是哪一份列表(AIPM-9)。
+
+    批注锚在正文某一段上,评论对整页说话 —— 两份列表共用同一个面板,头图标跟着
+    当前那一份走:批注是笔,评论是对话气泡。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def _icon_map(self):
+        """ICON 表那一段源码。"""
+        src = self.js[self.js.index("var ICON = {") :]
+        return src[: src.index("\n  };")]
+
+    def test_the_shell_opens_on_the_pen(self):
+        """首屏那一份列表是批注,静态外壳里先摆笔 —— 它和默认的 panelMode 同值,
+        不会先画一颗气泡再被 syncMode() 翻回去。"""
+        shell = self.js[
+            self.js.index("panel.innerHTML =") : self.js.index("document.body.appendChild(panel)")
+        ]
+        head = shell[shell.index("aipm-anno__head-icon") :]
+        head = head[: head.index("aipm-anno__title")]
+        self.assertIn("ICON.pen", head)
+        self.assertIn('var panelMode = "annotations"', self.js)
+
+    def test_switching_lists_swaps_the_head_icon(self):
+        """两个模式的所有入口都走 syncMode(),换图标写在这里就够。"""
+        block = _block(self.js, "function syncMode()")
+        self.assertIn("els.headIcon.innerHTML = isComments ? ICON.comment : ICON.pen", block)
+        # 换的是那颗 span。写 els.head.innerHTML 会把标题按钮、条数徽章、账号与
+        # 关闭按钮一起抹掉,面板的头就秃了。
+        self.assertNotIn("els.head.innerHTML", self.js)
+
+    def test_the_comment_glyph_is_a_bubble_of_the_same_family(self):
+        """气泡与同表其余图标一样:24 方格坐标系里的实心路径、对读屏隐藏。
+        头图标是纯装饰,「这份列表是评论」由标题按钮上的字与 aria-pressed 说。"""
+        icons = self._icon_map()
+        self.assertIn("\n    comment:\n", icons)
+        bubble = icons[icons.index("\n    comment:") :]
+        bubble = bubble[: bubble.index("\n    close:")]
+        self.assertIn('viewBox="0 0 24 24"', bubble)
+        self.assertIn('aria-hidden="true"', bubble)
+        self.assertIn("<path d=", bubble)
+        self.assertNotIn("stroke", bubble)
+
+    def test_one_rule_paints_whichever_glyph_is_inside(self):
+        """两颗图标共用 .aipm-anno__head-icon svg 这一条:尺寸与配色写在选择器上,
+        换图标不带动头部排版。"""
+        rule = _block(self.css, ".aipm-anno__head-icon svg {")
+        self.assertEqual(_decl(rule, "width"), _decl(rule, "height"))
+        self.assertIn("fill: var(--md-accent-fg-color)", rule)
+
+    def test_the_pen_still_marks_the_write_annotation_button(self):
+        """笔没有从别处消失:工具栏上那颗「写批注」还是它。"""
+        toolbar = self.js[self.js.index('var toolbar = document.createElement("div")') :]
+        toolbar = toolbar[: toolbar.index("document.body.appendChild(toolbar)")]
+        button = toolbar[toolbar.index("aipm-anno__tb-annotate") :]
+        self.assertIn("ICON.pen", button)
 
 
 if __name__ == "__main__":

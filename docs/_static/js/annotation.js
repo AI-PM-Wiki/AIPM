@@ -116,6 +116,10 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.59,16.59L10,18l6,-6 -6,-6 -1.41,1.41L13.17,12z"/></svg>',
     pen:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z"/></svg>',
+    /* 评论列表那一边的头图标:一颗对话气泡。批注是在正文某一段上写字,评论是对
+       整个页面说话,面板头上的图标得跟着当前那一份列表走(见 syncMode)。 */
+    comment:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20,2H4c-1.1,0 -2,0.9 -2,2v18l4,-4h14c1.1,0 2,-0.9 2,-2V4c0,-1.1 -0.9,-2 -2,-2z"/></svg>',
     close:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,6.4L17.6,5L12,10.6L6.4,5L5,6.4L10.6,12L5,17.6L6.4,19L12,13.4L17.6,19L19,17.6L13.4,12L19,6.4z"/></svg>',
     spark:
@@ -493,9 +497,12 @@
     '<button type="button" class="aipm-anno__grip" aria-label="调整批注面板高度">' +
     '<span class="aipm-anno__grip-bar"></span></button>' +
     '<header class="aipm-anno__head">' +
-    '<span class="aipm-anno__head-icon">' +
+    /* 这一枚是面板的标记,也是一颗按钮:站长点它是「重新生成智能高亮」,其余人点
+       它换一份列表(见 syncHeadIcon)。所以它是真 <button> —— 键盘与焦点圈都不必
+       自己补,面板那条「按钮不吞正文选区」的规则也一并盖到它。 */
+    '<button type="button" class="aipm-anno__head-icon aipm-anno__iconbtn">' +
     ICON.pen +
-    "</span>" +
+    "</button>" +
     /* 标题即「批注 ↔ 评论」的切换器:它同时是当前模式的指示。但它首先是**按钮**,
        而按钮得在不悬停的时候就看得出来 —— 悬停底色只帮得到鼠标,触屏没有悬停。
        所以正面是一颗带边框的胶囊:左边写当前模式(syncMode() 改的就是这个 span),
@@ -577,6 +584,7 @@
     toolbar: toolbar,
     grip: panel.querySelector(".aipm-anno__grip"),
     head: panel.querySelector(".aipm-anno__head"),
+    headIcon: panel.querySelector(".aipm-anno__head-icon"),
     title: panel.querySelector(".aipm-anno__title"),
     titleLabel: panel.querySelector(".aipm-anno__title-label"),
     count: panel.querySelector(".aipm-anno__count"),
@@ -3817,6 +3825,10 @@
      ================================================================ */
   var suggestCache = {};
   var cooldownUntil = 0;
+  /* 判分请求进行中。页头那颗按钮靠 disabled 挡住连点,面板页头那支笔没有 disabled
+     可言,所以这里另记一笔 —— 重新生成一次就是一轮真金白银的 provider 调用,连点
+     两下会让第二下也走一遍「缓存未命中」,多花一次钱。 */
+  var smartBusy = false;
   /* 条子当前说的是哪一页。instant 导航只换内容容器,面板与条子都留在原地 ——
      不记这一笔,换页后条子会继续挂上一页的回执(用户验收意见:「通知不会随着
      页面切换而切换」)。 */
@@ -3870,28 +3882,76 @@
     return out;
   }
 
-  function smartHighlight() {
-    /* 判的是正文,评论模式下没有正文可判。按钮挂在页头上一直可见,所以这里不再是
-       「够到也白搭地返回」,而是把面板切回批注模式 —— 用户点的是「给这一页划线」,
-       回执(智能高亮条与那两颗「全部高亮 / 全部关闭」)也长在批注那一份列表里。 */
-    if (panelMode !== "annotations") {
-      panelMode = "annotations";
-      editorDraft = null;
-      composerSelection = null;
-      syncMode();
-      render();
+  /** 判分进行中时页头那颗按钮收起来 —— 一次判分就是一轮 provider 调用,连点两下
+      会让第二下也走一遍「缓存未命中」。面板页头那支笔不受影响:它换列表那一半
+      与判分无关,重新生成那一半由 smartBusy 自己挡(见 smartHighlight)。 */
+  function setSmartBusy(on) {
+    smartBusy = on;
+    smartBtn.disabled = on;
+  }
+
+  /**
+   * 面板页头那支笔点下去做什么,看身份:
+   *   站长(服务端 ADMIN_LOGINS)→ 重新生成智能高亮(跳过两层缓存重新判分);
+   *   其余人 → 在「批注 / 评论」两份列表之间切换,与标题那颗胶囊同一件事。
+   *
+   * 两条路都不改这颗按钮的形与位,所以身份不写进样式,只写进它的标题与 aria ——
+   * 读屏与悬停提示说的都该是「点下去会发生什么」。身份是会变的(未登录 → 登录 →
+   * 退出登录),所以每次都要按当下的身份重写一遍。
+   */
+  function syncHeadIcon() {
+    var admin = !!(auth && auth.isAdmin && auth.isAdmin());
+    var label = admin ? "重新生成智能高亮(重新判分并覆盖本页缓存)" : modeSwitchHint();
+    els.headIcon.title = label;
+    els.headIcon.setAttribute("aria-label", label);
+    if (admin) {
+      els.headIcon.removeAttribute("aria-pressed");
+      return;
     }
-    /* 回执落在面板里的智能高亮条上,面板关着的话点了等于没反应 —— 先把它叫出来。
-       移动端还得多一步:抽屉停在 peek 那一条上时,智能高亮条是被 .is-compact
-       压成 opacity:0 的,得展开到第三段才看得见(与写批注那条路一致)。 */
-    revealPanel();
-    /* 选区也一并撤掉:这一条判的是整页正文,跟用户手上选中的那一段无关,而它接下来
-       要往正文里插一整批 <mark> —— DOM 一动,浏览器再报一次 selectionchange,选区
-       还在正文里的话,刚收起的悬浮窗又会被摆回面板前面(见 clearSelection)。 */
-    clearSelection();
-    if (mode === "sheet") setSnap("expanded", false);
+    /* 换列表那一半是开关,状态跟着当前模式走 —— 与标题那颗胶囊同一套 aria。 */
+    els.headIcon.setAttribute("aria-pressed", panelMode === "comments" ? "true" : "false");
+  }
+
+  /**
+   * 判这一页的正文。
+   *
+   * 默认先读缓存:页内已有的那份结果(本次会话点过一次)直接摆回来,服务端那层
+   * 同页缓存也照样命中 —— 一次判分的结果不该因为第二次点而被重算一遍。
+   *
+   * `opts.refresh` 是站长在面板页头那支笔上点的「重新生成」:跳过这两层缓存、
+   * 让服务端重新判分并覆盖它那份缓存(见 syncHeadIcon)。
+   *
+   * `opts.auto` 是进页面时自己跑的那一条(见 autoSmart):不动界面、失败不出声、
+   * 拿到的建议直接写成「仅本机」高亮。
+   */
+  function smartHighlight(opts) {
+    var refresh = !!(opts && opts.refresh);
+    var auto = !!(opts && opts.auto);
+    if (!auto) {
+      /* 判的是正文,评论模式下没有正文可判。按钮挂在页头上一直可见,所以这里不再是
+        「够到也白搭地返回」,而是把面板切回批注模式 —— 用户点的是「给这一页划线」,
+        回执(智能高亮条与那两颗「全部高亮 / 全部关闭」)也长在批注那一份列表里。 */
+      if (panelMode !== "annotations") {
+        panelMode = "annotations";
+        editorDraft = null;
+        composerSelection = null;
+        syncMode();
+        render();
+      }
+      /* 回执落在面板里的智能高亮条上,面板关着的话点了等于没反应 —— 先把它叫出来。
+         移动端还得多一步:抽屉停在 peek 那一条上时,智能高亮条是被 .is-compact
+         压成 opacity:0 的,得展开到第三段才看得见(与写批注那条路一致)。 */
+      revealPanel();
+      /* 选区也一并撤掉:这一条判的是整页正文,跟用户手上选中的那一段无关,而它接下来
+         要往正文里插一整批 <mark> —— DOM 一动,浏览器再报一次 selectionchange,选区
+         还在正文里的话,刚收起的悬浮窗又会被摆回面板前面(见 clearSelection)。 */
+      clearSelection();
+      if (mode === "sheet") setSnap("expanded", false);
+    }
+    if (smartBusy) return;
     var now = Date.now();
     if (now < cooldownUntil) {
+      if (auto) return;
       setSmartbar(
         "刚请求过,请等 " + Math.ceil((cooldownUntil - now) / 1000) + " 秒后再试。",
         "warn"
@@ -3899,20 +3959,35 @@
       return;
     }
     var page = pagePath();
-    if (suggestCache[page]) {
-      renderSuggestions(suggestCache[page]);
+    if (!refresh && suggestCache[page]) {
+      /* 自动那条不在这里摆结果:这一页的缓存结果归 syncSmartbar 管(换页回来也走它)。 */
+      if (!auto) renderSuggestions(suggestCache[page]);
       return;
     }
     var blocks = extractBlocks();
     if (blocks.length === 0) {
+      if (auto) return;
       setSmartbar("这一页没有可判定的正文。", "warn");
       return;
     }
-    setSmartbar("正在分析这一页…(共 " + blocks.length + " 段)", "busy");
-    smartBtn.disabled = true;
+    if (!auto) {
+      setSmartbar(
+        refresh
+          ? "正在重新生成…(共 " + blocks.length + " 段)"
+          : "正在分析这一页…(共 " + blocks.length + " 段)",
+        "busy"
+      );
+    }
+    /* 自动那条只占住 smartBusy,不动页头那颗按钮:用户点它的时候面板照常打开,
+       判分回来结果就摆在条子上,比一颗按不动的按钮说得清楚。 */
+    if (auto) smartBusy = true;
+    else setSmartBusy(true);
     store
       .request("/api/highlight/suggest", {
         method: "POST",
+        /* 重新生成要认人:服务端只放站长过,所以这一条得带上会话。普通判分匿名即可,
+           未登录时 token() 为 null,请求头里不带 Authorization —— 与今天一样。 */
+        token: auth && auth.token ? auth.token() : null,
         body: {
           page: page,
           title: pageTitle(),
@@ -3922,15 +3997,26 @@
           blocks: blocks.map(function (b) {
             return { id: b.id, text: b.text };
           }),
-          judge: "auto"
+          judge: "auto",
+          refresh: refresh
         }
       })
       .then(function (res) {
-        smartBtn.disabled = false;
+        if (auto) smartBusy = false;
+        else setSmartBusy(false);
+        /* 自动判分是后台动作,失败不该往用户眼前摆条子 —— 那是他点 ✨ 时才要的回执。
+           服务端没配密钥这种真的不可用仍要收掉按钮,与手动那条路同一个状态。 */
+        var say = auto ? function () {} : setSmartbar;
+        /* 服务端那两道路闸(未登录 / 不是站长)。界面上这颗笔只对站长可点,所以走到
+           这里通常意味着会话在这中间过期了 —— 如实说一句,别把 403 念成「失败」。 */
+        if (res.status === 401 || res.status === 403) {
+          say("重新生成仅限站长使用,请重新登录后再试。", "warn");
+          return;
+        }
         if (res.status === 429) {
           var retry = res.headers && res.headers.get ? Number(res.headers.get("retry-after")) : 0;
           cooldownUntil = Date.now() + (retry > 0 ? retry * 1000 : 30000);
-          setSmartbar(
+          say(
             (res.body && res.body.message) || "请求过于频繁,请稍后再试。",
             "warn"
           );
@@ -3941,14 +4027,14 @@
              - not_configured 是服务端没配判分密钥,重试永远不会好 → 停掉按钮;
              - 其余(片全挂 / 排队满)是暂时性的 → 按 Retry-After 冷却,按钮留着。 */
           if (res.body && res.body.error === "highlight_not_configured") {
-            setSmartbar("智能高亮未启用(服务端缺少判分密钥),批注功能不受影响。", "warn");
+            say("智能高亮未启用(服务端缺少判分密钥),批注功能不受影响。", "warn");
             smartBtn.disabled = true;
             return;
           }
           var retry503 =
             res.headers && res.headers.get ? Number(res.headers.get("retry-after")) : 0;
           cooldownUntil = Date.now() + (retry503 > 0 ? retry503 * 1000 : 30000);
-          setSmartbar(
+          say(
             (res.body && res.body.message) || "智能高亮暂时不可用,请稍后再试。",
             "warn"
           );
@@ -3957,16 +4043,53 @@
         if (!res.ok) {
           // status 0 = 请求根本没发出去(断网/被拦截),别把 0 当状态码念给用户听
           if (res.status === 0) {
-            setSmartbar("网络异常,连不上智能高亮服务,请检查网络后重试。", "warn");
+            say("网络异常,连不上智能高亮服务,请检查网络后重试。", "warn");
             return;
           }
-          setSmartbar("智能高亮失败:" + ((res.body && res.body.message) || res.status), "warn");
+          say("智能高亮失败:" + ((res.body && res.body.message) || res.status), "warn");
           return;
         }
         res.body.blocks = blocks;
         suggestCache[page] = res.body;
-        renderSuggestions(res.body);
+        /* 判完时人可能已经换到别的页了。结果留在缓存里(回到那一页时按块 id 重绑即可),
+           绝不能往手上这一页的 DOM 上画 —— 块 id 是位置序号,两页的 b0 是两段文字。
+           这一页还没人管过的话,在这里补一次自动判分。 */
+        if (pagePath() !== page) {
+          autoSmart();
+          return;
+        }
+        if (auto) applySmart(res.body);
+        else renderSuggestions(res.body);
       });
+  }
+
+  /**
+   * 进一个页面就自动判一次(issue #102)。
+   *
+   * 页内没有这一页的结果时,让服务端判一遍 —— 它那份同页缓存命中就直接复用,没有
+   * 就生成并缓存下来,拿回的建议当场写成「仅本机」高亮。用户不必先去点页头那颗 ✨。
+   *
+   * 四道闸,任一命中就不跑:
+   *   - 这一页的自动判分已经用过了(store.smartDone:判成过,或者用户把这一页整批
+   *     关掉过、删光过),往后归用户自己决定;
+   *   - 本次会话里已经判过(结果就在 suggestCache 里);
+   *   - 有请求在飞:一次判分要几秒,连着换页会同时点着好几笔;
+   *   - 还在冷却期里(服务端限流、预算用完)。
+   */
+  function autoSmart() {
+    if (smartBusy) return;
+    if (Date.now() < cooldownUntil) return;
+    var page = pagePath();
+    if (store.smartDone(page)) return;
+    if (suggestCache[page]) return;
+    /* 这一页已经有智能高亮(用户手动点过,或者默认开启之前留下的):记下自动判分
+       已经用过,不再判一遍、也不再写一遍 —— 他删掉那些高亮之后也不该被加回来。 */
+    if (smartAnnos().length > 0) {
+      store.markSmartDone(page);
+      return;
+    }
+    if (extractBlocks().length === 0) return;
+    smartHighlight({ auto: true });
   }
 
   function setSmartbar(text, kind) {
@@ -4187,7 +4310,12 @@
     els.smartbar.appendChild(smartClose);
   }
 
-  /** 全开:一次性把余下的建议落成「仅本机」。已高亮的块跳过,不重复落。 */
+  /**
+   * 全开:一次性把余下的建议落成「仅本机」。已高亮的块跳过,不重复落。
+   *
+   * 署名写**判分用的那个模型型号**(服务端回的 model id,jev-1.13.0 / deepseek-flash…):
+   * 这些批注说的是模型的判断,署名要指出是哪一次判断给的。
+   */
   function applySmart(payload) {
     var byId = {};
     (payload.blocks || []).forEach(function (b) {
@@ -4196,7 +4324,7 @@
     var fresh = freshSuggestions(payload);
     var page = pagePath();
     var now = new Date().toISOString();
-    var who = auth && auth.isLoggedIn() && auth.user() ? auth.user().login : "本机";
+    var who = judgeLabel(payload);
     var added = 0;
     fresh.forEach(function (s) {
       var block = byId[s.id];
@@ -4220,6 +4348,9 @@
         setHint(err.message);
       }
     });
+    /* 这一页的自动判分就此用掉(见 autoSmart):往后增加、改色、删除都归用户,
+       自动那条不再插手。 */
+    store.markSmartDone(page);
     refreshLocal();
     renderSuggestions(payload);
   }
@@ -4229,6 +4360,9 @@
     smartAnnos().forEach(function (a) {
       store.localRemove(a.page, a.id);
     });
+    /* 关掉是用户对这一页的答复:记下来,下次进这一页不再自动判、不再自动写。
+       不记的话「全部关闭」换页回来就被「默认开启」推翻了。 */
+    store.markSmartDone(pagePath());
     refreshLocal();
     renderSuggestions(payload);
   }
@@ -4237,33 +4371,48 @@
      面板外壳:模式切换 / 账号 / 分组折叠与显示
      ================================================================ */
 
-  /** 标题就是模式开关 —— 它写着什么,列表里就是什么。
-
-      只改 label span 的 textContent:按钮里还有那颗双向箭头,整颗重写 innerHTML
-      会把图标一起抹掉。aria 三件套跟着当前模式走 —— 读屏听到的应该是**点下去
-      会发生什么**(切到评论),而不是一句恒定的「切换批注与评论」。 */
-  function syncMode() {
-    var isComments = panelMode === "comments";
-    var label = isComments ? "评论" : "批注";
-    var hint = isComments ? "切回批注(锚在正文某一段上)" : "切到评论(对整页说话)";
-    els.titleLabel.textContent = label;
-    els.title.title = hint;
-    els.title.setAttribute("aria-label", hint);
-    els.title.setAttribute("aria-pressed", isComments ? "true" : "false");
-    /* 智能高亮条长在批注那一份列表里(它说的「全部高亮」就是正文里的划线),
-       切到评论就把残留的那一条收掉。按钮本身不跟着藏 —— 它在页头上,点击时会把
-       面板切回批注模式(见 smartHighlight)。 */
-    if (isComments) setSmartbar("", "");
+  /** 点下去会发生什么(相对当前模式而言的反向动作)。标题那颗胶囊与面板页头那支
+      笔共用这一份措辞 —— 两处说的是同一件事,不该各写一句。 */
+  function modeSwitchHint() {
+    return panelMode === "comments" ? "切回批注(锚在正文某一段上)" : "切到评论(对整页说话)";
   }
 
-  els.title.addEventListener("click", function () {
+  /** 换一份列表:批注 ↔ 评论。两个入口(标题、页头那支笔)共用这一条。 */
+  function togglePanelMode() {
     panelMode = panelMode === "comments" ? "annotations" : "comments";
     // 换模式等于换了一份列表,正在写的那张卡不该跨模式跟过去
     editorDraft = null;
     composerSelection = null;
     syncMode();
     render();
-  });
+  }
+
+  /** 标题就是模式开关 —— 它写着什么,列表里就是什么。
+
+      只改 label span 的 textContent:按钮里还有那颗双向箭头,整颗重写 innerHTML
+      会把图标一起抹掉。aria 三件套跟着当前模式走 —— 读屏听到的应该是**点下去
+      会发生什么**(切到评论),而不是一句恒定的「切换批注与评论」。
+
+      头上的图标跟着模式一起换:批注是笔,评论是对话气泡。它在标题按钮外面,
+      整颗 span 重写 innerHTML,里面没有别的东西要留。 */
+  function syncMode() {
+    var isComments = panelMode === "comments";
+    var label = isComments ? "评论" : "批注";
+    var hint = modeSwitchHint();
+    els.titleLabel.textContent = label;
+    els.headIcon.innerHTML = isComments ? ICON.comment : ICON.pen;
+    els.title.title = hint;
+    els.title.setAttribute("aria-label", hint);
+    els.title.setAttribute("aria-pressed", isComments ? "true" : "false");
+    /* 页头那支笔的措辞跟着模式走(它写的是「切到评论」还是「切回批注」)。 */
+    syncHeadIcon();
+    /* 智能高亮条长在批注那一份列表里(它说的「全部高亮」就是正文里的划线),
+       切到评论就把残留的那一条收掉。按钮本身不跟着藏 —— 它在页头上,点击时会把
+       面板切回批注模式(见 smartHighlight)。 */
+    if (isComments) setSmartbar("", "");
+  }
+
+  els.title.addEventListener("click", togglePanelMode);
 
   /* 分组头:箭头折叠、眼睛整栏不显示。两件事都写进 prefs,刷新后保持。 */
   els.list.addEventListener("click", function (e) {
@@ -4394,7 +4543,20 @@
     }
   }
 
-  smartBtn.addEventListener("click", smartHighlight);
+  smartBtn.addEventListener("click", function () {
+    smartHighlight();
+  });
+
+  /* 面板页头那支笔:站长点它是「重新生成」,其余人点它换一份列表(身份那半边见
+     syncHeadIcon)。监听器常驻,身份却是会变的,所以每次点击都重新问一遍。 */
+  function headIconAction() {
+    if (auth && auth.isAdmin && auth.isAdmin()) {
+      smartHighlight({ refresh: true });
+      return;
+    }
+    togglePanelMode();
+  }
+  els.headIcon.addEventListener("click", headIconAction);
 
   /* ================================================================
      面板 ↔ 正文:两头的定位
@@ -4584,6 +4746,8 @@
        打开。面板只是列表的容器,不是高亮的前置条件 —— 之前只在 open 时加载,
        结果是刷新后页面上光秃秃的,别人的公开批注要等用户先点开面板才浮现。 */
     ensureAnnotationsLoaded();
+    /* 智能高亮默认开着:这一页没判过就自动判一次,建议当场写成「仅本机」高亮。 */
+    autoSmart();
   }
 
   if (typeof document$ !== "undefined" && document$.subscribe) {
@@ -4641,11 +4805,13 @@
   if (auth) {
     auth.ready().then(function () {
       syncComposer();
+      syncHeadIcon();
       if (auth.isLoggedIn()) invalidate();
       if (open) ensureAnnotationsLoaded();
     });
     auth.onChange(function () {
       syncComposer();
+      syncHeadIcon();
     });
   }
 

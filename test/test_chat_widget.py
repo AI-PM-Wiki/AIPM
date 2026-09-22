@@ -8,7 +8,10 @@
 - 移动抽屉三段停靠点的高度与近全屏顶部间隙落在 PRD 给定区间;
 - peek 无遮罩、half/expanded 有遮罩并锁背景滚动;
 - FAB/遮罩/面板挂在 body 顶层,不依赖 [data-md-component=container]
-  (instant 导航换页不重建它们,也就不再需要 MutationObserver 重挂)。
+  (instant 导航换页不重建它们,也就不再需要 MutationObserver 重挂);
+- 入口按钮(FAB)的外观与位置照旧(issue #72 只加交互):原胶囊、图标 + 引导语、
+  右下角锚点都不动;按住可拖走(跟手 + 轻微侧倾),松手弹回原位 —— 锚点在 CSS,
+  JS 只写 transform。
 """
 
 from __future__ import annotations
@@ -348,6 +351,192 @@ class TestChatWidgetStyles(unittest.TestCase):
 
     def test_reduced_motion_disables_transitions(self):
         self.assertIn("@media (prefers-reduced-motion: reduce)", self.css)
+
+
+class TestChatWidgetEntryDrag(unittest.TestCase):
+    """入口按钮(FAB):样式与位置照旧,只在拖拽时有一套同族的按/拖态。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.css = CHAT_CSS.read_text(encoding="utf-8")
+        cls.js = CHAT_JS.read_text(encoding="utf-8")
+
+    def _rule(self, selector: str) -> str:
+        m = re.search(re.escape(selector) + r"\s*\{([^}]*)\}", self.css)
+        self.assertIsNotNone(m, f"未找到规则:{selector}")
+        return m.group(1)
+
+    def _media(self, query: str) -> str:
+        m = re.search(r"@media[^{]*" + re.escape(query) + r"[^{]*\{", self.css)
+        self.assertIsNotNone(m, f"未找到媒体查询:{query}")
+        start, depth = m.start(), 0
+        for i in range(m.end() - 1, len(self.css)):
+            if self.css[i] == "{":
+                depth += 1
+            elif self.css[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    return self.css[start:i + 1]
+        self.fail(f"媒体查询未闭合:{query}")
+
+    def _section(self, title: str) -> str:
+        """取某节注释到下一节注释之间的正文。"""
+        m = re.search(r"/\* -+\n   " + re.escape(title) + r".*?\*/\n(.*?)(?=/\* -+\n   3\.)",
+                      self.css, re.S)
+        self.assertIsNotNone(m, f"未找到小节:{title}")
+        return m.group(1)
+
+    # -- 样式与位置照旧 ----------------------------------------------------
+    def test_fab_look_is_unchanged(self):
+        """原胶囊:图标 + 引导语、999px 圆角、accent 实色、2.5rem 高。"""
+        fab = self._rule(".aipm-chat__fab")
+        self.assertIn("border-radius: 999px;", fab)
+        self.assertIn("height: 2.5rem;", fab)
+        self.assertIn("padding: 0 .95rem 0 .72rem;", fab)
+        self.assertIn("background: var(--md-accent-fg-color);", fab)
+        self.assertIn("color: var(--md-accent-bg-color);", fab)
+        self.assertIn("box-shadow: 0 2px 10px rgba(0, 0, 0, .18);", fab)
+        self.assertIn(".aipm-chat__fab svg {", self.css)
+        self.assertIn(".aipm-chat__fab-label {", self.css)
+
+    def test_fab_anchor_is_unchanged(self):
+        """原来的位置:右下角 1.25rem,桌面与移动端一视同仁。"""
+        fab = self._rule(".aipm-chat__fab")
+        self.assertIn("right: 1.25rem;", fab)
+        self.assertIn("bottom: 1.25rem;", fab)
+        # 悬浮球那一版留下的尺寸/锚点变量与移动端断点都得清干净
+        self.assertNotIn("--aipm-chat-ball", self.css)
+        self.assertNotIn("aipm-chat__fab-face", self.css)
+        self.assertNotIn("aipm-chat__fab-face", self.js)
+        self.assertNotIn("BALL_FACE", self.js)
+
+    def test_fab_keeps_icon_and_label(self):
+        self.assertIn("fab.innerHTML = SPARK_ICON +", self.js)
+        self.assertIn("aipm-chat__fab-label", self.js)
+        self.assertIn("询问助手", self.js)
+
+    def test_no_viewport_scoped_fab_rules(self):
+        """FAB 的样式与位置不随视口断点变:移动端也照旧。"""
+        drag = self._section("2.1 拖拽交互")
+        self.assertNotIn("@media", drag)
+        self.assertNotIn("max-width", drag)
+        self.assertNotIn("aipm-chat-mode--sheet .aipm-chat__fab", self.css)
+        self.assertNotIn("aipm-chat-mode--overlay .aipm-chat__fab", self.css)
+
+    # -- 交互:跟手 / 侧倾 / 回弹 ------------------------------------------
+    def test_drag_follows_the_pointer_without_a_transition(self):
+        drag = self._rule(".aipm-chat__fab.is-dragging")
+        # 过渡必须让位(annotation.css 的让位规则更具体,所以这里必须 !important)
+        self.assertIn("transition: none !important;", drag)
+        self.assertIn("cursor: grabbing;", drag)
+        # 拎起来的投影与静息/hover 同一个阴影家族,只是更深
+        self.assertIn("box-shadow: 0 10px 24px rgba(0, 0, 0, .3);", drag)
+        # 交互属性写在 2.1 的 .aipm-chat__fab 里,静息态那段(第 2 节原文)不掺
+        sec = self._section("2.1 拖拽交互")
+        self.assertIn("cursor: grab;", sec)
+        self.assertIn("touch-action: none;", sec)
+        self.assertIn("will-change: transform;", sec)
+
+    def test_release_springs_back_to_the_css_anchor(self):
+        back = self._rule(".aipm-chat__fab.is-returning")
+        self.assertIn("transition: transform var(--aipm-chat-drag-back)", back)
+        self.assertIn("var(--aipm-chat-drag-spring) !important;", back)
+        self.assertIn("--aipm-chat-drag-spring: cubic-bezier(.22, 1.3, .36, 1);", self.css)
+        self.assertIn("const DRAG_BACK_MS = 460;", self.js)
+        self.assertIn('fab.style.transform = "";', self.js)
+        self.assertIn('fab.classList.add("is-returning")', self.js)
+
+    def test_drag_never_rotates_the_capsule(self):
+        """拖拽只做「拎起来」(位移 + 轻微放大),不旋转 —— 胶囊全程保持水平。"""
+        self.assertNotIn("rotate(", self.js)
+        self.assertNotIn("TILT", self.js)
+        self.assertNotIn("tilt", self.js)
+        # 跟手帧写进 transform 的只有位移与放大
+        self.assertIn('"translate3d(" + x + "px," + y + "px,0)"', self.js)
+        self.assertIn('" scale(" + scale + ")"', self.js)
+        # 静息态同样不带旋转
+        self.assertNotIn("rotate", self._rule(".aipm-chat__fab"))
+
+    def test_release_backstops_kill_the_stuck_drag_state(self):
+        """松手不能只赌 pointerup 一个事件:丢了它,胶囊会跟着没按键的光标走。
+
+        入口全部收敛到幂等的 dragRelease:指针抬起 / cancel / 失去捕获 /
+        窗口失焦 / 页面切后台,外加「move 时指针已不按下」这一层判定。
+        """
+        # 幂等:已经结算过就直接返回
+        self.assertIn("const d = drag;\n    if (!d) return;", self.js)
+        # 只认自己那根指针,别的指针不算它的
+        self.assertIn("if (id !== d.id) return;", self.js)
+        # 兜底:window 捕获阶段再听一遍 up/cancel
+        self.assertIn('window.addEventListener("pointerup", dragRelease, true);', self.js)
+        self.assertIn('window.addEventListener("pointercancel", dragRelease, true);', self.js)
+        # 捕获被系统收回(元素被隐藏 / 让位给批注面板)
+        self.assertIn('fab.addEventListener("lostpointercapture", dragRelease);', self.js)
+        # 窗口失焦 / 页面切后台(此时 up 会彻底消失)
+        self.assertIn('window.addEventListener("blur", dragRelease);', self.js)
+        self.assertIn("if (document.hidden) dragRelease();", self.js)
+        # move 时指针已经不在按下了 → 收手,不再跟
+        self.assertIn('const dragStillPressed = (e) => e.pointerType === "touch" || e.buttons !== 0;', self.js)
+        self.assertIn("if (!dragStillPressed(e)) {", self.js)
+        # 触摸的 buttons 语义各家不一,不能拿它当依据
+        self.assertIn('e.pointerType === "touch" || e.buttons !== 0', self.js)
+        # 捕获没拿到也不能把拖拽卡住
+        self.assertIn("fab.setPointerCapture(e.pointerId);", self.js)
+        self.assertIn("} catch (err) {", self.js)
+
+    def test_drag_is_thresholded_and_swallows_the_trailing_click(self):
+        self.assertIn("const DRAG_SLOP = 4;", self.js)
+        for ev in ("pointerdown", "pointermove", "pointerup", "pointercancel"):
+            with self.subTest(event=ev):
+                self.assertIn(f'fab.addEventListener("{ev}"', self.js)
+        self.assertIn("fab.setPointerCapture(e.pointerId)", self.js)
+        self.assertIn("if (dragSwallow) {", self.js)
+        self.assertIn("dragSwallow = false;", self.js)
+
+    def test_drag_resists_instead_of_hitting_a_wall(self):
+        """橡皮筋:越往外拉每 px 换到的位移越少,没有硬限位那一下顶死。"""
+        self.assertIn("const DRAG_RANGE = 20;", self.js)
+        self.assertIn("const dragRubber = (pull) => DRAG_RANGE * pull / (pull + DRAG_RANGE);", self.js)
+        self.assertIn("const k = pull > 0 ? dragRubber(pull) / pull : 0;", self.js)
+        self.assertIn("dragPlace(px * k, py * k, DRAG_LIFT);", self.js)
+        # 硬限位(夹到某个值就不动了)必须已经不存在
+        self.assertNotIn("DRAG_MAX", self.js)
+        self.assertNotIn("if (dist >", self.js)
+        # 渐近线必须明显小于锚点边距,否则贴边时会推出屏幕
+        anchor_px = 1.25 * 20  # 站点根字号 20px
+        self.assertLess(20, anchor_px)
+        # 橡皮筋取代了原来的视口夹取(不再需要量视口)
+        self.assertNotIn("DRAG_MARGIN", self.js)
+        self.assertNotIn("dragVw", self.js)
+
+    def test_rubber_band_curve_is_smooth_1to1_and_bounded(self):
+        """把公式在 Python 里跑一遍:起点 1:1、单调变沉、永远够不到渐近线。"""
+        R = 20
+        f = lambda pull: R * pull / (pull + R)
+        g = lambda off: R * off / (R - off)          # 逆函数,回弹途中接手用
+        self.assertIn("const dragUnrubber = (offset) => {", self.js)
+        self.assertIn("return DRAG_RANGE * o / (DRAG_RANGE - o);", self.js)
+        self.assertIn("const pull = off > 0 ? dragUnrubber(off) : 0;", self.js)
+        # 起点 1:1:小位移几乎完全跟手,不会一上来就发黏
+        self.assertAlmostEqual((f(0.01) - f(0)) / 0.01, 1.0, places=2)
+        self.assertAlmostEqual(f(4), 4 * R / (4 + R), places=9)
+        # 单调变沉:位移单调增,但每多拉 1px 换到的位移严格递减
+        offs = [f(p / 2) for p in range(0, 800)]
+        self.assertEqual(offs, sorted(offs))
+        gains = [(f(p / 2 + 0.5) - f(p / 2)) / 0.5 for p in range(0, 799)]
+        self.assertEqual(gains, sorted(gains, reverse=True))
+        self.assertGreater(gains[0], gains[-1] * 10)
+        # 有界:拉到 10000px 也只逼近 R,永远越不过去
+        self.assertLess(f(10000), R)
+        self.assertGreater(f(10000), R - 0.05)
+        # 逆函数真的能反解回拉力(接手不跳变)
+        for pull in (1, 5, 20, 100, 1000):
+            with self.subTest(pull=pull):
+                self.assertAlmostEqual(g(f(pull)), pull, places=6)
+
+    def test_reduced_motion_also_kills_the_spring_back(self):
+        block = self._media("(prefers-reduced-motion: reduce)")
+        self.assertIn(".aipm-chat__fab.is-returning,", block)
 
 
 if __name__ == "__main__":

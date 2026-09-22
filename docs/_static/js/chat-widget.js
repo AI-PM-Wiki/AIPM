@@ -1,7 +1,8 @@
 /*
   AI-PM 文档问答 Agent 助手(chat-widget.js,2026-09-20)
 
-  形态:右下角扁平胶囊按钮(图标 + 「询问助手」引导语)。点开后按视口宽度分三态:
+  形态:右下角扁平胶囊按钮(图标 + 「询问助手」引导语)。按住可拖拽(有互动感),
+  松手弹回右下角原位 —— 拖拽只改手感,不改入口的位置与样式。点开后按视口宽度分三态:
   - 桌面停靠(≥1200px):面板 fixed 贴视口右侧(320–420px),整个 MkDocs 页面
     (页头 + 左侧 nav + 正文 + TOC)整体保留并收窄 —— 页面与面板是两个独立的
     布局区域、两个独立滚动容器;TOC 不再被替换或隐藏
@@ -32,6 +33,13 @@
   - 与后端契约:POST {message, history} → text/event-stream,帧事件
     ready / sources / delta / done / error;预校验失败返回纯 JSON(400/403/
     413/429/503),映射中文提示(429 附 Retry-After 重试时间)
+  - FAB 可拖拽(issue #72):外观与位置一律照旧,加的只是交互。锚点在 CSS
+    (right/bottom),JS 只写 transform,所以「松手回原位」= 清掉 inline transform
+    交回 CSS 过渡 —— JS 不需要知道锚点在哪,锚点被别的面板改(批注面板停靠时让位,
+    annotation.css)也照样成立。跟手期间不做布局测量;拖拽超过 4px 才算拖拽,并抑制
+    随后的 click(拖完不该顺带开面板);位移径向限位在 20px 内(只许离开原位一点点,
+    到边即停,且保证整颗仍在视口内);回弹动画未落定时再按住,接着当前位置继续
+    (不跳);拖拽中按横向位移轻微侧倾,松手回正
   - 从 peek 直接发问会自动升到 half(否则回答落在面板可视区之外看不见)
   - 消息操作:每条 AI 回答气泡下方提供常驻「复制」「重新生成」(不随
     hover 显隐);重新生成截断该轮之后的历史并重发其上方那条用户消息
@@ -113,6 +121,7 @@
   const TRASH_ICON =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6v12zM19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z"/></svg>';
 
+  /* FAB:外观与位置照旧(图标 + 引导语胶囊);可拖拽见文末「FAB 拖拽」一节 */
   const fab = document.createElement("button");
   fab.type = "button";
   fab.className = "aipm-chat__fab";
@@ -1099,9 +1108,155 @@
   }
 
   /* ================================================================
+     FAB 拖拽:按住跟手(越拉越沉),松手弹回原位(issue #72)
+     外观/位置一律照旧,这里只加交互。锚点在 CSS(right/bottom),这里只写
+     transform —— 于是「回原位」就是清掉 inline transform、把 transform 交回
+     CSS,不需要在 JS 里记锚点坐标(锚点还会被别的面板改:批注面板停靠时给 FAB
+     让位,见 annotation.css)。位移一律按指针增量算,跟手期间不做布局测量,也不
+     量视口:位移被橡皮筋压在 DRAG_RANGE(20px)的渐近线之下,而锚点离视口边至少
+     25px。姿态只做「拎起来」(略微放大 + 更深的投影),不做旋转 —— 胶囊始终水平。
+     收手不依赖单一事件:pointerup/cancel、捕获被收回、窗口失焦、页面切后台,
+     以及「move 时指针已经不按了」都会结算,丢一个事件不会把拖拽黏住。
+     ================================================================ */
+  const DRAG_SLOP = 4;            // px:超过才算拖拽,之内仍是「点了一下」
+  const DRAG_RANGE = 20;          // px:橡皮筋的渐近线 —— 拉得再远也只逼近它,够不到
+  const DRAG_LIFT = 1.04;         // 拎起来时略微放大(静息 1 / hover 1.05),不旋转
+  const DRAG_BACK_MS = 460;       // 与 CSS --aipm-chat-drag-back 一致
+
+  let drag = null;                // {id, x0, y0, px, py, moved};px/py 是等效拉力,不是位移
+  let dragReturn = 0;             // 回弹收尾定时器(清 is-returning)
+  let dragSwallow = false;        // 这一段指针序列拖过了 → 随后那次 click 不算数
+
+  /* 橡皮筋阻力:不做硬限位,而是「越往外拉,每多拉 1px 换到的位移越少」。
+     位移 = R·pull/(pull+R) —— 在原点导数正好是 1,所以小位移仍然 1:1 跟手、
+     不会一上来就发黏;之后逐段变沉,以 DRAG_RANGE 为渐近线:拉到天边也只逼近
+     20px,永远越不过去。既飞不出去,也没有「顶住不动」的那一下顿挫。 */
+  const dragRubber = (pull) => DRAG_RANGE * pull / (pull + DRAG_RANGE);
+
+  /* 反解:当前位移 → 等效拉力(橡皮筋的逆函数)。
+     回弹还没停时被按住,先反解出此刻的等效拉力、再叠加这次的指针增量、重新正解,
+     于是接手点是连续的 —— 非线性映射也不会让胶囊跳一下。 */
+  const dragUnrubber = (offset) => {
+    const o = Math.min(offset, DRAG_RANGE * 0.999);
+    return DRAG_RANGE * o / (DRAG_RANGE - o);
+  };
+
+  /* 写 inline transform:只有相对锚点的位移(静息 0,0)与「拎起来」的轻微放大
+     —— 不旋转:胶囊始终保持水平,拖拽时只是被轻轻提起来一点 */
+  const dragPlace = (x, y, scale) => {
+    fab.style.transform = "translate3d(" + x + "px," + y + "px,0)" +
+      (scale && scale !== 1 ? " scale(" + scale + ")" : "");
+  };
+
+  /* 当前实际落在 FAB 上的位移(回弹途中被按住时要用它接着走,不能跳回起点) */
+  const dragMatrix = () => {
+    const t = getComputedStyle(fab).transform;
+    if (!t || t === "none") return null;
+    try {
+      return new DOMMatrixReadOnly(t);
+    } catch (err) {
+      return null;
+    }
+  };
+
+  fab.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;   // 只跟主键
+    dragSwallow = false;                                       // 新手势,重新计
+    clearTimeout(dragReturn);
+    fab.classList.remove("is-returning");
+    const m = dragMatrix();
+    const ox = m ? m.m41 : 0;
+    const oy = m ? m.m42 : 0;
+    const off = Math.hypot(ox, oy);
+    /* 把此刻的实际位移换算回等效拉力,接着往下拉(位移 0 时拉力也是 0) */
+    const pull = off > 0 ? dragUnrubber(off) : 0;
+    drag = {
+      id: e.pointerId, x0: e.clientX, y0: e.clientY,
+      px: off > 0 ? ox / off * pull : 0, py: off > 0 ? oy / off * pull : 0,
+      moved: false
+    };
+    /* 捕获只是为了「拖出元素也还能收到 move」;万一没拿到(指针已不活跃、元素
+       不可见),后面的兜底照样能收手,不能因为这一步失败把拖拽卡住 */
+    try {
+      fab.setPointerCapture(e.pointerId);
+    } catch (err) {
+      /* 忽略:不影响本次拖拽 */
+    }
+  });
+
+  /* 收手:一次拖拽只结算一次。下面几个入口(指针抬起 / cancel / 捕获被系统收回 /
+     窗口失焦 / 页面切到后台)都走这里,重复调用没有副作用 —— 丢一个事件也不会把
+     拖拽状态卡住。e 可以省略(那种情况下按「当前这次拖拽」结算)。 */
+  const dragRelease = (e) => {
+    const d = drag;
+    if (!d) return;                                            // 已经结算过
+    const id = e && e.pointerId !== undefined ? e.pointerId : d.id;
+    if (id !== d.id) return;                                   // 别的指针,不关它的事
+    drag = null;
+    if (fab.hasPointerCapture(id)) fab.releasePointerCapture(id);
+    if (!d.moved) return;                                      // 只是一下点击:交给 click
+    dragSwallow = true;
+    fab.classList.remove("is-dragging");
+    fab.classList.add("is-returning");
+    fab.style.transform = "";                                  // 交回 CSS:回正 + 吸回原位
+    dragReturn = setTimeout(() => fab.classList.remove("is-returning"), DRAG_BACK_MS);
+  };
+
+  /* 指针还按着吗?鼠标与手写笔看 buttons;触摸的 buttons 各家实现不一致,不能当
+     依据(触摸交给 pointerup/cancel 和下面的兜底)。 */
+  const dragStillPressed = (e) => e.pointerType === "touch" || e.buttons !== 0;
+
+  fab.addEventListener("pointermove", (e) => {
+    const d = drag;
+    if (!d || e.pointerId !== d.id) return;
+    /* 兜底一:指针已经不在按下了,说明 up 没送到我们这儿(在窗口外松手、松手时
+       焦点在别的 App、落在内嵌 iframe 上……)。必须立刻收手 —— 否则胶囊会跟着
+       一个没按键的光标一路走,而且永远停不下来:它一直在光标底下,于是永远收得到
+       pointermove,自己把自己黏住了。 */
+    if (!dragStillPressed(e)) {
+      dragRelease(e);
+      return;
+    }
+    const dx = e.clientX - d.x0;
+    const dy = e.clientY - d.y0;
+    if (!d.moved) {
+      if (Math.abs(dx) < DRAG_SLOP && Math.abs(dy) < DRAG_SLOP) return;
+      d.moved = true;
+      fab.classList.add("is-dragging");                        // 过渡让位,开始跟手
+    }
+    /* 橡皮筋:先把「等效拉力」按指针增量累加(方向与大小都留着),
+       再换算成胶囊实际该走的位移 —— 拉得越远,每 px 换到的位移越少,
+       逼近 DRAG_RANGE 但永远够不到。锚点离视口边至少 1.25rem(25px),
+       渐近线比它小,所以胶囊永远整颗留在屏幕内,不必再单独夹视口。 */
+    const px = d.px + dx;
+    const py = d.py + dy;
+    const pull = Math.hypot(px, py);
+    const k = pull > 0 ? dragRubber(pull) / pull : 0;
+    dragPlace(px * k, py * k, DRAG_LIFT);
+  });
+
+  fab.addEventListener("pointerup", dragRelease);
+  fab.addEventListener("pointercancel", dragRelease);
+  /* 兜底二:up/cancel 未必落在 FAB 身上。window 捕获阶段再听一遍(捕获阶段先到
+     window、再回到 FAB,两边都调也只结算一次);再补上三种会让 up 彻底消失的
+     情况:系统收回指针捕获、窗口失焦、页面切到后台。 */
+  window.addEventListener("pointerup", dragRelease, true);
+  window.addEventListener("pointercancel", dragRelease, true);
+  fab.addEventListener("lostpointercapture", dragRelease);
+  window.addEventListener("blur", dragRelease);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) dragRelease();
+  });
+
+  /* ================================================================
      交互(打开 / 关闭 / Escape / 焦点环)
      ================================================================ */
   els.fab.addEventListener("click", () => {
+    /* 刚拖过的那一下不算数:松手弹回不是「点击」 */
+    if (dragSwallow) {
+      dragSwallow = false;
+      return;
+    }
     /* 走注册表而不是直接 openPanel:批注面板开着时点 FAB 是「切到助手」,
        两个面板占同一块屏幕区域,不能同时存在 */
     if (SHARED) SHARED.claim("chat");

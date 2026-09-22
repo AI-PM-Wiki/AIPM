@@ -9,7 +9,7 @@
 - **禁止**使用try-except进行import。如果一个库是需要的，你必须直接import。
 - **禁止**擅自进入plan mode
 - **禁止**用Git回滚任何代码（严厉禁止。如果做了，你将会遭受毁灭性打击）。我在对话中所说的任何“回滚”指的都是“用文件编辑工具，手动将代码恢复到上一个状态”，而**不是**使用git进行回滚。
-- **禁止**读写/tmp目录下的内容（如果你需要产生一些中间结果，你应该输出在当前目录下的一个特定的用于存放中间结果的目录；该目录需要被gitignore，如 meta/）
+- **禁止**读写/tmp目录下的内容（如果你需要产生一些中间结果，你应该输出在当前目录下的一个特定的用于存放中间结果的目录；该目录需要被gitignore，如 meta/ ）
 - 尽量少使用视觉功能（因为你的视觉能力清晰度特别差，会导致错误的定位，让你做出错误的决策）
 
 提供网页链接时，必须先了解网页链接内的**完整**内容，再开始执行任务。 如果发现库的用法错误，必须先**重新查看**所提供的网页链接的**完整内容**。 不要求最小化依赖，不允许用各种乱七八糟的方式（包括造轮子）绕过依赖。
@@ -56,10 +56,11 @@
 
 # 项目概述
 
-**AI-PM** 是一个中文 AI 产品管理知识 wiki(https://aipm.ac/)，内容为协作维护的原创中文资料。
+**AI-PM** 是一个中文 AI 产品管理知识 wiki( https://aipm.ac/ )，内容为协作维护的原创中文资料。
 
 - 主题子模块改动**提交后立即推送**子模块远端,防止 gitlink 指向远端不存在的 commit
   导致 clone/CI/submodule update 失败。
+- 产品设计哲学：「Agent 原生」（将 Agent 作为用户群体之一，后端各种 API 在设计的时候应考虑到 Agent 的使用）
 
 ## 文档结构
 
@@ -155,5 +156,5 @@ bash scripts/check-upstream-remnants.sh  # 无上游 fork 残留(2026-08 新增,
   - `annotation-server`（自建批注后端(GitHub OAuth + 公开/私有批注存储 + 智能高亮判定),仓库 AI-PM-Wiki/aipm-annotation-server,跟踪 main）
 - 浏览器自动化:ego-lite。
 - computer use: kimi-cu
-- 站点部署于根路径(site_url: https://aipm.ac/),根目录有 CNAME、
+- 站点部署于根路径( site_url: https://aipm.ac/ ),根目录有 CNAME、
   robots.txt 等发布文件

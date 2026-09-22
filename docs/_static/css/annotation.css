@@ -275,11 +275,8 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   display: inline-flex;
   flex: none;
 }
-.aipm-anno__head-icon svg {
-  width: 1.05rem;
-  height: 1.05rem;
-  fill: var(--md-accent-fg-color);
-}
+/* 这枚图标的尺寸与颜色写在下面按钮那一档里(见 .aipm-anno__iconbtn 之后的
+   .aipm-anno__head-icon svg):它换的是笔还是气泡,头部的排版都不动。 */
 /* 标题是「批注 ↔ 评论」的切换器,所以它是一颗按钮 —— 但按钮得在**不悬停**的
    时候也看得出来。原先只有一条 :hover 底色,那等于把「这里能点」这句话只讲给
    鼠标听:触屏没有悬停,键盘更是什么都看不见。
@@ -380,6 +377,18 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__iconbtn svg {
   width: 1.05rem;
   height: 1.05rem;
+  fill: currentColor;
+}
+/* 页头那枚图标同属图标按钮一档:命中区与悬停底色都来自上面那条
+   .aipm-anno__iconbtn,颜色与尺寸另写在这里 —— 笔与气泡都取强调色,通用那条给的是
+   currentColor。两条选择器同权,先后即是生效顺序:这一条必须排在通用规则之后。
+   悬停时交回 currentColor,与账号、关闭两颗走的是同一条规则。 */
+.aipm-anno__head-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: var(--md-accent-fg-color);
+}
+.aipm-anno__head-icon:hover svg {
   fill: currentColor;
 }
 
