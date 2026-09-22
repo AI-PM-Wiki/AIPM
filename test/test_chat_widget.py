@@ -466,22 +466,46 @@ class TestChatWidgetEntryDrag(unittest.TestCase):
         self.assertIn("if (dragSwallow) {", self.js)
         self.assertIn("dragSwallow = false;", self.js)
 
-    def test_drag_is_leashed_to_the_anchor(self):
-        """限位:只能离开原位一点点,不能到处飞。
-
-        位移是「相对锚点」的向量,径向夹进 DRAG_MAX 的圆 —— 四面八方一样远,
-        且限位半径小于锚点离视口边的距离(1.25rem),所以胶囊永远整颗在屏内。
-        """
-        self.assertIn("const DRAG_MAX = 20;", self.js)
-        self.assertIn("Math.hypot(x, y)", self.js)
-        self.assertIn("if (dist > DRAG_MAX) {", self.js)
-        self.assertIn("const k = DRAG_MAX / dist;", self.js)
-        # 限位半径必须明显小于锚点边距,否则贴边时会推出屏幕
+    def test_drag_resists_instead_of_hitting_a_wall(self):
+        """橡皮筋:越往外拉每 px 换到的位移越少,没有硬限位那一下顶死。"""
+        self.assertIn("const DRAG_RANGE = 20;", self.js)
+        self.assertIn("const dragRubber = (pull) => DRAG_RANGE * pull / (pull + DRAG_RANGE);", self.js)
+        self.assertIn("const k = pull > 0 ? dragRubber(pull) / pull : 0;", self.js)
+        self.assertIn("dragPlace(px * k, py * k, DRAG_LIFT);", self.js)
+        # 硬限位(夹到某个值就不动了)必须已经不存在
+        self.assertNotIn("DRAG_MAX", self.js)
+        self.assertNotIn("if (dist >", self.js)
+        # 渐近线必须明显小于锚点边距,否则贴边时会推出屏幕
         anchor_px = 1.25 * 20  # 站点根字号 20px
         self.assertLess(20, anchor_px)
-        # 限位取代了原来的视口夹取(不再需要量视口)
+        # 橡皮筋取代了原来的视口夹取(不再需要量视口)
         self.assertNotIn("DRAG_MARGIN", self.js)
         self.assertNotIn("dragVw", self.js)
+
+    def test_rubber_band_curve_is_smooth_1to1_and_bounded(self):
+        """把公式在 Python 里跑一遍:起点 1:1、单调变沉、永远够不到渐近线。"""
+        R = 20
+        f = lambda pull: R * pull / (pull + R)
+        g = lambda off: R * off / (R - off)          # 逆函数,回弹途中接手用
+        self.assertIn("const dragUnrubber = (offset) => {", self.js)
+        self.assertIn("return DRAG_RANGE * o / (DRAG_RANGE - o);", self.js)
+        self.assertIn("const pull = off > 0 ? dragUnrubber(off) : 0;", self.js)
+        # 起点 1:1:小位移几乎完全跟手,不会一上来就发黏
+        self.assertAlmostEqual((f(0.01) - f(0)) / 0.01, 1.0, places=2)
+        self.assertAlmostEqual(f(4), 4 * R / (4 + R), places=9)
+        # 单调变沉:位移单调增,但每多拉 1px 换到的位移严格递减
+        offs = [f(p / 2) for p in range(0, 800)]
+        self.assertEqual(offs, sorted(offs))
+        gains = [(f(p / 2 + 0.5) - f(p / 2)) / 0.5 for p in range(0, 799)]
+        self.assertEqual(gains, sorted(gains, reverse=True))
+        self.assertGreater(gains[0], gains[-1] * 10)
+        # 有界:拉到 10000px 也只逼近 R,永远越不过去
+        self.assertLess(f(10000), R)
+        self.assertGreater(f(10000), R - 0.05)
+        # 逆函数真的能反解回拉力(接手不跳变)
+        for pull in (1, 5, 20, 100, 1000):
+            with self.subTest(pull=pull):
+                self.assertAlmostEqual(g(f(pull)), pull, places=6)
 
     def test_reduced_motion_also_kills_the_spring_back(self):
         block = self._media("(prefers-reduced-motion: reduce)")

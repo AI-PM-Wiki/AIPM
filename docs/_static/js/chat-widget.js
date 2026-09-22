@@ -1108,22 +1108,36 @@
   }
 
   /* ================================================================
-     FAB 拖拽:按住跟手(限位内),松手弹回原位(issue #72)
+     FAB 拖拽:按住跟手(越拉越沉),松手弹回原位(issue #72)
      外观/位置一律照旧,这里只加交互。锚点在 CSS(right/bottom),这里只写
      transform —— 于是「回原位」就是清掉 inline transform、把 transform 交回
      CSS,不需要在 JS 里记锚点坐标(锚点还会被别的面板改:批注面板停靠时给 FAB
      让位,见 annotation.css)。位移一律按指针增量算,跟手期间不做布局测量,也不
-     量视口:位移被径向夹在 DRAG_MAX(20px)内,而锚点离视口边至少 25px。
-     姿态只做「拎起来」(略微放大 + 更深的投影),不做旋转 —— 胶囊始终水平。
+     量视口:位移被橡皮筋压在 DRAG_RANGE(20px)的渐近线之下,而锚点离视口边至少
+     25px。姿态只做「拎起来」(略微放大 + 更深的投影),不做旋转 —— 胶囊始终水平。
      ================================================================ */
   const DRAG_SLOP = 4;            // px:超过才算拖拽,之内仍是「点了一下」
-  const DRAG_MAX = 20;            // px:离原位的最大位移(限位半径,四面八方一样远)
+  const DRAG_RANGE = 20;          // px:橡皮筋的渐近线 —— 拉得再远也只逼近它,够不到
   const DRAG_LIFT = 1.04;         // 拎起来时略微放大(静息 1 / hover 1.05),不旋转
   const DRAG_BACK_MS = 460;       // 与 CSS --aipm-chat-drag-back 一致
 
-  let drag = null;                // {id, x0, y0, ox, oy, moved}
+  let drag = null;                // {id, x0, y0, px, py, moved};px/py 是等效拉力,不是位移
   let dragReturn = 0;             // 回弹收尾定时器(清 is-returning)
   let dragSwallow = false;        // 这一段指针序列拖过了 → 随后那次 click 不算数
+
+  /* 橡皮筋阻力:不做硬限位,而是「越往外拉,每多拉 1px 换到的位移越少」。
+     位移 = R·pull/(pull+R) —— 在原点导数正好是 1,所以小位移仍然 1:1 跟手、
+     不会一上来就发黏;之后逐段变沉,以 DRAG_RANGE 为渐近线:拉到天边也只逼近
+     20px,永远越不过去。既飞不出去,也没有「顶住不动」的那一下顿挫。 */
+  const dragRubber = (pull) => DRAG_RANGE * pull / (pull + DRAG_RANGE);
+
+  /* 反解:当前位移 → 等效拉力(橡皮筋的逆函数)。
+     回弹还没停时被按住,先反解出此刻的等效拉力、再叠加这次的指针增量、重新正解,
+     于是接手点是连续的 —— 非线性映射也不会让胶囊跳一下。 */
+  const dragUnrubber = (offset) => {
+    const o = Math.min(offset, DRAG_RANGE * 0.999);
+    return DRAG_RANGE * o / (DRAG_RANGE - o);
+  };
 
   /* 写 inline transform:只有相对锚点的位移(静息 0,0)与「拎起来」的轻微放大
      —— 不旋转:胶囊始终保持水平,拖拽时只是被轻轻提起来一点 */
@@ -1151,7 +1165,14 @@
     const m = dragMatrix();
     const ox = m ? m.m41 : 0;
     const oy = m ? m.m42 : 0;
-    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, ox: ox, oy: oy, moved: false };
+    const off = Math.hypot(ox, oy);
+    /* 把此刻的实际位移换算回等效拉力,接着往下拉(位移 0 时拉力也是 0) */
+    const pull = off > 0 ? dragUnrubber(off) : 0;
+    drag = {
+      id: e.pointerId, x0: e.clientX, y0: e.clientY,
+      px: off > 0 ? ox / off * pull : 0, py: off > 0 ? oy / off * pull : 0,
+      moved: false
+    };
     fab.setPointerCapture(e.pointerId);
   });
 
@@ -1165,19 +1186,15 @@
       d.moved = true;
       fab.classList.add("is-dragging");                        // 过渡让位,开始跟手
     }
-    /* 限位:只许离开原位一点点 —— 把「相对锚点的位移」径向夹进 DRAG_MAX 的圆里,
-       四面八方一样远,到边就跟着指针一起停住。锚点本身离视口边至少 1.25rem
-       (25px),限位圆比它小,所以胶囊永远整颗留在屏幕内,不必再单独夹视口
-       (于是也不需要量视口尺寸)*/
-    let x = d.ox + dx;
-    let y = d.oy + dy;
-    const dist = Math.hypot(x, y);
-    if (dist > DRAG_MAX) {
-      const k = DRAG_MAX / dist;
-      x *= k;
-      y *= k;
-    }
-    dragPlace(x, y, DRAG_LIFT);
+    /* 橡皮筋:先把「等效拉力」按指针增量累加(方向与大小都留着),
+       再换算成胶囊实际该走的位移 —— 拉得越远,每 px 换到的位移越少,
+       逼近 DRAG_RANGE 但永远够不到。锚点离视口边至少 1.25rem(25px),
+       渐近线比它小,所以胶囊永远整颗留在屏幕内,不必再单独夹视口。 */
+    const px = d.px + dx;
+    const py = d.py + dy;
+    const pull = Math.hypot(px, py);
+    const k = pull > 0 ? dragRubber(pull) / pull : 0;
+    dragPlace(px * k, py * k, DRAG_LIFT);
   });
 
   const dragRelease = (e) => {
