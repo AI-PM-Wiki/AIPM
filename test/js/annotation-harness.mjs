@@ -50,8 +50,13 @@ const PAGE = `<!doctype html><html><body>
  * 中那一条靠它把时间冻在请求飞出去的那一刻。
  *
  * `runScripts` 是必须的:被测的就是这四个脚本本身,它们得在真 DOM 里执行。
+ *
+ * `instant` 装上 mkdocs-material 的 `document$`(instant loading 那个「每进一个
+ * 页面发一次」的 observable)。站点头部的并入逻辑订阅它,进页面时的自动判分
+ * (见 autoSmart)就挂在这一条上;jsdom 里没有这个全局,不装的话那条路根本不跑。
+ * 它按 mkdocs-material 的接口行为:订阅时先发当前这一份,之后每次换页再发。
  */
-export function boot({ session, respond } = {}) {
+export function boot({ session, respond, instant = false } = {}) {
   const dom = new JSDOM(PAGE, {
     url: "https://aipm.ac/ai/pm/",
     runScripts: "dangerously",
@@ -72,6 +77,14 @@ export function boot({ session, respond } = {}) {
     unobserve() {}
     disconnect() {}
   };
+
+  if (instant) {
+    w.document$ = {
+      subscribe(fn) {
+        fn();
+      }
+    };
+  }
 
   const requests = [];
   w.fetch = (url, init) => {

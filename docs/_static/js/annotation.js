@@ -3825,10 +3825,15 @@
      ================================================================ */
   var suggestCache = {};
   var cooldownUntil = 0;
-  /* 判分请求进行中。页头那颗按钮靠 disabled 挡住连点,面板页头那支笔没有 disabled
-     可言,所以这里另记一笔 —— 重新生成一次就是一轮真金白银的 provider 调用,连点
-     两下会让第二下也走一遍「缓存未命中」,多花一次钱。 */
-  var smartBusy = false;
+  /* 手上那一笔判分请求:null = 没有在飞,其余是它的来路 —— "auto" 是进页面自己跑
+     的那条,"refresh" 是站长在面板页头那支笔上点的重新生成,"judge" 是手动判分。
+     页头那颗 ✨ 靠 disabled 挡住连点,面板页头那支笔没有 disabled 可言,所以这里
+     另记一笔 —— 重新生成一次就是一轮真金白银的 provider 调用,连点两下会让第二下
+     也走一遍「缓存未命中」,多花一次钱。 */
+  var smartInFlight = null;
+  /* 自动判分在飞的时候用户点的那一下重新生成:排在这里,等手上那一笔收尾再发
+     (见 drainPendingRefresh)。存的是他点的时候看的是哪一页。 */
+  var pendingRefresh = null;
   /* 条子当前说的是哪一页。instant 导航只换内容容器,面板与条子都留在原地 ——
      不记这一笔,换页后条子会继续挂上一页的回执(用户验收意见:「通知不会随着
      页面切换而切换」)。 */
@@ -3843,7 +3848,8 @@
    * `includeMarked` 为真时连已经划过高亮的块也一并返回 —— 换页回来重建建议条时
    * 要按块 id 把 Range 重绑到当前 DOM 上(见 withLiveBlocks),落过高亮的块若被
    * 跳过,它在建议里就「不存在」,一条已落过一半的页面会被显示成「本页没有值得
-   * 高亮的地方」。送去判分那条路照旧不带它(已高亮的段落不必再判一次)。
+   * 高亮的地方」。「重新生成」那一条也带它:整页重判的结论要写回服务端那一页的
+   * 缓存格,缺了已高亮的那几块就是一份缺段的整页结果(见 smartHighlight)。
    */
   function extractBlocks(includeMarked) {
     var root = contentRoot();
@@ -3882,12 +3888,16 @@
     return out;
   }
 
-  /** 判分进行中时页头那颗按钮收起来 —— 一次判分就是一轮 provider 调用,连点两下
-      会让第二下也走一遍「缓存未命中」。面板页头那支笔不受影响:它换列表那一半
-      与判分无关,重新生成那一半由 smartBusy 自己挡(见 smartHighlight)。 */
-  function setSmartBusy(on) {
-    smartBusy = on;
-    smartBtn.disabled = on;
+  /**
+   * 记下手上这一笔判分请求(`kind` 为 null = 收尾了)。
+   *
+   * 页头那颗 ✨ 在自动判分期间保持可点:用户点它的时候面板照常打开,判分回来结果
+   * 就摆在条子上,比一颗按不动的按钮说得清楚。用户自己点出来的那几笔则把它收起来
+   * —— 一次判分就是一轮 provider 调用,连点两下会让第二下也走一遍「缓存未命中」。
+   */
+  function setSmartBusy(kind) {
+    smartInFlight = kind;
+    smartBtn.disabled = kind !== null && kind !== "auto";
   }
 
   /**
@@ -3941,7 +3951,15 @@
       clearSelection();
       if (mode === "sheet") setSnap("expanded", false);
     }
-    if (smartBusy) return;
+    if (smartInFlight !== null) {
+      /* 手上有别的一笔在飞。自动判分要跑几秒,这几秒里页头那颗图标仍然点得动 ——
+         那一下不能丢,也不能并着发第二笔:记在 pendingRefresh 上,等它收尾再发,
+         连点几下合并成一次(见 drainPendingRefresh)。 */
+      if (!refresh || smartInFlight !== "auto") return;
+      pendingRefresh = pagePath();
+      setSmartbar("正在重新生成…(等这一页当前的判分跑完)", "busy");
+      return;
+    }
     var now = Date.now();
     if (now < cooldownUntil) {
       if (auto) return;
@@ -3957,7 +3975,13 @@
       if (!auto) renderSuggestions(suggestCache[page]);
       return;
     }
-    var blocks = extractBlocks();
+    /* 重新生成送的是这一页**全部**可判定块 —— 与第一次判分送的那一份逐块相同。
+       跳过已落过高亮的块会送出一份**子集**,而服务端那份同页缓存只有页面粒度
+       (它的 key 是页面 + 内容哈希 + judge + 色板,不含这一次送了哪些块),判完照
+       原样覆盖整页那一格:漏掉的那几段在缓存里从此没有结论,后面进这一页的人身上
+       没有标记、送来的是整页,命中的却是这份缺段的结果。全部块都已高亮时照样要发,
+       「点下去什么都不会发生」的按钮比一次重判更糟。 */
+    var blocks = refresh ? extractBlocks(true) : extractBlocks();
     if (blocks.length === 0) {
       if (auto) return;
       setSmartbar("这一页没有可判定的正文。", "warn");
@@ -3971,10 +3995,7 @@
         "busy"
       );
     }
-    /* 自动那条只占住 smartBusy,不动页头那颗按钮:用户点它的时候面板照常打开,
-       判分回来结果就摆在条子上,比一颗按不动的按钮说得清楚。 */
-    if (auto) smartBusy = true;
-    else setSmartBusy(true);
+    setSmartBusy(auto ? "auto" : refresh ? "refresh" : "judge");
     store
       .request("/api/highlight/suggest", {
         method: "POST",
@@ -3995,8 +4016,7 @@
         }
       })
       .then(function (res) {
-        if (auto) smartBusy = false;
-        else setSmartBusy(false);
+        setSmartBusy(null);
         /* 自动判分是后台动作,失败不该往用户眼前摆条子 —— 那是他点 ✨ 时才要的回执。
            服务端没配密钥这种真的不可用仍要收掉按钮,与手动那条路同一个状态。 */
         var say = auto ? function () {} : setSmartbar;
@@ -4053,7 +4073,25 @@
         }
         if (auto) applySmart(res.body);
         else renderSuggestions(res.body, page, { refreshed: refresh });
-      });
+      })
+      /* 排队等着的那一笔重新生成在**这一笔收尾之后**才发:两笔串起来,旧那一份结果
+         先落地、新的后落地 —— 并着发才会有旧结论盖在新的上面。失败也照样放行:
+         store.request 把网络不可达收成 status 0,不会 reject。 */
+      .then(drainPendingRefresh);
+  }
+
+  /**
+   * 排队等着的那一笔重新生成:手上那一笔判分收尾之后接着发。
+   *
+   * 排的是哪一页就冲哪一页发。等的过程里人可能已经翻到别的页 —— 那一页的重新生成
+   * 不是他此刻点的,替他花掉一次判分是错的;新页自己那条自动判分照常跑。
+   */
+  function drainPendingRefresh() {
+    var page = pendingRefresh;
+    pendingRefresh = null;
+    if (page === null) return;
+    if (pagePath() !== page) return;
+    smartHighlight({ refresh: true });
   }
 
   /**
@@ -4070,7 +4108,7 @@
    *   - 还在冷却期里(服务端限流、预算用完)。
    */
   function autoSmart() {
-    if (smartBusy) return;
+    if (smartInFlight !== null) return;
     if (Date.now() < cooldownUntil) return;
     var page = pagePath();
     if (store.smartDone(page)) return;

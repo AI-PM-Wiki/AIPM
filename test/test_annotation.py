@@ -389,14 +389,28 @@ class TestHeadIconClick(unittest.TestCase):
         那枚图标自身的尺寸与配色由 TestHeadIconTellsTheTwoListsApart 盯着。"""
         self.assertNotIn(".aipm-anno__head-icon.is-regenerate", self.css)
 
+    def test_a_click_during_the_automatic_pass_is_queued_not_dropped(self):
+        """自动判分要跑几秒,这几秒里页头那颗图标仍然点得动。那一下不能丢(站长点
+        了却什么都没发生),也不能并着发第二笔(旧那一份结果会落在新的上面):排一笔
+        待办,等手上那一笔收尾再发,连点几下合并成一次。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn('if (!refresh || smartInFlight !== "auto") return;', block)
+        self.assertIn("pendingRefresh = pagePath();", block)
+        self.assertIn(".then(drainPendingRefresh);", block)
+        queue = _block(self.js, "function drainPendingRefresh()")
+        self.assertIn("smartHighlight({ refresh: true });", queue)
+        # 排的是哪一页就冲哪一页发:等的过程里翻页,那一笔不再替他花出去
+        self.assertIn("if (pagePath() !== page) return;", queue)
+
     def test_the_two_head_icon_entries_do_not_double_spend(self):
         """一次重新生成就是一轮判分;连点两下不该各走一遍「缓存未命中」。
         换列表那一半与判分无关,所以它不跟着判分变淡 —— 变淡只发生在智能高亮
-        那颗按钮身上(它带 disabled 可表达)。"""
+        那颗按钮身上(它带 disabled 可表达);自动判分那条不占它,站长在那几秒里
+        照样点得动页头那颗图标。"""
         block = _block(self.js, "function setSmartBusy(")
-        self.assertIn("smartBtn.disabled = on", block)
+        self.assertIn('smartBtn.disabled = kind !== null && kind !== "auto";', block)
         self.assertNotIn("headIcon", block)
-        self.assertIn("if (smartBusy) return;", _block(self.js, "function smartHighlight("))
+        self.assertIn("if (smartInFlight !== null) {", _block(self.js, "function smartHighlight("))
 
     def test_the_head_icon_state_follows_the_login(self):
         """未登录 → 登录 → 退出登录这条来回里,标记必须跟着身份走。"""
@@ -512,7 +526,7 @@ class TestSmartHighlightIsOnByDefault(unittest.TestCase):
         self.assertIn("var auto = !!(opts && opts.auto);", block)
         self.assertIn("var say = auto ? function () {} : setSmartbar;", block)
         # 面板切模式、叫出面板、撤选区都只对点击成立
-        ui = block[block.index("if (!auto) {") : block.index("if (smartBusy) return;")]
+        ui = block[block.index("if (!auto) {") : block.index("if (smartInFlight !== null) {")]
         self.assertIn("revealPanel();", ui)
         self.assertIn("clearSelection();", ui)
         self.assertNotIn("setSmartbar(", _block(self.js, "function autoSmart()"))
@@ -732,6 +746,23 @@ class TestSmartHighlightBlockSources(unittest.TestCase):
         self.assertGreater(
             skipped, numbered, "模板文字的过滤必须在编号之后(与已高亮块同一条理由)"
         )
+
+    def test_regenerate_sends_the_whole_page(self):
+        """重新生成的结果要写回服务端那一页的缓存格,而那一格只有页面粒度 ——
+        cacheKey 是页面 + 内容哈希 + judge + 色板,不含这一次送了哪些块。所以它
+        送出去的必须是这一页**全部**可判定块:跳过已高亮的块会送出一份子集,写进
+        缓存的就是缺段的结论,后面进这一页的人(身上没有标记,送来的是整页)命中的
+        正是它。全部块都已高亮时也要发 —— 判分这条路只看正文,不看已经划了多少。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("var blocks = refresh ? extractBlocks(true) : extractBlocks();", block)
+
+    def test_the_page_cache_has_no_block_dimension(self):
+        """上面那条的前提,钉在服务端那一侧:同页缓存按页面 + 内容哈希 + judge +
+        色板分格。哪天它按块集合分格了,前端就不必为这一条送整页。"""
+        service = self._server_source(self.highlight_path, "private cacheKey(")
+        key = _block(service, "private cacheKey(")
+        self.assertIn("contentHash", key)
+        self.assertNotIn("blocks", key)
 
     def _server_source(self, path, marker):
         """读子模块里服务端的源码;修复还没随 gitlink 同步进来时跳过。
