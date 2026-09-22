@@ -1115,8 +1115,8 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__smartbar[data-kind="busy"] {
   color: var(--md-default-fg-color--light);
 }
-/* 标题行吃掉剩余宽度、省略号收尾;开关与「N 段未判定」不参与收缩 —— 三者
-   必须挤在一行里(验收意见:建议不要一条条列出来)。 */
+/* 标题行吃掉剩余宽度、省略号收尾;开关、「N 段未判定」与右端的关闭按钮不参与
+   收缩 —— 四者必须挤在一行里(验收意见:建议不要一条条列出来)。 */
 .aipm-anno__smart-head {
   flex: 1 1 auto;
   min-width: 0;
@@ -1125,6 +1125,16 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-size: .6875rem;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* 纯文字通知(报错 / 进行中)紧接着也占掉剩余宽度,但它**换行而不省略**:
+   「请求过于频繁,请稍后再试(服务端限流窗口 60 秒,单页最多 5 次)。」这种句子
+   截掉尾巴就白报了 —— 通知是让人读完的,宁可让条子长高一行(条子变高本来也是
+   这些长文案原有的表现)。要的只是让它可缩:flex 行里不给 min-width:0,它就会
+   把自己撑到内容宽,把右端那颗关闭按钮顶出可视区。颜色留在继承上 —— warn 的粉、
+   busy 的灰都由 .aipm-anno__smartbar 的 data-kind 定;字号也沿用条子自己的 .75rem。 */
+.aipm-anno__smart-text {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .aipm-anno__smartbar[data-kind="warn"] .aipm-anno__smart-head,
 .aipm-anno__smartbar[data-kind="busy"] .aipm-anno__smart-head {
@@ -1153,6 +1163,42 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   white-space: nowrap;
   color: var(--md-default-fg-color--light);
   font-size: .6875rem;
+}
+/* 右端那颗「关掉它」。颜色 inherit —— 跟着 data-kind 走:warn 是粉、busy 是灰,
+   不必为每种状态再写一条。压的只是不透明度,悬停才回到本色。它比页头的关闭叉
+   小一号(1.05rem → .7rem):同一条条子里还有 .6875rem 的开关按钮,右上角那颗
+   尺寸在这儿会喧宾夺主。条子右侧的内边距保持 .75rem 不动 —— 这颗 1.15rem 的按钮
+   里,图标右缘因此落在离边 ~.98rem 处,与页头那颗关闭叉(~.93rem)几乎是同一条
+   竖线(实测 1440px 视口下差 1px)。 */
+.aipm-anno__smart-close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: .25rem;
+  color: inherit;
+  background: transparent;
+  opacity: .5;
+  cursor: pointer;
+  transition: opacity .15s ease, background-color .15s ease;
+}
+.aipm-anno__smart-close:hover,
+.aipm-anno__smart-close:focus-visible {
+  opacity: 1;
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__smart-close:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
+}
+.aipm-anno__smart-close svg {
+  width: .7rem;
+  height: .7rem;
+  fill: currentColor;
 }
 
 /* ----------------------------------------------------------------------------
