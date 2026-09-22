@@ -1114,23 +1114,21 @@
      CSS,不需要在 JS 里记锚点坐标(锚点还会被别的面板改:批注面板停靠时给 FAB
      让位,见 annotation.css)。位移一律按指针增量算,跟手期间不做布局测量,也不
      量视口:位移被径向夹在 DRAG_MAX(20px)内,而锚点离视口边至少 25px。
+     姿态只做「拎起来」(略微放大 + 更深的投影),不做旋转 —— 胶囊始终水平。
      ================================================================ */
   const DRAG_SLOP = 4;            // px:超过才算拖拽,之内仍是「点了一下」
   const DRAG_MAX = 20;            // px:离原位的最大位移(限位半径,四面八方一样远)
-  const DRAG_LIFT = 1.04;         // 拎起来时略微放大(静息 1 / hover 1.05)
-  const DRAG_TILT_MAX = 3;        // deg:拉到限位时的侧倾(按横向位移取比例)
+  const DRAG_LIFT = 1.04;         // 拎起来时略微放大(静息 1 / hover 1.05),不旋转
   const DRAG_BACK_MS = 460;       // 与 CSS --aipm-chat-drag-back 一致
 
   let drag = null;                // {id, x0, y0, ox, oy, moved}
   let dragReturn = 0;             // 回弹收尾定时器(清 is-returning)
   let dragSwallow = false;        // 这一段指针序列拖过了 → 随后那次 click 不算数
 
-  const dragClamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-
-  /* 写 inline transform:位移相对锚点(静息 0,0),并带上拎起与侧倾的姿态 */
-  const dragPlace = (x, y, scale, tilt) => {
+  /* 写 inline transform:只有相对锚点的位移(静息 0,0)与「拎起来」的轻微放大
+     —— 不旋转:胶囊始终保持水平,拖拽时只是被轻轻提起来一点 */
+  const dragPlace = (x, y, scale) => {
     fab.style.transform = "translate3d(" + x + "px," + y + "px,0)" +
-      (tilt ? " rotate(" + tilt + "deg)" : "") +
       (scale && scale !== 1 ? " scale(" + scale + ")" : "");
   };
 
@@ -1179,9 +1177,7 @@
       x *= k;
       y *= k;
     }
-    /* 侧倾只按横向位移:往哪边拖就往哪边倾一点,像被拎着走(横向拉满 = 倾满) */
-    dragPlace(x, y, DRAG_LIFT,
-              dragClamp(x / DRAG_MAX * DRAG_TILT_MAX, -DRAG_TILT_MAX, DRAG_TILT_MAX));
+    dragPlace(x, y, DRAG_LIFT);
   });
 
   const dragRelease = (e) => {

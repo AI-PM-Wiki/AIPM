@@ -446,14 +446,16 @@ class TestChatWidgetEntryDrag(unittest.TestCase):
         self.assertIn('fab.style.transform = "";', self.js)
         self.assertIn('fab.classList.add("is-returning")', self.js)
 
-    def test_drag_tilts_then_returns_upright(self):
-        """按/拖态的侧倾只写在跟手那一帧里,松手把 transform 交回 CSS 即回正。"""
-        self.assertIn("const DRAG_TILT_MAX = 3;", self.js)
-        self.assertIn("rotate(", self.js)
-        # 横向拉满限位 = 倾满,侧倾跟着位移而不是跟时间
-        self.assertIn("x / DRAG_MAX * DRAG_TILT_MAX", self.js)
-        # 侧倾不进 CSS 的静息态
-        self.assertNotIn("rotate(", self._rule(".aipm-chat__fab"))
+    def test_drag_never_rotates_the_capsule(self):
+        """拖拽只做「拎起来」(位移 + 轻微放大),不旋转 —— 胶囊全程保持水平。"""
+        self.assertNotIn("rotate(", self.js)
+        self.assertNotIn("TILT", self.js)
+        self.assertNotIn("tilt", self.js)
+        # 跟手帧写进 transform 的只有位移与放大
+        self.assertIn('"translate3d(" + x + "px," + y + "px,0)"', self.js)
+        self.assertIn('" scale(" + scale + ")"', self.js)
+        # 静息态同样不带旋转
+        self.assertNotIn("rotate", self._rule(".aipm-chat__fab"))
 
     def test_drag_is_thresholded_and_swallows_the_trailing_click(self):
         self.assertIn("const DRAG_SLOP = 4;", self.js)
