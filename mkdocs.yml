@@ -16,8 +16,7 @@ copyright: 'Copyright &copy; 2026 AI-PM Wiki Team'
 # Contents
 nav:
   - 简介:
-    - 快速开始: index.md
-    - 关于本项目: intro/about.md
+    - 关于本项目: index.md
     - 如何参与: intro/htc.md
     - 格式手册: intro/format.md
     - AI-PM 不是什么: intro/what-ai-pm-is-not.md
@@ -795,7 +794,7 @@ extra:
   # 取代原先嵌入的 hypothes.is 客户端;enabled 关闭后不再注入
   annotation:
     enabled: true
-    version: 29
+    version: 30
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   # 大陆站点勿用 Google Analytics(GA 在大陆不可直连),建议自建 umami。
   #   provider: umami
@@ -812,7 +811,6 @@ extra:
 extra_javascript:
   - '_static/js/mathjax.js?v=2'
   - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
-  - '_static/js/banner.js?v=11'
   - '_static/js/header-line.js?v=1'
   - '_static/js/umami.js?v=1'
   - '_static/js/mermaid-zoom.js?v=4'
@@ -820,7 +818,7 @@ extra_javascript:
   # AI 助手面板与批注面板都用它，且必须排在 hooks 追加的两个面板脚本之前
   - '_static/js/panel-shared.js?v=1'
 extra_css:
-  - '_static/css/extra.css?v=39'
+  - '_static/css/extra.css?v=40'
   - '_static/css/mermaid-zoom.css?v=4'
 
 # Extensions

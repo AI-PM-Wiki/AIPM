@@ -33,8 +33,10 @@ class TestExtractAndResolve(unittest.TestCase):
     def test_directory_url_resolves_to_index(self):
         home = DOCS_DIR / "index.md"
         self.assertEqual(resolve_target(home, "pm/"), DOCS_DIR / "pm" / "index.md")
+        # 目录风格 URL 落到同级 .md(原 fixture 是 intro/about/,该页已并作主页
+        # docs/index.md)
         self.assertEqual(
-            resolve_target(home, "intro/about/"), DOCS_DIR / "intro" / "about.md"
+            resolve_target(home, "intro/htc/"), DOCS_DIR / "intro" / "htc.md"
         )
 
     def test_capability_heading_slug_matches_mkdocs(self):
