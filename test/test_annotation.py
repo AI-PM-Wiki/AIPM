@@ -338,16 +338,18 @@ class TestHeadIconClick(unittest.TestCase):
         # 「不是站长」不能用 disabled 表达:那说的是「按不动」
         self.assertNotIn("disabled", block)
 
-    def test_the_head_icon_only_restyles_nothing_about_identity(self):
-        """身份不写进样式:两条路都不改这颗按钮的形与位,只改它说什么。"""
-        rule = _block(self.css, ".aipm-anno__head-icon.aipm-anno__iconbtn svg")
-        self.assertIn("var(--md-accent-fg-color)", rule)
+    def test_no_identity_styling_is_written_into_the_stylesheet(self):
+        """身份不出现在样式里:两条路共用同一副外观,分开的只有点击去向与措辞。
+        那枚图标自身的尺寸与配色由 TestHeadIconTellsTheTwoListsApart 盯着。"""
         self.assertNotIn(".aipm-anno__head-icon.is-regenerate", self.css)
 
     def test_the_two_head_icon_entries_do_not_double_spend(self):
-        """一次重新生成就是一轮判分;连点两下不该各走一遍「缓存未命中」。"""
+        """一次重新生成就是一轮判分;连点两下不该各走一遍「缓存未命中」。
+        换列表那一半与判分无关,所以它不跟着判分变淡 —— 变淡只发生在智能高亮
+        那颗按钮身上(它带 disabled 可表达)。"""
         block = _block(self.js, "function setSmartBusy(")
         self.assertIn("smartBtn.disabled = on", block)
+        self.assertNotIn("headIcon", block)
         self.assertIn("if (smartBusy) return;", _block(self.js, "function smartHighlight("))
 
     def test_the_head_icon_state_follows_the_login(self):
