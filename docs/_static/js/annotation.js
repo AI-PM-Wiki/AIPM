@@ -4059,7 +4059,7 @@
           return;
         }
         if (auto) applySmart(res.body);
-        else renderSuggestions(res.body);
+        else renderSuggestions(res.body, page, { refreshed: refresh });
       });
   }
 
@@ -4229,8 +4229,9 @@
    * 建议不在这里逐条罗列(用户验收意见:一条条列出来太吵),落库后它们就是
    * 面板列表里普通的「仅本机」条目,和手写的批注一样可以编辑、改色、上传。
    */
-  function renderSuggestions(payload, page) {
+  function renderSuggestions(payload, page, opts) {
     payload = withLiveBlocks(payload);
+    var refreshed = !!(opts && opts.refreshed);
     smartbarPage = page || pagePath();
     smartbarDismissed = null;
     els.smartbar.hidden = false;
@@ -4278,6 +4279,17 @@
         : "本页没有值得高亮的地方";
     }
     els.smartbar.appendChild(btn);
+
+    /* 重新生成要的是「跳过缓存重判」。服务端不认 refresh 时——比站点旧的版本会把这个
+       字段整个丢掉——它照旧读缓存,回包里于是带 cached:true,而真判过的那一份从不带
+       这个标记。把这份旧结论当成新一轮结果摆出来是撒谎,所以在这里说明白。 */
+    if (refreshed && payload.cached) {
+      var stale = document.createElement("span");
+      stale.className = "aipm-anno__smart-note";
+      stale.textContent = "服务端没有重新判分";
+      stale.title = "取回的仍是缓存里那一份结论。批注服务重新部署后,重新生成才会真的跳过缓存。";
+      els.smartbar.appendChild(stale);
+    }
 
     /* 「N 段未判定」只在**真出了问题**时才说。过短、纯符号、代码块、导航目录、
        与本页其他段落重复、「不值得高亮」、超出每页上限 —— 这些都是刻意不给建议的

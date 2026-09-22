@@ -281,10 +281,13 @@ class TestJudgeDegradation(unittest.TestCase):
 class TestHeadIconClick(unittest.TestCase):
     """面板页头那支笔点下去做什么,看身份(issue #97 与 #103)。
 
-    两条容易悄悄回退的约定:
+    三条容易悄悄回退的约定:
     - 默认仍是缓存优先,只有重新生成这一条路跳过页内那层缓存;
     - 重新生成要认人:站长走重新生成,其余人换一份列表;服务端另有一道闸
       (未登录 401、非站长 403)拦住伪造的请求 —— 判分一次就是一次真金白银的调用。
+      站长按登录名也认得出:服务端比站点旧的那段窗口里,签发会话与 /api/auth/me
+      都还没有 admin 标记;
+    - 服务端不认 refresh 时(照旧读缓存)要说明白,不能把旧结论摆成新一轮结果。
     """
 
     @classmethod
@@ -327,6 +330,49 @@ class TestHeadIconClick(unittest.TestCase):
         self.assertIn("togglePanelMode()", handler)
         # 监听器常驻,身份却会变 —— 每次点击都要重新问一遍
         self.assertIn('els.headIcon.addEventListener("click", headIconAction)', self.js)
+
+    def test_the_owner_is_recognised_by_name_too(self):
+        """站长不能只认服务端回的 admin 标记:站点合并进 main 就上线,批注服务要等
+        重建容器,中间那段窗口里签发会话与 /api/auth/me 都还没有这个字段 —— 只认它
+        的话,站长在这段窗口里被当成普通访客,页头那颗图标退回「换一份列表」(线上
+        报回来的就是这个现象)。"""
+        block = _block(self.auth, "function isAdmin()")
+        self.assertIn("session.admin === true", block)
+        self.assertIn("ADMIN_LOGINS.indexOf(login.toLowerCase())", block)
+        # 名单是空的也不该崩:没有登录态时连名单都不看
+        self.assertIn("if (session === null) return false;", block)
+
+    def test_the_owner_list_lines_up_with_the_server_default(self):
+        """名单是服务端 ADMIN_LOGINS 的同名副本,两头都按小写比 —— GitHub 回的 login
+        首字母大小写未必与配置里写的一致(HuangYincan / huangyincan 是同一个人)。"""
+        names = re.findall(r'var ADMIN_LOGINS = \[(.*?)\]', self.auth, flags=re.S)
+        self.assertEqual(len(names), 1)
+        entries = re.findall(r'"([^"]+)"', names[0])
+        self.assertTrue(entries)
+        self.assertEqual(entries, [n.lower() for n in entries])
+        for login in entries:
+            self.assertIn(f"ADMIN_LOGINS: z.string().default('{login}')", self._server_file("config.ts"))
+
+    def test_the_owner_click_regenerates_in_both_lists(self):
+        """页头只有这一颗图标,批注那份列表与评论那份列表共用它。站长点它到哪一份
+        列表上都是重新生成 —— 判据里不许掺「现在看的是哪一份」。"""
+        handler = _block(self.js, "function headIconAction()")
+        self.assertNotIn("panelMode", handler)
+        self.assertLess(
+            handler.index("auth.isAdmin()"),
+            handler.index("smartHighlight({ refresh: true })"),
+        )
+
+    def test_a_refresh_the_server_would_not_take_is_said_out_loud(self):
+        """服务端比站点旧时不认 refresh(那个字段被丢掉,照旧读缓存),回包里于是带
+        cached:true —— 真判过的结果从不带这个标记。把这份旧结论当成新一轮结果摆出来
+        等于撒谎,所以条子上要写明它没有重新判分。"""
+        block = _block(self.js, "function renderSuggestions(")
+        self.assertIn("if (refreshed && payload.cached)", block)
+        self.assertIn("服务端没有重新判分", block)
+        # 判据落在「重新生成这一条路」上:普通读缓存不带这个提示
+        caller = _block(self.js, "function smartHighlight(")
+        self.assertIn("{ refreshed: refresh }", caller)
 
     def test_the_head_icon_label_says_what_the_click_does(self):
         block = _block(self.js, "function syncHeadIcon()")
@@ -766,7 +812,7 @@ class TestSmartbarNoticeScope(unittest.TestCase):
             self.assertIn(reason, deliberate, f"{reason} 是刻意跳过,不该计进未判定")
         for reason in ("not_in_page", "no_answer", "budget_exhausted"):
             self.assertNotIn(reason, deliberate, f"{reason} 是真失败,必须报出来")
-        block = _block(self.js, "function renderSuggestions(payload, page)")
+        block = _block(self.js, "function renderSuggestions(payload, page, opts)")
         self.assertIn("DELIBERATE_SKIP[code]", block)
         self.assertIn("段没能判定", block)
         self.assertNotIn('" 段未判定"', self.js)
@@ -795,14 +841,14 @@ class TestSmartbarNoticeScope(unittest.TestCase):
         # 有新内容要显示时,「关过」的记号清掉
         self.assertIn("smartbarDismissed = null;", _block(self.js, "function setSmartbar(text, kind)"))
         self.assertIn(
-            "smartbarDismissed = null;", _block(self.js, "function renderSuggestions(payload, page)")
+            "smartbarDismissed = null;", _block(self.js, "function renderSuggestions(payload, page, opts)")
         )
 
     def test_fallback_parenthetical_wraps_as_one_piece(self):
         """「(Jev 不可用)」整体换行,不能断在「不可」和「用」之间。"""
         why = _block(self.css, ".aipm-anno__smart-why {")
         self.assertIn("white-space: nowrap", why)
-        render = _block(self.js, "function renderSuggestions(payload, page)")
+        render = _block(self.js, "function renderSuggestions(payload, page, opts)")
         self.assertIn('why.className = "aipm-anno__smart-why";', render)
         self.assertIn("createTextNode", render, "逐段 append 文本节点")
         self.assertNotIn("innerHTML =", render, "不拼 HTML 字符串")
@@ -813,7 +859,7 @@ class TestSmartbarNoticeScope(unittest.TestCase):
         block = _block(self.js, "function withLiveBlocks(payload)")
         self.assertIn("extractBlocks(true)", block, "已落过高亮的块也要取到(否则它会「不存在」)")
         self.assertIn("out.blocks = blocks;", block)
-        render = _block(self.js, "function renderSuggestions(payload, page)")
+        render = _block(self.js, "function renderSuggestions(payload, page, opts)")
         self.assertIn("payload = withLiveBlocks(payload);", render)
 
     def test_smartbar_records_which_page_it_describes(self):
@@ -821,7 +867,7 @@ class TestSmartbarNoticeScope(unittest.TestCase):
         block = _block(self.js, "function setSmartbar(text, kind)")
         self.assertIn("smartbarPage = pagePath();", block)
         self.assertIn("smartbarPage = null;", block)
-        render = _block(self.js, "function renderSuggestions(payload, page)")
+        render = _block(self.js, "function renderSuggestions(payload, page, opts)")
         self.assertIn("smartbarPage = page || pagePath();", render)
 
 
