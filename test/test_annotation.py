@@ -265,17 +265,115 @@ class TestJudgeDegradation(unittest.TestCase):
 
     def test_unavailable_degrades_without_breaking_annotations(self):
         """503 时只禁用智能高亮按钮,批注主功能不受影响。"""
-        block = _block(self.js, "function smartHighlight()")
+        block = _block(self.js, "function smartHighlight(")
         self.assertIn("res.status === 503", block)
         self.assertIn("smartBtn.disabled = true", block)
 
     def test_rate_limit_cooldown(self):
-        block = _block(self.js, "function smartHighlight()")
+        block = _block(self.js, "function smartHighlight(")
         self.assertIn("res.status === 429", block)
         self.assertIn("cooldownUntil", block)
 
     def test_same_page_result_is_reused(self):
         self.assertIn("suggestCache[page]", self.js)
+
+
+class TestRegenerateIsAdminOnly(unittest.TestCase):
+    """站长在面板页头那支笔上点「重新生成」。
+
+    两条容易悄悄回退的约定:
+    - 默认仍是缓存优先,只有重新生成这一条路跳过页内那层缓存;
+    - 重新生成要认人:前端只对站长把图标做成开关,服务端另有一道闸(未登录 401、
+      非站长 403),两处缺一不可 —— 判分一次就是一次真金白银的调用。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+        cls.auth = AUTH_JS.read_text(encoding="utf-8")
+        cls.server_src = ROOT / "annotation-server" / "src"
+
+    def _server_file(self, rel):
+        path = self.server_src / rel
+        if not path.exists():  # pragma: no cover - 子模块未检出
+            self.skipTest("annotation-server 子模块未检出")
+        return path.read_text(encoding="utf-8")
+
+    # ---- 前端 ----
+
+    def test_the_page_cache_is_read_first_unless_refreshing(self):
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("if (!refresh && suggestCache[page])", block)
+
+    def test_refresh_rides_along_with_the_session(self):
+        block = _block(self.js, "function smartHighlight(")
+        self.assertIn("refresh: refresh", block)
+        self.assertIn("auth.token()", block)
+
+    def test_the_head_icon_becomes_a_button_only_for_the_admin(self):
+        block = _block(self.js, "function syncHeadIcon()")
+        self.assertIn("auth.isAdmin()", block)
+        self.assertIn('classList.toggle("is-regenerate", on)', block)
+        # 命中区与悬停底色沿用面板里那族图标按钮,不另起一套
+        self.assertIn('classList.toggle("aipm-anno__iconbtn", on)', block)
+        # 「不是站长」不能用 disabled 表达:那说的是「按不动」
+        self.assertNotIn("disabled", block)
+
+    def test_the_head_icon_is_wired_to_both_input_paths(self):
+        self.assertIn('els.headIcon.addEventListener("click", headIconRegenerate)', self.js)
+        self.assertIn('els.headIcon.addEventListener("keydown"', self.js)
+        self.assertIn("smartHighlight({ refresh: true })", self.js)
+        # 监听器常驻,身份却会变 —— 每次触发都要重新问一遍
+        handler = _block(self.js, "function headIconRegenerate()")
+        self.assertIn("auth.isAdmin()", handler)
+
+    def test_the_head_icon_keeps_its_shape_for_everyone_else(self):
+        """面板的标记不为站长换图形、也不为站长换位置:多出来的只有命中区与悬停底色。"""
+        self.assertIn('class="aipm-anno__head-icon"', self.js)
+        rule = _block(self.css, ".aipm-anno__head-icon.is-regenerate svg")
+        self.assertIn("var(--md-accent-fg-color)", rule)
+
+    def test_the_two_entry_points_do_not_double_spend(self):
+        """一次重新生成就是一轮判分;连点两下不该各走一遍「缓存未命中」。"""
+        block = _block(self.js, "function setSmartBusy(")
+        self.assertIn("smartBtn.disabled = on", block)
+        self.assertIn('els.headIcon.classList.toggle("is-busy", on)', block)
+        self.assertIn("if (smartBusy) return;", _block(self.js, "function smartHighlight("))
+
+    def test_the_head_icon_state_follows_the_login(self):
+        """未登录 → 登录 → 退出登录这条来回里,标记必须跟着身份走。"""
+        self.assertIn("syncHeadIcon();", _block(self.js, "auth.onChange(function ()"))
+        self.assertIn("syncHeadIcon();", self.js[self.js.index("auth.ready().then(") :])
+
+    def test_the_admin_flag_comes_from_the_server(self):
+        self.assertIn("isAdmin: isAdmin", self.auth)
+        self.assertIn("res.body.admin === true", self.auth)
+
+    # ---- 服务端 ----
+
+    def test_the_refresh_flag_is_gated_at_the_route(self):
+        block = _block(self._server_file("server.ts"), "async function handleSuggest(")
+        self.assertIn("parsed.data.refresh", block)
+        self.assertIn("login_required", block)
+        self.assertIn("isAdmin(actor, config.adminLogins)", block)
+        self.assertIn("forbidden", block)
+
+    def test_the_admin_list_is_configurable(self):
+        self.assertIn("ADMIN_LOGINS", self._server_file("config.ts"))
+        self.assertIn(
+            "export function isAdmin(actor: Author, adminLogins: string[])",
+            self._server_file("annotations.ts"),
+        )
+
+    def test_refresh_skips_the_cache_but_not_the_guardrails(self):
+        """绕开的是缓存那一层。限流、并发与预算仍在它后面 —— 重新生成照样要花钱,
+        不该因为它是站长点的就放过护栏。"""
+        block = _block(self._server_file("highlight/index.ts"), "async suggest(")
+        self.assertIn("raw.refresh !== true", block)
+        cache = block.index("raw.refresh !== true")
+        self.assertLess(cache, block.index("this.limiter.tryAcquire(ipKey)"))
+        self.assertLess(cache, block.index("this.semaphore.acquire("))
 
 
 class TestThreeVisibilities(unittest.TestCase):
@@ -772,7 +870,7 @@ class TestUiRoundThree(unittest.TestCase):
         """按钮站在面板外面,显隐就不该再跟着面板里的模式走 —— 面板关着的时候用户
         看不见当前是哪一份列表,一颗「有时在、有时不在」的页头按钮就是没来由的
         闪烁。所以它一直可见,点击时自己把面板切回批注模式并叫出来。"""
-        block = _block(self.js, "function smartHighlight()")
+        block = _block(self.js, "function smartHighlight(")
         self.assertIn('panelMode = "annotations"', block)
         self.assertIn("revealPanel()", block)
         self.assertNotIn("smartBtn.hidden", self.js)
@@ -2643,7 +2741,7 @@ class TestTheFloatingToolbarNeverStrands(unittest.TestCase):
     def test_the_smart_highlight_does_not_leave_it_hanging_over_the_panel(self):
         """✨ 判的是整页正文,跟手上选中那一段无关,接下来还要往正文里插一整批
         <mark> —— 选区留着的话,DOM 一动又会把浮窗摆回面板前面。"""
-        fn = _block(self.js, "function smartHighlight()")
+        fn = _block(self.js, "function smartHighlight(")
         self.assertIn("revealPanel()", fn)
         self.assertIn("clearSelection()", fn)
 
