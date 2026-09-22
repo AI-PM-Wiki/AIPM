@@ -6,3 +6,7 @@
 	path = agent-server
 	url = https://github.com/AI-PM-Wiki/aipm-agent-server
 	branch = main
+[submodule "annotation-server"]
+	path = annotation-server
+	url = https://github.com/AI-PM-Wiki/aipm-annotation-server
+	branch = main
