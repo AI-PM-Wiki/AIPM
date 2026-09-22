@@ -8,6 +8,10 @@ site/
 .env
 .well-known/
 node_modules/
+# 本地虚拟环境。写成不带斜杠的 `.venv` 而不是 `.venv/`:worktree 里它常常是
+# 软链到主仓库 .venv 的**符号链接**,带斜杠的目录型 pattern 匹配不到符号链接,
+# `git add -A` 会把一条指向虚拟环境的软链提交进去。
+.venv
 *.pyc
 /meta/
 /.agents/
