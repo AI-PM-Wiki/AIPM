@@ -254,9 +254,13 @@ class TestJudgeDegradation(unittest.TestCase):
             self.assertTrue((self.server_dir / name).exists(), f"缺少 {name}")
 
     def test_suggestions_carry_a_source_label(self):
-        """建议条标注来源(「Jev」/「Claude」),回退可解释。"""
+        """建议条标注来源,回退可解释。
+
+        来源写的是**模型 id**(jev-1.13.0 / deepseek-flash…),不写死 provider 名 ——
+        兜底那一路是可配的 Anthropic 兼容端点,印死名字会跟真实模型自相矛盾。
+        """
         self.assertIn('if (source === "jev") return "Jev"', self.js)
-        self.assertIn('if (source === "llm") return "Claude"', self.js)
+        self.assertIn('if (source === "llm") return "备用模型"', self.js)
         self.assertIn("payload.fallbackFrom", self.js)
 
     def test_unavailable_degrades_without_breaking_annotations(self):
@@ -503,6 +507,106 @@ class TestSmartHighlightBlockSources(unittest.TestCase):
         )
 
 
+class TestSmartbarNoticeScope(unittest.TestCase):
+    """建议条这一行的三条验收意见(2026-09-22)。
+
+    用户看到的原话:通知显示不全(「智能高亮 · 来源 Claude (由 Jev 回退) deep」)、
+    「10 段未判定又是什么鬼」、通知不随页面切换。三条都钉在这里,免得改回去也能跑。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = ANNO_JS.read_text(encoding="utf-8")
+        cls.css = ANNO_CSS.read_text(encoding="utf-8")
+
+    def test_source_line_uses_the_model_id(self):
+        """「来源」一律说服务端回的模型 id。
+
+        写死 provider 名会撒谎:兜底那一路是可配的 Anthropic 兼容端点,线上指到
+        DeepSeek 时条子上却印着「来源 Claude」,后面还跟着 deepseek-flash。
+        """
+        self.assertIn("function judgeLabel(payload)", self.js)
+        block = _block(self.js, "function judgeLabel(payload)")
+        self.assertIn("payload.model", block)
+        self.assertNotIn('"Claude"', self.js)
+
+    def test_head_wraps_instead_of_truncating(self):
+        """标题行换行、不省略 —— 截掉尾巴的「来源」等于没写。"""
+        block = _block(self.css, ".aipm-anno__smart-head {")
+        self.assertNotIn("text-overflow: ellipsis", block)
+        self.assertNotIn("white-space: nowrap", block)
+        self.assertIn("min-width: 0", block, "可缩:不然会把关闭按钮顶出条子")
+
+    def test_deliberate_skips_are_not_reported_as_undecided(self):
+        """「N 段未判定」只数真失败,不数刻意跳过的段落。
+
+        过短、代码块、导航、重复、不值得高亮、超出每页上限 —— 这些是设计内的跳过,
+        数量还随页面结构浮动,摆成「10 段未判定」只会让人以为坏了。
+        """
+        deliberate = _block(self.js, "var DELIBERATE_SKIP = {")
+        for reason in ("too_short", "code", "navigation", "duplicate", "not_worth", "over_page_limit"):
+            self.assertIn(reason, deliberate, f"{reason} 是刻意跳过,不该计进未判定")
+        for reason in ("not_in_page", "no_answer", "budget_exhausted"):
+            self.assertNotIn(reason, deliberate, f"{reason} 是真失败,必须报出来")
+        block = _block(self.js, "function renderSuggestions(payload, page)")
+        self.assertIn("DELIBERATE_SKIP[code]", block)
+        self.assertIn("段没能判定", block)
+        self.assertNotIn('" 段未判定"', self.js)
+
+    def test_smartbar_follows_the_page(self):
+        """换页后条子不能继续说上一页的事。"""
+        page_change = _block(self.js, "function onPageChange(")
+        self.assertIn("syncSmartbar();", page_change)
+        sync = _block(self.js, "function syncSmartbar()")
+        self.assertIn("suggestCache[page]", sync, "新页有缓存就直接摆出来")
+        self.assertIn('setSmartbar("", "")', sync, "没有缓存就收起")
+
+    def test_dismissal_is_per_page_and_beats_the_auto_restore(self):
+        """用户亲手关掉的条子不许自动弹回来 —— 但「关掉」只对那一页作数。
+
+        「换页时收起」与「用户点了叉」是同一个可见结果(条子不见了),得分两个状态
+        记:前者换回来要能自动恢复,后者不能。第一版把它们混成一个 hidden 判断,
+        结果是换页再回来时缓存好的结果也摆不出来了。
+        """
+        self.assertIn("var smartbarDismissed = null;", self.js)
+        close = self.js[self.js.index("smartClose.addEventListener") :]
+        close = close[: close.index("});")]
+        self.assertIn("smartbarDismissed = pagePath();", close)
+        sync = _block(self.js, "function syncSmartbar()")
+        self.assertIn("if (smartbarDismissed === page) return;", sync)
+        # 有新内容要显示时,「关过」的记号清掉
+        self.assertIn("smartbarDismissed = null;", _block(self.js, "function setSmartbar(text, kind)"))
+        self.assertIn(
+            "smartbarDismissed = null;", _block(self.js, "function renderSuggestions(payload, page)")
+        )
+
+    def test_fallback_parenthetical_wraps_as_one_piece(self):
+        """「(Jev 不可用)」整体换行,不能断在「不可」和「用」之间。"""
+        why = _block(self.css, ".aipm-anno__smart-why {")
+        self.assertIn("white-space: nowrap", why)
+        render = _block(self.js, "function renderSuggestions(payload, page)")
+        self.assertIn('why.className = "aipm-anno__smart-why";', render)
+        self.assertIn("createTextNode", render, "逐段 append 文本节点")
+        self.assertNotIn("innerHTML =", render, "不拼 HTML 字符串")
+
+    def test_cached_result_rebinds_block_ranges(self):
+        """缓存里的 Range 指向上一份 DOM:按块 id 重绑,绑不上的块宁可丢掉。"""
+        self.assertIn("function withLiveBlocks(payload)", self.js)
+        block = _block(self.js, "function withLiveBlocks(payload)")
+        self.assertIn("extractBlocks(true)", block, "已落过高亮的块也要取到(否则它会「不存在」)")
+        self.assertIn("out.blocks = blocks;", block)
+        render = _block(self.js, "function renderSuggestions(payload, page)")
+        self.assertIn("payload = withLiveBlocks(payload);", render)
+
+    def test_smartbar_records_which_page_it_describes(self):
+        self.assertIn("var smartbarPage = null;", self.js)
+        block = _block(self.js, "function setSmartbar(text, kind)")
+        self.assertIn("smartbarPage = pagePath();", block)
+        self.assertIn("smartbarPage = null;", block)
+        render = _block(self.js, "function renderSuggestions(payload, page)")
+        self.assertIn("smartbarPage = page || pagePath();", render)
+
+
 @unittest.skipUnless(SERVER_ANNOTATIONS_TS.exists(), "annotation-server 子模块未检出")
 class TestServerSideVisibilityRules(unittest.TestCase):
     """前后端同一条边界:服务端也不接受「仅本机」。"""
@@ -537,14 +641,14 @@ class TestUiReviewRound(unittest.TestCase):
 
     def test_already_highlighted_blocks_are_skipped(self):
         """块内的 mark 要用 querySelector 找 —— closest 是往上找,永远命中不了。"""
-        block = _block(self.js, "function extractBlocks()")
+        block = _block(self.js, "function extractBlocks(")
         self.assertIn('el.querySelector("mark.aipm-anno-mark")', block)
 
     def test_smart_highlight_is_a_two_state_toggle(self):
         """建议不再逐条罗列,只有「全部高亮 / 全部关闭」两态。"""
         self.assertNotIn("aipm-anno__smart-list", self.js)
         self.assertNotIn("aipm-anno__smart-item", self.css)
-        block = _block(self.js, "function renderSuggestions(payload)")
+        block = _block(self.js, "function renderSuggestions(payload")
         self.assertIn("全部高亮(", block)
         self.assertIn("全部关闭(", block)
         self.assertIn("smartAnnos()", block)
@@ -2589,7 +2693,7 @@ class TestSmartbarNotificationsCanBeDismissed(unittest.TestCase):
         """两处重画都要挂回去:textContent 一清,按钮就跟着没了。"""
         self.assertIn("appendChild(smartClose)", _block(self.js, "function setSmartbar(text, kind)"))
         self.assertIn(
-            "appendChild(smartClose)", _block(self.js, "function renderSuggestions(payload)")
+            "appendChild(smartClose)", _block(self.js, "function renderSuggestions(payload")
         )
 
     def test_dismissing_only_hides_the_strip(self):

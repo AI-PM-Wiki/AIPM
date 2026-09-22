@@ -17,8 +17,8 @@ node_modules/
 /.agents/
 /.claude/
 /.Codex/
-/CLAUDE.md
 /CLAUDE.local.md
+/CLAUDEbk.local.md
 /.clang-format
 /.gitpod.yml
 scripts/banner/output/
