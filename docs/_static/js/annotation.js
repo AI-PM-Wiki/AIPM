@@ -66,10 +66,14 @@
   var SWIPE_V = 0.45;
   var CLOSE_RATIO = 0.6;
   var SHEET_MIN_H = 56;
-  /** 服务端每请求块数上限(HIGHLIGHT_MAX_BLOCKS 默认值);超出部分不下发。 */
-  var MAX_BLOCKS = 120;
+  /** 服务端每请求块数上限(与 HIGHLIGHT_MAX_BLOCKS 对齐);超出部分不下发。
+      取值:2026-09 实测全站 601 页,最长的一页 654 块,按两倍留冗余。 */
+  var MAX_BLOCKS = 1308;
   /** 单块送去判分的字符上限:过长会把预算花在一条上,截断即可(锚定仍用整块)。 */
   var MAX_BLOCK_CHARS = 1000;
+  /** 送去判分的总字符闸,与服务端 HIGHLIGHT_MAX_CHARS(60000)对齐并留余量。
+      没有它,块数上限一抬,字符密的页面就会撞服务端 400 too_many_chars。 */
+  var MAX_BLOCK_TOTAL_CHARS = 55000;
   var BLOCK_SELECTOR = "p, li, blockquote, td, th, dd, dt";
   var ORPHAN_GROUP = "orphan";
 
@@ -501,10 +505,9 @@
     ICON.swap +
     "</button>" +
     '<span class="aipm-anno__count" hidden></span>' +
-    '<button type="button" class="aipm-anno__iconbtn aipm-anno__smart" title="智能高亮" aria-label="智能高亮">' +
-    ICON.spark +
-    "</button>" +
-    // 账号按钮夹在智能高亮与关闭之间(顺序即视觉顺序):登录态的唯一入口
+    /* 账号按钮是这串动作里的头一颗(顺序即视觉顺序):登录态的唯一入口。
+       头一颗原先的智能高亮搬去了页头(见 smartBtn)—— 按钮一旦站在面板外面,
+       它的可见性就不该再跟着面板里的模式走。 */
     '<button type="button" class="aipm-anno__iconbtn aipm-anno__account" title="用 GitHub 登录" aria-label="账号">' +
     ICON.login +
     "</button>" +
@@ -577,7 +580,6 @@
     title: panel.querySelector(".aipm-anno__title"),
     titleLabel: panel.querySelector(".aipm-anno__title-label"),
     count: panel.querySelector(".aipm-anno__count"),
-    smart: panel.querySelector(".aipm-anno__smart"),
     account: panel.querySelector(".aipm-anno__account"),
     acct: panel.querySelector(".aipm-anno__acct"),
     acctName: panel.querySelector(".aipm-anno__acct-name"),
@@ -594,6 +596,21 @@
   entry.setAttribute("aria-expanded", "false");
   entry.setAttribute("data-state", "closed");
   entry.innerHTML = ICON.chevronLeft;
+
+  /* 智能高亮按钮:它判的是**页面正文**,不是面板里的列表,所以跟入口并排站在
+     页头,不开面板也够得着(顺序即视觉顺序:✨ 在 ‹ 左边,位置由 extra.css 的
+     right: 2.4rem / right: 0 定)。
+
+     它在面板里时是跟着模式显隐的(评论模式下收起,那边没有正文可划)。搬到面板
+     外面之后这条规则不再成立:面板关着的时候,用户根本看不见当前是哪一份列表,
+     一颗「有时在、有时不在」的页头按钮就成了没来由的闪烁。所以它一直可见,
+     点击时自己把面板切回批注模式(见 smartHighlight 开头那段)。 */
+  var smartBtn = document.createElement("button");
+  smartBtn.type = "button";
+  smartBtn.className = "md-header__button md-icon aipm-anno-smart";
+  smartBtn.title = "智能高亮";
+  smartBtn.setAttribute("aria-label", "智能高亮");
+  smartBtn.innerHTML = ICON.spark;
 
   /* 入口是**开关**,不是「只负责开」:面板开着时再点一次即收起。这个来回只能由它
      自己承担 —— 助手的 FAB 在面板开着时直接隐藏(.is-hidden),批注入口一直可见。
@@ -618,6 +635,9 @@
   function mountEntry() {
     var inner = document.querySelector(".md-header__inner");
     if (!inner || entry.parentNode === inner) return;
+    /* 先 smart 后 entry:两颗都绝对定位,谁在左由 CSS 定,这里的先后只管 Tab 序
+       —— 从左到右,✨ 再 ‹。 */
+    inner.appendChild(smartBtn);
     inner.appendChild(entry);
   }
 
@@ -782,6 +802,14 @@
     if (open) return;
     open = true;
     openedAt = Date.now();
+    /* 面板一开,划词悬浮窗就让位 —— 它 position: fixed、z-index 在面板之上,留着的
+       话是叠在面板前面的一层浮窗,而此刻用户要办的事已经在面板里了。点页头那颗
+       入口按钮并不保证把正文选区收掉(实测 headless Chromium 下就不收),所以不能
+       指望 selectionchange 顺手把它清掉,这里得自己清。
+
+       顺序无碍:startCreate() 是先把选区存进 composerSelection 再开面板的,这里清
+       的是 pendingSelection。 */
+    hideToolbar();
     clearDragHeight();
     clearTimeout(snapTimer);
     panel.classList.remove("is-compact", "is-snapping");
@@ -859,16 +887,26 @@
     });
   }
 
+  /** 从面板外面把面板叫出来。助手开着时走 claim:注册表先关助手再开批注,两步在
+      同一个同步任务里,所以那是「切到批注」而不是「什么都没发生」。
+
+      悬浮窗在这里也一并收:这叫的是**面板**,而面板和悬浮窗占的是同一块视线。
+      已经开着时尤其不能漏 —— 那条路会从 openPanel 的 `if (open) return` 上早退
+      (点 ✨ 时面板常常已经开着),收不着。 */
+  function revealPanel() {
+    hideToolbar();
+    if (open) return;
+    if (panels) panels.claim("annotation");
+    else openPanel();
+  }
+
   entry.addEventListener("click", function () {
-    /* 开着 → 收起;没开 → 打开。助手开着时走 claim:注册表先关助手再开批注,
-       两步在同一个同步任务里,所以那是「切到批注」而不是「什么都没发生」。 */
+    /* 开着 → 收起;没开 → 打开。 */
     if (open) {
       if (panels) panels.close("annotation");
       else closePanel();
-    } else if (panels) {
-      panels.claim("annotation");
     } else {
-      openPanel();
+      revealPanel();
     }
   });
   els.close.addEventListener("click", closePanel);
@@ -1148,12 +1186,34 @@
 
   /* 排序开关:两颗芯片,没有「排序」二字 —— 芯片自己写着「最热 / 最新」,
      再挂一个提示语只是占地方。语义由 radiogroup 的 aria-label 承担。 */
+  /**
+   * 一次收放所有**原始评论**的回复区。
+   *
+   * 原始评论一多,一条条点开回复区太慢:想通读讨论要全展开,想只看大家说了什么
+   * 要全收起来。它抄的是同一份状态(view.folded),所以单张卡随后自己再点一次,
+   * 以那一次为准 —— 两颗按钮不是另一套开关。
+   *
+   * 只认全页评论:批注卡不归评论面板这一行管(它们有自己的默认收起)。
+   */
+  function foldAllComments(folded) {
+    publicList.concat(privateList).concat(localList).forEach(function (anno) {
+      if (!isPageComment(anno)) return;
+      replyViewOf(anno.id).folded = folded;
+    });
+    render();
+  }
+
   function sortRow() {
     var prefs = store.prefs();
     var row = document.createElement("div");
     row.className = "aipm-anno__sort";
-    row.setAttribute("role", "radiogroup");
-    row.setAttribute("aria-label", "评论排序");
+
+    /* 排序是一个单选组,「全部展开 / 全部折叠」不是它的选项 —— 所以后者摆在
+       radiogroup 外面,免得读屏软件把那两颗念成第三、第四种排序。 */
+    var group = document.createElement("div");
+    group.className = "aipm-anno__sort-group";
+    group.setAttribute("role", "radiogroup");
+    group.setAttribute("aria-label", "评论排序");
     COMMENT_SORTS.forEach(function (s) {
       var b = document.createElement("button");
       b.type = "button";
@@ -1165,8 +1225,25 @@
         store.setPrefs({ commentSort: s.id });
         render();
       });
-      row.appendChild(b);
+      group.appendChild(b);
     });
+    row.appendChild(group);
+
+    row.appendChild(spacerNode());
+
+    var all = document.createElement("span");
+    all.className = "aipm-anno__foldall";
+    [
+      { label: "全部展开", folded: false },
+      { label: "全部折叠", folded: true }
+    ].forEach(function (item) {
+      all.appendChild(
+        moreButton("aipm-anno__replies-fold", item.label, 0, function () {
+          foldAllComments(item.folded);
+        })
+      );
+    });
+    row.appendChild(all);
     return row;
   }
 
@@ -1435,6 +1512,20 @@
        重算一次,否则 peek 会停在上一轮的数值上。refreshPeek 内部对 data-snap 的
        存取在同一个任务里完成,浏览器只画一帧,不会闪。 */
     if (mode === "sheet") applyMetrics();
+
+    /* 「回复 @某人」点下去的那一下落在这儿:节点要等整棵列表建完才在文档里,
+       在上面边建边滚是滚不动的。与正文高亮点击走同一套「滚过去 + 闪一下」。 */
+    if (pendingFocus !== null) {
+      var target = els.list.querySelector('[data-reply-id="' + pendingFocus + '"]');
+      pendingFocus = null;
+      if (target) {
+        target.scrollIntoView({ block: "center", behavior: "smooth" });
+        target.classList.add("is-flash");
+        setTimeout(function () {
+          target.classList.remove("is-flash");
+        }, 900);
+      }
+    }
   }
 
   /* ---- 卡片上的小浮层:点左上角圆点改「外观」----
@@ -1473,7 +1564,7 @@
     pop.className = "aipm-anno__pop";
     pop.setAttribute("role", "group");
     pop.setAttribute("aria-label", "批注外观");
-    pop.innerHTML = popRow("画法", styleHtml()) + popRow("颜色", swatchHtml());
+    pop.innerHTML = popRow("样式", styleHtml()) + popRow("颜色", swatchHtml());
     // styleHtml/swatchHtml 产出的是 .aipm-anno__tb-style 与 .aipm-anno__swatch,
     // 选中态与悬浮窗共用一套 is-active。
     var st = pop.querySelector('[data-style="' + styleOf(current) + '"]');
@@ -1500,15 +1591,338 @@
     openPop = { wrap: wrapEl, node: pop };
   }
 
+  /* ---------------------------------------------------------------
+     回复的账号信息、折叠与翻页
+     ---------------------------------------------------------------
+     一条热评底下挂着几十条回复时,列表不该被它一条占满 —— B 站与 YouTube 用的
+     是同一个办法:先露几条,剩下的折在一颗「展开」下面;顶层回复本身也翻页。
+     缩进只留一档(原始评论 → 回复 → 回复回复),再往里的那条改口称「回复 @某人」,
+     层次由文字说清,而不是由左边的空白说清(400px 宽的面板里,第二档缩进之后
+     正文只剩一条竖线)。
+
+     这一整套是**批注卡与评论卡共用**的:「收起回复」、逐层折叠、@ 拍平、翻页、
+     计数都长在 repliesBox 里,两边的层级不可能各漂一套。
+
+     **折叠是逐层独立的**:每个节点只管自己那几条直接子回复,一个楼层底下挂了
+     几十条、其中某一条底下又挂了几十条,两处各收各的 —— 一刀切在楼层上的话,
+     「这一层很多」与「那一层很多」只能一起收,想看其中一个就得把整层铺开。
+     开合态因此按 **节点 id** 记(楼层也就是个节点),不是按楼层记。
+
+     逐层折叠治的是「某一层特别宽」;**治不了「每一层都不少」** —— 每层露 3 条,
+     三层下去就是 1 + 3 + 9,再深一层又翻三倍。所以每个楼层另有一道总行数
+     上限(REPLY_ROWS_MAX),铺满了就折成一颗「本层还有 N 条回复」。两道各管一头:
+     前者管读起来顺不顺,后者管画出来的行数有没有底。
+
+     展开态存在 replyView 里,**不属于任何一次渲染** —— 面板每敲一个字就整个重建
+     一遍,状态要是记在节点上,刚展开的那几条会当场收回去。
+     */
+  var REPLY_PREVIEW = 3;
+  /* 一个楼层一次最多铺多少行。取 20 是因为逐层折叠之后,一棵「每层都满 3 条」的树
+     到第二层是 1+3 = 4 行,到第三层是 13,再深一层就是 40 —— 上限正好卡在开始
+     不像话的那一档之前。 */
+  var REPLY_ROWS_MAX = 20;
+  var REPLY_PAGE = 20;
+  /**
+   * annoId -> { page: 1, open: { <replyId>: true }, closed: { <replyId>: true },
+   *             rows: { <floorId>: n }, unfolded: bool }
+   *
+   * open / closed 是一层的两个方向:open = 这一层全铺开(越过「先露三条」的预览),
+   * closed = 这一层一条不露。两个都没有 = 按默认来(先露 REPLY_PREVIEW 条)。
+   */
+  var replyView = {};
+  /** 「回复 @某人」点下去要跳的那一条。跳转发生在 render 末尾 —— 节点那时才在文档里。 */
+  var pendingFocus = null;
+
+  function replyViewOf(annoId) {
+    var v = replyView[annoId];
+    if (!v) {
+      v = { page: 1, open: {}, closed: {}, rows: {} };
+      replyView[annoId] = v;
+    }
+    return v;
+  }
+
+  /** 顶层的祖先 —— 这条回复挂在哪个楼层下。父级悬空时就是它自己。 */
+  function floorIdOf(byId, reply) {
+    var cur = reply;
+    var guard = 0;
+    while (cur && cur.parentId && byId[cur.parentId] && guard < 1000) {
+      cur = byId[cur.parentId];
+      guard++;
+    }
+    return cur ? cur.id : null;
+  }
+
+  /**
+   * 按当前的开合态,这个节点连它自己在内**本该**铺几行。与真实铺开的那一轮
+   * (paintReply)走的是同一条规则,只是不设上限 —— 两个数一减,就是被楼层总行数
+   * 上限截掉的那些,楼层末尾那颗「本层还有 N 条回复」据此报数。
+   *
+   * 只看真实存在的节点,所以这里是 O(这棵子树里真正有几条回复),不是按每层
+   * 乘 3 指数展开的。
+   */
+  function plannedRows(childrenOf, openSet, closedSet, node) {
+    var kids = childrenOf[node.id] || [];
+    var n = 1;
+    for (var i = 0; i < limitOf(node, kids, openSet, closedSet); i++) {
+      n += plannedRows(childrenOf, openSet, closedSet, kids[i]);
+    }
+    return n;
+  }
+
+  /**
+   * 这一层铺几条。三态:
+   *   closed        → 一条不露
+   *   open          → 全铺
+   *   都没有(默认) → 先露 REPLY_PREVIEW 条
+   *
+   * 默认态只对**第一层**(原始批注/评论 → 回复)有意义 —— 那一层是「这条下面有些
+   * 什么人在说话」,先露三条让人扫得动。再往里(回复 → 回复回复)那一层本来常常
+   * 只有一两条,「先露三条」在那儿等于没有折叠,所以它靠 closed 明确收放。
+   */
+  function limitOf(node, kids, openSet, closedSet) {
+    if (closedSet[node.id] === true) return 0;
+    if (openSet[node.id] === true) return kids.length;
+    return Math.min(REPLY_PREVIEW, kids.length);
+  }
+
+  /**
+   * 从某个节点一路往上到楼层,把沿途每个节点都记进来(含它自己)。回复框与刚发出
+   * 的那条回复都要靠它:它们落在最里面,沿途任何一层收着都看不见。
+   */
+  function ancestorChain(byId, reply) {
+    var chain = [];
+    var cur = reply;
+    var guard = 0;
+    while (cur && guard < 1000) {
+      chain.push(cur.id);
+      cur = cur.parentId ? byId[cur.parentId] : null;
+      guard++;
+    }
+    return chain;
+  }
+
+  /**
+   * 自己刚发的回复一定要看得见 —— 它要是落进一个收着的楼层、或落到还没翻到的那一页
+   * 里,发完就像没发出去。所以发之前先把落点放开。
+   *
+   * 落点拿**当前**数据算:父回复一定已经在本地(服务端只收已经存在的楼层),新回复
+   * 本身还没回来,但它在哪一层完全由父级决定。
+   */
+  function openReplyTarget(anno, parentId) {
+    var byId = {};
+    (anno.replies || []).forEach(function (r) {
+      byId[r.id] = r;
+    });
+    var view = replyViewOf(anno.id);
+    /* 发回复同理:发完那次重渲染不能把新回复连同整块回复区一起折回去。 */
+    view.folded = false;
+    if (parentId && byId[parentId]) {
+      /* 新回复恒挂在父级的**最后**,而父级那一层要是正收着(只露前几条),它正好
+         落在折叠外面 —— 所以沿途每一层都得放开,不只是楼层那一层。 */
+      ancestorChain(byId, byId[parentId]).forEach(function (id) {
+        view.open[id] = true;
+      });
+      return;
+    }
+    /* 回的是这条批注自己 → 新回复是一条新的顶层楼层,排在最后一条之后。它落在
+       第几页现在就能算出来:现有的顶层楼层数就是它的下标。 */
+    var floors = 0;
+    (anno.replies || []).forEach(function (r) {
+      if (!(r.parentId && byId[r.parentId])) floors++;
+    });
+    view.page = Math.max(view.page, Math.floor(floors / REPLY_PAGE) + 1);
+  }
+
+  /**
+   * 跳到被回复的那一条。滚动落在 render 的末尾 —— 这儿建出来的节点那时才在文档里。
+   *
+   * 放开楼层、翻到它那一页这两步其实**够不着**:@ 那一行与它指的那一条在同一个
+   * 楼层里,而父级在 DFS 里恒排在子级之前,所以父级露得出来时子级一定也露着 ——
+   * 能点到那颗 @,就说明目标已经画在屏幕上了。留着是因为这两条是从「折叠规则」
+   * 推出来的,规则哪天改了(比如折叠改成按热度挑几条),跳转不该跟着坏在一处
+   * 没人会想到的地方。
+   */
+  function jumpToReply(anno, replyId) {
+    var view = replyViewOf(anno.id);
+    var byId = {};
+    var floorless = [];
+    (anno.replies || []).forEach(function (r) {
+      byId[r.id] = r;
+    });
+    (anno.replies || []).forEach(function (r) {
+      /* 顶层 = 没有父级,或父级已经找不到(悬空 parentId)。与 repliesBox 同一套判定。 */
+      if (!(r.parentId && byId[r.parentId])) floorless.push(r);
+    });
+    var target = byId[replyId];
+    if (!target) return;
+    var floor = floorIdOf(byId, target);
+    if (floor) {
+      view.open[floor] = true;
+      floorless.forEach(function (f, i) {
+        if (f.id !== floor) return;
+        view.page = Math.max(view.page, Math.floor(i / REPLY_PAGE) + 1);
+      });
+    }
+    pendingFocus = replyId;
+    render();
+  }
+
+  /**
+   * 回复的头一行:头像 + 名字 + 楼主角标 + 时间。
+   *
+   * 头像与名字都得有 —— 回复上只挂一串 login 时,读者得靠那串字母在脑子里记住
+   * 谁是谁;头像能在一眼之内分清,这正是 B 站与 YouTube 的回复列表都带头像的原因。
+   * 名字用 GitHub 的显示名,后面再跟一个 @handle:显示名可以重名,handle 不会,
+   * 两个都给才既好认又认得出是谁。
+   */
+  function replyHead(anno, reply) {
+    var head = document.createElement("div");
+    head.className = "aipm-anno__reply-head";
+
+    var av = avatarOf(reply.author);
+    av.classList.add("is-sm");
+    head.appendChild(av);
+
+    var login = loginOf(reply.author);
+    var name = displayNameOf(reply.author);
+    var who = document.createElement("b");
+    who.className = "aipm-anno__reply-who";
+    who.textContent = name;
+    who.title = "@" + login;
+    /* 显示名与 handle 相同时不必说两遍 —— 那就只剩一遍。handle 挂在同一个 <b>
+       里(而不是另起一格):名字这一格是这一行唯一有弹性的,挤不下时两个一起
+       省略,而不是把后面的时间与按钮顶出面板。 */
+    if (name !== login) {
+      var handle = document.createElement("span");
+      handle.className = "aipm-anno__reply-handle";
+      handle.textContent = "@" + login;
+      who.appendChild(handle);
+    }
+    head.appendChild(who);
+    /* 「这条是楼主的」—— B 站叫 UP 主、YouTube 叫创作者。几十层的高楼里,作者
+       本人的一句话比别人的重,而这个信息只有 githubId 说得清;不标出来,读者
+       只能拿名字去猜,而名字可以重。 */
+    if (isFloorOwner(anno, reply)) {
+      var badge = document.createElement("span");
+      badge.className = "aipm-anno__badge is-author";
+      badge.textContent = "作者";
+      head.appendChild(badge);
+    }
+
+    var when = relTime(reply.createdAt);
+    if (when) {
+      var time = document.createElement("time");
+      time.className = "aipm-anno__reply-time";
+      time.dateTime = reply.createdAt;
+      time.textContent = when;
+      time.title = absTime(reply.createdAt);
+      head.appendChild(time);
+    }
+    head.appendChild(spacerNode());
+
+    var tools = document.createElement("span");
+    tools.className = "aipm-anno__reply-tools";
+    if (canReply(anno)) {
+      tools.appendChild(
+        iconButton(ICON.reply, "回复这条", "reply", function () {
+          startReply(anno, reply);
+        })
+      );
+    }
+    if (canDeleteReply(anno, reply)) {
+      var del = ibtn(ICON.trash, "删除这条回复", "delete-reply");
+      del.classList.add("is-danger");
+      armDelete(del, "删除这条回复", function () {
+        removeReply(anno, reply);
+      });
+      tools.appendChild(del);
+    }
+    if (tools.childNodes.length > 0) head.appendChild(tools);
+    return head;
+  }
+
+  /**
+   * 回复的正文。缩进到顶之后(`parent` 非空)在最前面补一句「回复 @某人」——
+   * B 站与 YouTube 都是这个写法:层次说在正文里,不再往右缩。那颗 @ 可点,
+   * 点了跳到被回复的那一条;高楼里「他到底在回谁」因此不用靠猜。
+   */
+  function replyBody(anno, reply, parent) {
+    var p = document.createElement("p");
+    p.className = "aipm-anno__reply-body";
+    if (parent) {
+      var at = document.createElement("button");
+      at.type = "button";
+      at.className = "aipm-anno__reply-at";
+      at.textContent = "回复 @" + displayNameOf(parent.author);
+      at.title = "跳到这条回复";
+      at.addEventListener("click", function () {
+        jumpToReply(anno, reply.parentId);
+      });
+      p.appendChild(at);
+      /* 冒号是这一行的分界:显示名可以很长(见上面那颗按钮的省略),没有它,
+         名字与正文会连成一串认不出边界。B 站与知乎的楼中楼也这么写。 */
+      p.appendChild(document.createTextNode("："));
+    }
+    p.appendChild(document.createTextNode(reply.body));
+    return p;
+  }
+
+  /**
+   * 各处「还能展开」共用的那颗按钮。`depth` 是它将要展开的那一层 —— 按钮自己缩进
+   * 到那一层的宽度上,读者才知道按下去多出来的是谁的回复(逐层折叠之后,同一屏上
+   * 可能有好几颗,不缩进就分不清哪颗管哪条)。
+   */
+  function moreButton(className, label, depth, onClick) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = className;
+    b.textContent = label;
+    /* 档位由调用方算好 —— 只有它知道这一层最多缩到哪儿(见 repliesBox 的
+       MAX_DEPTH)。这儿只负责落到属性上,与回复 / 回复框共用同一组缩进规则。 */
+    if (depth > 0) b.setAttribute("data-depth", String(depth));
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
   /**
    * 回复区。批注卡与评论卡共用 —— 「回复」这件事两边长得一样,没理由两套。
    * 返回 null = 这条既没有回复、也不在回复中,调用方据此决定要不要挂这一块。
+   *
+   * 卡片级开合由两个开关决定:
+   *   `opts.cardFold` = 这张卡**能**把整块回复区收起来(两张卡都传);
+   *   `opts.folded`   = 默认就收着(只有批注卡传)。
+   *
+   * 批注卡默认收起:批注模式是拿来扫读正文里那些标记的,一屏十几条,每条都摊开
+   * 几十行回复就没法扫了。评论卡默认展开 —— 去评论面板就是来看对话的,再折一道
+   * 只是多一次点击;但「全部折叠」那颗全局按钮要靠它才收得动。
+   *
+   * 收起来那一版只挂一颗「展开 N 条回复」;摊开之后仍旧走下面那整套(逐层折叠、
+   * @ 拍平、楼层上限、翻页),末尾再留一条回去的路。
    */
-  function repliesBox(anno) {
+  function repliesBox(anno, opts) {
     var replies = anno.replies || [];
     var replyingHere =
       editorDraft !== null && editorDraft.kind === "reply" && editorDraft.annoId === anno.id;
     var replyParent = replyingHere ? editorDraft.parentId || null : null;
+    /* 卡片级开合。状态记三态:view.folded 为 undefined = 还没人点过,按默认来 ——
+       这样「全部展开 / 全部折叠」与单张卡自己的开合能共用同一个字段,谁后点谁说了算。 */
+    var cardFold = !!(opts && opts.cardFold) && replies.length > 0;
+    var card = cardFold ? replyViewOf(anno.id) : null;
+    var cardFolded =
+      cardFold && (card.folded === undefined ? !!(opts && opts.folded) : card.folded === true);
+    /* 正在这里回复时不许折:输入框得有个落脚的地方。 */
+    if (cardFolded && !replyingHere) {
+      var wrap = document.createElement("div");
+      wrap.className = "aipm-anno__replies-foldwrap";
+      wrap.appendChild(
+        moreButton("aipm-anno__replies-fold", "展开 " + replies.length + " 条回复", 0, function () {
+          card.folded = false;
+          render();
+        })
+      );
+      return wrap;
+    }
     if (replies.length > 0 || replyingHere) {
       var box = document.createElement("div");
       box.className = "aipm-anno__replies";
@@ -1528,8 +1942,48 @@
         if (!childrenOf[parent]) childrenOf[parent] = [];
         childrenOf[parent].push(r);
       });
-      /* 缩进深度封顶两层:再深的缩进在 400px 宽的面板里就只剩一条竖线了。 */
-      var MAX_DEPTH = 2;
+      /* 缩进只留**一档**:原始评论 → 回复 → 回复回复。再深的那一层不再往右缩,
+         改由正文开头那句「回复 @某人」说清层次 —— 400px 宽的面板里,第二档缩进
+         之后正文就只剩一条竖线,而楼中楼之间的回复本来也不该再开一层。 */
+      var MAX_DEPTH = 1;
+
+      var view = replyViewOf(anno.id);
+      var floors = childrenOf[""] || [];
+      /* 正在回复的那一条必须看得见:它在哪一页就翻到哪一页,缩在哪个收着的楼层里
+         就把它展开。写的时候看不见自己回的是谁,这个输入框就没有出口。 */
+      var openSet = {};
+      Object.keys(view.open).forEach(function (id) {
+        if (view.open[id]) openSet[id] = true;
+      });
+      var closedSet = {};
+      Object.keys(view.closed).forEach(function (id) {
+        if (view.closed[id]) closedSet[id] = true;
+      });
+      /* 逐层折叠之后,要让某一条看得见就得把它**沿途每一层**都放开 —— 只放开楼层
+         不够,中间任何一层收着,它就还是画不出来。编辑器与 @ 跳转都走这一条。 */
+      var editorChain = replyingHere && replyParent ? ancestorChain(byId, byId[replyParent]) : [];
+      editorChain.forEach(function (id) {
+        openSet[id] = true;
+        delete closedSet[id]; // 收着的层要放开,不能同时又收着
+      });
+      var editorFloor = editorChain.length > 0 ? editorChain[editorChain.length - 1] : null;
+      var page = view.page;
+      if (editorFloor) {
+        floors.forEach(function (f, i) {
+          if (f.id === editorFloor) page = Math.max(page, Math.floor(i / REPLY_PAGE) + 1);
+        });
+      }
+      var shownFloors = floors.slice(0, page * REPLY_PAGE);
+
+      /* 要翻页才看得全的时候,先报一句总数 —— 「还有多少条没看见」是这一页唯一
+         说不清的事。总共没几条时它就是废话,不挂。 */
+      if (replies.length > REPLY_PREVIEW) {
+        var count = document.createElement("div");
+        count.className = "aipm-anno__replies-count";
+        count.textContent = "共 " + replies.length + " 条回复";
+        box.appendChild(count);
+      }
+
       var placedEditor = false;
       var appendEditor = function (depth) {
         var form = materializeEditor();
@@ -1540,7 +1994,16 @@
         if (depth > 0) form.setAttribute("data-depth", String(Math.min(depth, MAX_DEPTH)));
         box.appendChild(form);
       };
-      var paintReply = function (r, depth) {
+
+      /* budget = 这个楼层还剩几行可铺(见 REPLY_ROWS_MAX)。返回这一趟真正铺了几行
+         —— 含它自己,楼层末尾拿它跟 plannedRows 一比就知道被截掉了多少。 */
+      var paintReply = function (r, depth, budget) {
+        /* 一行都铺不出来了就回头,调用方据此停手 —— 检查放在入口而不是循环里,
+           这样「还剩几行」与实际铺出来的行数永远对得上。 */
+        if (budget.left <= 0) return 0;
+        budget.left--;
+        var rows = 1;
+
         var line = document.createElement("div");
         line.className = "aipm-anno__reply";
         line.setAttribute("data-reply-id", r.id);
@@ -1550,96 +2013,144 @@
            挂在这条回复自己的头一行右端,位置就固定了 —— 连排时它们跟在正文尾巴
            后面,每条回复的按钮都落在不同的横坐标上,越读越散。这也正是批注卡
            自己的排法(左边是谁、右边是能对它做的事)。 */
-        var head = document.createElement("div");
-        head.className = "aipm-anno__reply-head";
-        var author = document.createElement("b");
-        author.className = "aipm-anno__reply-who";
-        author.textContent = (r.author && r.author.login) || "匿名";
-        head.appendChild(author);
-        var when = relTime(r.createdAt);
-        if (when) {
-          var time = document.createElement("time");
-          time.className = "aipm-anno__reply-time";
-          time.dateTime = r.createdAt;
-          time.textContent = when;
-          time.title = absTime(r.createdAt);
-          head.appendChild(time);
-        }
-        head.appendChild(spacerNode());
-
-        var tools = document.createElement("span");
-        tools.className = "aipm-anno__reply-tools";
-        if (canReply(anno)) {
-          tools.appendChild(
-            iconButton(ICON.reply, "回复这条", "reply", function () {
-              startReply(anno, r);
-            })
-          );
-        }
-        if (canDeleteReply(anno, r)) {
-          var del = ibtn(ICON.trash, "删除这条回复", "delete-reply");
-          del.classList.add("is-danger");
-          armDelete(del, "删除这条回复", function () {
-            removeReply(anno, r);
-          });
-          tools.appendChild(del);
-        }
-        if (tools.childNodes.length > 0) head.appendChild(tools);
-        line.appendChild(head);
-
-        var text = document.createElement("p");
-        text.className = "aipm-anno__reply-body";
-        text.textContent = r.body;
-        line.appendChild(text);
+        line.appendChild(replyHead(anno, r));
+        /* 缩进已经到顶、这条却又是在回某一条 —— 层次改由正文里那句「回复 @某人」
+           说清。父级悬空时 parent 取不到,那就不说(它按顶层渲染)。 */
+        var over = depth > MAX_DEPTH && r.parentId ? byId[r.parentId] : null;
+        line.appendChild(replyBody(anno, r, over || null));
 
         box.appendChild(line);
         /* 回这一条 → 输入框就落在这条下面、它已有的回复之前:新回复本来就是它的
            第一条子回复,写的时候看见的位置就是发出去之后的位置。 */
-        if (replyingHere && replyParent === r.id) appendEditor(depth + 1);
-        (childrenOf[r.id] || []).forEach(function (child) {
-          paintReply(child, depth + 1);
-        });
+        if (replyingHere && replyParent === r.id) {
+          appendEditor(Math.min(depth + 1, MAX_DEPTH));
+        }
+
+        /* 这一层自己收自己的(三态见 limitOf)。它与楼层那道总行数上限是两回事
+           —— 前者说不清「还有几条」的时候,后者兜底。
+
+           「收起」只挂在缩进的最深一档(`MAX_DEPTH`)上,也就是槽位里那一层
+           「回复」:它收的是自己那串「回复回复」。更深的不挂 —— 缩进到顶之后
+           它们的子回复跟它们铺在同一个档位上,每层各挂一颗,读者看到的就是三四颗
+           一模一样的「收起回复」摞在一起,而且收的深度各不相同,点哪颗全靠猜。
+           一档一颗还保证了相邻两颗之间必定隔着别的行,不会再连成一片。 */
+        var kids = childrenOf[r.id] || [];
+        var open = openSet[r.id] === true;
+        var closed = closedSet[r.id] === true;
+        var limit = limitOf(r, kids, openSet, closedSet);
+        var sweepable = depth === MAX_DEPTH && kids.length > 0;
+        var painted = 0;
+        for (var i = 0; i < kids.length && painted < limit; i++) {
+          var got = paintReply(kids[i], depth + 1, budget);
+          if (got === 0) break;
+          painted++;
+          rows += got;
+        }
+        /* 「还剩几条」只有把这一层数完了才敢报。被楼层总额截断时这一层的开合不挂:
+           那一刻「还剩几条」是总额说了算,挂在这儿会报一个只数了本层的数,点下去
+           也补不齐(补得齐的那颗在楼层末尾)。 */
+        if (painted >= limit) {
+          var rest = closed || open ? 0 : kids.length - painted;
+          var label = null;
+          var foldTo = null;
+          if (closed) {
+            label = "展开 " + kids.length + " 条回复";
+            foldTo = "open";
+          } else if (rest > 0) {
+            label = "展开剩余 " + rest + " 条回复";
+            foldTo = "open";
+          } else if (sweepable) {
+            /* 全铺着、还有子回复可收 —— 挂一颗「收起」。最深那一档里常常只有一
+               两条,「先露三条」的预览在那儿等于没有折叠,不挂这颗就根本收不掉。
+               槽位里那一层自己不挂 —— 它那三条预览是有用的,不该再多一颗按钮。
+
+               上面「还剩几条」那一支不看 depth:铺不下的回复再不给颗按钮,它们就
+               永远露不出来了,那一支必须到处都能挂。 */
+            label = "收起回复";
+            foldTo = "closed";
+          }
+          if (label !== null) {
+            box.appendChild(
+              moreButton(
+                "aipm-anno__reply-more",
+                label,
+                /* 缩进到它将要开合的那一层的**实际**档位上 —— 深过封顶的那几层
+                   是平铺的,按钮要是还按 depth + 1 缩,就会飘在它露出的那几条右边。 */
+                Math.min(depth + 1, MAX_DEPTH),
+                (function (node, how) {
+                  return function () {
+                    view.open[node.id] = how === "open";
+                    view.closed[node.id] = how === "closed";
+                    render();
+                  };
+                })(r, foldTo)
+              )
+            );
+          }
+        }
+        return rows;
       };
-      (childrenOf[""] || []).forEach(function (r) {
-        paintReply(r, 0);
+
+      shownFloors.forEach(function (floor) {
+        /* 逐层折叠之后「本该铺几行」与「真的铺了几行」一比,差出来的就是被楼层总
+           行数截掉的那些。这道上限自己是可以顶开的:点一次多给一页。 */
+        var cap = view.rows[floor.id] || REPLY_ROWS_MAX;
+        var paintedRows = paintReply(floor, 0, { left: cap });
+        var cut = plannedRows(childrenOf, openSet, closedSet, floor) - paintedRows;
+        if (cut > 0) {
+          box.appendChild(
+            moreButton("aipm-anno__replies-more", "本层还有 " + cut + " 条回复", 0, function () {
+              view.rows[floor.id] = cap + REPLY_ROWS_MAX;
+              render();
+            })
+          );
+        }
       });
+
       /* 回的是这条批注自己(不是某一条回复)→ 输入框排在整棵树后面。 */
       if (replyingHere && replyParent === null) appendEditor(0);
       /* 要回的那条回复在别处被删了:输入框仍旧要看得见,不然这段字写进了一块没有
          出口的空白里。落回末尾 —— 提交时服务端会说这条回复不存在。 */
       if (replyingHere && !placedEditor) appendEditor(0);
+
+      /* 顶层回复翻页。放在最后 —— 它是整段回复的下一页,不是某一个楼层的。 */
+      var restFloors = floors.length - shownFloors.length;
+      if (restFloors > 0) {
+        box.appendChild(
+          moreButton("aipm-anno__replies-more", "展开更多回复(" + restFloors + " 条)", 0, function () {
+            view.page = page + 1;
+            render();
+          })
+        );
+      }
+      /* 摊开之后要留一条回去的路 —— 否则「收起」就成了单向门:点开一次,这条
+         从此一直摊着,「全部折叠」也就无从收起单张卡。 */
+      if (cardFold) {
+        box.appendChild(
+          moreButton("aipm-anno__replies-fold", "收起全部回复", 0, function () {
+            card.folded = true;
+            render();
+          })
+        );
+      }
       return box;
     }
     return null;
   }
 
   /**
-   * 卡片底部的操作链:点赞 / 回复 / 上传 / 重新锚定。批注卡与评论卡共用 ——
+   * 卡片底部的操作链:点赞 / 上传 / 重新锚定。批注卡与评论卡共用 ——
    * 「上传」对两者都成立(仅本机那条本来就能转成公开),「重新锚定」只有批注有
    * (isOrphan 对评论恒为假)。一条操作都没有时返回空节点,调用方据此不挂这一行。
+   *
+   * 「回复」不在这行 —— 它搬去了卡片右上角,与「编辑 / 删除」站在一起(见
+   * cardReplyButton):那是它本来该在的地方。
    */
   function itemActions(anno, isOrphan) {
     var acts = document.createElement("div");
     acts.className = "aipm-anno__item-actions";
     /* 点赞:本机批注没有服务端可言,不显示。 */
     if (!isLocal(anno)) acts.appendChild(likeButton(anno));
-    /* 「回复」是一支回勾箭头就够了 —— 它是评论区里最不需要解释的那个动作,
-       一行文字链反而把这一行拉得七长八短。回不成时(未登录看别人的批注)仍是
-       同一颗按钮,只是 title 换成「登录后回复」,点下去先去登录。 */
-    if (canReply(anno)) {
-      acts.appendChild(
-        iconButton(ICON.reply, "回复", "reply", function () {
-          startReply(anno);
-        })
-      );
-    } else {
-      // 未登录看别人的批注:回复要在服务端落库,得先登录
-      acts.appendChild(
-        iconButton(ICON.reply, "登录后回复", "reply-login", function () {
-          if (auth) auth.loginForDraft(draftForLogin());
-        })
-      );
-    }
     if (isLocal(anno) && !store.serverIdOf(anno.id) && auth && auth.isLoggedIn()) {
       acts.appendChild(
         actionButton("上传为公开", "upload-public", function () {
@@ -1663,8 +2174,37 @@
   }
 
   /**
-   * 卡片右上角那两颗:铅笔 = 编辑,叉 = 删除。批注卡与评论卡共用 —— 四个操作
-   * 各归其位:改色在批注卡左上角的圆点(评论没有色可改),编辑与删除在这里。
+   * 卡片右上角的「回复」:一支回勾箭头。与每条回复右端那颗同一张脸、同一个位置
+   * 逻辑 —— 谁的回话按钮就贴在谁那一行的右端,回复贴在每条回复的头上,卡片贴在
+   * 卡片自己头上。它原先单独落在底部那条操作链里(整张卡的左下角):离它要回的
+   * 那句话最远,也和每条回复上那颗错开了一整行。
+   *
+   * 与 cardTools 分开而不是并进去,是因为可编辑与可回复是两回事:未登录看别人的
+   * 批注时,铅笔垃圾桶都不在,这颗回勾箭头还在(见下面的 else 分支)。
+   */
+  function cardReplyButton(anno) {
+    var frag = document.createDocumentFragment();
+    if (canReply(anno)) {
+      frag.appendChild(
+        iconButton(ICON.reply, "回复", "reply", function () {
+          startReply(anno);
+        })
+      );
+    } else {
+      // 未登录看别人的批注:回复要在服务端落库,得先登录
+      frag.appendChild(
+        iconButton(ICON.reply, "登录后回复", "reply-login", function () {
+          if (auth) auth.loginForDraft(draftForLogin());
+        })
+      );
+    }
+    return frag;
+  }
+
+  /**
+   * 卡片右上角那两颗:铅笔 = 编辑,垃圾桶 = 删除(左边还有一颗回勾箭头,见
+   * cardReplyButton)。批注卡与评论卡共用 —— 四个操作各归其位:改色在批注卡
+   * 左上角的圆点(评论没有色可改),回复 / 编辑 / 删除都在右上角这一排。
    * 编辑就地展开:点它,那张卡本身变成编辑态,不是另起一张。
    */
   function cardTools(anno) {
@@ -1717,6 +2257,7 @@
       up.textContent = "已上传";
       head.appendChild(up);
     }
+    head.appendChild(cardReplyButton(anno));
     head.appendChild(cardTools(anno));
     wrap.appendChild(head);
 
@@ -1728,7 +2269,7 @@
       wrap.appendChild(body);
     }
 
-    var box = repliesBox(anno);
+    var box = repliesBox(anno, { cardFold: true });
     if (box) wrap.appendChild(box);
 
     var acts = itemActions(anno, false);
@@ -1813,6 +2354,7 @@
       up.textContent = "已上传";
       top.appendChild(up);
     }
+    top.appendChild(cardReplyButton(anno));
     top.appendChild(cardTools(anno));
     wrap.appendChild(top);
 
@@ -1820,7 +2362,15 @@
     if (quoteText) {
       var q = document.createElement("blockquote");
       q.className = "aipm-anno__item-quote";
-      q.textContent = quoteText.length > 140 ? quoteText.slice(0, 140) + "…" : quoteText;
+      /* 引文是正文里那一笔的副本 —— 点它就是回到正主那儿(见 jumpToPassage)。
+         它得是「按钮」那一套的无障碍写法(role + tabindex + 键盘),但不能真做成
+         <button>:引文是可以被选中、被复制的一段话,mousedown 被按钮拦下就选不
+         动了(面板那条 preventDefault 只对 button 生效,见下面的 mousedown)。 */
+      q.setAttribute("role", "button");
+      q.setAttribute("tabindex", "0");
+      q.title = "跳到正文中的位置";
+      q.setAttribute("aria-label", "跳到正文:" + quoteText.slice(0, 60));
+      q.appendChild(quoteInk(styleOf(anno), shownQuote(quoteText)));
       wrap.appendChild(q);
     }
 
@@ -1831,7 +2381,7 @@
       wrap.appendChild(body);
     }
 
-    var box = repliesBox(anno);
+    var box = repliesBox(anno, { cardFold: true, folded: true });
     if (box) wrap.appendChild(box);
 
     var acts = itemActions(anno, isOrphan);
@@ -1847,6 +2397,32 @@
     b.textContent = label;
     b.addEventListener("click", handler);
     return b;
+  }
+
+  /** 引文最多铺这么长,再长的截断 —— 卡片是列表里的一条,不是阅读器。 */
+  var QUOTE_MAX = 140;
+
+  function shownQuote(text) {
+    return text.length > QUOTE_MAX ? text.slice(0, QUOTE_MAX) + "…" : text;
+  }
+
+  /**
+   * 引文行里那层「画上去的一笔」。
+   *
+   * 面板里的引文是正文里 <mark> 的副本,所以要长得跟正文里那段话一模一样:高亮 /
+   * 划线 / 两者叠加,颜色跟着这条批注走(色值与画法那张表在 CSS 的 9. 正文里的
+   * 高亮,两边共用)。
+   *
+   * 底色与下划线必须落在**行内**的这一层上,不能落在块级的 <blockquote> 上 ——
+   * 块级会把它拉成一条通栏色带,只划线那种画法更明显:整行底下一条直线,连字与
+   * 字之间的空档也划过去。而正文里那一笔是贴着字的,引文一旦折行就露馅。
+   */
+  function quoteInk(style, text) {
+    var ink = document.createElement("span");
+    ink.className = "aipm-anno__quote-ink";
+    ink.setAttribute("data-style", style);
+    ink.textContent = text;
+    return ink;
   }
 
   function quoteOf(anno) {
@@ -2086,6 +2662,22 @@
     pendingSelection = null;
   }
 
+  /**
+   * 收工具条的**同时**把正文选区撤掉。
+   *
+   * 光 hideToolbar() 挡不住它在原地弹回来:划词那一步的收尾是往正文里插一层
+   * 高亮 <mark>,而选区就在被插的那几个节点之间 —— DOM 一变,浏览器会再报一次
+   * selectionchange,选中范围还在正文里,handler 于是又把工具条摆回同一个位置。
+   * 用户看到的「挑完颜色它还赖着不走」就是这条回路。
+   *
+   * 只在动作**已经落地**的地方用(落高亮、开面板);滚页面收工具条时绝不能撤选区,
+   * 「重新锚定」靠的就是手里那份还活着的正文选区。
+   */
+  function clearSelection() {
+    var sel = window.getSelection();
+    if (sel && sel.removeAllRanges) sel.removeAllRanges();
+  }
+
   document.addEventListener("selectionchange", function () {
     if (!open && toolbar.hidden === false) hideToolbar();
     if (locked() && open) return;
@@ -2247,6 +2839,28 @@
 
   function loginOf(author) {
     return (author && author.login) || "匿名";
+  }
+
+  /**
+   * 显示名。GitHub 的 name 是可选的,没填就退回 handle —— 回复列表里挂一串
+   * 空白比挂 handle 糟得多。handle 仍然由调用方另给一份(见 replyHead):
+   * 显示名可以重名,handle 不会。
+   */
+  function displayNameOf(author) {
+    var name = author && typeof author.name === "string" ? author.name.trim() : "";
+    return name || loginOf(author);
+  }
+
+  /**
+   * 这条回复的作者是不是批注(楼层)的作者本人。githubId 为 0 的是「本机」那份
+   * 本地落款,不是任何人的账号 —— 拿它去比对会把所有本机留言判成楼主。
+   */
+  function isFloorOwner(anno, reply) {
+    var owner = anno && anno.author;
+    var who = reply && reply.author;
+    if (!owner || !who) return false;
+    if (!(owner.githubId > 0)) return false;
+    return owner.githubId === who.githubId;
   }
 
   /** 当前用户的作者形状。未登录就是「本机」那份 —— 与 syncComposer 里的落款一致。 */
@@ -2507,7 +3121,7 @@
     if (opts.quote) {
       quote = document.createElement("blockquote");
       quote.className = "aipm-anno__quote";
-      quote.textContent = String(opts.quote).slice(0, 200);
+      quote.appendChild(quoteInk(activeStyle, String(opts.quote).slice(0, 200)));
       card.appendChild(quote);
     }
 
@@ -2655,6 +3269,9 @@
     var selectors = pendingSelection.selectors;
     var visibility = defaultVisibility();
     hideToolbar();
+    /* 这一条是**已经完成**的动作,选区留着只会把工具条再招回来(见 clearSelection),
+       顺手点第二下的人还会在同一段上叠出第二条。 */
+    clearSelection();
     showInAnnotations();
     /* 落上了就落上了,不再弹一条「已高亮 · 仅本机」的道贺:高亮当场画在正文里,
        看得见,那句话只是把视线从被划的那段拉到屏幕底下去。 */
@@ -2675,6 +3292,9 @@
   /** reply 非空 = 回复某一条回复;为空 = 回复这条批注。 */
   function startReply(anno, reply) {
     composerSelection = null;
+    /* 在折起来的卡上点「回复」,等于说要看这块回复区 —— 把它摊开,不然输入框
+       落在一块没有任何出处的空白里。 */
+    replyViewOf(anno.id).folded = false;
     var who =
       (reply && reply.author && reply.author.login) ||
       (anno.author && anno.author.login) ||
@@ -2935,6 +3555,8 @@
    * 本机批注的回复只落 localStorage。
    */
   function postReply(anno, body, parentId) {
+    /* 先放开落点再发:发完的那次重渲染才不会把新回复自己藏起来。 */
+    openReplyTarget(anno, parentId);
     if (isLocal(anno)) {
       var replies = (anno.replies || []).slice();
       var now = new Date().toISOString();
@@ -3178,6 +3800,7 @@
     var nodes = root.querySelectorAll(BLOCK_SELECTOR);
     var out = [];
     var seq = 0;
+    var totalChars = 0;
     for (var i = 0; i < nodes.length && out.length < MAX_BLOCKS; i++) {
       var el = nodes[i];
       if (el.closest(".aipm-anno, .aipm-chat, .md-nav, nav, .md-sidebar")) continue;
@@ -3191,21 +3814,39 @@
       if (el.querySelector("mark.aipm-anno-mark")) continue;
       var text = (el.textContent || "").replace(/\s+/g, " ").trim();
       if (!text) continue;
+      var clipped = text.length > MAX_BLOCK_CHARS ? text.slice(0, MAX_BLOCK_CHARS) : text;
+      // 到顶就停(而不是跳过该块继续找短的):块的 id 是位置序号,继续找会让
+      // 「哪些块被送出去」依赖文本长短,反而更难解释。停在整页靠前的位置更可预期。
+      if (totalChars + clipped.length > MAX_BLOCK_TOTAL_CHARS) break;
+      totalChars += clipped.length;
       var range = document.createRange();
       range.selectNodeContents(el);
-      out.push({
-        id: id,
-        text: text.length > MAX_BLOCK_CHARS ? text.slice(0, MAX_BLOCK_CHARS) : text,
-        range: range
-      });
+      out.push({ id: id, text: clipped, range: range });
     }
     return out;
   }
 
   function smartHighlight() {
-
-    /* 评论模式没有正文可划;按钮虽然已经藏起来,键盘/脚本仍可能够到它。 */
-    if (panelMode !== "annotations") return;    var now = Date.now();
+    /* 判的是正文,评论模式下没有正文可判。按钮挂在页头上一直可见,所以这里不再是
+       「够到也白搭地返回」,而是把面板切回批注模式 —— 用户点的是「给这一页划线」,
+       回执(智能高亮条与那两颗「全部高亮 / 全部关闭」)也长在批注那一份列表里。 */
+    if (panelMode !== "annotations") {
+      panelMode = "annotations";
+      editorDraft = null;
+      composerSelection = null;
+      syncMode();
+      render();
+    }
+    /* 回执落在面板里的智能高亮条上,面板关着的话点了等于没反应 —— 先把它叫出来。
+       移动端还得多一步:抽屉停在 peek 那一条上时,智能高亮条是被 .is-compact
+       压成 opacity:0 的,得展开到第三段才看得见(与写批注那条路一致)。 */
+    revealPanel();
+    /* 选区也一并撤掉:这一条判的是整页正文,跟用户手上选中的那一段无关,而它接下来
+       要往正文里插一整批 <mark> —— DOM 一动,浏览器再报一次 selectionchange,选区
+       还在正文里的话,刚收起的悬浮窗又会被摆回面板前面(见 clearSelection)。 */
+    clearSelection();
+    if (mode === "sheet") setSnap("expanded", false);
+    var now = Date.now();
     if (now < cooldownUntil) {
       setSmartbar(
         "刚请求过,请等 " + Math.ceil((cooldownUntil - now) / 1000) + " 秒后再试。",
@@ -3224,7 +3865,7 @@
       return;
     }
     setSmartbar("正在分析这一页…(共 " + blocks.length + " 段)", "busy");
-    els.smart.disabled = true;
+    smartBtn.disabled = true;
     store
       .request("/api/highlight/suggest", {
         method: "POST",
@@ -3241,7 +3882,7 @@
         }
       })
       .then(function (res) {
-        els.smart.disabled = false;
+        smartBtn.disabled = false;
         if (res.status === 429) {
           var retry = res.headers && res.headers.get ? Number(res.headers.get("retry-after")) : 0;
           cooldownUntil = Date.now() + (retry > 0 ? retry * 1000 : 30000);
@@ -3252,11 +3893,29 @@
           return;
         }
         if (res.status === 503) {
-          setSmartbar("智能高亮当前不可用,批注功能不受影响。", "warn");
-          els.smart.disabled = true;
+          /* 两种 503 要分开对待,否则用户只能刷新页面:
+             - not_configured 是服务端没配判分密钥,重试永远不会好 → 停掉按钮;
+             - 其余(片全挂 / 排队满)是暂时性的 → 按 Retry-After 冷却,按钮留着。 */
+          if (res.body && res.body.error === "highlight_not_configured") {
+            setSmartbar("智能高亮未启用(服务端缺少判分密钥),批注功能不受影响。", "warn");
+            smartBtn.disabled = true;
+            return;
+          }
+          var retry503 =
+            res.headers && res.headers.get ? Number(res.headers.get("retry-after")) : 0;
+          cooldownUntil = Date.now() + (retry503 > 0 ? retry503 * 1000 : 30000);
+          setSmartbar(
+            (res.body && res.body.message) || "智能高亮暂时不可用,请稍后再试。",
+            "warn"
+          );
           return;
         }
         if (!res.ok) {
+          // status 0 = 请求根本没发出去(断网/被拦截),别把 0 当状态码念给用户听
+          if (res.status === 0) {
+            setSmartbar("网络异常,连不上智能高亮服务,请检查网络后重试。", "warn");
+            return;
+          }
           setSmartbar("智能高亮失败:" + ((res.body && res.body.message) || res.status), "warn");
           return;
         }
@@ -3429,8 +4088,9 @@
     els.title.title = hint;
     els.title.setAttribute("aria-label", hint);
     els.title.setAttribute("aria-pressed", isComments ? "true" : "false");
-    /* 智能高亮找的是「正文里值得划线的地方」,评论模式下没有正文可划。 */
-    els.smart.hidden = isComments;
+    /* 智能高亮条长在批注那一份列表里(它说的「全部高亮」就是正文里的划线),
+       切到评论就把残留的那一条收掉。按钮本身不跟着藏 —— 它在页头上,点击时会把
+       面板切回批注模式(见 smartHighlight)。 */
     if (isComments) setSmartbar("", "");
   }
 
@@ -3572,11 +4232,99 @@
     }
   }
 
-  els.smart.addEventListener("click", smartHighlight);
+  smartBtn.addEventListener("click", smartHighlight);
 
   /* ================================================================
-     高亮点击 → 定位到面板里的那条
+     面板 ↔ 正文:两头的定位
+     ----------------------------------------------------------------
+     一条批注同时出现在两处:正文里那一笔,和面板里的那张卡(引文是它的副本)。
+     两边都点得回去 —— 点正文里那一笔落到卡上,点卡上的引文落回正文。
      ================================================================ */
+
+  /**
+   * 这条批注在正文里的落点。
+   *
+   * 两级:先是它自己那一笔 <mark>;没有的话退到文字所在的那个块。后一档对应
+   * 「锚到了、但那段文字已被别人的高亮占住」—— 同一句话被两个人划线是常见情况,
+   * markRange 画不出第二笔,于是这条进了「未在正文中定位」。可文字明明就在页面
+   * 上,跳过去仍然是对的,只是那一笔不在它名下。两样都没有才是真没定位到。
+   */
+  function passageAnchor(anno) {
+    var mark = document.querySelector('mark.aipm-anno-mark[data-anno-id="' + anno.id + '"]');
+    if (mark) return mark;
+    var range = resolved[anno.id];
+    if (!range) return null;
+    var node = range.startContainer;
+    var el = node && node.nodeType === 3 ? node.parentNode : node;
+    return el && el.closest ? el.closest(BLOCK_SELECTOR) : null;
+  }
+
+  /**
+   * 点引文 → 跳回正文里那一段。
+   *
+   * 手机上面板是一张抽屉:半开或近全屏时正文正压在它底下,直接滚过去会「跳了
+   * 等于没跳」。所以先把抽屉收回头一档(peek),落点才在面板外面。桌面停靠是
+   * 并排的(页面让开一条,见 CSS 的 3.1),不必动。
+   */
+  function jumpToPassage(anno) {
+    var target = passageAnchor(anno);
+    if (!target) {
+      flash("这条批注没能在正文里定位到位置,跳不过去。", "warn");
+      return;
+    }
+    if (mode === "sheet" && snap !== "peek") setSnap("peek");
+    target.scrollIntoView({ block: "center", behavior: "smooth" });
+    target.classList.add("aipm-anno-flash");
+    setTimeout(function () {
+      target.classList.remove("aipm-anno-flash");
+    }, 900);
+  }
+
+  /** 从引文元素找回它那条批注,再跳。 */
+  function jumpFromQuote(q) {
+    var card = q.closest("[data-anno-id]");
+    var anno = card ? annoById(card.getAttribute("data-anno-id")) : null;
+    if (anno !== null) jumpToPassage(anno);
+  }
+
+  /* 引文整块是「回去」的入口。事件挂在列表上而不是逐张卡上:列表每一轮 render
+     都整个重建,逐卡挂事件会在重建时漏掉。
+
+     两道闸门拦的都是同一件事:引文是可以被选中、复制走的一段话,拖选完松手不该
+     跳走 ——
+       · 指针挪过窝的(按下与松开之间超过 4px)不算点击。手滑到文字末尾之外松手时
+         浏览器会把选区收回去(实测:同一个拖拽落在字符上会选中、落在那行文字的
+         空白处会收成光标),光看选区拦不住,所以还得看指针。4px 与抽屉拖拽同一档;
+       · 选区落在引文里的也不算 —— 双击选词时指针根本没动,只有这条拦得住。 */
+  var quotePress = null;
+  els.list.addEventListener("pointerdown", function (e) {
+    quotePress =
+      e.target.closest && e.target.closest(".aipm-anno__item-quote")
+        ? { x: e.clientX, y: e.clientY }
+        : null;
+  });
+  els.list.addEventListener("click", function (e) {
+    var q = e.target.closest ? e.target.closest(".aipm-anno__item-quote") : null;
+    if (!q) return;
+    var dragged =
+      quotePress !== null &&
+      (Math.abs(e.clientX - quotePress.x) > 4 || Math.abs(e.clientY - quotePress.y) > 4);
+    quotePress = null;
+    if (dragged) return;
+    var sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.anchorNode && q.contains(sel.anchorNode)) return;
+    jumpFromQuote(q);
+  });
+  /* 键盘走同一条路:引文是 role="button",回车与空格都得算数。 */
+  els.list.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var q = e.target.closest ? e.target.closest(".aipm-anno__item-quote") : null;
+    if (!q) return;
+    e.preventDefault();
+    jumpFromQuote(q);
+  });
+
+  /* ---- 反方向:正文里那一笔 → 面板里那张卡 ---- */
   document.addEventListener("click", function (e) {
     var mark = e.target.closest && e.target.closest("mark.aipm-anno-mark");
     if (!mark) return;
@@ -3659,7 +4407,34 @@
     mountEntry();
   }
 
+  /* 正文一滚,工具条就该收 —— 它是 position: fixed 的,锚点(被划的那段话)却跟着
+     页面走了,留着就是一扇钉在屏幕上、跟当前正文已经无关的浮窗,还压在页头与面板
+     上面(用户报的「一直悬浮在那里」)。选区本身不动:要「重新锚定」的人手里还是
+     那段话,只是画法/颜色那几颗按钮先收起来。
+
+     判据是「这个滚动容器里有没有锚点」,不是「有没有发生滚动」:侧栏、目录、面板
+     自己的列表滚起来,锚点纹丝不动,工具条收掉才是错的。scroll 不冒泡,所以挂在
+     window 的捕获相上,一次收齐所有滚动容器。 */
+  window.addEventListener(
+    "scroll",
+    function (e) {
+      if (toolbar.hidden || !pendingSelection) return;
+      var target = e.target;
+      if (target === document || target === window) {
+        hideToolbar();
+        return;
+      }
+      if (!target || target.nodeType !== 1) return;
+      var anchor = pendingSelection.range.startContainer;
+      if (target === anchor || target.contains(anchor)) hideToolbar();
+    },
+    { capture: true, passive: true }
+  );
+
   var onViewportChange = function () {
+    /* 视口一变(窗口缩放、转屏、停靠↔抽屉换形态),正文跟着重排,工具条钉住的那个
+       坐标就跟它要标的那句话对不上了 —— 与滚动同一条道理,一并收掉。 */
+    hideToolbar();
     applyMode();
   };
   window.addEventListener("resize", onViewportChange, { passive: true });

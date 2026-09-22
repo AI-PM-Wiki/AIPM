@@ -30,7 +30,16 @@
   --aipm-anno-sheet-peek: 9.25rem;
   --aipm-anno-sheet-half: 55vh;
   --aipm-anno-sheet-expanded: calc(100dvh - var(--aipm-anno-top-gap));
-  /* 与页头/助手面板同一条发丝线颜色令牌 */
+}
+
+/* 与页头/助手面板同一条发丝线颜色令牌。
+   必须挂在 body 而不是上面的 :root 里:Material 把 data-md-color-scheme 写在
+   <body> 上,extra.css 的 --pm-line 两套值也都声明在 [data-md-color-scheme=…] 上;
+   而 var() 是在"声明这个变量的元素"上求值的 —— 写进 :root 就只取得到 extra.css
+   里那份亮色 rgba(0,0,0,.12),深色模式下变成黑底上的黑线,面板左边线、页头分隔线
+   整条看不见(实测计算样式:panel border-left = rgba(0,0,0,0.12))。
+   挂在 body 上求值,才跟着主题走。 */
+body {
   --aipm-anno-line: var(--pm-line, var(--md-default-fg-color--lightest));
 }
 
@@ -249,7 +258,12 @@ html.aipm-anno-mode--sheet .aipm-anno__grip {
   flex: none;
   align-items: center;
   gap: .4rem;
-  height: 2.5rem;
+  /* 与站点页头 .md-header 等高(extra.css 的 --pm-header-h)。
+     末尾 +1px 是这条分隔线本身:全站 box-sizing: border-box(主题在 html 上定死、
+     后代 inherit),只写 height: 2.4rem 会把 border 算进这 2.4rem 里 —— 面板的分隔线
+     落在 47–48;而页头的下缘线是 box-shadow、画在 2.4rem **之外**,落在 48–49。
+     实测(DPR4)两条线差一行,并排接不上。补这 1px 才对得齐。 */
+  height: calc(var(--pm-header-h, 2.4rem) + 1px);
   padding: 0 .5rem 0 .9rem;
   border-bottom: 1px solid var(--aipm-anno-line);
   cursor: default;
@@ -273,8 +287,9 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
    所以正面直接做成一颗胶囊:边框勾出控件轮廓,左边写当前模式,尾巴上一对反向
    箭头说明点下去会换一份列表。
 
-   边框用 --md-default-fg-color--lighter 而不是页头那条发丝线(--aipm-anno-line
-   在暗色下是 12% 白,做分隔够用,勾控件轮廓就几乎看不见了;手柄条用的也是这一档)。
+   边框用 --md-default-fg-color--lighter 而不是页头那条发丝线 --aipm-anno-line:
+   发丝线是"分隔"档(暗色下 20% 白,见 extra.css 3. 节),勾控件轮廓还是太轻;
+   --lighter 两套配色都是 40%,静息态就看得清。手柄条用的也是这一档。
 
    底色刻意留空 —— 紧挨着的条数徽章是**实底无框**的,一虚一实才不会看成一串
    同样的标记。悬停时才填底,填的就是徽章那一档,顺手把边框再加重一档。 */
@@ -326,17 +341,13 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   text-align: center;
 }
 /* 页头是一条「标题在左、动作在右」的横条:笔 + 面板名 + 条数贴着左边,账号与关闭
-   贴着右边。auto 必须只落在这一串里的**第一颗**身上 —— 三颗各给一个的话,富余
-   空间会被平摊成三段,于是智能高亮飘在中间、账号飘在三分之二处,看起来是三颗
-   各管各的散点(这正是改之前的样子)。
+   贴着右边。auto 必须只落在这一串里的**第一颗**身上 —— 两颗各给一个的话,富余
+   空间会被平摊成两段,账号就飘到中间去了(这正是改之前的样子)。
 
-   两套模式的第一颗不是同一颗:批注模式下智能高亮在最前,评论模式下它被藏起来
-   (display:none 的元素不是弹性项,它那个 auto 也就不作数),于是靠相邻兄弟规则
-   把 auto 交接给账号。 */
-.aipm-anno__head .aipm-anno__smart {
-  margin-left: auto;
-}
-.aipm-anno__head .aipm-anno__smart[hidden] + .aipm-anno__account {
+   头一颗曾经是智能高亮,它连同「[hidden] 时把 auto 交接给下一颗」那条相邻兄弟
+   规则一起随按钮搬去了页头(见 extra.css 的 .aipm-anno-smart):这一串现在固定
+   是账号 → 关闭,不再随模式改换头一颗,交接规则也就没有存在的理由。 */
+.aipm-anno__head .aipm-anno__account {
   margin-left: auto;
 }
 .aipm-anno__iconbtn {
@@ -354,11 +365,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   cursor: pointer;
   transition: background-color .15s ease, color .15s ease;
 }
-/* display 会盖掉 [hidden] 的默认表现(作者来源优先于 UA,与特异性无关)——
-   页头那三颗按钮都吃这条,少一条就会「切了模式按钮还在」。 */
-.aipm-anno__iconbtn[hidden] {
-  display: none;
-}
+/* 页头这几颗按钮之间不留缝:它们自己带 1.9rem 的命中区,间距交给标题那侧的 auto。 */
 .aipm-anno__iconbtn + .aipm-anno__iconbtn {
   margin-left: 0;
 }
@@ -409,6 +416,23 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   align-items: center;
   gap: .25rem;
   margin: 0 0 .5rem;
+}
+/* 排序芯片是单选组,「全部展开 / 全部折叠」是旁边两颗动作 —— 分两格摆,
+   中间用 spacer 顶开:左边管顺序,右边管收放。 */
+.aipm-anno__sort-group {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+.aipm-anno__foldall {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: .55rem;
+}
+/* 这两颗在一条 flex 横排里,不要 .aipm-anno__replies-fold 那套块级外边距。 */
+.aipm-anno__foldall .aipm-anno__replies-fold {
+  margin: 0;
 }
 .aipm-anno__sort-btn {
   padding: .12rem .55rem;
@@ -502,6 +526,13 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+/* 回复里的头像比评论卡顶栏那颗小一档:回复是缩进一层的二级内容,头像跟正文
+   等高即可,不该跟卡片顶栏那颗一样大。 */
+.aipm-anno__cavatar.is-sm {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: .625rem;
 }
 /* 服务端不保证给 avatarUrl(也可能被墙拉不下来),退回首字母圆片 */
 .aipm-anno__cavatar.is-letter {
@@ -691,8 +722,8 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__pop .aipm-anno__tb-style.is-active {
   border-color: var(--md-default-fg-color);
 }
-/* 图标按钮。卡片右上角的「编辑 / 删除」、每条回复右端的「回复 / 删除」、卡片
-   底部那条「回复」都是它 —— 这几个动作在所有评论系统里都长着同一张脸(铅笔 /
+/* 图标按钮。卡片右上角的「回复 / 编辑 / 删除」、每条回复右端的「回复 / 删除」
+   都是它 —— 这几个动作在所有评论系统里都长着同一张脸(铅笔 /
    垃圾桶 / 回勾箭头),写字只会把一行按钮撑成一行文字。
    平时是一档浅灰(不跟正文抢注意力),悬停才落到正文色并浮起一层极浅的底:
    不描边、不铺底色块,一行图标才不至于把卡片压得很吵。名字全在 title 与
@@ -763,6 +794,12 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   background: transparent;
   border: 1px solid var(--aipm-anno-line);
 }
+/* 「作者」角标(楼主)。几十层的高楼里,作者本人的一句话比别人的重 —— 拿主色
+   把它和那些中性的状态角标(仅高亮 / 已上传)分开:它说的是身份,不是状态。 */
+.aipm-anno__badge.is-author {
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
 .aipm-anno__badge {
   padding: 0 .3rem;
   border-radius: .2rem;
@@ -771,13 +808,29 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-size: .625rem;
   white-space: nowrap;
 }
+/* 引文是正文里那一笔在面板里的副本 —— 一条灰杠加一段灰字说不出这件事。它现在
+   长得跟正文里那段被画上的话一模一样:划线 / 高亮 / 两者叠加,颜色跟着这条批注
+   走(画法与色值见 9. 正文里的高亮,两边共用同一张表;那层行内 span 由脚本挂,
+   见 annotation.js 的 quoteInk)。
+   字号仍小一档、颜色仍跟着卡片正文走 —— 它是引文,不是这条批注要说的话。
+   整块还是一个入口:点它回到正文里那一段(见 jumpToPassage)。 */
 .aipm-anno__item-quote {
   margin: .2rem 0 .35rem;
-  padding: 0 0 0 .5rem;
-  border-left: 2px solid var(--md-default-fg-color--lightest);
-  color: var(--md-default-fg-color--light);
+  padding: 0;
   font-size: .75rem;
   font-style: normal;
+  border-radius: .2rem;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+/* 悬停给一层中性底。引文自己的底色与下划线已经被画法用掉了,能借来表达「这里
+   可以点」的只剩这一档 —— 面板里所有可点元素(图标按钮、色块)用的都是它。 */
+.aipm-anno__item-quote:hover {
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__item-quote:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
 }
 .aipm-anno__item-body {
   margin: 0;
@@ -785,12 +838,21 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   word-break: break-word;
 }
 .aipm-anno__replies {
+  /* 一条回复的正文离卡片左沿有多远 = 灰条 2px + 灰条与文字之间的呼吸。
+     灰条挂在每条回复自己身上(见下一条规则),回复区里那几行**不带灰条**的
+     (「共 N 条回复」、「展开更多回复」、回复框)靠这个值跟回复的正文对齐成一列。 */
+  --aipm-anno-thread-inset: calc(.5rem + 2px);
   margin-top: .35rem;
-  padding-left: .5rem;
-  border-left: 2px solid var(--md-default-fg-color--lightest);
 }
+/* 左边那条灰条归**每一条**回复自己。它以前长在整段回复上:从「共 N 条回复」
+   一路拉到最底下,是一根不断的线,一层楼里几条回复看着像一整块。挂到条目上之后,
+   条与条之间随条目间距自然断开(下一条 .3rem 的上下边距),一层里有几条一眼数得清。
+   缩进一档的那几条回复本来就是这么长的(见 .aipm-anno__reply[data-depth]),现在
+   两层一个样。 */
 .aipm-anno__reply {
   margin: .3rem 0;
+  padding-left: .5rem;
+  border-left: 2px solid var(--md-default-fg-color--lightest);
   font-size: .75rem;
   line-height: 1.55;
   word-break: break-word;
@@ -804,10 +866,24 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   align-items: center;
   gap: .35rem;
 }
+/* 名字这一格是这一行里唯一有弹性的:GitHub 的显示名可以很长,头像 / 角标 /
+   时间 / 操作按钮都是定宽的,挤不下时该让名字省略,而不是把按钮顶出面板。 */
 .aipm-anno__reply-who {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--md-default-fg-color);
   font-weight: 700;
+}
+/* 显示名后面的 @handle(与显示名相同时不出现)。同一行里两串名字,靠一档浅灰
+   与常规字重把主次分开:显示名是「他叫什么」,handle 是「他是谁」——后者只在
+   需要确认身份时才读。 */
+.aipm-anno__reply-handle {
+  margin-left: .25rem;
+  color: var(--md-default-fg-color--light);
+  font-weight: 400;
 }
 .aipm-anno__reply-time {
   flex: none;
@@ -817,17 +893,11 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__reply-body {
   margin: 0;
 }
-/* 回复的回复:缩进一层。深度由脚本封顶在两层 —— 400px 宽的面板里再往里缩,
-   正文就只剩一条竖线了。 */
-.aipm-anno__reply[data-depth="1"] {
-  margin-left: .7rem;
-  padding-left: .5rem;
-  border-left: 2px solid var(--md-default-fg-color--lightest);
-}
-.aipm-anno__reply[data-depth="2"] {
-  margin-left: 1.4rem;
-  padding-left: .5rem;
-  border-left: 2px solid var(--md-default-fg-color--lightest);
+/* 回复缩进**一档**就到头:原始评论 → 回复 → 回复回复。再深的那一层不再往右缩
+   (400px 宽的面板里,第二档之后正文只剩一条竖线),改由正文开头那句「回复 @某人」
+   说清层次。脚本那边同样只封一档(MAX_DEPTH)。 */
+.aipm-anno__reply[data-depth] {
+  margin-left: calc(var(--aipm-anno-thread-inset) + .7rem);
 }
 /* 回复的操作链。触屏没有 hover,所以它一直看得见 —— 靠一档浅灰压住存在感,
    不再用 opacity 藏一半(那会让浅灰变到几乎看不见,点也点不准)。 */
@@ -837,6 +907,81 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   align-items: center;
   gap: .1rem;
 }
+
+/* 「共 N 条回复」。回复多到要折叠或翻页时才挂 —— 它是这一页上唯一说得清
+   「还有多少条没看见」的东西,总共没几条时它就是废话。 */
+.aipm-anno__replies-count {
+  margin-bottom: .3rem;
+  color: var(--md-default-fg-color--light);
+  font-size: .625rem;
+}
+/* 三处开合共用一套形:层里那颗「展开剩余 N 条回复 / 收起回复」、整段末尾那颗
+   「展开更多回复」、以及批注卡上那颗「展开 N 条回复 / 收起全部回复」。它们是
+   同一件事(把没铺出来的铺出来),做成文字链的样子、按钮的行为:能聚焦、能回车,
+   但不带按钮的框 —— 它是一句话,不是一个控件。 */
+.aipm-anno__reply-more,
+.aipm-anno__replies-more,
+.aipm-anno__replies-fold {
+  display: block;
+  margin: .25rem 0 .1rem;
+  padding: 0;
+  border: 0;
+  color: var(--md-accent-fg-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  text-align: left;
+  cursor: pointer;
+}
+/* 每层各有一颗开合 —— 一屏上可能同时有好几颗,缩进到它将要展开的那一层上,
+   读者才分得清哪颗管哪条(不缩进的话全挤在同一个横坐标上)。档位与回复的缩进
+   一致,对齐到它下面那几条回复的左沿。 */
+.aipm-anno__reply-more[data-depth] {
+  margin-left: calc(var(--aipm-anno-thread-inset) + .7rem);
+}
+/* 整段末尾那颗「本层还有 N 条回复」与「下一页」都不属于任何一层,不缩进;
+   与上面那层楼之间留一道缝,免得读成楼里的最后一条。 */
+.aipm-anno__replies-more {
+  margin-top: .45rem;
+}
+.aipm-anno__reply-more:hover,
+.aipm-anno__replies-more:hover,
+.aipm-anno__replies-fold:hover {
+  text-decoration: underline;
+}
+.aipm-anno__reply-more:focus-visible,
+.aipm-anno__replies-more:focus-visible,
+.aipm-anno__replies-fold:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+/* 正文开头那句「回复 @某人」。缩进到顶之后由它来说层次,并且可点 —— 点一下跳到
+   被回复的那一条。它长得像链接,但不是 <a>:它不导航到任何地址,只是个跳转动作。 */
+.aipm-anno__reply-at {
+  padding: 0;
+  border: 0;
+  color: var(--md-accent-fg-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+.aipm-anno__reply-at:hover {
+  text-decoration: underline;
+}
+/* 批注卡上那颗卡片级开合(「展开 N 条回复」/「收起全部回复」)。它是这一整块
+   回复区的开关,所以不再往里缩进,与卡片的正文左沿齐平。 */
+.aipm-anno__replies-foldwrap {
+  margin: .1rem 0 .2rem;
+}
+.aipm-anno__replies-fold {
+  font-weight: 600;
+}
+/* 「回复 @某人」跳过来的那一下,与点击正文高亮后的反馈同款。 */
+.aipm-anno__reply.is-flash {
+  border-radius: .2rem;
+  background: var(--md-default-fg-color--lightest);
+}
 /* 回复框:与新批注卡**故意不同形** —— 没有底色、没有左边那条主色、没有角标。
    它就是个朴素的小输入框,一眼看出「这是在回话」。 */
 .aipm-anno__replybox {
@@ -844,12 +989,17 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   margin: .2rem 0 .1rem;
 }
 /* 回复框跟着它将要成为的那一层缩进。回第一层回复时不再与顶层齐平 —— 写的时候
-   看见的层次就是发出去之后的层次,缩进的两档与 .aipm-anno__reply 保持一致。 */
-.aipm-anno__replybox[data-depth="1"] {
-  margin-left: .7rem;
+   看见的层次就是发出去之后的层次,档位与 .aipm-anno__reply 保持一致。 */
+.aipm-anno__replybox[data-depth] {
+  margin-left: calc(var(--aipm-anno-thread-inset) + .7rem);
 }
-.aipm-anno__replybox[data-depth="2"] {
-  margin-left: 1.4rem;
+/* 回复区里那几行**不是回复**的东西 —— 「共 N 条回复」、「展开更多回复」、回复框
+   —— 没有灰条可挂,靠同一个值补齐灰条那份宽度,跟回复的正文落在同一列上。少了
+   这一笔它们会比回复正文更靠左,整段回复的左沿就长短不一了。 */
+.aipm-anno__replies-count,
+.aipm-anno__replies-more,
+.aipm-anno__replybox {
+  margin-left: var(--aipm-anno-thread-inset);
 }
 .aipm-anno__input--reply {
   min-height: 2.2rem;
@@ -881,9 +1031,11 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   opacity: .6;
   cursor: progress;
 }
-/* 卡片底部的操作链。左边那颗是点赞(心 + 计数),右边是「回复」的图标按钮;
-   再往右的文字链是「上传为公开 / 私有」「重新锚定」—— 那几件事没有通行的图标,
-   写字比画图准。图标按钮自带内边距,间距因此收紧一档,免得一行里七长八短。 */
+/* 卡片底部的操作链:点赞(心 + 计数)与「上传为公开 / 私有」「重新锚定」那几条
+   文字链 —— 后几件事没有通行的图标,写字比画图准。点赞那颗自带内边距,间距因此
+   收紧一档,免得一行里七长八短。
+   「回复」不在这行:它搬去了卡片右上角(见 annotation.js 的 cardReplyButton),
+   与每条回复右端那颗回勾箭头同一个位置逻辑。 */
 .aipm-anno__item-actions {
   display: flex;
   flex-wrap: wrap;
@@ -938,11 +1090,6 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 /* 文字链跟着图标按钮一起站在这一行里,高度对齐才不会一高一低。 */
 .aipm-anno__item-actions .aipm-anno__link {
   height: 1.4rem;
-}
-/* 卡片底部这一行回答的是「这张卡能做什么」,比每条回复右端那两颗更该被看见 ——
-   同一颗图标按钮,这里给正文色,那里给浅灰。 */
-.aipm-anno__item-actions .aipm-anno__ibtn {
-  color: var(--md-default-fg-color);
 }
 
 /* ----------------------------------------------------------------------------
@@ -1037,14 +1184,12 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__draft[data-color="blue"]   { border-left-color: var(--aipm-anno-blue); }
 .aipm-anno__draft[data-color="pink"]   { border-left-color: var(--aipm-anno-pink); }
 .aipm-anno__draft[data-color="purple"] { border-left-color: var(--aipm-anno-purple); }
+/* 草稿卡上的引文与存下来之后那张卡上的引文长得一样 —— 「写的时候看到的排版,
+   就是发出去之后的排版」(同上一条,画法与色值见 9. 正文里的高亮)。卡片自己
+   左边那条 3px 彩线已经说明这条批注是什么色,引文不必再重复一遍。 */
 .aipm-anno__quote {
   margin: 0;
-  padding: 0 0 0 .5rem;
-  /* 引文竖线跟着草稿卡主色走:inherit 取父级 border-left-color,
-     不必把五个色再抄一遍 */
-  border-left: 2px solid transparent;
-  border-left-color: inherit;
-  color: var(--md-default-fg-color--light);
+  padding: 0;
   font-size: .75rem;
   max-height: 3.2rem;
   overflow: hidden;
@@ -1460,36 +1605,56 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 
 /* ----------------------------------------------------------------------------
-   9. 正文里的高亮
+   9. 正文里的高亮(以及面板引文行里那份副本)
    文字颜色一律 inherit(见文件头):对比度不被底色改变。
+
+   同一个选择器表里始终写着两个名字:正文里的 <mark>,和面板引文行里那层行内的
+   .aipm-anno__quote-ink。后者是前者的副本 —— 面板上看到的引文,就该跟文章里画
+   的那一笔长得一样。加一处忘一处,两边就会各说各话。
    ---------------------------------------------------------------------------- */
 /* 画法与颜色正交:先按色定出「墨色」与「底色」两个变量,再由画法决定用哪个。
-   underline 只用 ink、highlight 只用 wash、both 两个都用。 */
-.aipm-anno-mark {
+   underline 只用 ink、highlight 只用 wash、both 两个都用。
+
+   声明写在**卡片**上(这条批注是哪个色本来就记在卡片的 data-color 上),引文那层
+   行内 span 继承就拿到了 —— 五个色不必再往引文上抄一遍。 */
+.aipm-anno-mark,
+.aipm-anno__quote-ink {
   padding: 0;
   color: inherit;
   background: transparent;
   border-bottom: 2px solid transparent;
+}
+.aipm-anno-mark {
   cursor: pointer;
   transition: background-color .15s ease;
 }
-.aipm-anno-mark[data-color="yellow"] {
+.aipm-anno-mark[data-color="yellow"],
+.aipm-anno__item[data-color="yellow"],
+.aipm-anno__draft[data-color="yellow"] {
   --aipm-mark-ink: var(--aipm-anno-yellow);
   --aipm-mark-wash: var(--aipm-anno-yellow-bg);
 }
-.aipm-anno-mark[data-color="green"] {
+.aipm-anno-mark[data-color="green"],
+.aipm-anno__item[data-color="green"],
+.aipm-anno__draft[data-color="green"] {
   --aipm-mark-ink: var(--aipm-anno-green);
   --aipm-mark-wash: var(--aipm-anno-green-bg);
 }
-.aipm-anno-mark[data-color="blue"] {
+.aipm-anno-mark[data-color="blue"],
+.aipm-anno__item[data-color="blue"],
+.aipm-anno__draft[data-color="blue"] {
   --aipm-mark-ink: var(--aipm-anno-blue);
   --aipm-mark-wash: var(--aipm-anno-blue-bg);
 }
-.aipm-anno-mark[data-color="pink"] {
+.aipm-anno-mark[data-color="pink"],
+.aipm-anno__item[data-color="pink"],
+.aipm-anno__draft[data-color="pink"] {
   --aipm-mark-ink: var(--aipm-anno-pink);
   --aipm-mark-wash: var(--aipm-anno-pink-bg);
 }
-.aipm-anno-mark[data-color="purple"] {
+.aipm-anno-mark[data-color="purple"],
+.aipm-anno__item[data-color="purple"],
+.aipm-anno__draft[data-color="purple"] {
   --aipm-mark-ink: var(--aipm-anno-purple);
   --aipm-mark-wash: var(--aipm-anno-purple-bg);
 }
@@ -1497,14 +1662,19 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
    主题自带 `.md-typeset mark`(0,1,1)比 `.aipm-anno-mark`(0,1,0)更具体,
    只划线那条会被它铺上一层默认的黄底。带属性选择器才够赢。 */
 .aipm-anno-mark[data-style="highlight"],
-.aipm-anno-mark[data-style="both"] {
+.aipm-anno-mark[data-style="both"],
+.aipm-anno__quote-ink[data-style="highlight"],
+.aipm-anno__quote-ink[data-style="both"] {
   background: var(--aipm-mark-wash);
 }
-.aipm-anno-mark[data-style="underline"] {
+.aipm-anno-mark[data-style="underline"],
+.aipm-anno__quote-ink[data-style="underline"] {
   background: transparent;
 }
 .aipm-anno-mark[data-style="underline"],
-.aipm-anno-mark[data-style="both"] {
+.aipm-anno-mark[data-style="both"],
+.aipm-anno__quote-ink[data-style="underline"],
+.aipm-anno__quote-ink[data-style="both"] {
   border-bottom-color: var(--aipm-mark-ink);
 }
 .aipm-anno-mark:hover {
@@ -1533,6 +1703,18 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   border-bottom-color: transparent;
   cursor: default;
   pointer-events: none;
+}
+
+/* 点引文跳回正文时的落地提示。页面是被平滑滚过去的,光看滚动落点认不出「到了」
+   的是哪一段 —— 那一段先亮一圈。光圈用这条批注自己的墨色,于是「亮的是我点的那
+   条」一眼看得出来;退而求其次落到整个块上时(那句话已被别人的高亮占住,见
+   passageAnchor)它身上没有墨色,退回主题强调色。
+   outline 而不是 box-shadow:与正文里 mark 的焦点环同一档粗细与偏移,落在同一段
+   文字上,两种提示长得一样。行内元素折行时它按每一行的文字片段各描一圈(焦点环
+   也是这么画的),不是一块整的方框。 */
+.aipm-anno-flash {
+  outline: 2px solid var(--aipm-mark-ink, var(--md-accent-fg-color));
+  outline-offset: 1px;
 }
 
 /* ----------------------------------------------------------------------------

@@ -790,12 +790,12 @@ extra:
   # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
   chat_agent:
     enabled: true
-    version: 23
+    version: 24
   # 自建批注系统前端(注入由 hooks/annotation.py 完成):
   # 取代原先嵌入的 hypothes.is 客户端;enabled 关闭后不再注入
   annotation:
     enabled: true
-    version: 28
+    version: 29
   # analytics:  # TODO: 需要访问统计时取消注释并填写自己的 ID
   #   # 大陆站点勿用 Google Analytics(GA 在大陆不可直连),建议自建 umami。
   #   provider: umami
@@ -820,7 +820,7 @@ extra_javascript:
   # AI 助手面板与批注面板都用它，且必须排在 hooks 追加的两个面板脚本之前
   - '_static/js/panel-shared.js?v=1'
 extra_css:
-  - '_static/css/extra.css?v=38'
+  - '_static/css/extra.css?v=39'
   - '_static/css/mermaid-zoom.css?v=4'
 
 # Extensions

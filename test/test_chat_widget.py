@@ -20,6 +20,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAT_CSS = ROOT / "docs" / "_static" / "css" / "chat-widget.css"
+ANNO_CSS = ROOT / "docs" / "_static" / "css" / "annotation.css"
+EXTRA_CSS = ROOT / "docs" / "_static" / "css" / "extra.css"
 CHAT_JS = ROOT / "docs" / "_static" / "js" / "chat-widget.js"
 
 
@@ -56,6 +58,53 @@ class TestChatWidgetStyles(unittest.TestCase):
             "border-left: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));",
             self.css,
         )
+
+    def test_head_divider_matches_annotation_panel(self):
+        """头部与内容区之间的发丝线:与批注面板 .aipm-anno__head 同款同色。
+
+        两侧都是 1px 实线的 border-bottom,颜色令牌同为 --pm-line(即页头那条
+        交界线),不写死 rgba;批注面板未加载时一并回落到主题的浅色描边。
+        """
+        head = re.search(r"\n\.aipm-chat__head \{(.*?)\}", self.css, re.S).group(1)
+        self.assertIn(
+            "border-bottom: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));",
+            head,
+        )
+        # 同一条线在批注面板里的名字:--aipm-anno-line 别名到同一个 --pm-line
+        anno = ANNO_CSS.read_text(encoding="utf-8")
+        anno_line = re.search(r"--aipm-anno-line:\s*([^;]+);", anno)
+
+        self.assertIn("--pm-line", anno_line.group(1))
+
+    def test_head_height_matches_site_header(self):
+        """两个面板的页头与站点页头 .md-header 等高。
+
+        停靠/浮层形态下面板顶在视口上缘、紧挨着页头:高度不一致,面板页头那条
+        横向分割线就比页头下缘低一截,并排看是两级台阶。改之前实测三个值互不
+        相同 —— 站点页头 48px、批注页头 50px、助手页头 61px。所以三处只留一个
+        字面量(extra.css 的 --pm-header-h),其余按 token 读。
+
+        高度要带 +1px:全站 box-sizing: border-box,只写 2.4rem 会把面板这条
+        border-bottom 算进 2.4rem 里,线落在 47–48;页头的下缘线是 box-shadow、
+        画在 2.4rem 之外,落在 48–49。DPR4 实测差一行,并排接不上。
+        """
+        extra = EXTRA_CSS.read_text(encoding="utf-8")
+        self.assertIn("--pm-header-h: 2.4rem;", extra)
+
+        # 吸顶发丝线的落点也是这个高度,一并绑上同一个 token
+        line = re.search(r"\n\.md-header__line \{(.*?)\}", extra, re.S).group(1)
+        self.assertIn("top: var(--pm-header-h);", line)
+
+        # 两个面板的页头:高度读 token(+1px 的分隔线),且不再用上下 padding
+        # 去撑(定高后 padding 只会把内容挤出去)
+        for path, sel in ((CHAT_CSS, ".aipm-chat__head"), (ANNO_CSS, ".aipm-anno__head")):
+            with self.subTest(sel=sel):
+                rule = re.search(
+                    r"\n" + re.escape(sel) + r" \{(.*?)\}", path.read_text(encoding="utf-8"), re.S
+                ).group(1)
+                self.assertIn("height: calc(var(--pm-header-h, 2.4rem) + 1px);", rule)
+                self.assertNotIn("padding-top", rule)
+                self.assertNotIn("padding-bottom", rule)
 
     def test_tabs_bottom_border_is_removed(self):
         """主题给 .md-tabs 的 1px 下边框与注入的发丝线叠成粗线,extra.css 里去掉"""
@@ -142,6 +191,38 @@ class TestChatWidgetStyles(unittest.TestCase):
             self.css,
         )
 
+    def test_peek_drops_the_head_divider(self):
+        """一段不画页头那条分隔线。
+
+        一段时消息区是 display:none,页头与输入条之间空无一物 —— 这条线不划分任何
+        两块内容,只是一道横贯整屏的杠;而且它比抽屉自己的上缘还显眼(暗色实测:
+        线 20% 白、上缘 12%),内部分界反压过外部分界。抽屉里其余元素都是内缩的
+        (手柄小胶囊、输入条左右各留 15px、顶部 1rem 圆角),通栏的线不属于这套
+        语言。二段/三段消息区回来,线才重新有意义。
+        """
+        rule = re.search(
+            r'html\.aipm-chat-mode--sheet \.aipm-chat\[data-snap="peek"\] \.aipm-chat__head \{(.*?)\}',
+            self.css,
+            re.S,
+        )
+        self.assertIsNotNone(rule, "一段的页头规则不见了")
+        body = rule.group(1)
+        self.assertIn("border-bottom-color: transparent;", body)
+        # 只改颜色不改宽度:head 高度是 --pm-header-h + 1px 定死的,删 border 会让
+        # 内容盒重排(见 test_head_height_matches_site_header)
+        self.assertNotIn("border-bottom:", body)
+        self.assertNotIn("height:", body)
+
+        # 量具态不跟这条:它只量尺寸,而这条不动尺寸;真跟了会在转屏/开合时把线
+        # 淡出又淡回,闪一下
+        self.assertNotIn("is-peek-measure .aipm-chat__head", self.css)
+
+        # 线的消失是跟着吸附动画淡出,不是啪地断掉
+        head = re.search(r"\n\.aipm-chat__head \{(.*?)\}", self.css, re.S).group(1)
+        self.assertIn(
+            "transition: border-color var(--aipm-chat-dur) var(--aipm-chat-ease);", head
+        )
+
     def test_first_two_snaps_use_compact_single_row_composer(self):
         for snap in ("peek", "half"):
             with self.subTest(snap=snap):
@@ -185,10 +266,11 @@ class TestChatWidgetStyles(unittest.TestCase):
         # 量具自身引起的尺寸变化不再回头重测(免 ResizeObserver 回环)
         self.assertRegex(self.js, r"if \(measuringPeek\) return;")
 
-        # 量具只并 peek 的那几条几何规则:手柄 / 头部 / 输入条
+        # 量具只并 peek 的那几条几何规则:手柄 / 输入条
+        # (头部不在其列 —— 它由 --pm-header-h 定高,peek 不再有自己的几何,
+        #  量具态自然与 peek 一致,无需再并一条)
         for sel in (
             ".aipm-chat__grip",
-            ".aipm-chat__head",
             ".aipm-chat__composer",
             ".aipm-chat__input",
             ".aipm-chat__inputrow",

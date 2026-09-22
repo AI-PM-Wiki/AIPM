@@ -270,7 +270,22 @@ html.aipm-chat-mode--sheet .aipm-chat__grip {
   display: flex;
   align-items: center;
   gap: .35rem;
-  padding: .55rem .6rem .55rem 1rem;
+  /* 停靠/浮层形态下面板顶在视口上缘、紧挨着页头,页头高度一旦不同,它这条线就会
+     比页头下缘低一截,并排看是两级台阶 —— 所以取站点页头的高度(extra.css 的
+     --pm-header-h)。定了高度就不再给上下 padding,内容靠 align-items 居中。
+
+     末尾 +1px 是这条分隔线本身:全站 box-sizing: border-box(主题在 html 上定死、
+     后代 inherit),只写 2.4rem 会把 border 算进这 2.4rem 里 —— 面板的线落在 47–48;
+     而页头的下缘线是 box-shadow、画在 2.4rem **之外**,落在 48–49。实测(DPR4)
+     两条线差一行,并排接不上。补这 1px 才对得齐。 */
+  height: calc(var(--pm-header-h, 2.4rem) + 1px);
+  padding: 0 .6rem 0 1rem;
+  /* 描边色可过渡:一段收起那条线时跟着吸附动画淡出,而不是啪地消失 */
+  transition: border-color var(--aipm-chat-dur) var(--aipm-chat-ease);
+  /* 头部与下方内容区之间的发丝线:与批注面板 .aipm-anno__head 同款 ——
+     1px 实线、同一颜色令牌(--pm-line,即页头那条交界线;批注面板未加载时
+     回落到主题的浅色描边),两侧都不做投影。 */
+  border-bottom: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
 }
 html.aipm-chat-mode--sheet .aipm-chat__head {
   touch-action: none;              /* 头部同样可拖拽(onPointerDown 判定) */
@@ -340,15 +355,26 @@ html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__msgs {
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__clear {
   display: none;
 }
-/* 页面优先态垂直空间金贵:手柄与头部收紧,把高度留给输入条 */
+/* 页面优先态垂直空间金贵:手柄收紧,把高度留给输入条。
+   头部不在此列 —— 它已由 --pm-header-h 定死(且比原先的 peek 高度还矮 3px),
+   再收上下 padding 也改不了高度,只留一条空规则。 */
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__grip,
 html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__grip {
   height: 1rem;
 }
-html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__head,
-html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__head {
-  padding-top: .3rem;
-  padding-bottom: .3rem;
+/* 一段不画页头那条分隔线。此时消息区是 display:none,页头与输入条之间空无一物 ——
+   这条线不划分任何两块内容,只是一道横贯整屏的杠;而且它比抽屉自己的上缘还显眼
+   (暗色实测:线 20% 白,上缘 12%),内部分界压过了外部分界。抽屉里其余元素都是
+   内缩的(手柄小胶囊、输入条左右各留 15px、顶部 1rem 圆角),通栏的线也不属于这套
+   语言。二段/三段消息区回来,线才重新有意义。
+
+   只改颜色不改宽度:head 高度是 --pm-header-h + 1px 定死的,删 border 会让内容盒
+   重排;改颜色纯属重绘,还能跟着吸附动画一起淡出(见 .aipm-chat__head 的 transition)。
+
+   量具态 .is-peek-measure 不跟这条:它只量尺寸,而这条规则不动尺寸;真跟了反而
+   在转屏/开合时会把线淡出又淡回,闪一下。 */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__head {
+  border-bottom-color: transparent;
 }
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer,
 html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer,
