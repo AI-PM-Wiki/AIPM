@@ -631,7 +631,7 @@
      它在面板里时是跟着模式显隐的(评论模式下收起,那边没有正文可划)。搬到面板
      外面之后这条规则不再成立:面板关着的时候,用户根本看不见当前是哪一份列表,
      一颗「有时在、有时不在」的页头按钮就成了没来由的闪烁。所以它一直可见,
-     点击时自己把面板切回批注模式(见 smartHighlight 开头那段)。 */
+     点击时把面板叫出来、回执摆在智能高亮条上(见 smartHighlight 开头那段)。 */
   var smartBtn = document.createElement("button");
   smartBtn.type = "button";
   smartBtn.className = "md-header__button md-icon aipm-anno-smart";
@@ -3928,16 +3928,9 @@
     var refresh = !!(opts && opts.refresh);
     var auto = !!(opts && opts.auto);
     if (!auto) {
-      /* 判的是正文,评论模式下没有正文可判。按钮挂在页头上一直可见,所以这里不再是
-        「够到也白搭地返回」,而是把面板切回批注模式 —— 用户点的是「给这一页划线」,
-        回执(智能高亮条与那两颗「全部高亮 / 全部关闭」)也长在批注那一份列表里。 */
-      if (panelMode !== "annotations") {
-        panelMode = "annotations";
-        editorDraft = null;
-        composerSelection = null;
-        syncMode();
-        render();
-      }
+      /* 判的是正文,与面板里看的是哪一份列表无关:回执落在智能高亮条上,而那条长
+         在面板里、不跟着列表换。所以这里不切列表 —— 站长在「评论」那一份里点页头
+         那颗图标,判完之后人还在评论里。 */
       /* 回执落在面板里的智能高亮条上,面板关着的话点了等于没反应 —— 先把它叫出来。
          移动端还得多一步:抽屉停在 peek 那一条上时,智能高亮条是被 .is-compact
          压成 opacity:0 的,得展开到第三段才看得见(与写批注那条路一致)。 */
@@ -4418,10 +4411,6 @@
     els.title.setAttribute("aria-pressed", isComments ? "true" : "false");
     /* 页头那支笔的措辞跟着模式走(它写的是「切到评论」还是「切回批注」)。 */
     syncHeadIcon();
-    /* 智能高亮条长在批注那一份列表里(它说的「全部高亮」就是正文里的划线),
-       切到评论就把残留的那一条收掉。按钮本身不跟着藏 —— 它在页头上,点击时会把
-       面板切回批注模式(见 smartHighlight)。 */
-    if (isComments) setSmartbar("", "");
   }
 
   els.title.addEventListener("click", togglePanelMode);

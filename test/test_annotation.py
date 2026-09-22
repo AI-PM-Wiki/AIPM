@@ -1028,20 +1028,28 @@ class TestUiRoundThree(unittest.TestCase):
         block = _block(self.js, "function syncMode()")
         self.assertIn('"评论"', block)
         self.assertIn('"批注"', block)
-        # 智能高亮按钮不在面板里了,不随模式显隐;跟着模式一起收的是它那条回执
+        # 智能高亮按钮不在面板里了,不随模式显隐;它那条回执按页走,也不跟着模式收
         self.assertNotIn("aipm-anno__smart", block)
-        self.assertIn('setSmartbar("", "")', block)
+        self.assertNotIn("setSmartbar", block)
 
     def test_smart_button_is_not_hidden_by_the_panel_mode(self):
         """按钮站在面板外面,显隐就不该再跟着面板里的模式走 —— 面板关着的时候用户
         看不见当前是哪一份列表,一颗「有时在、有时不在」的页头按钮就是没来由的
-        闪烁。所以它一直可见,点击时自己把面板切回批注模式并叫出来。"""
+        闪烁。所以它一直可见,点击时把面板叫出来、回执摆在智能高亮条上。"""
         block = _block(self.js, "function smartHighlight(")
-        self.assertIn('panelMode = "annotations"', block)
         self.assertIn("revealPanel()", block)
         self.assertNotIn("smartBtn.hidden", self.js)
         # 面板里的 iconbtn 不再有需要 [hidden] 收回的那一颗,规则随之删掉
         self.assertNotIn(".aipm-anno__iconbtn[hidden]", self.css)
+
+    def test_the_regeneration_leaves_the_list_alone(self):
+        """判的是正文,面板里当前是「批注」还是「评论」与它无关 —— 回执(智能高亮条
+        与那两颗「全部高亮 / 全部关闭」)长在面板里、不跟着列表换。所以判分这一条路
+        不切列表:站长在评论那一份里点页头那颗图标,判完之后人还在评论里。"""
+        block = _block(self.js, "function smartHighlight(")
+        self.assertNotIn("panelMode", _strip_comments(block))
+        # 切列表只此两处:标题那颗胶囊与划词落批注;判分这一条路不在其中
+        self.assertNotIn("togglePanelMode()", block)
 
     def test_comment_mode_still_offers_the_selection_toolbar(self):
         """在评论视图里划词也要出悬浮窗(第三轮验收第 6 条),而且落了批注要切回
