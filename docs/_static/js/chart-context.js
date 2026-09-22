@@ -43,11 +43,18 @@
   才有。取一张图的字节要过三道,任何一道不过就退回只带文字说明的那条路:
 
   - **来源**:只取同源的地址。跨域的图 fetch 被 CORS 挡下,也超出「读者正在看的
-    这一页」;
+    这一页」。**重定向一概不跟**(`redirect: "manual"`):地址换了个地方之后取到的
+    就不是这一页的东西了,而重定向的去向在读之前是看不见的 —— 同源地址照样可以
+    302 到一台放行 CORS 的跨域服务器上,跟过去就把跨域的字节读了进来;
   - **类型**:认的只有 PNG / JPEG / WebP / GIF,按**字节开头**判定 —— 服务器说的
     content-type 由服务器给,和正文一样不可信,只用来在读字节之前挡掉明显不是图
     的东西;
-  - **体积**:超过 CTX.IMAGE_MAX_BYTES 的不取,不把一条语境变成几百 KB 的请求体。
+  - **体积**:超过 CTX.IMAGE_MAX_BYTES 的不取。这一道管的是**读的过程**:从头读,
+    一超限就地取消这条响应(reader.cancel()),剩下的字节既不进内存也不继续传。
+    读完了再判的话,一份几百 MB 的响应会先整个落进浏览器内存,再由我们自己丢掉它。
+
+  SVG 走的是同一个读取上限、同样在读取过程中停 —— 上限说的是「一次取源最多读多少
+  字节」,与这张图是位图还是矢量图无关。
 */
 (function () {
   "use strict";
@@ -177,6 +184,56 @@
     return url.origin === location.origin ? url : null;
   }
 
+  /**
+   * 取源的请求怎么发。
+   *
+   * `redirect: "manual"` 是不跟重定向:重定向是「地址换了个地方」,而重定向的去向
+   * 在读之前看不见 —— 同源地址照样可以 302 到一台放行 CORS 的跨域服务器上,跟过去
+   * 读到的就不是这一页的东西了。manual 之下重定向拿到的是一个不透明响应(状态 0、
+   * 没有正文),`res.ok` 为假,自然落回替代文本那条路:跨源重定向因此**根本不会
+   * 发生**,而不是发生之后再拦。
+   */
+  function sourceRequest(url) {
+    return fetch(url.href, { credentials: "same-origin", redirect: "manual" });
+  }
+
+  /**
+   * 读一个响应体,最多读 max 字节。
+   *
+   * 一超限就 `reader.cancel()`:这条响应就地断掉,剩下的字节既不进内存也不再传。
+   * 读完再判体积的话,超限的那份会先整个落进内存,再由我们自己丢掉它 —— 上限就
+   * 形同虚设。返回 null 表示超限(或没有正文)。
+   */
+  function readCapped(res, max) {
+    if (!res.body) return Promise.resolve(null);
+    var reader = res.body.getReader();
+    var chunks = [];
+    var total = 0;
+    function step() {
+      return reader.read().then(function (part) {
+        if (part.done) {
+          var bytes = new Uint8Array(total);
+          var at = 0;
+          for (var i = 0; i < chunks.length; i++) {
+            bytes.set(chunks[i], at);
+            at += chunks[i].length;
+          }
+          return bytes;
+        }
+        total += part.value.byteLength;
+        if (total > max) {
+          /* 取消本身的结果无关紧要(这条响应已经不要了),但它可能带着上游的读
+             错误一起拒绝 —— 别把一个未处理的拒绝留在页面上。 */
+          reader.cancel().catch(function () {});
+          return null;
+        }
+        chunks.push(part.value);
+        return step();
+      });
+    }
+    return step();
+  }
+
   function sameOriginSvgUrl(img) {
     var url = sameOriginUrl(img.src);
     return url !== null && url.pathname.toLowerCase().endsWith(".svg") ? url : null;
@@ -256,9 +313,9 @@
    *
    * 三道限制都在这里,任何一道不过就退回只带文字说明的那条路(与这条通路原本的
    * 行为一致):
-   *   - **来源**:只取同源的地址;
+   *   - **来源**:只取同源的地址,重定向一概不跟(见 sourceRequest);
    *   - **类型**:content-type 先挡一道,字节开头再认一道;
-   *   - **体积**:超过 CTX.IMAGE_MAX_BYTES 的不取。
+   *   - **体积**:读的过程中就不超过 CTX.IMAGE_MAX_BYTES(见 readCapped)。
    *
    * key 用图片地址:同一张图送两次只有一条语境,页面上两张不同的图各是一条。
    */
@@ -268,20 +325,19 @@
     var url = sameOriginUrl(img.src);
     if (url === null) return Promise.resolve({ chart: "image", source: text, key: img.src });
     /* 取的是同一张已经显示在页面上的图的地址,同源。失败不是异常,是这条路本来
-       就有的一种结果(图换了地方、服务器不给这个类型、字节认不出来),退回替代
-       文本即可 —— fetch 的第二个回调接住它,不额外包一层。 */
-    return fetch(url.href, { credentials: "same-origin" })
+       就有的一种结果(图换了地方、服务器不给这个类型、字节认不出来、超过上限),
+       退回替代文本即可 —— fetch 的第二个回调接住它,不额外包一层。 */
+    return sourceRequest(url)
       .then(
         function (res) {
-          return res.ok && looksLikeRaster(res) ? res.arrayBuffer() : null;
+          return res.ok && looksLikeRaster(res) ? readCapped(res, CTX.IMAGE_MAX_BYTES) : null;
         },
         function () {
           return null;
         }
       )
-      .then(function (buf) {
-        if (buf === null || buf.byteLength === 0 || buf.byteLength > CTX.IMAGE_MAX_BYTES) return null;
-        var bytes = new Uint8Array(buf);
+      .then(function (bytes) {
+        if (bytes === null || bytes.length === 0) return null;
         var mediaType = sniffImageType(bytes);
         if (mediaType === null) return null;
         return {
@@ -306,18 +362,19 @@
     if (svg === null) return readRaster(img);
     /* 取的是同一张已经显示在页面上的图的地址,同源。失败不是异常,是这条路本来
        就有的一种结果(图换了地方、服务器不给这个类型),退回替代文本即可 ——
-       fetch 的第二个回调接住它,不额外包一层。 */
-    return fetch(svg.href, { credentials: "same-origin" })
+       fetch 的第二个回调接住它,不额外包一层。读取与位图同一个上限:一份 SVG
+       再大也不该整个落进内存。 */
+    return sourceRequest(svg)
       .then(
         function (res) {
-          return res.ok && isSvgResponse(res) ? res.text() : "";
+          return res.ok && isSvgResponse(res) ? readCapped(res, CTX.IMAGE_MAX_BYTES) : null;
         },
         function () {
-          return "";
+          return null;
         }
       )
-      .then(function (markup) {
-        var labels = markup === "" ? "" : svgLabels(markup);
+      .then(function (bytes) {
+        var labels = bytes === null || bytes.length === 0 ? "" : svgLabels(new TextDecoder().decode(bytes));
         return {
           chart: "svg",
           source: labels || altTextOf(img) || missingText("svg", ordinalOf(img), "图里的文字没有取到"),

@@ -21,6 +21,7 @@ from __future__ import annotations
 import http.server
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -68,9 +69,33 @@ def build_site(out: Path, ref: str | None = None) -> Path:
     return out
 
 
+#: 「读不完的资源」每次往套接字里推多少字节。
+STREAM_CHUNK = 64 * 1024
+
+
+class _Stream:
+    """一份「读不完」的响应:交给取源那份远超上限的字节,交给页面自己那次 `<img>`
+    加载的是一张正常的图。
+
+    分两次给是为了量得准 —— 浏览器自己那次加载与取源那次请求的是同一个地址,混在
+    一起就分不出取源这一步到底读了多少。区分按 `Sec-Fetch-Dest`:取源发的是 fetch
+    (`empty`),`<img>` 发的是 `image`。用这条头的用例把 Service Worker 关掉
+    (见 `Browser(service_workers=...)`),否则站点那个 cache-first 的 SW 会按地址把
+    第二次请求挡回第一次的响应,两份内容根本到不了这里。"""
+
+    def __init__(self, body: bytes, loader: bytes, content_type: str):
+        self.body = body
+        self.loader = loader
+        self.content_type = content_type
+
+
 class _Handler(http.server.SimpleHTTPRequestHandler):
-    """静态文件。多一处:按路径覆盖 Content-Type —— 「类型限制」那条用例要一个
-    名字像图、内容不是图的东西。"""
+    """静态文件。多三处:按路径覆盖 Content-Type(「类型限制」那条用例要一个名字
+    像图、内容不是图的东西)、按路径回 302(「跨源重定向」那条用例)、按路径流式
+    写一份读不完的响应(「读取过程限额」那条用例)。"""
+
+    #: 客户端中途取消时,写阻塞在这个上限上就该放手 —— 不让一条用例把整个跑挂住。
+    timeout = 20
 
     def __init__(self, request, client_address, server):
         super().__init__(request, client_address, server, directory=str(server.root))
@@ -82,6 +107,58 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             return override[bare]
         return super().guess_type(path)
 
+    def end_headers(self):
+        if getattr(self.server, "cors", False):
+            self.send_header("Access-Control-Allow-Origin", "*")
+        super().end_headers()
+
+    def do_GET(self):
+        path = self.path.split("?", 1)[0]
+        target = self.server.redirects.get(path)
+        if target is not None:
+            self.send_response(HTTPStatus.FOUND)
+            self.send_header("Location", target)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        stream = self.server.streams.get(path)
+        if stream is not None:
+            self._stream(path, stream)
+            return
+        super().do_GET()
+
+    def _stream(self, path: str, stream: _Stream) -> None:
+        if self.headers.get("Sec-Fetch-Dest") != "empty":
+            self._write_all(stream.loader, stream.content_type)
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", stream.content_type)
+        self.send_header("Content-Length", str(len(stream.body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        written = 0
+        try:
+            while written < len(stream.body):
+                self.wfile.write(stream.body[written : written + STREAM_CHUNK])
+                self.wfile.flush()
+                written += STREAM_CHUNK
+        except (BrokenPipeError, ConnectionResetError, TimeoutError):
+            # 客户端把这条响应断了 —— 正是「超限就地取消」要留下的证据
+            self.server.stream_aborted[path] = True
+            self.close_connection = True
+        finally:
+            self.server.stream_written[path] = written
+
+    def _write_all(self, body: bytes, content_type: str) -> None:
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError, TimeoutError):
+            self.close_connection = True
+
     def log_message(self, *args):  # 用例自己会报关键信息,不必刷访问日志
         pass
 
@@ -91,14 +168,33 @@ class StaticSite:
 
     `serve(root)` 换根,端口不动 —— 对浏览器来说还是同一个 origin,缓存、Service
     Worker、localStorage 全都留着。这正是「老用户升级」与「换了个新端口再看一眼」
-    的区别所在。"""
+    的区别所在。
 
-    def __init__(self, root: Path, content_types: dict[str, str] | None = None):
+    `cors=True` 的实例给每个响应加 `Access-Control-Allow-Origin: *` —— 「同源地址
+    重定向到允许 CORS 的跨域资源」那条用例需要一台**真的会放行**的跨域服务器,否则
+    挡住那一步的是 CORS,而不是被测的那道判断。"""
+
+    def __init__(
+        self,
+        root: Path,
+        content_types: dict[str, str] | None = None,
+        cors: bool = False,
+    ):
         self.root = Path(root)
         self.content_types = content_types or {}
+        self.cors = cors
+        self.redirects: dict[str, str] = {}
+        self.streams: dict[str, _Stream] = {}
+        self.stream_written: dict[str, int] = {}
+        self.stream_aborted: dict[str, bool] = {}
         self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
         self.httpd.root = self.root
         self.httpd.content_types = self.content_types
+        self.httpd.cors = self.cors
+        self.httpd.redirects = self.redirects
+        self.httpd.streams = self.streams
+        self.httpd.stream_written = self.stream_written
+        self.httpd.stream_aborted = self.stream_aborted
         self.port = self.httpd.server_address[1]
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self.thread.start()
@@ -120,6 +216,31 @@ class StaticSite:
         if content_type is not None:
             self.content_types["/" + relpath] = content_type
         return "/" + relpath
+
+    def redirect(self, relpath: str, target: str, content_type: str | None = None) -> str:
+        """一个 302 到 target 的站内路径。target 可以是另一个 origin 上的地址。"""
+        path = "/" + relpath
+        self.redirects[path] = target
+        if content_type is not None:
+            self.content_types[path] = content_type
+        return path
+
+    def stream(self, relpath: str, body: bytes, loader: bytes, content_type: str) -> str:
+        """一份「读不完」的资源,返回它的站内路径。
+
+        `loader` 是页面自己那次 `<img>` 加载拿到的内容(一张正常的图):它必须能正常
+        显示,否则按钮所在的容器量不出尺寸。"""
+        path = "/" + relpath
+        self.streams[path] = _Stream(body, loader, content_type)
+        return path
+
+    def bytes_read_by_fetch(self, path: str) -> int:
+        """取源那一步从这份响应里实际读走的字节数。"""
+        return self.stream_written.get(path, 0)
+
+    def was_cancelled(self, path: str) -> bool:
+        """这条响应写到一半被客户端断掉了没有。"""
+        return self.stream_aborted.get(path, False)
 
     def close(self) -> None:
         self.httpd.shutdown()
@@ -162,14 +283,34 @@ _SSE_REPLY = "\n".join(
 )
 
 
+#: 上游拒绝图像输入时的那句话。文案照 Anthropic 的真实措辞写(400 + invalid_request_error),
+#: 用例要验的是「这句话没有原样走到用户眼前」,所以它必须是一句认得出来的、带上游细节的话。
+IMAGE_REJECTION_BODY = json.dumps(
+    {
+        "type": "error",
+        "error": {
+            "type": "invalid_request_error",
+            "message": (
+                "messages.0.content.1.image.source.base64: This model does not support "
+                "image inputs. Request id req_01STUBIMAGE"
+            ),
+        },
+    }
+).encode("utf-8")
+
+
 class StubModel:
     """假的模型 API。把收到的每个请求体抄进 `requests`,用它自己那段 SSE 结束这一轮。
 
     agent-server 那边只要把 ANTHROPIC_BASE_URL 指过来,这一轮就打不到真的那一侧,
-    而「模型收到了什么」是这里抄下来的原件。"""
+    而「模型收到了什么」是这里抄下来的原件。
 
-    def __init__(self):
+    `reject_images` 打开时,带图像块的请求一律收到 400(见 IMAGE_REJECTION_BODY)——
+    「模型不收图」这条路径要能被执行到,才谈得上验证界面给出的反馈。"""
+
+    def __init__(self, reject_images: bool = False):
         self.requests: list[dict] = []
+        self.reject_images = reject_images
         self._httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _StubHandler)
         self._httpd.owner = self
         self.port = self._httpd.server_address[1]
@@ -192,6 +333,14 @@ class _StubHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+    @staticmethod
+    def _carries_an_image(body: dict) -> bool:
+        for message in body.get("messages", []):
+            content = message.get("content")
+            if isinstance(content, list) and any(b.get("type") == "image" for b in content):
+                return True
+        return False
+
     def do_POST(self):
         length = int(self.headers.get("content-length") or 0)
         raw = self.rfile.read(length).decode("utf-8", "replace")
@@ -203,6 +352,9 @@ class _StubHandler(http.server.BaseHTTPRequestHandler):
         self.server.owner.requests.append({"path": path, "body": body})
         if path.endswith("/count_tokens"):
             self._json({"input_tokens": 1})
+            return
+        if self.server.owner.reject_images and self._carries_an_image(body):
+            self._json_raw(IMAGE_REJECTION_BODY, HTTPStatus.BAD_REQUEST)
             return
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
@@ -216,8 +368,10 @@ class _StubHandler(http.server.BaseHTTPRequestHandler):
         self._json({})
 
     def _json(self, obj):
-        payload = json.dumps(obj).encode("utf-8")
-        self.send_response(HTTPStatus.OK)
+        self._json_raw(json.dumps(obj).encode("utf-8"), HTTPStatus.OK)
+
+    def _json_raw(self, payload: bytes, status: HTTPStatus):
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
@@ -287,21 +441,37 @@ class Browser:
     来自站点 origin 或问答后端 origin 的 console.error —— 一条通路里「悄悄抛了个
     TypeError 但界面看起来没事」正是要靠它现形。
 
-    别的 origin 上的加载失败不进 `errors`:批注后端(8788)、统计脚本这些不在这条
-    通路里,它们连不上是用例环境的事,不是被测代码的事。`other_origin_errors`
-    留下它们,要排查时看得到。"""
+    别的 origin 上的加载失败不进 `errors`:批注后端(8788)、统计脚本、主题从 CDN
+    取的 mermaid 这些都不在这条通路里,它们连不上是用例环境的事,不是被测代码的
+    事(主题那个 CDN 取不到时会抛一句带 CDN 地址的 `Invalid script`)。判据是报错
+    里提到的地址:只要提到的都是别人的地址,就归到 `other_origin_errors`,要排查
+    时看得到。"""
 
-    def __init__(self, playwright, base: str):
+    def __init__(self, playwright, base: str, service_workers: str = "allow"):
         self.browser = playwright.chromium.launch()
-        self.context = self.browser.new_context()
+        self.context = self.browser.new_context(service_workers=service_workers)
         self.page = self.context.new_page()
         self.base = base
         self.errors: list[str] = []
         self.other_origin_errors: list[str] = []
-        self.page.on("pageerror", lambda e: self.errors.append(f"pageerror: {e}"))
+        self.page.on("pageerror", self._on_pageerror)
         self.page.on("console", self._on_console)
         self.chat_bodies: list[dict] = []
         self.page.on("request", self._on_request)
+
+    def _foreign_origin(self, line: str) -> bool:
+        """这句话里提到的地址,有没有不是本站与问答后端的。"""
+        for url in re.findall(r"https?://[^\s'\"()]+", line):
+            if not url.startswith(self.base) and not url.startswith(f"http://127.0.0.1:{AGENT_PORT}"):
+                return True
+        return False
+
+    def _on_pageerror(self, err):
+        line = f"pageerror: {err}"
+        if self._foreign_origin(line):
+            self.other_origin_errors.append(line)
+            return
+        self.errors.append(line)
 
     def _on_console(self, msg):
         if msg.type != "error":

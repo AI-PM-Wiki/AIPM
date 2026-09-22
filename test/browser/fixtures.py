@@ -59,3 +59,12 @@ PLAIN_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
 #:   - 配 text/html:content-type 那一道前置筛子就该拦下;
 #:   - 配 image/png:筛子放行,由**字节开头**那一道认出来不是图。
 NOT_AN_IMAGE = "<!doctype html><html><body><p>这不是一张图。</p></body></html>\n".encode("utf-8")
+
+
+def oversized(body_head: bytes, total: int) -> bytes:
+    """一份「读不完」的响应:开头是真东西,后面是填充,总量远超任何合理的读取上限。
+
+    开头按各自的格式起:位图是 PNG 的签名,那样它是一张真的会被当成图处理的响应,
+    而不是「一眼就看得出不是图」的东西 —— 用例要验的正是「读的过程有没有上限」,
+    所以它必须先过类型那一关。"""
+    return body_head + b"\x00" * (total - len(body_head))

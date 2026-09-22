@@ -48,7 +48,7 @@ class TestChartContextAssets(unittest.TestCase):
 
     def test_assets_are_registered_with_cache_versions(self):
         scripts = self.config[self.config.index("extra_javascript:") :]
-        self.assertIn("_static/js/chart-context.js?v=2", scripts)
+        self.assertIn("_static/js/chart-context.js?v=3", scripts)
         self.assertIn("_static/css/chart-context.css?v=1", scripts)
         entries = [e.split("?", 1)[0] for e in re.findall(r"-\s*'([^']+)'", scripts)]
         self.assertLess(
@@ -156,8 +156,8 @@ class TestChartSourceFidelity(unittest.TestCase):
     def test_svg_is_fetched_same_origin_and_parsed_as_an_inert_document(self):
         fn = self._fn("function readImage(img)")
         self.assertIn("sameOriginSvgUrl(img)", fn, "跨域的图不取")
-        self.assertIn("fetch(svg.href", fn)
-        self.assertIn("svgLabels(markup)", fn)
+        self.assertIn("sourceRequest(svg)", fn)
+        self.assertIn("svgLabels(", fn)
 
         guard = self._fn("function sameOriginUrl(src)")
         self.assertIn("url.origin === location.origin", guard)
@@ -172,24 +172,53 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn('doc.querySelectorAll("title, desc, text")', parse)
         self.assertIn('doc.querySelector("parsererror")', parse, "不是 SVG 时返回空,交给兜底")
 
+    def test_source_fetch_never_follows_a_redirect(self):
+        """重定向是「地址换了个地方」,去向在读之前看不见 —— 同源地址照样可以 302
+        到一台放行 CORS 的跨域服务器上。不跟,就是跨源那一步根本不会发生。"""
+        req = self._fn("function sourceRequest(url)")
+        self.assertIn('redirect: "manual"', req, "跟了重定向,跨源那一侧就被读了")
+        self.assertIn('credentials: "same-origin"', req)
+        self.assertNotIn("redirect: \"follow\"", req)
+
+        for read in ("function readRaster(img)", "function readImage(img)"):
+            self.assertIn("sourceRequest(", self._fn(read), f"{read} 没走这条取源请求")
+
+    def test_reads_stop_at_the_limit_instead_of_after_it(self):
+        """超限要在**读的过程中**停:整份读进来再丢掉,几百 MB 的响应照样会先落进
+        内存,上限形同虚设。"""
+        fn = self._fn("function readCapped(res, max)")
+        self.assertIn("res.body.getReader()", fn)
+        self.assertIn("reader.read()", fn)
+        self.assertIn("total > max", fn, "读到一半就要判,不是读完再判")
+        self.assertIn("reader.cancel()", fn, "超限的那条响应要就地取消")
+
+        for read, call in (
+            ("function readRaster(img)", "readCapped(res, CTX.IMAGE_MAX_BYTES)"),
+            ("function readImage(img)", "readCapped(res, CTX.IMAGE_MAX_BYTES)"),
+        ):
+            self.assertIn(call, self._fn(read), f"{read} 没有走限额读取")
+        self.assertNotIn("arrayBuffer()", self.js, "整份读进内存的那两个口子都不该在")
+        self.assertNotIn("res.text()", self.js)
+
     def test_raster_images_send_the_image_itself(self):
         """位图送的是图像本身,不只是替代文本 —— 图里的文字与结构只在像素里。"""
         fn = self._fn("function readRaster(img)")
         self.assertIn("altTextOf(img)", fn, "替代文本留着,和图像一并送")
         self.assertIn('chart: "image"', fn)
         self.assertIn("key: img.src", fn)
-        self.assertIn("res.arrayBuffer()", fn, "取的是字节,不是文字")
-        self.assertIn("CTX.IMAGE_MAX_BYTES", fn, "体积那一关")
+        self.assertIn("readCapped(res, CTX.IMAGE_MAX_BYTES)", fn, "体积那一关在读的过程中")
         self.assertIn("sniffImageType(bytes)", fn, "种类按字节开头认")
         self.assertIn("base64Of(bytes)", fn)
         self.assertIn("mediaType: mediaType", fn)
         self.assertIn("imageData: base64Of(bytes)", fn)
 
     def test_raster_fetch_is_limited_in_source_type_and_size(self):
-        """三道限制:来源(同源)、类型(四种之一,按字节)、体积(≤ 上限)。"""
+        """三道限制:来源(同源且不跟重定向)、类型(四种之一,按字节)、体积(读的过程中
+        不超过上限)。"""
         read = self._fn("function readRaster(img)")
         self.assertIn("sameOriginUrl(img.src)", read, "来源:跨域不取")
         self.assertIn("looksLikeRaster(res)", read, "类型:先按 content-type 筛一道")
+        self.assertIn("readCapped(res, CTX.IMAGE_MAX_BYTES)", read, "体积:读的过程中限额")
 
         sniff = self._fn("function sniffImageType(bytes)")
         for sig in ("0x89", "0xd8", "0x46", "0x52"):
@@ -202,10 +231,7 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn("content-type", header)
         self.assertIn("CTX.RASTER_TYPES.indexOf(type) >= 0", header)
 
-        self.assertIn(
-            "if (buf === null || buf.byteLength === 0 || buf.byteLength > CTX.IMAGE_MAX_BYTES) return null;",
-            read,
-        )
+        self.assertIn("if (bytes === null || bytes.length === 0) return null;", read)
 
     def test_base64_is_built_in_chunks(self):
         """五十万个码元一次 apply 会把调用栈撑爆,分块拼。"""
