@@ -457,6 +457,33 @@ class TestChatWidgetEntryDrag(unittest.TestCase):
         # 静息态同样不带旋转
         self.assertNotIn("rotate", self._rule(".aipm-chat__fab"))
 
+    def test_release_backstops_kill_the_stuck_drag_state(self):
+        """松手不能只赌 pointerup 一个事件:丢了它,胶囊会跟着没按键的光标走。
+
+        入口全部收敛到幂等的 dragRelease:指针抬起 / cancel / 失去捕获 /
+        窗口失焦 / 页面切后台,外加「move 时指针已不按下」这一层判定。
+        """
+        # 幂等:已经结算过就直接返回
+        self.assertIn("const d = drag;\n    if (!d) return;", self.js)
+        # 只认自己那根指针,别的指针不算它的
+        self.assertIn("if (id !== d.id) return;", self.js)
+        # 兜底:window 捕获阶段再听一遍 up/cancel
+        self.assertIn('window.addEventListener("pointerup", dragRelease, true);', self.js)
+        self.assertIn('window.addEventListener("pointercancel", dragRelease, true);', self.js)
+        # 捕获被系统收回(元素被隐藏 / 让位给批注面板)
+        self.assertIn('fab.addEventListener("lostpointercapture", dragRelease);', self.js)
+        # 窗口失焦 / 页面切后台(此时 up 会彻底消失)
+        self.assertIn('window.addEventListener("blur", dragRelease);', self.js)
+        self.assertIn("if (document.hidden) dragRelease();", self.js)
+        # move 时指针已经不在按下了 → 收手,不再跟
+        self.assertIn('const dragStillPressed = (e) => e.pointerType === "touch" || e.buttons !== 0;', self.js)
+        self.assertIn("if (!dragStillPressed(e)) {", self.js)
+        # 触摸的 buttons 语义各家不一,不能拿它当依据
+        self.assertIn('e.pointerType === "touch" || e.buttons !== 0', self.js)
+        # 捕获没拿到也不能把拖拽卡住
+        self.assertIn("fab.setPointerCapture(e.pointerId);", self.js)
+        self.assertIn("} catch (err) {", self.js)
+
     def test_drag_is_thresholded_and_swallows_the_trailing_click(self):
         self.assertIn("const DRAG_SLOP = 4;", self.js)
         for ev in ("pointerdown", "pointermove", "pointerup", "pointercancel"):

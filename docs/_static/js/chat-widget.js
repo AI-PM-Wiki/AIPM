@@ -1115,6 +1115,8 @@
      让位,见 annotation.css)。位移一律按指针增量算,跟手期间不做布局测量,也不
      量视口:位移被橡皮筋压在 DRAG_RANGE(20px)的渐近线之下,而锚点离视口边至少
      25px。姿态只做「拎起来」(略微放大 + 更深的投影),不做旋转 —— 胶囊始终水平。
+     收手不依赖单一事件:pointerup/cancel、捕获被收回、窗口失焦、页面切后台,
+     以及「move 时指针已经不按了」都会结算,丢一个事件不会把拖拽黏住。
      ================================================================ */
   const DRAG_SLOP = 4;            // px:超过才算拖拽,之内仍是「点了一下」
   const DRAG_RANGE = 20;          // px:橡皮筋的渐近线 —— 拉得再远也只逼近它,够不到
@@ -1173,12 +1175,48 @@
       px: off > 0 ? ox / off * pull : 0, py: off > 0 ? oy / off * pull : 0,
       moved: false
     };
-    fab.setPointerCapture(e.pointerId);
+    /* 捕获只是为了「拖出元素也还能收到 move」;万一没拿到(指针已不活跃、元素
+       不可见),后面的兜底照样能收手,不能因为这一步失败把拖拽卡住 */
+    try {
+      fab.setPointerCapture(e.pointerId);
+    } catch (err) {
+      /* 忽略:不影响本次拖拽 */
+    }
   });
+
+  /* 收手:一次拖拽只结算一次。下面几个入口(指针抬起 / cancel / 捕获被系统收回 /
+     窗口失焦 / 页面切到后台)都走这里,重复调用没有副作用 —— 丢一个事件也不会把
+     拖拽状态卡住。e 可以省略(那种情况下按「当前这次拖拽」结算)。 */
+  const dragRelease = (e) => {
+    const d = drag;
+    if (!d) return;                                            // 已经结算过
+    const id = e && e.pointerId !== undefined ? e.pointerId : d.id;
+    if (id !== d.id) return;                                   // 别的指针,不关它的事
+    drag = null;
+    if (fab.hasPointerCapture(id)) fab.releasePointerCapture(id);
+    if (!d.moved) return;                                      // 只是一下点击:交给 click
+    dragSwallow = true;
+    fab.classList.remove("is-dragging");
+    fab.classList.add("is-returning");
+    fab.style.transform = "";                                  // 交回 CSS:回正 + 吸回原位
+    dragReturn = setTimeout(() => fab.classList.remove("is-returning"), DRAG_BACK_MS);
+  };
+
+  /* 指针还按着吗?鼠标与手写笔看 buttons;触摸的 buttons 各家实现不一致,不能当
+     依据(触摸交给 pointerup/cancel 和下面的兜底)。 */
+  const dragStillPressed = (e) => e.pointerType === "touch" || e.buttons !== 0;
 
   fab.addEventListener("pointermove", (e) => {
     const d = drag;
     if (!d || e.pointerId !== d.id) return;
+    /* 兜底一:指针已经不在按下了,说明 up 没送到我们这儿(在窗口外松手、松手时
+       焦点在别的 App、落在内嵌 iframe 上……)。必须立刻收手 —— 否则胶囊会跟着
+       一个没按键的光标一路走,而且永远停不下来:它一直在光标底下,于是永远收得到
+       pointermove,自己把自己黏住了。 */
+    if (!dragStillPressed(e)) {
+      dragRelease(e);
+      return;
+    }
     const dx = e.clientX - d.x0;
     const dy = e.clientY - d.y0;
     if (!d.moved) {
@@ -1197,20 +1235,18 @@
     dragPlace(px * k, py * k, DRAG_LIFT);
   });
 
-  const dragRelease = (e) => {
-    const d = drag;
-    if (!d || e.pointerId !== d.id) return;
-    drag = null;
-    if (fab.hasPointerCapture(e.pointerId)) fab.releasePointerCapture(e.pointerId);
-    if (!d.moved) return;                                      // 只是一下点击:交给 click
-    dragSwallow = true;
-    fab.classList.remove("is-dragging");
-    fab.classList.add("is-returning");
-    fab.style.transform = "";                                  // 交回 CSS:回正 + 吸回原位
-    dragReturn = setTimeout(() => fab.classList.remove("is-returning"), DRAG_BACK_MS);
-  };
   fab.addEventListener("pointerup", dragRelease);
   fab.addEventListener("pointercancel", dragRelease);
+  /* 兜底二:up/cancel 未必落在 FAB 身上。window 捕获阶段再听一遍(捕获阶段先到
+     window、再回到 FAB,两边都调也只结算一次);再补上三种会让 up 彻底消失的
+     情况:系统收回指针捕获、窗口失焦、页面切到后台。 */
+  window.addEventListener("pointerup", dragRelease, true);
+  window.addEventListener("pointercancel", dragRelease, true);
+  fab.addEventListener("lostpointercapture", dragRelease);
+  window.addEventListener("blur", dragRelease);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) dragRelease();
+  });
 
   /* ================================================================
      交互(打开 / 关闭 / Escape / 焦点环)
