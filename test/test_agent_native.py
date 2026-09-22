@@ -8,9 +8,16 @@
 - **语境条目的构造只有一处**。形状、去重、「仅本机不出本机」这三件事都在
   context-item.js;面板与助手两边都只调它,谁都不自己拼一个上下文对象。
   多一处构造点就多一处能绕开那条边界的路。
-- **仅本机的批注进不了语境**。它的承诺是「只在那台设备上」,而语境会离开
-  浏览器。前端在 forAnnotation 里挡,服务端在 visibility 的取值里挡,两道闸
-  各自成立;两边的用例都跑。
+- **「仅本机」不出本机**靠的是同一个判断被每个容器各调一次:构造、进语境条、
+  从 localStorage 恢复、出网。**出网那道是最后一道**,它保证即便别的入口漏了,
+  内容也序列化不进请求体。服务端另有一道独立的闸(visibility 的枚举里没有
+  local,并按 kind 校验必填字段),两边各自成立。
+- **助手面板对批注面板的接口只有它导出的那几个成员**。曾经那里调了一个没导出的
+  `chat.open()`,于是两条「问助手」入口都是语境挂上之后再抛异常 —— 导出的成员与
+  调用方用到的那一组必须对得上。
+- **换页后语境跟着换页**。面板挂在 body 上、instant 导航不换它,不主动收的话,
+  在 A 页送进来的那段话会跟着 B 页的提问发出去。逐条比 page,页内锚点跳转不算
+  换页;历史消息里的语境不动(「重新生成」要按原样重发)。
 - **同一条来源连送两次只有一条语境**。参照 poco-ai/Agentero#614:按 id 追加会
   让同一条来源排出一串重复条目,而删其中一条又会把同 id 的其余条目一起删掉。
 - **不带 context 的请求行为不变**。老客户端(浏览器缓存里的旧 JS、脚本调用)
@@ -21,6 +28,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -77,7 +85,7 @@ class TestContextItemModule(unittest.TestCase):
         )
 
     def test_exports_the_shared_entry_points(self):
-        for name in ("forSelection", "forAnnotation", "upsert", "remove", "toPayload"):
+        for name in ("forSelection", "forAnnotation", "isDeliverable", "sanitize", "upsert", "remove", "toPayload"):
             self.assertIn(f"{name}: {name}", self.src, f"window.__aipmContext 未导出 {name}")
 
     def test_limits_match_the_server_side(self):
@@ -97,6 +105,21 @@ class TestContextItemModule(unittest.TestCase):
         fn = fn[: fn.index("\n  }") + 4]
         self.assertIn('visibility !== "public" && visibility !== "private"', fn)
         self.assertIn("return null", fn)
+
+    def test_every_container_checks_the_same_predicate(self):
+        """条目要经过四个容器:构造、进条、恢复、出网。判断只写一份。"""
+        fn = self.src[self.src.index("function isDeliverable(item)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn('item.visibility === "public" || item.visibility === "private"', fn)
+
+        for head, name in (
+            ("function upsert(list, item)", "upsert"),
+            ("function sanitize(list)", "sanitize"),
+            ("function toPayload(list)", "toPayload"),
+        ):
+            body = self.src[self.src.index(head) :]
+            body = body[: body.index("\n  }") + 4]
+            self.assertIn("isDeliverable", body, f"{name} 没有过 isDeliverable")
 
     def test_upsert_refreshes_in_place(self):
         fn = self.src[self.src.index("function upsert(") :]
@@ -142,6 +165,16 @@ class TestAnnotationPanelHandsOffContext(unittest.TestCase):
         self.assertIn("isLocal(anno)", fn)
         self.assertIn("b.disabled = true", fn, "仅本机那条必须按不动")
         self.assertIn("askAssistant(annotationContext(anno))", fn)
+
+    def test_ask_assistant_uses_only_exported_members(self):
+        """调用方用到的成员必须在导出里 —— 少一个就是点下去抛异常。"""
+        api = _strip_comments(_read(CHAT_JS))
+        api = api[api.index("window.__aipmChat = {") :]
+        api = api[: api.index("\n  };") + 5]
+        exported = set(re.findall(r"^\s+(\w+):\s", api, flags=re.M))
+        used = set(re.findall(r"\bchat\.(\w+)", self.js))
+        self.assertTrue(exported, "没解析出 window.__aipmChat 导出的成员")
+        self.assertLessEqual(used, exported, f"annotation.js 用了没导出的成员:{sorted(used - exported)}")
 
     def test_context_is_built_in_exactly_one_place(self):
         self.assertEqual(
@@ -224,12 +257,20 @@ class TestChatPanelConsumesContext(unittest.TestCase):
         self.assertIn("aipm-chat__ctx-inline", fn, "气泡上要留一份,回头翻会话才看得见当时拿哪段话问的")
         self.assertIn(".aipm-chat__ctx-inline", self.css)
 
-    def test_restored_context_is_shape_checked(self):
-        self.assertIn("sanitizeCtx", self.js)
+    def test_restored_context_goes_through_the_shared_shape_rule(self):
+        """恢复那条路不另写一份形状判断 —— 与出网、进条共用 context-item.js 的。"""
         fn = self.js[self.js.index("const sanitizeCtx = (list)") :]
         fn = fn[: fn.index("\n  };") + 5]
-        self.assertIn('"selection"', fn)
-        self.assertIn('"annotation"', fn)
+        self.assertIn("CTX.sanitize(list)", _squash(fn))
+
+    def test_page_change_prunes_the_context_bar(self):
+        """换页后不再发上一页的语境;历史消息里的那些留着。"""
+        self.assertIn("document$.subscribe(pruneCtxForPage)", _squash(self.js))
+        fn = self.js[self.js.index("const pruneCtxForPage = ()") :]
+        fn = fn[: fn.index("\n  };") + 5]
+        self.assertIn("CTX.normalizePage(location.pathname)", _squash(fn), "按当前页逐条比,页内锚点跳转不算换页")
+        self.assertIn("pendingCtx.filter", fn)
+        self.assertNotIn("history", fn, "历史消息里的语境是「当时拿哪段话问的」的记录,重新生成要按原样重发")
 
 
 class TestServerAcceptsContext(unittest.TestCase):
@@ -248,9 +289,31 @@ class TestServerAcceptsContext(unittest.TestCase):
 
     def test_visibility_enum_excludes_local(self):
         item = self.srv[self.srv.index("const ContextItemSchema") :]
-        item = item[: item.index("\n});") + 4]
+        item = item[: item.index("const ChatBodySchema")]
         self.assertIn("z.enum(['public', 'private'])", _squash(item))
         self.assertNotIn("'local'", item, "「仅本机」不该有进服务端的取值")
+
+    def test_kind_rule_is_enforced_by_the_schema(self):
+        """按 kind 的必填字段挂在同一个 schema 上,漏不出 schema 之外。"""
+        schema = self.srv[self.srv.index("const ContextItemSchema") :]
+        schema = schema[: schema.index("const ChatBodySchema")]
+        self.assertIn(".superRefine(", schema)
+        self.assertIn("contextItemProblem(item)", schema)
+        self.assertIn("{ code: 'custom', message: problem }", _squash(schema))
+
+        rule = self.ctx[self.ctx.index("export function contextItemProblem(") :]
+        rule = rule[: rule.index("\n}") + 2]
+        self.assertIn("item.kind === 'selection'", rule)
+        self.assertIn("quote.length > 0 || body.length > 0", _squash(rule))
+
+    def test_schema_and_http_checks_are_wired(self):
+        """schema 一层的断言在 src/context-http-check.ts,挂成 npm 脚本免得住坏。"""
+        script = _read(AGENT_SERVER / "src" / "context-http-check.ts")
+        self.assertIn("ChatBodySchema.safeParse", script)
+        self.assertIn("createApp", script)
+        self.assertIn("visibility: 'local'", script)
+        scripts = json.loads(_read(AGENT_SERVER / "package.json"))["scripts"]
+        self.assertIn("context-check", scripts)
 
     def test_context_reaches_the_agent(self):
         self.assertIn("context: parsed.context", self.srv)

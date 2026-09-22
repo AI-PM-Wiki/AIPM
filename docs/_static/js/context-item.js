@@ -10,9 +10,11 @@
   同一条来源连点两次就排出一串重复条目,而删其中一条又会把同 id 的其余条目一起删掉。
 
   三态里的「仅本机」**不进语境**:它的承诺是「只在那台设备上」,而语境会随提问
-  发到问答后端、再进入模型上下文。这条判断收在 forAnnotation 一处,面板其余部分
-  拿不到第二个构造入口,调用方也没有别的办法造出一条 local 语境。服务端另有一道
-  独立的闸(server.ts 里 visibility 的枚举没有 local),两边各自成立。
+  发到问答后端、再进入模型上下文。判断只有 isDeliverable 一份,条目每进一个容器
+  都过它一遍 —— 构造(forSelection / forAnnotation)、进语境条(upsert)、从
+  localStorage 回来(sanitize)、出网(toPayload)。**出网那道是最后一道**:即便
+  别的入口漏了,带 local 的条目也序列化不进请求体。服务端另有一道独立的闸
+  (server.ts 里 visibility 的枚举没有 local,并按 kind 校验必填字段),两边各自成立。
 
   纯函数,不碰 DOM、不读时钟 —— 可以脱离页面直接断言。
 */
@@ -86,6 +88,22 @@
   }
 
   /**
+   * 这条语境能不能离开浏览器。
+   *
+   * 形状齐、kind 认识、可见范围是那两档可以出网的取值 —— 「仅本机」卡在最后一条
+   * 上。判断只写这一份,条目每进一个容器都过它:构造、进语境条、从 localStorage
+   * 回来、出网。于是「这里要不要判一次 local」不必在每个入口各想一遍,加一处入口
+   * 也不必再判一次。
+   */
+  function isDeliverable(item) {
+    if (!item || typeof item !== "object") return false;
+    if (typeof item.id !== "string" || item.id === "") return false;
+    if (item.kind !== "selection" && item.kind !== "annotation") return false;
+    if (typeof item.page !== "string" || item.page === "") return false;
+    return item.visibility === "public" || item.visibility === "private";
+  }
+
+  /**
    * 正文里划选的一段话。quote 为空说明选区已经没了,返回 null 让调用方别送空语境。
    */
   function forSelection(input) {
@@ -111,9 +129,9 @@
   /**
    * 批注面板里的一条批注。
    *
-   * **visibility 为 local 时返回 null** —— 这是「仅本机」那道边界在前端的落点,
-   * 也是整个面板里唯一判断它的地方。调用方不需要、也不应该自己再判一次:
-   * 多一处判断就多一处改漏的机会。
+   * **visibility 为 local 时返回 null**:批注面板在构造这一步就交不出「仅本机」的
+   * 语境,用不着等出网那道闸。调用方不需要、也不应该自己再判一次 —— 判断在
+   * isDeliverable 里只有一份。
    */
   function forAnnotation(input) {
     var visibility = input.visibility;
@@ -143,9 +161,12 @@
    * 同 id 的条目**在原位刷新**(位置不动,内容取新的):连着对同一条批注点两次
    * 「问助手」,语境条里仍然只有一条。位置不动是有意的 —— 点第二次的人期待的是
    * 「把这条更新一下」,把它挪到队尾等于让整条语境条重排。
+   *
+   * 过不了 isDeliverable 的条目在这里就进不来,语境条因此不会摆出一条发不出去的
+   * 东西 —— 恢复出来或被别的调用方塞进来的「仅本机」条目,在这一步被挡下。
    */
   function upsert(list, item) {
-    if (!item || !item.id) return { ok: false, code: "invalid_context", items: list };
+    if (!isDeliverable(item)) return { ok: false, code: "invalid_context", items: list };
     var items = list.slice();
     for (var i = 0; i < items.length; i++) {
       if (items[i].id === item.id) {
@@ -164,9 +185,24 @@
     });
   }
 
-  /** 出网的形态:内部字段(id / 展示用的派生量)不进请求体。 */
+  /**
+   * localStorage 里的语境可能来自旧版本、被手工改坏,或者是从别处恢复出来的
+   * 「仅本机」条目:只收过得了 isDeliverable 的,其余丢掉 —— 坏条目别让整轮提问
+   * 卡在取字段上,「仅本机」的那条则根本不该回到语境条里。
+   */
+  function sanitize(list) {
+    if (!Array.isArray(list)) return [];
+    return list.filter(isDeliverable);
+  }
+
+  /**
+   * 出网的形态:内部字段(id / 展示用的派生量)不进请求体。
+   *
+   * 这是条目离开浏览器前的最后一道:过不了 isDeliverable 的一条都不发。语境条与
+   * 请求体因此不会出现分歧 —— 看不到的东西也发不出去。
+   */
   function toPayload(list) {
-    return list.map(function (item) {
+    return list.filter(isDeliverable).map(function (item) {
       return {
         kind: item.kind,
         page: item.page,
@@ -189,6 +225,8 @@
     excerptOf: excerptOf,
     forSelection: forSelection,
     forAnnotation: forAnnotation,
+    isDeliverable: isDeliverable,
+    sanitize: sanitize,
     upsert: upsert,
     remove: remove,
     toPayload: toPayload

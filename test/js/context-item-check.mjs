@@ -22,7 +22,7 @@ const check = (name, cond, detail = '') => {
 };
 
 check('模块挂在 window 上', CTX !== null && typeof CTX === 'object');
-check('导出的入口齐全', ['forSelection', 'forAnnotation', 'upsert', 'remove', 'toPayload'].every((k) => typeof CTX[k] === 'function'));
+check('导出的入口齐全', ['forSelection', 'forAnnotation', 'isDeliverable', 'sanitize', 'upsert', 'remove', 'toPayload'].every((k) => typeof CTX[k] === 'function'));
 
 /* ---- 划选 ---- */
 {
@@ -142,6 +142,47 @@ check('导出的入口齐全', ['forSelection', 'forAnnotation', 'upsert', 'remo
   check('出网:字段与后端 schema 对齐', ['kind', 'page', 'title', 'quote', 'prefix', 'suffix', 'body', 'color', 'visibility'].every((k) => k in wire[0]));
   check('出网:可见范围原样带出', wire[0].visibility === 'private');
   check('出网:空列表 → 空数组', CTX.toPayload([]).length === 0);
+}
+
+/* ---- 「仅本机」不止构造函数那一道 ----
+   条目要经过四个容器才走出去:构造 → 语境条 → localStorage → 请求体。此前只有
+   构造那一处判 visibility,于是从 localStorage 恢复回来的、或别的调用方直接塞
+   进来的 local 条目会一路进到请求体,由服务端拒掉 —— 那时内容已经离开设备了。
+   这里用**手工拼的**条目绕开构造函数,按路径各断言一次。 */
+{
+  const local = {
+    id: 'anno-local',
+    kind: 'annotation',
+    page: '/ai/rag/',
+    title: '检索增强生成',
+    quote: '这段话只在本机。',
+    prefix: '',
+    suffix: '',
+    body: '仅本机的批注。',
+    color: 'yellow',
+    visibility: 'local'
+  };
+
+  check('仅本机: 过不了 isDeliverable', CTX.isDeliverable(local) === false);
+
+  const put = CTX.upsert([], local);
+  check('仅本机: 进不了语境条', put.ok === false && put.code === 'invalid_context' && put.items.length === 0);
+
+  const publicItem = CTX.forSelection({ page: '/ai/rag/', quote: '公开的一段话。', selectors: [] });
+  const restored = CTX.sanitize([local, publicItem]);
+  check('仅本机: 从 localStorage 恢复时被丢掉', restored.length === 1 && restored[0].kind === 'selection', `len=${restored.length}`);
+
+  const wire = CTX.toPayload([local, publicItem]);
+  check('仅本机: 出网那一道也发不出去', wire.length === 1 && wire[0].quote === '公开的一段话。', JSON.stringify(wire));
+  check('仅本机: 一份都不剩时请求体里没有它', CTX.toPayload([local]).length === 0);
+
+  check('恢复: 非数组 → 空', CTX.sanitize(null).length === 0 && CTX.sanitize('x').length === 0);
+  check('恢复: 坏形状丢掉,好的留下', CTX.sanitize([
+    { id: 'x' },
+    null,
+    CTX.forAnnotation({ page: '/ai/rag/', id: 'ok', quote: '好的一条。', body: '', color: '', visibility: 'public' })
+  ]).length === 1);
+  check('恢复: 好条目原样留下(不丢字段)', restored[0].quote === '公开的一段话。' && restored[0].page === '/ai/rag/' && restored[0].visibility === 'public');
 }
 
 console.log(`\n${failed === 0 ? '全部通过' : `${failed} 项失败`}`);

@@ -3357,10 +3357,13 @@
   var ctxItem = window.__aipmContext || null;
 
   /**
-   * 把一条语境交给助手面板并把它打开。
+   * 把一条语境交给助手面板。
    *
-   * 失败要说出来:语境条满了(最多 CONTEXT_MAX_ITEMS 条)或助手面板没加载时,
-   * 按钮点下去什么都不发生,用户只会以为坏了。
+   * 开面板是 attachContext 自己做的(内部走共享注册表的 claim,与点 FAB 同一条
+   * 路),这里不再开第二次 —— window.__aipmChat 上也只有 attachContext 与 isOpen。
+   *
+   * 失败要说出来:语境条满了(最多 CONTEXT_MAX_ITEMS 条)、条目过不了那道边界,
+   * 或助手面板没加载时,按钮点下去什么都不发生,用户只会以为坏了。
    */
   function askAssistant(item) {
     if (item === null) return;
@@ -3370,10 +3373,7 @@
       return;
     }
     var res = chat.attachContext(item);
-    if (res && res.ok) {
-      chat.open();
-      return;
-    }
+    if (res && res.ok) return;
     flash(
       res && res.code === "context_full"
         ? "对话里最多放 " + ctxItem.MAX_ITEMS + " 条语境,先去对话框上方去掉一条。"

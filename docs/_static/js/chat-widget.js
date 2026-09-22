@@ -1143,15 +1143,10 @@
     els.ctxbar.hidden = pendingCtx.length === 0;
   };
 
-  /* localStorage 里的语境可能来自旧版本或被手工改坏:只收形态对得上的条目,
-     坏条目丢掉,别让整轮提问卡在取字段上。 */
-  const sanitizeCtx = (list) => {
-    if (!Array.isArray(list)) return [];
-    return list.filter(
-      (it) => it && typeof it.id === "string" && typeof it.page === "string" &&
-        (it.kind === "selection" || it.kind === "annotation")
-    );
-  };
+  /* localStorage 里的语境可能来自旧版本、被手工改坏,或者是从别处恢复出来的
+     「仅本机」条目:形状与那道边界都在 context-item.js 的 sanitize 里,这里不
+     重写一遍 —— 多一处判断就多一处改漏的机会。 */
+  const sanitizeCtx = (list) => (CTX ? CTX.sanitize(list) : []);
 
   /**
    * 批注面板的入口。返回 {ok} 或 {ok:false, code} —— 语境条满了要让人知道,
@@ -1166,6 +1161,26 @@
     pendingCtx = res.items;
     renderCtx();
     return res;
+  };
+
+  /**
+   * 换页时把不属于新页的语境收掉。
+   *
+   * 条目说的是「正在读的这一页上的一段话」,而面板 append 在 body 上、instant
+   * 导航又不换它 —— 不主动收,在页面 A 送进来的那段话会跟着下一次提问发出去,
+   * 而用户此刻读的是页面 B。历史消息里已经发出去的那些不动:它们是「当时拿哪段
+   * 话问的」的记录,「重新生成」要按原样重发。
+   *
+   * 逐条比 page 而不是整条清空:页内锚点跳转不算换页,那一页的语境该留着。
+   */
+  const pruneCtxForPage = () => {
+    if (CTX === null || pendingCtx.length === 0) return;
+    const page = CTX.normalizePage(location.pathname);
+    const left = pendingCtx.filter((it) => it.page === page);
+    if (left.length === pendingCtx.length) return;
+    pendingCtx = left;
+    renderCtx();
+    updateSendState();
   };
 
   /* ================================================================
@@ -1479,9 +1494,13 @@
     });
   }
 
-  /* 批注面板送语境的入口(调用方见 annotation.js 的 askAssistant)。
-     开面板走共享注册表的 claim:它与点 FAB 是同一条路 —— 先关掉批注面板再开助手,
-     两个面板在同一块屏幕区域里互斥。注册表不在时退回直接开。 */
+  /**
+   * 送语境的入口,调用方只有 annotation.js 的 askAssistant(见那里的注释)。
+   *
+   * attachContext 成功就已经把面板打开了 —— 走共享注册表的 claim,与点 FAB 是同
+   * 一条路(先关掉批注面板再开助手,两个面板互斥);注册表不在时退回直接开。
+   * 调用方因此不必、也不该再自己开一次面板:它手上只有这里导出的这几个成员。
+   */
   window.__aipmChat = {
     attachContext: (item) => {
       const res = attachContext(item);
@@ -1494,4 +1513,11 @@
     },
     isOpen: () => open
   };
+
+  /* 换页后把不属于新页的语境收掉。机制与批注面板的条子同一条:mkdocs-material 的
+     document$ 在每次页面(含 instant 导航)就绪后发一次。没有它(未开 instant
+     导航)时换页是整页重载,语境条本来就从头开始,不需要额外兜底。 */
+  if (typeof document$ !== "undefined" && document$.subscribe) {
+    document$.subscribe(pruneCtxForPage);
+  }
 })();
