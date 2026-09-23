@@ -47,6 +47,11 @@ CTX_CHECK = ROOT / "test" / "js" / "context-item-check.mjs"
 AGENT_SERVER = ROOT / "agent-server"
 SRV_TS = AGENT_SERVER / "src" / "server.ts"
 AGENT_TS = AGENT_SERVER / "src" / "agent.ts"
+TOOLS_TS = AGENT_SERVER / "src" / "tools.ts"
+PROP_TS = AGENT_SERVER / "src" / "annotation-proposal.ts"
+PROP_CHECK = AGENT_SERVER / "src" / "proposal-check.ts"
+STORE_JS = ROOT / "docs" / "_static" / "js" / "annotation-store.js"
+BROWSER_CASE = ROOT / "test" / "browser" / "check_agent_annotation.py"
 CTX_TS = AGENT_SERVER / "src" / "context.ts"
 UNIT_TS = AGENT_SERVER / "src" / "unit-check.ts"
 
@@ -417,6 +422,7 @@ class TestServerAcceptsContext(unittest.TestCase):
         self.assertIn("run.py", modules)
         self.assertIn("check_chart_flow.py", modules)
         self.assertIn("check_cache_upgrade.py", modules)
+        self.assertIn("check_agent_annotation.py", modules)
         for name in modules:
             self.assertFalse(
                 name.startswith("test_"),
@@ -456,6 +462,180 @@ class TestContextItemBehaviour(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertIn("全部通过", proc.stdout)
         self.assertGreaterEqual(proc.stdout.count("PASS"), 30, proc.stdout)
+
+
+class TestAgentWritesAnnotations(unittest.TestCase):
+    """「Agent 写批注」这条通路(AIPM#107):模型只提建议,写入在用户自己的会话里发生。
+
+    这一步容易在改动中悄悄回退的几条:
+
+    - **工具参数里没有页面**。建议写给哪一页由请求的语境定(proposalPage),模型手里
+      没有这一项 —— 它因此只能对用户此刻在读的这一页提建议,点不了别处。
+    - **缺省可见范围是仅本机**。三态里只有它不出网;要公开或私有,模型得自己写明,
+      而用户在卡上还能改 —— 出不出本机由用户点下去的那一刻定。
+    - **写入只有一条通路**:卡上的「采纳」调批注面板的 acceptProposal,它自己又只走
+      submitAnnotation。助手这一侧没有任何写入接口,也不持有批注凭据。
+    - **没登录选公开/私有不出网**:存成草稿、去登录,回跳之后由既有草稿通路补发,
+      而且**只补发一次** —— 那一处每有结果都会走到,草稿不先取走就会被连发几条。
+    - 上限与取值两端同源(色板 / 画法 / 引文与边缘长度),「多长算超限」两端一个答案。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.prop = _strip_comments(_read(PROP_TS))
+        cls.tools = _strip_comments(_read(TOOLS_TS))
+        cls.agent = _strip_comments(_read(AGENT_TS))
+        cls.srv = _strip_comments(_read(SRV_TS))
+        cls.anno = _strip_comments(_read(ANNO_JS))
+        cls.chat = _strip_comments(_read(CHAT_JS))
+        cls.store = _strip_comments(_read(STORE_JS))
+        cls.check = _read(PROP_CHECK)
+        cls.browser = _read(BROWSER_CASE)
+
+    def body_of(self, src: str, head: str) -> str:
+        """从一个函数头取到它那一层的大括号收尾,断言只读这一段。"""
+        start = src.index(head)
+        return src[start : src.index("\n  }", start) + 4]
+
+    def test_tool_arguments_carry_no_page_or_author(self):
+        """页面与作者都不在模型的参数里:前者由语境定,后者由批注服务按令牌定。"""
+        schema = self.tools[self.tools.index("const ProposalArgsSchema = z.strictObject({") :]
+        schema = schema[: schema.index("\n});")]
+        keys = re.findall(r"^  (\w+):", schema, flags=re.M)
+        self.assertEqual(
+            keys,
+            ["scope", "quote", "prefix", "suffix", "body", "color", "style", "visibility", "note"],
+            f"工具入参的字段变了:{keys}",
+        )
+        for forbidden in ("page", "author", "id", "token"):
+            self.assertNotIn(f"{forbidden}:", schema, f"工具入参里出现了 {forbidden},这一项不该由模型给")
+        self.assertIn("z.strictObject", schema, "多写的键要当场变成错误结果,不能被静默忽略")
+        # 工具说明里也得写着页面不需要模型指定
+        self.assertIn("页面由服务端定", _squash(self.tools))
+
+    def test_defaults_are_the_ones_that_do_not_leave_the_machine(self):
+        schema = self.tools[self.tools.index("const ProposalArgsSchema = z.strictObject({") :]
+        schema = _squash(schema[: schema.index("\n});")])
+        for field, values, default in (
+            ("visibility", "PROPOSAL_VISIBILITIES", "'local'"),
+            ("style", "PROPOSAL_STYLES", "'highlight'"),
+            ("color", "PROPOSAL_COLORS", "'yellow'"),
+            ("scope", "PROPOSAL_SCOPES", "'text'"),
+        ):
+            self.assertIn(
+                f"{field}: z.enum({values}).default({default})",
+                schema,
+                f"{field} 的取值或缺省值变了",
+            )
+        self.assertIn("visibility: z", schema)
+
+    def test_page_is_injected_from_the_request_context(self):
+        self.assertIn("proposalPage: proposalPage(input.context ?? [])", _squash(self.agent))
+        self.assertIn("if (proposalPage === null)", self.tools, "没有语境时必须拒绝,而不是随便挑一页")
+        self.assertIn("proposalPage: string | null", _squash(self.tools))
+
+    def test_choices_match_the_panel(self):
+        palette = re.search(r"var PALETTE = \[(.*?)\n  \];", self.store, flags=re.S).group(1)
+        colors = re.findall(r'id: "(\w+)"', palette)
+        styles = re.search(r"var ANNO_STYLES = \[([^\]]*)\]", self.store).group(1)
+        self.assertEqual(
+            colors,
+            re.findall(r"'(\w+)'", re.search(r"PROPOSAL_COLORS = \[([^\]]*)\]", self.prop).group(1)),
+            "色板两端不一致",
+        )
+        self.assertEqual(
+            [s.strip().strip('"') for s in styles.split(",")],
+            re.findall(r"'(\w+)'", re.search(r"PROPOSAL_STYLES = \[([^\]]*)\]", self.prop).group(1)),
+            "画法两端不一致",
+        )
+
+    def test_proposal_limits_share_the_context_limits(self):
+        """同一段原文在两条通路上,「多长算超限」必须是一个答案。"""
+        ctx = _read(CTX_JS)
+        ctx_limits = dict(
+            (key, int(value))
+            for key, value in re.findall(r"(\w+): (\d+)", re.search(r"var LIMITS = (\{[^}]*\})", ctx).group(1))
+        )
+        prop_limits = dict(
+            (key, int(value))
+            for key, value in re.findall(r"(\w+): (\d+)", re.search(r"PROPOSAL_LIMITS = (\{[^}]*\})", self.prop).group(1))
+        )
+        for key in ("quote", "edge", "body"):
+            self.assertIn(key, ctx_limits, f"{key} 在语境那侧没有同名上限,两边的说法就对不上了")
+            self.assertEqual(prop_limits[key], ctx_limits[key], f"{key} 的上限两端不一致")
+        for key in ("quote", "edge", "body", "note"):
+            self.assertIn(f"PROPOSAL_LIMITS.{key}", self.tools, f"上限 {key} 要真的用在 schema 上,不能只声明")
+
+    def test_tool_result_says_it_is_not_written(self):
+        """模型最容易把「工具返回成功」当成「已经写好了」,这段结果就得拦住它。"""
+        self.assertIn("还没有写入", self.prop)
+        self.assertIn("${proposal.page}", self.prop, "结果里要说清这条建议写给哪一页")
+        self.assertIn("不要重复提交同一条建议", self.prop)
+
+    def test_server_streams_the_proposal_frame(self):
+        self.assertIn("safeWrite('proposal', proposal)", self.srv)
+        self.assertIn("proposalsCount++", self.srv)
+        done = self.srv[self.srv.index("event: 'done'") :]
+        self.assertIn("proposalsCount", done[:400], "done 那条记录要带上这一轮提了几条")
+
+    def test_widget_renders_the_card_and_lets_the_user_pick_visibility(self):
+        self.assertIn('case "proposal":', self.chat)
+        self.assertIn("isProposalShaped(data)", self.chat, "形状过不了的帧不渲染成卡")
+        for label in ("仅本机", "仅自己可见", "公开"):
+            self.assertIn(f'label: "{label}"', self.chat, f"卡上少了「{label}」这一档")
+        self.assertIn('settle("login", "已存成草稿,登录回来接着发。")', self.chat)
+
+    def test_panel_exports_only_the_accept_entry(self):
+        export = re.search(r"window\.__aipmAnno = \{(.*?)\};", self.anno, flags=re.S).group(1)
+        self.assertEqual(
+            re.findall(r"(\w+):", export),
+            ["acceptProposal"],
+            "导出的成员变了:助手那一侧只该有「采纳」这一个入口",
+        )
+
+    def test_accept_writes_only_through_submit_annotation(self):
+        fn = self.body_of(self.anno, "function acceptProposal(proposal)")
+        self.assertIn("submitAnnotation(", fn)
+        self.assertNotIn("/api/annotations", fn, "写入只能走 submitAnnotation,面板里不另发一条请求")
+        self.assertNotIn("fetch(", fn)
+        for code in ("wrong_page", "not_on_page", "malformed", "login_required", "write_failed"):
+            self.assertIn(f'"{code}"', fn, f"采纳的失败分档少了 {code}")
+
+    def test_local_proposal_never_goes_to_the_server(self):
+        fn = self.body_of(self.anno, "function acceptProposal(proposal)")
+        gate = fn[fn.index('proposal.visibility !== "local"') :]
+        self.assertIn("!auth.token()", gate[:120], "没登录时只有公开/私有那一档才需要登录")
+        self.assertIn("loginForDraft(", fn, "没登录时不静默出网,走既有草稿通路")
+
+    def test_draft_is_taken_before_it_is_resent(self):
+        """登录回来的补发:草稿先取走再发,否则同一份会被连发几条。"""
+        fn = self.body_of(self.anno, "function maybeRestoreDraft()")
+        self.assertIn("store.clearDraft();", fn)
+        self.assertLess(
+            fn.index("store.clearDraft();"),
+            fn.index("submitAnnotation("),
+            "先取走再发:发送是异步的,留着就会被下一趟重复发出去",
+        )
+
+    def test_proposal_check_is_wired(self):
+        self.assertIn("Invalid option", self.check, "越权取值那一条要真的被 SDK 的 schema 挡下")
+        self.assertIn("MCP error", self.check, "工具自己拒绝的那几条也要量到")
+        scripts = json.loads(_read(AGENT_SERVER / "package.json"))["scripts"]
+        self.assertIn("proposal-check", scripts)
+
+    def test_browser_case_covers_the_three_claims(self):
+        """真浏览器那组要覆盖:实际写得下去、可见范围由用户挑、越权与越界都拒绝。"""
+        for claim in (
+            "def test_a_proposal_is_written_by_the_users_own_session",
+            "def test_the_visibility_the_user_picks_is_what_gets_written",
+            "def test_a_local_proposal_never_reaches_the_server",
+            "def test_a_public_proposal_without_login_goes_through_the_login_round_trip",
+            "def test_a_quote_that_is_not_on_the_page_is_refused",
+            "def test_a_proposal_for_a_page_the_reader_left_is_refused",
+        ):
+            self.assertIn(claim, self.browser)
+        self.assertIn('self.assertEqual(writes[0]["authorization"], f"Bearer {ANNO_TOKEN}"', self.browser, "写入要带用户自己的会话")
+        self.assertIn('self.assertEqual(self.api.writes(), [], "仅本机那条出了网")', self.browser)
 
 
 if __name__ == "__main__":

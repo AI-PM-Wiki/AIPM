@@ -1499,9 +1499,13 @@ class TestUiRoundFour(unittest.TestCase):
 
     # ---- 发出去的形状 ----
 
-    def test_style_is_sent_on_create(self):
+    def test_style_and_colour_are_sent_on_create(self):
         fn = _block(self.js, "function submitAnnotation(")
-        self.assertIn("style: activeStyle", fn)
+        self.assertIn("style: annoStyle", fn)
+        self.assertIn("color: annoColor", fn)
+        # 不给就按当前选中的那一对归一(见 colorOf / styleIdOf),给了就用给的
+        self.assertIn("return activeColor;", _block(self.js, "function colorOf(id)"))
+        self.assertIn(": activeStyle;", _block(self.js, "function styleIdOf(id)"))
 
     def test_style_and_colour_are_patched_together(self):
         fn = _block(self.js, "function submitEditor()")
