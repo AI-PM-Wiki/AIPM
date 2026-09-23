@@ -240,7 +240,7 @@ class AgentAnnotationCase(unittest.TestCase):
         """等卡片给出结果(写完 / 失败 / 存成草稿),返回它写下的那句话。"""
         card = self.card(index)
         self.page.wait_for_function(
-            """(el) => !!(el.getAttribute('data-state'))""",
+            """(el) => !!el.getAttribute('data-state') && el.getAttribute('data-state') !== 'writing'""",
             arg=card.element_handle(timeout=8000),
             timeout=8000,
         )
@@ -395,6 +395,8 @@ class AgentAnnotationCase(unittest.TestCase):
         local_button = self.card().locator(".aipm-chat__proposal-visbtn", has_text="仅本机")
         self.assertTrue(local_button.is_disabled())
         self.assertTrue(self.card().locator(".aipm-chat__proposal-dismiss").is_disabled())
+        self.page.evaluate("() => document.querySelector('.aipm-chat__proposal-visbtn').click()")
+        self.assertEqual(self.card().locator(".aipm-chat__proposal-visbtn[aria-pressed=true]").inner_text(), "公开")
         self.assertEqual(self.local_annotations(), [])
 
 

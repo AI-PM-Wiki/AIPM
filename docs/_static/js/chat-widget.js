@@ -1016,6 +1016,7 @@
         persist();
         for (const button of visButtons) button.disabled = true;
         accept.disabled = true;
+        card.setAttribute("data-state", "writing");
         dismiss.disabled = true;
         state.textContent = "写入中…";
         Promise.resolve(
@@ -1037,7 +1038,7 @@
             }
             if (code === "unknown" || wasUncertain) {
               card.setAttribute("data-state", "unknown");
-              state.textContent = (res && res.message) || "写入结果未知,请保持可见范围并重试。";
+              state.textContent = "写入结果未知,请保持可见范围并重试。";
               accept.disabled = false;
               return;
             }
