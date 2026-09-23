@@ -993,10 +993,19 @@
   /* 未登录一律只能落本机(服务端那两条路都要 token);登录后按用户在悬浮窗里选的那个
      走,「仅本机」仍然可选 —— 登录了也想把某些东西留在自己机器上是合理诉求。 */
   function defaultVisibility() {
+    var pending = uncertainDraft();
+    if (pending) return pending.visibility;
     if (!auth || !auth.isLoggedIn()) return "local";
     if (activeVis === "private") return "private";
     if (activeVis === "local") return "local";
     return "public";
+  }
+
+  function uncertainDraft() {
+    var draft = store.peekDraft();
+    return draft && draft.resultUnknown && draft.page === pagePath() &&
+      editorDraft && editorDraft.kind === "create" &&
+      editorDraft.requestId === draft.requestId ? draft : null;
   }
 
   /** 画法归一:不认识的 id 一律按高亮(与 store 的默认一致)。 */
@@ -3269,12 +3278,14 @@
     }
     if (nodes.visbtn) {
       nodes.visbtn.addEventListener("click", function () {
+        if (uncertainDraft()) return;
         if (nodes.vislist.hidden) openVisMenu(nodes);
         else closeVisMenu(nodes);
       });
     }
     if (!els.vislist) return;
     els.vislist.addEventListener("click", function (e) {
+      if (uncertainDraft()) return;
       var b = e.target.closest("button[data-vis]");
       if (!b) return;
       var vis = b.getAttribute("data-vis");
@@ -3462,6 +3473,11 @@
   }
 
   function beginEditor(opts) {
+    if (store.peekDraft() && store.peekDraft().resultUnknown &&
+        store.peekDraft().page === pagePath()) {
+      maybeRestoreDraft();
+      return;
+    }
     var kind = opts.kind;
     var annoId = opts.annoId || null;
     var body = opts.body || "";
@@ -3497,6 +3513,10 @@
   var editorDraft = null;
 
   function closeEditor() {
+    if (uncertainDraft()) {
+      setHint("写入结果未知,请保持原内容及可见范围重试。");
+      return;
+    }
     editorDraft = null;
     composerSelection = null;
     unmountEditor();
@@ -3539,7 +3559,16 @@
     }
     els.draftMeta.setAttribute("data-vis", label.cls);
     var opts = els.vislist.querySelectorAll("button[data-vis]");
+    var pending = uncertainDraft();
+    if (els.visbtn) els.visbtn.disabled = !!pending;
+    if (els.input) els.input.readOnly = !!pending;
+    if (els.cancel) els.cancel.disabled = !!pending;
+    if (els.swatches) {
+      var colors = els.swatches.querySelectorAll("button");
+      for (var k = 0; k < colors.length; k++) colors[k].disabled = !!pending;
+    }
     for (var j = 0; j < opts.length; j++) {
+      opts[j].disabled = !!pending;
       opts[j].classList.toggle("is-active", opts[j].getAttribute("data-vis") === vis);
     }
   }
@@ -3628,6 +3657,20 @@
    */
   function submitEditor() {
     if (editorDraft === null) return;
+    var pending = uncertainDraft();
+    if (pending) {
+      setBusy(true);
+      submitAnnotation(
+        pending.selectors || [], pending.body, pending.visibility,
+        pending.scope === "page", pending.color, pending.style, pending.requestId, true
+      ).then(function (result) {
+        setBusy(false);
+        if (!result.ok) return;
+        store.clearDraft();
+        closeEditor();
+      });
+      return;
+    }
     var kind = editorDraft.kind;
     var body = els.input ? els.input.value.trim() : "";
 
@@ -4782,6 +4825,7 @@
   }
 
   var restoringDraft = false;
+  var attemptedDraftRequestId = null;
 
   /** OAuth 往返回来:草稿还在就恢复,并把待发布的那条补发出去。 */
   function maybeRestoreDraft() {
@@ -4820,14 +4864,24 @@
     render();
     if (els.input) els.input.focus();
     if (auth && auth.isLoggedIn() &&
-        (draft.selectors || draft.scope === "page") && editorDraft.kind === "create") {
+        (draft.selectors || draft.scope === "page") && editorDraft.kind === "create" &&
+        attemptedDraftRequestId !== draft.requestId) {
       restoringDraft = true;
+      attemptedDraftRequestId = draft.requestId;
       submitAnnotation(
         draft.selectors || [], draft.body, draft.visibility, draft.scope === "page",
-        draft.color, draft.style, draft.requestId
-      ).then(function (ok) {
+        draft.color, draft.style, draft.requestId, true
+      ).then(function (result) {
         restoringDraft = false;
-        if (!ok) return;
+        if (!result.ok) {
+          if (result.code === "unknown" || draft.resultUnknown) {
+            draft.resultUnknown = true;
+            store.saveDraft(draft);
+            render();
+            setHint("写入结果未知,请保持原内容及可见范围重试。");
+          }
+          return;
+        }
         store.clearDraft();
         closeEditor();
         setSmartbar("已按登录前的草稿保存:" + (draft.visibility === "private" ? "私有" : "公开"), "info");
@@ -5099,7 +5153,7 @@
       syncComposer();
       syncHeadIcon();
       if (auth.isLoggedIn()) invalidate();
-      if (open) ensureAnnotationsLoaded();
+      if (open || store.peekDraft()) ensureAnnotationsLoaded();
     });
     auth.onChange(function () {
       syncComposer();
