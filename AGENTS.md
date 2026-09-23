@@ -133,6 +133,24 @@ bash scripts/check-upstream-remnants.sh  # 无上游 fork 残留(2026-08 新增,
   - 本项目经常会有多个Agent并发，所以分支创建、合并、push 与 worktree 清理等操作需要小心，需要注意避免合并冲突。
 - **分支**:`dev` = 集成分支(只做集成,不做日常开发);`main` = 发布分支,
   **绝不直接 push,只走 PR**(main 上的 push 触发 GitHub Actions 构建并部署到 gh-pages)。
+  - PR 在 CI 过了之后会有 netlify 部署预览
+  - 注意 PR 命名规范：
+```markdown
+Available types:
+ - dev
+ - feat
+ - fix
+ - docs
+ - style
+ - refactor
+ - perf
+ - test
+ - build
+ - ci
+ - chore
+ - revert
+```
+
 - **发布后同步回**(防 dev 累积 behind):dev→main PR 合并后**立即**执行
   `git fetch origin && git merge --ff-only origin/main && git push origin dev`——
   PR 的 merge commit 父节点就是 dev 当时的 tip,必然可纯快进,dev 与 main 精确对齐,
