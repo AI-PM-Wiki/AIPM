@@ -26,6 +26,7 @@ import shutil
 import socket
 import subprocess
 import threading
+import unittest
 import urllib.request
 from http import HTTPStatus
 from pathlib import Path
@@ -36,6 +37,7 @@ AGENT_SERVER = ROOT / "agent-server"
 
 #: 聊天 widget 在 localhost 上写死的后端地址(见 docs/_static/js/chat-widget.js)
 AGENT_PORT = 8787
+AGENT_ORIGIN = f"http://127.0.0.1:{AGENT_PORT}"
 
 
 def run(cmd: list[str], cwd: Path = ROOT, **kwargs) -> subprocess.CompletedProcess:
@@ -78,15 +80,35 @@ class _Stream:
     加载的是一张正常的图。
 
     分两次给是为了量得准 —— 浏览器自己那次加载与取源那次请求的是同一个地址,混在
-    一起就分不出取源这一步到底读了多少。区分按 `Sec-Fetch-Dest`:取源发的是 fetch
-    (`empty`),`<img>` 发的是 `image`。用这条头的用例把 Service Worker 关掉
-    (见 `Browser(service_workers=...)`),否则站点那个 cache-first 的 SW 会按地址把
-    第二次请求挡回第一次的响应,两份内容根本到不了这里。"""
+    一起就分不出取源这一步到底读了多少。区分按 `Sec-Fetch-Mode`:取源发的是
+    `cors`(页面代码自己发的 fetch),`<img>` 发的是 `no-cors`。
+
+    不按 `Sec-Fetch-Dest` 分,虽然那个头看着更直白:Service Worker 接管之后,
+    `<img>` 那次加载是 SW 拿拦截到的请求重新发起的,而**重新发起时 destination
+    是空的**(`Sec-Fetch-Dest: empty`)—— 两份内容会发错,而错的那一份(超大的)
+    正好让「取源读了多少」量出个假数。`Sec-Fetch-Mode` 在这次重新发起里原样保留。
+
+    两份内容都带 `Cache-Control: no-store`:这条用例要的是「每次都由服务端给字节」,
+    落进浏览器的 HTTP 缓存就量不出来了(SW 那份 Cache Storage 不受它影响)。
+    """
 
     def __init__(self, body: bytes, loader: bytes, content_type: str):
         self.body = body
         self.loader = loader
         self.content_type = content_type
+
+
+class _Truncated:
+    """一份「读到一半就断」的响应:`body` 是响应头里 `Content-Length` 声明的那一份,
+    实际只写出去一半。取源那边读到的是 `reader.read()` 拒绝 —— 请求成功、头拿到
+    了、正文中途失败,与「根本取不到这张图」是两种不同的情形。
+
+    `loader` 与 `_Stream` 同一个用处:页面自己那次 `<img>` 加载拿到的是一张正常的
+    图,否则按钮所在的容器量不出尺寸、点不着。"""
+
+    def __init__(self, body: bytes, loader: bytes):
+        self.body = body
+        self.loader = loader
 
 
 class _Handler(http.server.SimpleHTTPRequestHandler):
@@ -125,10 +147,14 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         if stream is not None:
             self._stream(path, stream)
             return
+        truncated = self.server.truncated.get(path)
+        if truncated is not None:
+            self._truncate(path, truncated)
+            return
         super().do_GET()
 
     def _stream(self, path: str, stream: _Stream) -> None:
-        if self.headers.get("Sec-Fetch-Dest") != "empty":
+        if self.headers.get("Sec-Fetch-Mode") != "no-cors":
             self._write_all(stream.loader, stream.content_type)
             return
         self.send_response(HTTPStatus.OK)
@@ -149,10 +175,30 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         finally:
             self.server.stream_written[path] = written
 
+    def _truncate(self, path: str, truncated: _Truncated) -> None:
+        """响应头照发,正文只给一半就断:读的过程中失败的那条路。
+
+        `Content-Length` 说的是整份,实际写出去一半,客户端因此拿到的是
+        `ERR_CONTENT_LENGTH_MISMATCH` —— 取源那边 `reader.read()` 会拒绝。
+        页面自己那次 `<img>` 加载照旧给 `loader`(见 `_Truncated`)。"""
+        if self.headers.get("Sec-Fetch-Mode") != "no-cors":
+            self._write_all(truncated.loader, "image/png")
+            return
+        body = truncated.body
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "image/png")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body[: len(body) // 2])
+        self.wfile.flush()
+        self.close_connection = True
+
     def _write_all(self, body: bytes, content_type: str) -> None:
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -185,6 +231,7 @@ class StaticSite:
         self.cors = cors
         self.redirects: dict[str, str] = {}
         self.streams: dict[str, _Stream] = {}
+        self.truncated: dict[str, bytes] = {}
         self.stream_written: dict[str, int] = {}
         self.stream_aborted: dict[str, bool] = {}
         self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
@@ -193,6 +240,7 @@ class StaticSite:
         self.httpd.cors = self.cors
         self.httpd.redirects = self.redirects
         self.httpd.streams = self.streams
+        self.httpd.truncated = self.truncated
         self.httpd.stream_written = self.stream_written
         self.httpd.stream_aborted = self.stream_aborted
         self.port = self.httpd.server_address[1]
@@ -232,6 +280,15 @@ class StaticSite:
         显示,否则按钮所在的容器量不出尺寸。"""
         path = "/" + relpath
         self.streams[path] = _Stream(body, loader, content_type)
+        return path
+
+    def truncate(self, relpath: str, body: bytes, loader: bytes) -> str:
+        """一份「读到一半就断」的资源,返回它的站内路径。
+
+        `body` 是响应头里 `Content-Length` 声明的那一份,实际只写出去一半;`loader`
+        是页面自己那次 `<img>` 加载拿到的正常图(见 `_Truncated`)。"""
+        path = "/" + relpath
+        self.truncated[path] = _Truncated(body, loader)
         return path
 
     def bytes_read_by_fetch(self, path: str) -> int:
@@ -434,6 +491,43 @@ class AgentServer:
             self.proc.wait(timeout=10)
 
 
+#: 被挡下来的记录的理由,只有这两种。两者认的都是**错误的出处**,不是「消息里
+#: 出现了网址」:一条本站脚本抛出的错误里照样可以有别人的网址,那种错误必须留在
+#: `errors` 里 —— 靠消息文本放行,一条真实失败就能靠这句话本身溜过去。
+REASON_FOREIGN_SCRIPT = "third-party-script-error"
+REASON_FOREIGN_RESOURCE = "third-party-resource-failed"
+
+#: 主题的脚本加载器取不到脚本时抛的那句话的**全部**内容(见 mkdocs-material 的
+#: browser/script/index.ts)。认的是这个形状:`Invalid script: <那个地址>`。
+INVALID_SCRIPT_RE = re.compile(r"^Invalid script: (\S+)$")
+
+#: 堆栈里的一帧:`at fn (http://host/path:1:2)` 或 `at http://host/path:1:2`。
+_STACK_FRAME_RE = re.compile(r"(https?://[^\s()]+?):\d+:\d+")
+
+
+def assert_no_page_errors(case: unittest.TestCase, browser: "Browser") -> None:
+    """这条通路自己这一侧没有异常 —— 连同**被挡下来的那些记录**一起断言。
+
+    挡下来的每一条都必须指得出一个不属于本站与问答后端的地址,理由只有两种(见
+    Browser 的归类)。过滤挡错一次,一条真实失败就被藏起来了,所以这件事由断言
+    兜住:挡下来的记录要逐条站得住,站不住就地报出来。"""
+    for entry in browser.ignored:
+        case.assertIn(
+            entry["reason"],
+            (REASON_FOREIGN_SCRIPT, REASON_FOREIGN_RESOURCE),
+            f"挡下来的记录理由不认识:{entry}",
+        )
+        case.assertTrue(
+            browser.is_foreign(entry["origin"]),
+            f"挡下来的记录指不出一个第三方地址:{entry}",
+        )
+    case.assertEqual(
+        browser.errors,
+        [],
+        f"页面上有异常:{browser.errors};被挡下的记录:{browser.ignored}",
+    )
+
+
 class Browser:
     """一个 Chromium 与它的一个页面,顺带收页面上的报错。
 
@@ -441,11 +535,15 @@ class Browser:
     来自站点 origin 或问答后端 origin 的 console.error —— 一条通路里「悄悄抛了个
     TypeError 但界面看起来没事」正是要靠它现形。
 
-    别的 origin 上的加载失败不进 `errors`:批注后端(8788)、统计脚本、主题从 CDN
-    取的 mermaid 这些都不在这条通路里,它们连不上是用例环境的事,不是被测代码的
-    事(主题那个 CDN 取不到时会抛一句带 CDN 地址的 `Invalid script`)。判据是报错
-    里提到的地址:只要提到的都是别人的地址,就归到 `other_origin_errors`,要排查
-    时看得到。"""
+    别的 origin 上的失败不进 `errors`,进 `ignored`,每条带得住事的地址与理由:
+
+    - **第三方脚本抛出的错误**:堆栈第一帧(抛错的那个脚本)不在本站与问答后端上;
+    - **第三方资源加载失败**:浏览器的 console.error,它自己报的地址是第三方的。
+
+    两处的依据都是**出处**,不是消息文本。主题那个 CDN 取不到 mermaid 时抛的
+    `Invalid script: <CDN 地址>` 是唯一一条出处在我们、指向别人的错误:认的是这
+    句话的完整形状,地址落在别人那里才挡下,落在这里就是「我们自己的脚本没加载成」,
+    照旧进 `errors`。`assert_no_page_errors` 逐条再审一遍这些记录。"""
 
     def __init__(self, playwright, base: str, service_workers: str = "allow"):
         self.browser = playwright.chromium.launch()
@@ -453,23 +551,44 @@ class Browser:
         self.page = self.context.new_page()
         self.base = base
         self.errors: list[str] = []
-        self.other_origin_errors: list[str] = []
+        self.ignored: list[dict] = []
         self.page.on("pageerror", self._on_pageerror)
         self.page.on("console", self._on_console)
         self.chat_bodies: list[dict] = []
         self.page.on("request", self._on_request)
 
-    def _foreign_origin(self, line: str) -> bool:
-        """这句话里提到的地址,有没有不是本站与问答后端的。"""
-        for url in re.findall(r"https?://[^\s'\"()]+", line):
-            if not url.startswith(self.base) and not url.startswith(f"http://127.0.0.1:{AGENT_PORT}"):
-                return True
-        return False
+    def is_foreign(self, url: str | None) -> bool:
+        """这个地址在不在这条通路之外。"""
+        return bool(url) and not self._ours(url)
+
+    def _ours(self, url: str) -> bool:
+        """这个地址是不是这条通路自己的:本站,或问答后端。"""
+        return url.startswith(self.base) or url.startswith(AGENT_ORIGIN)
+
+    def _ignore(self, line: str, origin: str, reason: str) -> None:
+        self.ignored.append({"line": line, "origin": origin, "reason": reason})
+
+    @staticmethod
+    def _stack_origin(err) -> str:
+        """这条错误是从哪个脚本抛出来的:堆栈第一帧的地址(取不到就是空串)。"""
+        found = _STACK_FRAME_RE.search(getattr(err, "stack", "") or "")
+        return found.group(1) if found is not None else ""
 
     def _on_pageerror(self, err):
         line = f"pageerror: {err}"
-        if self._foreign_origin(line):
-            self.other_origin_errors.append(line)
+        named = INVALID_SCRIPT_RE.match(str(err))
+        if named is not None:
+            # 主题的脚本加载器报告某个地址上的脚本没取到。它抛在我们自己的 bundle
+            # 里,指的却是那个地址 —— 地址是别人的就挡下,是自己的就是真实失败。
+            src = named.group(1)
+            if self._ours(src):
+                self.errors.append(line)
+            else:
+                self._ignore(line, src, REASON_FOREIGN_SCRIPT)
+            return
+        origin = self._stack_origin(err)
+        if origin and not self._ours(origin):
+            self._ignore(line, origin, REASON_FOREIGN_SCRIPT)
             return
         self.errors.append(line)
 
@@ -478,8 +597,8 @@ class Browser:
             return
         url = (msg.location or {}).get("url") or ""
         line = f"console.error: {msg.text} [{url}]"
-        if url and not url.startswith(self.base) and not url.startswith(f"http://127.0.0.1:{AGENT_PORT}"):
-            self.other_origin_errors.append(line)
+        if self.is_foreign(url):
+            self._ignore(line, url, REASON_FOREIGN_RESOURCE)
             return
         self.errors.append(line)
 

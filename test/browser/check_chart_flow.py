@@ -12,6 +12,9 @@
 - 取图的三道限制:**来源**(跨域不取,同源地址重定向到跨域也不取)、**类型**(按字节
   认,不看服务器说的)、**体积**(超过上限不取,而且是在**读的过程中**停 —— 超限的
   响应就地取消,不把整份拉进内存);
+- **正文读到一半断掉**:退回替代文本,按钮恢复可按,不留未处理的拒绝;
+- **Service Worker 接管之后**,上面那条体积限制在三种处境下都成立:这次读没命中
+  缓存、缓存里已经有这张图、老用户带着旧缓存升到新构建;
 - mermaid 源码在渲染替换掉它之前收下来,收的是**逐字节相同**的那份源码;
 - 同源 SVG 取不到时回落到替代文本;
 - 不可信的 SVG 不执行 —— 同一份载荷,innerHTML 那条路是活的,取源那条路是死的;
@@ -30,7 +33,16 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 import fixtures
-from harness import ROOT, WORK, AgentServer, Browser, StaticSite, StubModel, build_site
+from harness import (
+    ROOT,
+    WORK,
+    AgentServer,
+    Browser,
+    StaticSite,
+    StubModel,
+    assert_no_page_errors,
+    build_site,
+)
 
 RAG_PAGE = "/ai/rag/"
 SITE_IMG = ROOT / "docs" / "job" / "jd-breakdowns" / "images" / "bytedance_developer_ai_pm_jd_01.png"
@@ -39,72 +51,124 @@ SITE_IMG = ROOT / "docs" / "job" / "jd-breakdowns" / "images" / "bytedance_devel
 #: 有没有停」—— 上限之内的正常图走的是另一条用例。
 OVERSIZED_TOTAL = 32 * 1024 * 1024
 
+#: 上一版构建(改动之前那个提交)。两个用例类都要拿它造出「老用户手里那一版」。
+#: 缓存升级那条用它当旧构建;Service Worker 那条用它当「带着旧缓存升级」的起点。
+OLD_REF = "5c76a4ba"
+
+#: 用例素材的站内路径。素材住在站点根目录里,每换一次根目录都要重放一遍
+#: (见 `write_fixtures`),路径本身不变。
+HUGE_PNG = "/probe/huge.png"
+HUGE_SVG = "/probe/huge.svg"
+TRUNCATED_PNG = "/probe/half-there.png"
+REDIRECT_PNG = "/probe/redirect-to-far.png"
+REDIRECT_SVG = "/probe/redirect-to-far.svg"
+
 
 def mermaid_blocks(markdown: Path) -> list[str]:
     """markdown 里的 mermaid 源码块,按出现顺序。"""
     return re.findall(r"```mermaid\n(.*?)```", markdown.read_text(encoding="utf-8"), flags=re.S)
 
 
-class ChartContextFlowTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.site = StaticSite(build_site(WORK / "site-flow"))
+def write_fixtures(site: StaticSite, probe: StaticSite) -> None:
+    """往站点根目录里放用例素材,并把跨域地址与重定向登记好。
+
+    每换一次站点根目录都要重放一遍 —— 素材就住在根目录里(见 `_Stack` 与
+    `ServiceWorkerReadLimitTest` 的升级用例)。"""
+    # 真实正文里就有的那张 PNG:用例拿它的字节与线上发出去的 base64 对
+    site.write("probe/real.png", SITE_IMG.read_bytes())
+    site.write("probe/small.png", fixtures.png(8, 8, 1))
+    site.write("probe/big.png", fixtures.png(640, 640, 2))
+    site.write("probe/not-an-image.png", fixtures.NOT_AN_IMAGE, "text/html")
+    site.write("probe/mislabelled.png", fixtures.NOT_AN_IMAGE, "image/png")
+    site.write("probe/payload.svg", fixtures.PAYLOAD_SVG)
+    site.write("probe/plain.svg", fixtures.PLAIN_SVG)
+    # 跨域那一张:另一台静态服务,只放这一个文件
+    probe.write("far.png", fixtures.png(8, 8, 3))
+    probe.write("far.svg", fixtures.PLAIN_SVG, "image/svg+xml")
+    # 同源地址 → 跨域地址的 302。两个都在站内路径上,来源那一关按地址判是过得去的。
+    site.redirect(REDIRECT_PNG.lstrip("/"), f"{probe.base}/far.png")
+    site.redirect(REDIRECT_SVG.lstrip("/"), f"{probe.base}/far.svg")
+    # 读不完的两份:取源那一步拿到的是超大字节,页面上的 <img> 自己那次加载拿到
+    # 一张正常的图(按钮所在的容器要靠它量出尺寸)。
+    site.stream(
+        HUGE_PNG.lstrip("/"),
+        fixtures.oversized(b"\x89PNG\r\n\x1a\n", OVERSIZED_TOTAL),
+        fixtures.png(8, 8, 5),
+        "image/png",
+    )
+    site.stream(
+        HUGE_SVG.lstrip("/"),
+        fixtures.oversized(b'<svg xmlns="http://www.w3.org/2000/svg">', OVERSIZED_TOTAL),
+        fixtures.PLAIN_SVG,
+        "image/svg+xml",
+    )
+    # 读到一半断的那一份:头照发,正文只写一半。
+    site.truncate(
+        TRUNCATED_PNG.lstrip("/"),
+        fixtures.png(8, 8, 6) + b"\x00" * (128 * 1024),
+        fixtures.png(8, 8, 7),
+    )
+
+
+class _Stack:
+    """一整套跑得起来的东西:真站点、跨域探针、假模型、真的 agent-server、浏览器引擎。
+
+    整个模块共用一份 —— 建站要几十秒,两个用例类各建一份没有意义。"""
+
+    def __init__(self):
+        self.site_dir = build_site(WORK / "site-flow")
+        self.site = StaticSite(self.site_dir)
         # 跨域那一台**加 CORS 头**:不加的话,挡住「同源重定向到跨域资源」那一步的是
         # CORS 自己,被测的那道来源判断就轮不到 —— 用例必须让跨域那一侧真的放行。
-        cls.probe = StaticSite(cls.site.root / "probe", cors=True)
-        cls._write_fixtures()
-        cls.model = StubModel()
-        cls.server = AgentServer(cls.site, cls.model)
-        cls.pw = sync_playwright().start()
+        self.probe = StaticSite(self.site_dir / "probe", cors=True)
+        self.model = StubModel()
+        self.server = AgentServer(self.site, self.model)
+        self.pw = sync_playwright().start()
+        write_fixtures(self.site, self.probe)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.server.close()
-        cls.model.close()
-        cls.probe.close()
-        cls.site.close()
-        cls.pw.stop()
+    def close(self) -> None:
+        self.server.close()
+        self.model.close()
+        self.probe.close()
+        self.site.close()
+        self.pw.stop()
 
-    @classmethod
-    def _write_fixtures(cls) -> None:
-        site = cls.site
-        # 真实正文里就有的那张 PNG:用例拿它的字节与线上发出去的 base64 对
-        site.write("probe/real.png", SITE_IMG.read_bytes())
-        site.write("probe/small.png", fixtures.png(8, 8, 1))
-        site.write("probe/big.png", fixtures.png(640, 640, 2))
-        site.write("probe/not-an-image.png", fixtures.NOT_AN_IMAGE, "text/html")
-        site.write("probe/mislabelled.png", fixtures.NOT_AN_IMAGE, "image/png")
-        site.write("probe/payload.svg", fixtures.PAYLOAD_SVG)
-        site.write("probe/plain.svg", fixtures.PLAIN_SVG)
-        # 跨域那一张:另一台静态服务,只放这一个文件
-        cls.probe.write("far.png", fixtures.png(8, 8, 3))
-        cls.probe.write("far.svg", fixtures.PLAIN_SVG, "image/svg+xml")
-        # 同源地址 → 跨域地址的 302。两个都在站内路径上,来源那一关按地址判是过得去的。
-        cls.redirect_png = site.redirect("probe/redirect-to-far.png", f"{cls.probe.base}/far.png")
-        cls.redirect_svg = site.redirect("probe/redirect-to-far.svg", f"{cls.probe.base}/far.svg")
-        # 读不完的两份:取源那一步拿到的是超大字节,页面上的 <img> 自己那次加载拿到
-        # 一张正常的图(按钮所在的容器要靠它量出尺寸)。
-        cls.huge_png = site.stream(
-            "probe/huge.png",
-            fixtures.oversized(b"\x89PNG\r\n\x1a\n", OVERSIZED_TOTAL),
-            fixtures.png(8, 8, 5),
-            "image/png",
-        )
-        cls.huge_svg = site.stream(
-            "probe/huge.svg",
-            fixtures.oversized(b'<svg xmlns="http://www.w3.org/2000/svg">', OVERSIZED_TOTAL),
-            fixtures.PLAIN_SVG,
-            "image/svg+xml",
-        )
+
+_STACK: _Stack | None = None
+
+
+def stack() -> _Stack:
+    global _STACK
+    if _STACK is None:
+        _STACK = _Stack()
+    return _STACK
+
+
+def tearDownModule() -> None:
+    global _STACK
+    if _STACK is not None:
+        _STACK.close()
+        _STACK = None
+
+
+class ChartFlowCase(unittest.TestCase):
+    """两个用例类共用的东西:那一整套服务,以及页面上点图的那几件工具。
+
+    `service_workers` 是两类用例唯一分开的地方 —— 见两个子类各自的说明。"""
+
+    #: "block" 或 "allow",传给 Playwright 的 context。
+    service_workers = "block"
 
     def setUp(self):
+        self.stack = stack()
+        self.site = self.stack.site
+        self.probe = self.stack.probe
+        self.model = self.stack.model
+        self.server = self.stack.server
+        self.pw = self.stack.pw
         # 假模型 API 整类共用一份记录,每个用例只看自己这一段
         self.model_seen = len(self.model.messages())
-        # Service Worker 关掉:站点那个是**按地址**的 cache-first,而「读取过程限额」
-        # 那两条用例故意让同一个地址先是页面自己那次加载、再是取源那次请求 —— SW 会把
-        # 第二次挡回第一次的响应,两份内容根本到不了服务端,量不出取源读了多少。
-        # SW 自己的行为由 check_cache_upgrade.py 单独覆盖。
-        self.browser = Browser(self.pw, self.site.base, service_workers="block")
+        self.browser = Browser(self.pw, self.site.base, service_workers=self.service_workers)
         self.page = self.browser.goto(RAG_PAGE)
         self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
 
@@ -198,6 +262,16 @@ class ChartContextFlowTest(unittest.TestCase):
                 out.extend(b for b in content if b.get("type") == "image")
         return out
 
+
+class ChartContextFlowTest(ChartFlowCase):
+    """这条通路的正面用例。
+
+    Service Worker 关掉:站点那个是**按地址**的 cache-first,而「读不完的响应」故意
+    让同一个地址先是页面自己那次加载、再是取源那次请求 —— SW 会把第二次挡回第一次
+    的响应,两份内容根本到不了服务端,量不出取源读了多少。这里量的是取源本身,
+    所以把那一层摘掉;SW 接管之后限额还成不成立,由 `ServiceWorkerReadLimitTest`
+    另开一组(那边不摘)。"""
+
     # ---- 1. 位图:图像本身,一路到模型 ----
 
     def test_bitmap_reaches_the_model(self):
@@ -240,7 +314,7 @@ class ChartContextFlowTest(unittest.TestCase):
         self.assertIn("位图(图像本身随本消息一起送过来)", text)
         self.assertIn("图像: 本消息附带的第 1 张图", text)
         self.assertIn("这张图里写了什么?", text)
-        self.assertEqual(self.browser.errors, [], f"页面上有异常:{self.browser.errors}")
+        assert_no_page_errors(self, self.browser)
 
     # ---- 2. 三道限制:来源、类型、体积 ----
 
@@ -272,7 +346,7 @@ class ChartContextFlowTest(unittest.TestCase):
         requests = self.model_requests()
         self.assertEqual(len(requests), 1)
         self.assertEqual(self.images_in(requests[0]["body"]), [], "三道限制都没挡住图像")
-        self.assertEqual(self.browser.errors, [], f"页面上有异常:{self.browser.errors}")
+        assert_no_page_errors(self, self.browser)
 
     def test_mislabelled_type_is_caught_by_the_bytes(self):
         """服务器说它是 image/png,字节说它不是 —— 认的必须是字节。"""
@@ -294,7 +368,7 @@ class ChartContextFlowTest(unittest.TestCase):
         跨域那一侧**真的放行 CORS**(probe 服务带 `Access-Control-Allow-Origin: *`),
         所以挡住这一步的只能是取源自己的来源判断 —— 换成一台不放行的服务器,红的
         原因就变成 CORS,量不出这道判断在不在。"""
-        self.inject("redirect", self.redirect_png, "一个重定向到跨域的地址")
+        self.inject("redirect", REDIRECT_PNG, "一个重定向到跨域的地址")
         self.ask("redirect")
         self.wait_chips(1)
         self.assertEqual(self.chips(), ["一个重定向到跨域的地址"])
@@ -307,7 +381,7 @@ class ChartContextFlowTest(unittest.TestCase):
 
     def test_same_origin_svg_redirecting_cross_origin_is_not_read(self):
         """SVG 那条路同样按来源判:重定向之后的字符不是这张图的字。"""
-        self.inject("redirectsvg", self.redirect_svg, "一个重定向到跨域的 SVG 地址")
+        self.inject("redirectsvg", REDIRECT_SVG, "一个重定向到跨域的 SVG 地址")
         self.ask("redirectsvg")
         self.wait_chips(1)
         self.assertEqual(
@@ -320,12 +394,12 @@ class ChartContextFlowTest(unittest.TestCase):
 
     def test_oversized_bitmap_is_cancelled_mid_read(self):
         """超限的响应要就地取消,而不是先整份读进内存再丢掉。"""
-        self.inject("huge", self.huge_png, "一份读不完的位图")
+        self.inject("huge", HUGE_PNG, "一份读不完的位图")
         self.ask("huge")
         self.wait_chips(1)
         self.assertEqual(self.chips(), ["一份读不完的位图"])
 
-        read = self.settled_bytes(self.huge_png)
+        read = self.settled_bytes(HUGE_PNG)
         self.assertGreaterEqual(
             read, self.image_cap(), "取源没读起来,这个数说明不了「读的过程中停」"
         )
@@ -334,7 +408,7 @@ class ChartContextFlowTest(unittest.TestCase):
             OVERSIZED_TOTAL // 4,
             f"整份 {OVERSIZED_TOTAL} 字节的响应被读进了内存,读了 {read} 字节",
         )
-        self.assertTrue(self.site.was_cancelled(self.huge_png), "超限的响应没有被取消")
+        self.assertTrue(self.site.was_cancelled(HUGE_PNG), "超限的响应没有被取消")
 
         wire = self.send("这张图里写了什么?")
         item = wire["context"][0]
@@ -343,12 +417,12 @@ class ChartContextFlowTest(unittest.TestCase):
 
     def test_oversized_svg_is_cancelled_mid_read(self):
         """SVG 与位图同一个上限,同样读的过程中停。"""
-        self.inject("hugesvg", self.huge_svg, "一份读不完的 SVG")
+        self.inject("hugesvg", HUGE_SVG, "一份读不完的 SVG")
         self.ask("hugesvg")
         self.wait_chips(1)
         self.assertEqual(self.chips(), ["一份读不完的 SVG"])
 
-        read = self.settled_bytes(self.huge_svg)
+        read = self.settled_bytes(HUGE_SVG)
         self.assertGreaterEqual(
             read, self.image_cap(), "取源没读起来,这个数说明不了「读的过程中停」"
         )
@@ -357,7 +431,34 @@ class ChartContextFlowTest(unittest.TestCase):
             OVERSIZED_TOTAL // 4,
             f"整份 {OVERSIZED_TOTAL} 字节的 SVG 被读进了内存,读了 {read} 字节",
         )
-        self.assertTrue(self.site.was_cancelled(self.huge_svg), "超限的响应没有被取消")
+        self.assertTrue(self.site.was_cancelled(HUGE_SVG), "超限的响应没有被取消")
+
+    # ---- 2d. 正文读到一半断掉 ----
+
+    def test_body_failing_mid_read_falls_back_and_frees_the_button(self):
+        """响应头到手、正文读到一半断了:退回替代文本,按钮恢复可按,不留未处理的拒绝。
+
+        「取不到这张图」与「读到一半断掉」是两种情形,但都是取源这条路上本来就有
+        的结果,走到用户那里应当是同一个:这条语境仍然立得住(写的是替代文本),
+        按钮回到能按的状态。按钮停在忙碌态、或者页面上多出一个没人接的拒绝,都是
+        这条通路漏掉了这一半。"""
+        self.inject("half", TRUNCATED_PNG, "一份读到一半断掉的图")
+        self.ask("half")
+        self.wait_chips(1)
+        self.assertEqual(self.chips(), ["一份读到一半断掉的图"])
+
+        button = self.ask_button("half")
+        self.assertFalse(button.is_disabled(), "读失败之后按钮还按不动")
+        self.assertNotIn(
+            "is-busy", button.get_attribute("class") or "", "按钮还停在取源的忙碌态"
+        )
+
+        wire = self.send("这张图里写了什么?")
+        item = wire["context"][0]
+        self.assertEqual(item["mediaType"], "", "读到一半断掉的那份进了请求体")
+        self.assertEqual(item["imageData"], "")
+        self.assertEqual(self.images_in(self.model_requests()[0]["body"]), [])
+        assert_no_page_errors(self, self.browser)
 
     # ---- 3. mermaid:渲染替换之前收下源码 ----
 
@@ -377,7 +478,7 @@ class ChartContextFlowTest(unittest.TestCase):
 
         requests = self.model_requests()
         self.assertEqual(self.images_in(requests[0]["body"]), [], "mermaid 走的是文字那条路")
-        self.assertEqual(self.browser.errors, [], f"页面上有异常:{self.browser.errors}")
+        assert_no_page_errors(self, self.browser)
 
     # ---- 4. SVG 取不到时回落 ----
 
@@ -510,7 +611,7 @@ class ChartContextFlowTest(unittest.TestCase):
             [],
             "降级之后重发的那一轮,模型那边又收到了图像",
         )
-        self.assertEqual(self.browser.errors, [], f"页面上有异常:{self.browser.errors}")
+        assert_no_page_errors(self, self.browser)
 
     def squeeze_quota(self) -> int:
         """把 localStorage 占满,再填到只剩约 100 KB。返回量出来的余量。
@@ -620,7 +721,171 @@ class ChartContextFlowTest(unittest.TestCase):
         self.assertNotIn("req_01STUBIMAGE", text, "上游报错里的请求编号走到了用户眼前")
         self.assertNotIn("does not support image inputs", text, "上游报错的原文走到了用户眼前")
         self.assertNotIn("模型服务暂时不可用", text, "还停在通用提示上,用户不知道要做什么")
-        self.assertEqual(self.browser.errors, [], f"页面上有异常:{self.browser.errors}")
+        assert_no_page_errors(self, self.browser)
+
+
+class ServiceWorkerReadLimitTest(ChartFlowCase):
+    """Service Worker 接管之后,取源的读取限额仍然成立。
+
+    上面那一组把 SW 关掉,量的是取源本身;线上跑的站点是有 SW 的,所以同一件事要
+    在三种处境下各验一遍:这次读没命中缓存、缓存里已经有这张图、以及老用户带着
+    旧缓存升到新构建。
+
+    ── SW 与「读的过程中停」为什么是同一件事 ──
+
+    cache-first 那一层回填时会把响应 clone 一份出去异步写入缓存,那份副本读多少由
+    缓存层自己定,页面这边 `reader.cancel()` 管不着它 —— 取消掉页面这一半之后,
+    另一半照旧把整份读完,上限就只约束得住一半。所以取源那次请求**不经过那一层**
+    (见 service-worker.js 的放行),这条响应只有一个消费者,读多少只由取源那一处
+    决定。
+
+    这里不摘 SW,量「取源读了多少」的那两条仍然成立:两份内容按 `Sec-Fetch-Mode`
+    分(SW 重新发起 `<img>` 那次加载时 `Sec-Fetch-Dest` 是空的,按那个分会发错),
+    见 harness 的 `_Stream`。"""
+
+    service_workers = "allow"
+
+    def setUp(self):
+        super().setUp()
+        self.page.wait_for_function("() => navigator.serviceWorker.controller !== null")
+
+    # ---- 手上这几件工具 ----
+
+    def cached_urls(self) -> list[str]:
+        """缓存里现在有哪些地址(SW 那份 Cache Storage)。"""
+        return self.page.evaluate(
+            """async () => {
+                const out = [];
+                for (const name of await caches.keys()) {
+                    const cache = await caches.open(name);
+                    for (const req of await cache.keys()) out.push(req.url);
+                }
+                return out;
+            }"""
+        )
+
+    def wait_cached(self, needle: str) -> None:
+        """等这个片段的缓存条目出现 —— 前提是它确实进得去,进不去就是这条用例站不住。"""
+        self.page.wait_for_function(
+            """async (needle) => {
+                for (const name of await caches.keys()) {
+                    const cache = await caches.open(name);
+                    for (const req of await cache.keys()) if (req.url.includes(needle)) return true;
+                }
+                return false;
+            }""",
+            arg=needle,
+            timeout=15000,
+        )
+
+    def upgrade_service_worker(self) -> None:
+        """让浏览器把新的 service-worker.js 换上去,并等它接管本页。
+
+        不能只看 `controller` 非空 —— 新旧脚本的地址一样,从接口上看不出换没换。
+        靠 `reg.update()` 触发一次字节比对(此刻服务端给的已经是新构建那一份),
+        靠 `controllerchange` 确认接管完成:新脚本 activate 里 claim 的正是这一刻。"""
+        self.page.evaluate(
+            """() => new Promise((resolve, reject) => {
+                const guard = setTimeout(
+                    () => reject(new Error('新脚本 15 秒内没有接管本页')), 15000
+                );
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    clearTimeout(guard);
+                    resolve(true);
+                }, { once: true });
+                navigator.serviceWorker.getRegistration('/').then((reg) => reg && reg.update());
+            })"""
+        )
+
+    def assert_cap_held(self, path: str, what: str) -> None:
+        """取源从这份响应里读走的字节数停在上限附近,并且这条响应被就地取消了。"""
+        read = self.settled_bytes(path)
+        self.assertGreaterEqual(
+            read, self.image_cap(), f"{what}:取源没读起来,这个数说明不了「读的过程中停」"
+        )
+        self.assertLess(
+            read,
+            OVERSIZED_TOTAL // 4,
+            f"{what}:整份 {OVERSIZED_TOTAL} 字节被读进了内存,读了 {read} 字节",
+        )
+        self.assertTrue(self.site.was_cancelled(path), f"{what}:超限的响应没有被取消")
+
+    # ---- 1. 没命中缓存 ----
+
+    def test_oversized_bitmap_stops_mid_read_under_the_service_worker(self):
+        self.inject("huge", HUGE_PNG, "一份读不完的位图")
+        self.ask("huge")
+        self.wait_chips(1)
+        self.assertEqual(self.chips(), ["一份读不完的位图"])
+
+        self.assert_cap_held(HUGE_PNG, "位图")
+        assert_no_page_errors(self, self.browser)
+
+    def test_oversized_svg_stops_mid_read_under_the_service_worker(self):
+        self.inject("hugesvg", HUGE_SVG, "一份读不完的 SVG")
+        self.ask("hugesvg")
+        self.wait_chips(1)
+        self.assertEqual(self.chips(), ["一份读不完的 SVG"])
+
+        self.assert_cap_held(HUGE_SVG, "SVG")
+        assert_no_page_errors(self, self.browser)
+
+    # ---- 2. 缓存里已经有这张图 ----
+
+    def test_a_warm_cache_does_not_feed_the_source_read(self):
+        """缓存层手里已经有这张图时,取源读的仍然不是那一份。
+
+        老用户第二次打开这一页,图早进了 SW 的缓存;点「问助手」时缓存层手里有
+        现成的一份。取源读的是此刻这一页上的字节、读多少由它自己定,不借用那份
+        —— 借用的话这条响应就有了第二个消费者,限额重新变成只管一半。"""
+        self.inject("huge", HUGE_PNG, "一份已经进过缓存的读不完的位图")
+        self.wait_cached("/probe/huge.png")
+        self.ask("huge")
+        self.wait_chips(1)
+        self.assertEqual(self.chips(), ["一份已经进过缓存的读不完的位图"])
+
+        self.assert_cap_held(HUGE_PNG, "缓存命中")
+        assert_no_page_errors(self, self.browser)
+
+    # ---- 3. 老用户带着旧缓存升级 ----
+
+    def test_read_limit_holds_after_an_upgrade_that_keeps_the_old_cache(self):
+        """带着旧缓存升级:旧构建缓存过的东西还在,新构建上的取源限额照样成立。
+
+        两件事叠在一起 —— 升级(SW 换成新脚本、页面换成新版本号)与旧缓存(旧构建
+        那次加载留下的条目)。升级之后点「问助手」,读的必须是此刻这一页上的字节,
+        并且读到上限就地停。"""
+        old_dir = build_site(WORK / "site-flow-old", ref=OLD_REF)
+        self.addCleanup(self.site.serve, self.stack.site_dir)
+        self.site.serve(old_dir)
+        write_fixtures(self.site, self.probe)
+
+        self.page.goto(self.site.base + RAG_PAGE, wait_until="load")
+        self.page.wait_for_function("() => navigator.serviceWorker.controller !== null")
+        # 首次加载时页面还没被接管,它请求的那些资源不过 SW;再加载一次,这一遍
+        # 才走 cache-first,旧构建那一版脚本这才真正进了缓存。
+        self.page.reload(wait_until="load")
+        self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
+        self.wait_cached("chart-context.js?v=3")
+
+        # 同一个端口、同一个浏览器:把根换成新构建,再把新的 SW 换上去并等它接管
+        self.site.serve(self.stack.site_dir)
+        self.upgrade_service_worker()
+        self.page.reload(wait_until="load")
+        self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
+
+        self.inject("huge", HUGE_PNG, "升级之后送进来的读不完的位图")
+        self.ask("huge")
+        self.wait_chips(1)
+        self.assertEqual(self.chips(), ["升级之后送进来的读不完的位图"])
+
+        self.assert_cap_held(HUGE_PNG, "升级之后")
+        self.assertIn(
+            "chart-context.js?v=3",
+            " ".join(self.cached_urls()),
+            "旧构建那份缓存没了 —— 这条用例的前提不成立",
+        )
+        assert_no_page_errors(self, self.browser)
 
 
 if __name__ == "__main__":
