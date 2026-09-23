@@ -22,8 +22,8 @@ class TestMermaidZoomAssets(unittest.TestCase):
 
     def test_assets_are_registered_with_cache_versions(self):
         config_scripts = self.config[self.config.index("extra_javascript:") :]
-        self.assertIn("_static/js/mermaid-zoom.js?v=4", config_scripts)
-        self.assertIn("_static/css/mermaid-zoom.css?v=5", config_scripts)
+        self.assertIn("_static/js/mermaid-zoom.js?v=5", config_scripts)
+        self.assertIn("_static/css/mermaid-zoom.css?v=7", config_scripts)
 
     def test_viewer_waits_for_rendered_mermaid_dom(self):
         self.assertIn('querySelectorAll(".mermaid")', self.javascript)
@@ -94,12 +94,15 @@ class TestMermaidZoomAssets(unittest.TestCase):
         self.assertIn("width: 2rem", self.stylesheet)
         self.assertIn("pointer-events: none", self.stylesheet)
 
-    def test_mobile_close_stays_beside_title_and_zoom_controls_stay_on_one_row(self):
+    def test_mobile_close_has_own_grid_cell_and_controls_can_wrap(self):
         mobile = self.stylesheet.split("@media (max-width: 44rem) {")[1].split("\n}\n", 1)[0]
-        self.assertRegex(mobile, r"\.mermaid-zoom__header\s*\{[^}]*position: relative;")
-        self.assertRegex(mobile, r"\.mermaid-zoom__title\s*\{[^}]*padding-right: 3rem;")
-        self.assertRegex(mobile, r"\.mermaid-zoom__actions\s*\{[^}]*flex-wrap: nowrap;")
-        self.assertRegex(mobile, r"\.mermaid-zoom__button--close\s*\{[^}]*position: absolute;")
+        self.assertRegex(mobile, r"\.mermaid-zoom__header\s*\{[^}]*display: grid;")
+        self.assertRegex(mobile, r"\.mermaid-zoom__actions\s*\{[^}]*grid-row: 2;[^}]*flex-wrap: wrap;")
+        self.assertRegex(mobile, r"\.mermaid-zoom__button--close\s*\{[^}]*grid-row: 1;")
+        self.assertIn("min-width: clamp(2rem, 10vw, 2.25rem)", mobile)
+        self.assertIn("font-size: clamp(.65rem, 2.5vw, .75rem)", mobile)
+        self.assertIn('data-mermaid-action="close" aria-label="关闭"', self.javascript)
+        self.assertIn('<svg viewBox="0 0 24 24" aria-hidden="true"', self.javascript)
 
     def test_styles_are_namespaced_and_respect_user_preferences(self):
         self.assertIn(".mermaid-zoom__", self.stylesheet)

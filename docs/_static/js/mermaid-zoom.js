@@ -97,10 +97,12 @@
             '<button type="button" class="mermaid-zoom__button" data-mermaid-action="zoom-out" aria-label="缩小">−</button>' +
             '<output class="mermaid-zoom__scale" aria-live="polite">100%</output>' +
             '<button type="button" class="mermaid-zoom__button" data-mermaid-action="zoom-in" aria-label="放大">＋</button>' +
-            '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--close" data-mermaid-action="close">' +
-              "关闭" +
-            "</button>" +
           "</div>" +
+          '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--close" data-mermaid-action="close" aria-label="关闭" title="关闭">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+              '<path d="M5 5l14 14M19 5 5 19"></path>' +
+            "</svg>" +
+          "</button>" +
         "</header>" +
         '<p class="mermaid-zoom__hint" id="aipm-mermaid-dialog-hint">' +
           "可拖动图表查看不同区域，使用滚轮或双指缩放。" +
