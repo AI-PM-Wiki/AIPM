@@ -107,10 +107,13 @@ class RealDraftCase(unittest.TestCase):
         cls.site.close()
 
     def test_unknown_draft_keeps_scope_and_retries_original_write(self):
+        ResponseDropProxy.drop_next = True
+        ResponseDropProxy.writes.clear()
         request = urllib.request.Request("http://127.0.0.1:18788/api/auth/dev",
                                          data=b"{}", headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(request) as response:
             session = json.load(response)
+        before_count = len(json.loads((Path(self.data) / "store.json").read_text())["annotations"])
         browser = self.playwright.chromium.launch()
         context = browser.new_context()
         page = context.new_page()
@@ -141,11 +144,106 @@ class RealDraftCase(unittest.TestCase):
             self.assertEqual([write["request"] for write in ResponseDropProxy.writes],
                              [ResponseDropProxy.writes[0]["request"]] * 3)
             state = json.loads((Path(self.data) / "store.json").read_text())
-            self.assertEqual(len(state["annotations"]), 1)
+            self.assertEqual(len(state["annotations"]), before_count + 1)
+            self.assertEqual(sum(a["body"] == draft["body"] for a in state["annotations"]), 1)
+            self.stop_service()
+            self.start_service()
+            with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
+                annotations = json.load(response)["annotations"]
+                self.assertEqual(len(annotations), before_count + 1)
+                self.assertEqual(sum(a["body"] == draft["body"] for a in annotations), 1)
+        finally:
+            context.close()
+            browser.close()
+
+    def test_manual_retry_after_storage_failure_keeps_unknown_scope(self):
+        ResponseDropProxy.drop_next = False
+        ResponseDropProxy.writes.clear()
+        request = urllib.request.Request("http://127.0.0.1:18788/api/auth/dev",
+                                         data=b"{}", headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request) as response:
+            session = json.load(response)
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        obstruction = Path(self.data) / "store.json.tmp"
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            draft = {"requestId": "manual-retry-storage-failure", "page": "/ai/rag/",
+                     "color": "yellow", "style": "highlight", "body": "Manual retry durability review",
+                     "visibility": "public", "resumeKind": "create", "resumeId": None,
+                     "scope": "page", "selectors": None, "quote": ""}
+            page.evaluate("([auth, draft]) => { localStorage.setItem(\"aipm-anno-auth\", JSON.stringify(auth)); localStorage.setItem(\"aipm-anno-draft\", JSON.stringify(draft)); }", [session, draft])
+            obstruction.mkdir()
+            with page.expect_response(lambda response: response.url.endswith("/api/annotations") and response.request.method == "POST") as initial:
+                page.reload(wait_until="load")
+            self.assertEqual(initial.value.status, 503)
+            page.wait_for_function("() => document.querySelector(\".aipm-anno__hint\")?.textContent.includes(\"保存失败\")")
+            self.assertEqual(len(json.loads((Path(self.data) / "store.json").read_text())["annotations"]), 0)
+            obstruction.rmdir()
+            ResponseDropProxy.drop_next = True
+            with page.expect_event("requestfailed", predicate=lambda req: req.url.endswith("/api/annotations") and req.method == "POST"):
+                page.locator(".aipm-anno__save").click()
+            page.wait_for_function("() => !document.querySelector(\".aipm-anno__save\").disabled")
+            self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
+            self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
+            self.assertTrue(page.evaluate("() => JSON.parse(localStorage.getItem(\"aipm-anno-draft\")).resultUnknown"))
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [503, 201])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            self.assertIsNone(page.evaluate("() => localStorage.getItem(\"aipm-anno-local\")"))
+            page.locator(".aipm-anno__save").click()
+            page.wait_for_function("() => !localStorage.getItem(\"aipm-anno-draft\")")
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [503, 201, 200])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[2]["request"])
+            self.assertEqual(len(json.loads((Path(self.data) / "store.json").read_text())["annotations"]), 1)
             self.stop_service()
             self.start_service()
             with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
                 self.assertEqual(len(json.load(response)["annotations"]), 1)
+        finally:
+            if obstruction.is_dir():
+                obstruction.rmdir()
+            context.close()
+            browser.close()
+
+    def test_new_editor_submission_preserves_unknown_result(self):
+        ResponseDropProxy.drop_next = False
+        ResponseDropProxy.writes.clear()
+        request = urllib.request.Request("http://127.0.0.1:18788/api/auth/dev",
+                                         data=b"{}", headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request) as response:
+            session = json.load(response)
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.evaluate("auth => localStorage.setItem(\"aipm-anno-auth\", JSON.stringify(auth))", session)
+            page.reload(wait_until="load")
+            page.locator(".aipm-anno-entry").click()
+            page.locator(".aipm-anno__head-icon").click()
+            page.locator(".aipm-anno__newbtn").click()
+            page.locator(".aipm-anno__input--comment").fill("New editor interrupted response")
+            ResponseDropProxy.drop_next = True
+            with page.expect_event("requestfailed", predicate=lambda req: req.url.endswith("/api/annotations") and req.method == "POST"):
+                page.locator(".aipm-anno__save").click()
+            page.wait_for_function("() => !document.querySelector(\".aipm-anno__save\").disabled")
+            draft = page.evaluate("() => JSON.parse(localStorage.getItem(\"aipm-anno-draft\"))")
+            self.assertTrue(draft["resultUnknown"])
+            self.assertEqual(draft["visibility"], "public")
+            self.assertEqual(page.locator(".aipm-anno__input--comment").input_value(), draft["body"])
+            self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
+            self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
+            page.reload(wait_until="load")
+            page.wait_for_function("() => !localStorage.getItem(\"aipm-anno-draft\")")
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201, 200])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            state = json.loads((Path(self.data) / "store.json").read_text())["annotations"]
+            self.assertEqual(sum(a["body"] == "New editor interrupted response" for a in state), 1)
+            self.stop_service()
+            self.start_service()
+            with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
+                self.assertEqual(sum(a["body"] == "New editor interrupted response" for a in json.load(response)["annotations"]), 1)
         finally:
             context.close()
             browser.close()

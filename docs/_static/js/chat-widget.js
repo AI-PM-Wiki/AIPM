@@ -306,7 +306,7 @@
     const tail = () => history.slice(-HISTORY_MAX);
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(tail()));
-      return;
+      return true;
     } catch (e) { /* 多半是配额满了,去掉图像再试一次 */ }
     try {
       const lean = tail().map((m) =>
@@ -319,7 +319,8 @@
           : m
       );
       localStorage.setItem(HISTORY_KEY, JSON.stringify(lean));
-    } catch (e) { /* 还是写不下:这一次不存(隐私模式等场景同样静默) */ }
+      return true;
+    } catch (e) { return false; }
   };
 
   const restore = () => {
@@ -1013,7 +1014,12 @@
         if (!proposal.requestId) proposal.requestId = window.crypto.randomUUID();
         const submittedVisibility = chosen;
         proposal.visibility = submittedVisibility;
-        persist();
+        if (!persist()) {
+          if (!wasUncertain) proposal.requestId = null;
+          card.setAttribute("data-state", "failed");
+          state.textContent = "无法保存重试状态,请检查浏览器存储。";
+          return;
+        }
         for (const button of visButtons) button.disabled = true;
         accept.disabled = true;
         card.setAttribute("data-state", "writing");

@@ -3737,12 +3737,61 @@
       setHint("评论不能是空的。");
       return;
     }
+    if (visibility === "local") {
+      setBusy(true);
+      submitAnnotation(selectors, body, visibility, isPage, undefined, undefined, undefined, true)
+        .then(function (result) {
+          setBusy(false);
+          if (result.ok) closeEditor();
+        });
+      return;
+    }
+    var previous = store.peekDraft();
+    editorDraft.body = body;
+    editorDraft.requestId = editorDraft.requestId || store.uid();
+    var draft = {
+      requestId: editorDraft.requestId,
+      page: pagePath(),
+      color: activeColor,
+      style: activeStyle,
+      body: body,
+      visibility: visibility,
+      resumeKind: "create",
+      resumeId: null,
+      scope: isPage ? "page" : null,
+      selectors: isPage ? null : selectors,
+      quote: composerSelection ? composerSelection.quote || "" : "",
+      resultUnknown: true
+    };
+    store.saveDraft(draft);
+    var saved = store.peekDraft();
+    if (!saved || saved.requestId !== draft.requestId || !saved.resultUnknown) {
+      setHint("草稿未能保存,请检查浏览器存储后重试。");
+      return;
+    }
+    render();
     setBusy(true);
     submitAnnotation(
-      selectors, body, visibility, isPage, undefined, undefined, editorDraft.requestId
-    ).then(function (ok) {
+      selectors, body, visibility, isPage, draft.color, draft.style, draft.requestId, true
+    ).then(function (result) {
       setBusy(false);
-      if (ok) closeEditor();
+      if (result.ok) {
+        store.clearDraft();
+        closeEditor();
+        return;
+      }
+      if (result.code === "unknown" || (previous && previous.resultUnknown)) {
+        render();
+        setHint("写入结果未知,请保持原内容及可见范围重试。");
+        return;
+      }
+      if (previous && previous.requestId === draft.requestId) {
+        draft.resultUnknown = false;
+        store.saveDraft(draft);
+      } else {
+        store.clearDraft();
+      }
+      render();
     });
   }
 
@@ -4866,6 +4915,15 @@
     if (auth && auth.isLoggedIn() &&
         (draft.selectors || draft.scope === "page") && editorDraft.kind === "create" &&
         attemptedDraftRequestId !== draft.requestId) {
+      var wasUnknown = !!draft.resultUnknown;
+      draft.resultUnknown = true;
+      store.saveDraft(draft);
+      var saved = store.peekDraft();
+      if (!saved || saved.requestId !== draft.requestId || !saved.resultUnknown) {
+        setHint("草稿未能保存,请检查浏览器存储后重试。");
+        return;
+      }
+      render();
       restoringDraft = true;
       attemptedDraftRequestId = draft.requestId;
       submitAnnotation(
@@ -4874,11 +4932,14 @@
       ).then(function (result) {
         restoringDraft = false;
         if (!result.ok) {
-          if (result.code === "unknown" || draft.resultUnknown) {
-            draft.resultUnknown = true;
-            store.saveDraft(draft);
+          if (result.code === "unknown" || wasUnknown) {
             render();
             setHint("写入结果未知,请保持原内容及可见范围重试。");
+          } else {
+            draft.resultUnknown = false;
+            store.saveDraft(draft);
+            render();
+            setHint("保存失败,请重试。");
           }
           return;
         }
