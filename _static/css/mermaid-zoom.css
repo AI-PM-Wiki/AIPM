@@ -1,0 +1,244 @@
+/*
+  Mermaid 图放大查看器样式。
+
+  所有选择器均使用 mermaid-zoom 命名空间。正文中的 Mermaid 宿主不设新的
+  尺寸规则,避免影响主题的 SVG 渲染;只为放大按钮增加一个轻量操作行。
+*/
+
+.mermaid-zoom__figure {
+  position: relative;
+}
+
+.mermaid-zoom__trigger {
+  position: absolute;
+  right: .4rem;
+  bottom: .4rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  min-height: 0;
+  margin: 0;
+  padding: .42rem;
+  border: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
+  border-radius: .45rem;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-default-bg-color);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease,
+              opacity .15s ease;
+}
+
+.mermaid-zoom__figure:hover > .mermaid-zoom__trigger,
+.mermaid-zoom__trigger:focus-visible {
+  opacity: .94;
+  pointer-events: auto;
+}
+
+.mermaid-zoom__trigger svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+@media (hover: none) {
+  .mermaid-zoom__figure > .mermaid-zoom__trigger {
+    opacity: .94;
+    pointer-events: auto;
+  }
+}
+
+.mermaid-zoom__trigger:hover,
+.mermaid-zoom__trigger:focus-visible {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.mermaid-zoom__trigger:focus-visible,
+.mermaid-zoom__button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+.mermaid-zoom__dialog {
+  width: min(96vw, 90rem);
+  height: min(92dvh, 62rem);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
+  border-radius: .8rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: var(--md-shadow-z3, 0 1rem 3rem rgba(0, 0, 0, .28));
+}
+
+.mermaid-zoom__dialog::backdrop {
+  background: rgba(0, 0, 0, .58);
+}
+
+.mermaid-zoom__shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.mermaid-zoom__header {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  flex: none;
+  min-height: 3.4rem;
+  padding: .65rem .85rem .65rem 1rem;
+  border-bottom: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
+}
+
+.mermaid-zoom__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--md-default-fg-color);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.mermaid-zoom__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.mermaid-zoom__button {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: .35rem .6rem;
+  border: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
+  border-radius: .4rem;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: .75rem;
+  line-height: 1.2;
+}
+
+.mermaid-zoom__button:hover {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.mermaid-zoom__button--close {
+  margin-left: .2rem;
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+}
+
+.mermaid-zoom__scale {
+  min-width: 3.2rem;
+  color: var(--md-default-fg-color--light);
+  font-size: .75rem;
+  text-align: center;
+}
+
+.mermaid-zoom__hint {
+  flex: none;
+  margin: 0;
+  padding: .5rem 1rem;
+  color: var(--md-default-fg-color--light);
+  font-size: .75rem;
+  line-height: 1.5;
+}
+
+.mermaid-zoom__viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  cursor: grab;
+  touch-action: none;
+}
+
+.mermaid-zoom__viewport.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/* 画布填满视口;平移由 JS 写在 canvas 的 2D translate 上。
+   倍率用宿主 CSS zoom 重绘,不要 will-change / 3D transform,以免把 SVG 栅格化。 */
+.mermaid-zoom__canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+
+.mermaid-zoom__canvas > .mermaid {
+  display: block;
+  flex: none;
+  margin: 0;
+  pointer-events: auto;
+}
+
+@media (max-width: 44rem) {
+  .mermaid-zoom__dialog {
+    width: calc(100vw - 1rem);
+    height: calc(100dvh - 1rem);
+    border-radius: .55rem;
+  }
+
+  .mermaid-zoom__header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+
+  .mermaid-zoom__title {
+    flex-basis: 100%;
+  }
+
+  .mermaid-zoom__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mermaid-zoom__button--close {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 44rem) and (orientation: portrait) {
+  .mermaid-zoom__dialog {
+    margin: .5rem;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mermaid-zoom__trigger,
+  .mermaid-zoom__button {
+    transition: none;
+  }
+}
+
+@media print {
+  .mermaid-zoom__trigger,
+  .mermaid-zoom__dialog {
+    display: none !important;
+  }
+}

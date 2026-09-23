@@ -1,0 +1,967 @@
+/* ============================================================================
+   AI-PM 文档问答助手(chat-widget.css,2026-09-20)
+
+   页面级三形态(形态类由 chat-widget.js 写在 <html> 上,断点见 §1):
+   - 桌面停靠 dock(≥1200px):面板 fixed 贴视口右侧(宽 320–420px),原 MkDocs
+     页面整体保留并收窄(html.aipm-chat-mode--dock.aipm-chat-open 给 .md-container
+     留 margin-right),TOC 不再被替换或隐藏;页面与面板各自独立滚动
+   - 平板浮层 overlay(768–1199px):面板浮在页面之上 + 遮罩(页面不收窄)
+   - 移动抽屉 sheet(<768px):三段式底部抽屉 peek/half/expanded;peek 高度按内容
+     实测(手柄+标题+输入条),half/expanded 依视口写入 --aipm-chat-sheet-*
+     (见 chat-widget.js 的 metrics()/refreshPeek())
+
+   层级:遮罩 65 < 面板 70;FAB 60。面板关闭态用 visibility 挂起(不可聚焦),
+   打开后 240ms 位移动画(reduced-motion 下取消)。颜色全走 Material --md-* 变量。
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   1. 变量(断点:75em = 1200px 桌面停靠 / 47.9875em = 767.98px 移动抽屉)
+   ---------------------------------------------------------------------------- */
+:root {
+  /* 桌面停靠面板宽:320–420px 区间,窄桌面取小值保住正文列 */
+  --aipm-chat-w: clamp(20rem, 28vw, 26.25rem);
+  /* 近全屏停靠点顶部保留的页面间隙(PRD 12–24px) */
+  --aipm-chat-top-gap: 1rem;
+  --aipm-chat-dur: .24s;
+  --aipm-chat-ease: cubic-bezier(.4, 0, .2, 1);
+  /* 经典滚动条宽度(JS 实测写入):面板让开滚动条,页面收窄量与之对齐 */
+  --aipm-chat-sbw: 0px;
+  /* 移动端三段高度(JS 启动时按视口重写,此处仅作无 JS 兜底) */
+  --aipm-chat-sheet-peek: 8.5rem;
+  --aipm-chat-sheet-half: 55vh;
+  --aipm-chat-sheet-expanded: calc(100dvh - var(--aipm-chat-top-gap));
+}
+
+/* ----------------------------------------------------------------------------
+   2. FAB 扁平胶囊(图标 + 引导语)
+   ---------------------------------------------------------------------------- */
+.aipm-chat__fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: .38rem;
+  height: 2.5rem;
+  padding: 0 .95rem 0 .72rem;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+  font-family: inherit;
+  font-size: .8125rem;
+  font-weight: 500;
+  transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease;
+}
+/* hover:微微放大 + 阴影加深(参考 Claude 文档站点右下角按钮) */
+.aipm-chat__fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .26);
+}
+.aipm-chat__fab:active {
+  transform: scale(.97);
+}
+.aipm-chat__fab svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
+  fill: currentColor;
+}
+.aipm-chat__fab-label {
+  white-space: nowrap;
+}
+/* 面板打开时收起 FAB(面板自带关闭按钮、遮罩与 Escape) */
+.aipm-chat__fab.is-hidden {
+  opacity: 0;
+  transform: scale(.85);
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------------------
+   2.1 拖拽交互(issue #72):按住跟手拖走,松手弹回右下角原位
+   外观与位置一律照旧(见上,原文照搬,逐像素不变)—— 这一节只加交互:
+   - 锚点仍是上面的 right/bottom,所以 JS 只写 transform;松手清掉 inline
+     transform 就回到原位,JS 不需要知道锚点坐标,锚点被别的面板改(批注面板
+     停靠时给 FAB 让位,见 annotation.css)也照样成立
+   - 跟手期间过渡必须让位(带 !important:annotation.css 的让位规则为 right/
+     bottom 写了整条 transition 列表,选择器比这里更具体),否则胶囊慢半拍追指针
+   - 按/拖态与静息态同一套语言:同色系、同圆角(999px 不变)、同阴影家族,只是
+     抬起一点、跟手时按横向位移轻微侧倾(像被拎着走);松手由弹簧缓动吸回原位,
+     略带过冲 —— 时长与 JS 的 DRAG_BACK_MS 对齐
+   ---------------------------------------------------------------------------- */
+:root {
+  --aipm-chat-drag-back: .46s;
+  --aipm-chat-drag-spring: cubic-bezier(.22, 1.3, .36, 1);
+}
+/* 交互属性:触屏上从胶囊起手的滑动归拖拽(不滚页面),长按也不弹系统菜单/选区。
+   will-change 只写在拖拽态:常驻会把胶囊提成合成层,层里的文字会丢掉次像素
+   抗锯齿 —— 静息态就不再与改前逐像素一致了(实测 36 个像素的差别全来自这里) */
+.aipm-chat__fab {
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.aipm-chat__fab.is-dragging {
+  cursor: grabbing;
+  will-change: transform;
+  /* 拎起来的反馈:比 hover 再抬一档的投影(同阴影家族,只是更深) */
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .3);
+  transition: none !important;
+}
+/* 松手回弹:JS 清掉 inline transform 把 transform 交回 CSS,这条过渡负责把胶囊
+   「吸」回原位(时长 / 缓动见 --aipm-chat-drag-*) */
+.aipm-chat__fab.is-returning {
+  transition: transform var(--aipm-chat-drag-back) var(--aipm-chat-drag-spring) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   3. 遮罩(浮层 / 抽屉半开、近全屏;peek 与桌面停靠不显示)
+   ---------------------------------------------------------------------------- */
+.aipm-chat__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  opacity: 0;
+  pointer-events: none;
+  /* 明暗只走 opacity:背景固定成最深那一档,半开 / 近全屏用 .5 / 1 表达。
+     早先是 opacity 与 background-color 一起过渡 —— 屏幕上真正看到的压暗是两者
+     相乘,于是成了 0.2·p²:缓动做了两遍,前半段几乎不变暗、最后三分之一才追上来
+     (实测 35% 进度处只有 24%,单次缓动应是 49%)。而且 background-color 是绘制
+     属性,每帧都要把整屏重栅格一遍;opacity 走合成器,栅格一次就够。
+     静息视觉逐像素相同:.5 × .4 = .2,1 × .4 = .4。 */
+  background: rgba(0, 0, 0, .4);
+  transition: opacity var(--aipm-chat-dur) var(--aipm-chat-ease);
+}
+.aipm-chat__scrim[data-level="half"] {
+  opacity: .5;
+  pointer-events: auto;
+}
+.aipm-chat__scrim[data-level="full"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* 跟手期间遮罩由 JS 逐帧写 inline opacity —— 带过渡的话每帧都在追一个移动的
+   目标,和面板高度那条一样会「蹭」而不是跟手。 */
+.aipm-chat__scrim.is-dragging {
+  transition: none;
+}
+
+/* 半开 / 近全屏 / 浮层:锁背景页面滚动(桌面停靠不锁,页面独立滚动) */
+html.aipm-chat-locked {
+  overflow: hidden;
+}
+
+/* ----------------------------------------------------------------------------
+   4. 面板骨架(页面级 fixed 面板;三种形态共用内部结构)
+   ---------------------------------------------------------------------------- */
+.aipm-chat {
+  position: fixed;
+  top: 0;
+  right: var(--aipm-chat-sbw);
+  bottom: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  width: var(--aipm-chat-w);
+  color: var(--md-default-fg-color);
+  font-family: var(--md-text-font-family, var(--md-text-font, system-ui, sans-serif));
+  font-size: .8125rem;
+  line-height: 1.55;
+  background: var(--md-default-bg-color);
+  /* 与页头交界发丝线(extra.css 的 --pm-line / .md-header__line)同一颜色令牌:
+     两条都是 1px 实线,亮色 rgba(0,0,0,.12)、暗色 rgba(255,255,255,.12);
+     不用投影(投影会像浮层) */
+  border-left: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
+  /* 关闭态:整体移出视口右侧并挂起(visibility 挂起后不可聚焦、不进无障碍树) */
+  visibility: hidden;
+  transform: translateX(100%);
+  transition: transform var(--aipm-chat-dur) var(--aipm-chat-ease),
+              visibility 0s linear var(--aipm-chat-dur);
+}
+html.aipm-chat-open .aipm-chat {
+  visibility: visible;
+  transform: none;
+  transition: transform var(--aipm-chat-dur) var(--aipm-chat-ease),
+              visibility 0s;
+}
+
+/* 4.1 桌面停靠(≥1200px):页面整体收窄,为面板让出右侧空间。
+   收窄量 = 面板宽 + 滚动条宽,使正文右缘与面板左缘严丝合缝;
+   .md-grid 的 max-width + margin:auto 让正文在新宽度里自动居中,
+   不会出现横向溢出。 */
+@media screen and (min-width: 75em) {
+  /* 主题里 .md-header 与 .md-container 是 body 下的两个兄弟块级元素,
+     页头不在容器内 —— 收窄必须同时作用于两者,否则页头会压在面板下 */
+  .md-header,
+  .md-container {
+    transition: margin-right var(--aipm-chat-dur) var(--aipm-chat-ease);
+  }
+  html.aipm-chat-mode--dock.aipm-chat-open .md-header,
+  html.aipm-chat-mode--dock.aipm-chat-open .md-container {
+    margin-right: calc(var(--aipm-chat-w) + var(--aipm-chat-sbw));
+  }
+}
+
+/* 4.2 平板浮层(768–1199px):浮在页面上方,宽度不超过视口的 82%,
+   页面不被完全覆盖 */
+html.aipm-chat-mode--overlay .aipm-chat {
+  width: min(26.25rem, 82vw);
+  box-shadow: -0.2rem 0 1.2rem rgba(0, 0, 0, .18);
+  border-left: 0;
+}
+
+/* 4.3 移动抽屉(<768px):贴底、顶部圆角、三段高度 */
+html.aipm-chat-mode--sheet .aipm-chat {
+  top: auto;
+  overflow: hidden;
+  right: 0;
+  left: 0;
+  width: auto;
+  height: var(--aipm-chat-sheet-peek);
+  border-left: 0;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 -0.2rem 1.4rem rgba(0, 0, 0, .22);
+  transform: translateY(100%);
+  transition: transform var(--aipm-chat-dur) var(--aipm-chat-ease),
+              height var(--aipm-chat-dur) var(--aipm-chat-ease),
+              visibility 0s linear var(--aipm-chat-dur);
+}
+html.aipm-chat-mode--sheet.aipm-chat-open .aipm-chat {
+  transform: none;
+  transition: transform var(--aipm-chat-dur) var(--aipm-chat-ease),
+              height var(--aipm-chat-dur) var(--aipm-chat-ease),
+              visibility 0s;
+}
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] {
+  /* 页面优先态贴住内容:手柄 + 标题 + 输入条,不留空白。
+     高度是实测出来的长度(JS 写 --aipm-chat-sheet-peek):
+     fit-content 虽然语义更直白,但 CSS 无法对它做高度过渡,吸附会瞬跳 */
+  height: var(--aipm-chat-sheet-peek);
+}
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] {
+  height: var(--aipm-chat-sheet-half);
+}
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="expanded"] {
+  height: var(--aipm-chat-sheet-expanded);
+}
+/* 拖拽中:高度跟手,关掉吸附动画,也不受 peek 的 min-height 下限约束 */
+.aipm-chat.is-dragging {
+  transition: none !important;
+  min-height: 0 !important;
+}
+/* 拖拽 / 吸附期间消息区上缘渐隐:半行文字柔和收起,而不是被硬切一刀 */
+.aipm-chat.is-dragging .aipm-chat__msgs,
+.aipm-chat.is-snapping .aipm-chat__msgs {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
+          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, #000 1.2rem);
+}
+/* 拖到半开以下 = 正在往页面优先态去(那一段不展示历史),消息区整体淡出 */
+.aipm-chat.is-compact .aipm-chat__msgs {
+  opacity: 0;
+  transition: opacity .12s linear;
+}
+/* 抽屉内滚动交给消息区/输入区,避免拖拽时整页跟着动 */
+html.aipm-chat-mode--sheet .aipm-chat__msgs {
+  overscroll-behavior: contain;
+}
+
+/* ----------------------------------------------------------------------------
+   5. 拖拽手柄(仅抽屉形态)+ 头部
+   ---------------------------------------------------------------------------- */
+.aipm-chat__grip {
+  display: none;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;              /* 拖拽时不触发页面滚动 */
+}
+html.aipm-chat-mode--sheet .aipm-chat__grip {
+  display: flex;
+}
+.aipm-chat__grip:active {
+  cursor: grabbing;
+}
+.aipm-chat__grip-bar {
+  width: 2.25rem;
+  height: .25rem;
+  border-radius: 999px;
+  background: var(--md-default-fg-color--lighter);
+  transition: background-color .12s ease;
+}
+.aipm-chat__grip:hover .aipm-chat__grip-bar {
+  background: var(--md-default-fg-color--light);
+}
+
+.aipm-chat__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  /* 停靠/浮层形态下面板顶在视口上缘、紧挨着页头,页头高度一旦不同,它这条线就会
+     比页头下缘低一截,并排看是两级台阶 —— 所以取站点页头的高度(extra.css 的
+     --pm-header-h)。定了高度就不再给上下 padding,内容靠 align-items 居中。
+
+     末尾 +1px 是这条分隔线本身:全站 box-sizing: border-box(主题在 html 上定死、
+     后代 inherit),只写 2.4rem 会把 border 算进这 2.4rem 里 —— 面板的线落在 47–48;
+     而页头的下缘线是 box-shadow、画在 2.4rem **之外**,落在 48–49。实测(DPR4)
+     两条线差一行,并排接不上。补这 1px 才对得齐。 */
+  height: calc(var(--pm-header-h, 2.4rem) + 1px);
+  padding: 0 .6rem 0 1rem;
+  /* 描边色可过渡:一段收起那条线时跟着吸附动画淡出,而不是啪地消失 */
+  transition: border-color var(--aipm-chat-dur) var(--aipm-chat-ease);
+  /* 头部与下方内容区之间的发丝线:与批注面板 .aipm-anno__head 同款 ——
+     1px 实线、同一颜色令牌(--pm-line,即页头那条交界线;批注面板未加载时
+     回落到主题的浅色描边),两侧都不做投影。 */
+  border-bottom: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
+}
+html.aipm-chat-mode--sheet .aipm-chat__head {
+  touch-action: none;              /* 头部同样可拖拽(onPointerDown 判定) */
+}
+.aipm-chat__head-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-accent-fg-color);
+}
+.aipm-chat__head-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: currentColor;
+}
+.aipm-chat__title {
+  flex: 1;
+  min-width: 0;
+  font-size: .9375rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aipm-chat__iconbtn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: .45rem;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease;
+}
+.aipm-chat__iconbtn:hover {
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-chat__iconbtn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: currentColor;
+}
+
+/* ----------------------------------------------------------------------------
+   6. 抽屉前两段的紧凑输入条(页面优先态 / 半开态)
+
+   这两段要给页面留空间,输入框换成单行窄条:[输入……][附件][发送],
+   两个图标按钮都靠右;第三段(近全屏)仍是原来的卡片式输入区。
+   页面优先态只露手柄 + 标题 + 输入条,不展示历史消息(消息区被隐藏)。
+
+   量具类 .is-peek-measure:JS 实测页面优先态高度时临时挂上,借走 peek 的那几条
+   几何规则(手柄/头部收紧、输入条换成单行窄条),量完即摘。**只并几何,不并面板
+   高度与消息区显隐** —— 测量绝不能把面板真的切到 peek 停靠点(见 chat-widget.js
+   的 refreshPeek() 与 issue #73)。
+   ---------------------------------------------------------------------------- */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__msgs {
+  display: none;
+}
+/* 页面优先态不展示历史消息,清屏按钮也就没有存在的必要 */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__clear {
+  display: none;
+}
+/* 页面优先态垂直空间金贵:手柄收紧,把高度留给输入条。
+   头部不在此列 —— 它已由 --pm-header-h 定死(且比原先的 peek 高度还矮 3px),
+   再收上下 padding 也改不了高度,只留一条空规则。 */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__grip,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__grip {
+  height: 1rem;
+}
+/* 一段不画页头那条分隔线。此时消息区是 display:none,页头与输入条之间空无一物 ——
+   这条线不划分任何两块内容,只是一道横贯整屏的杠;而且它比抽屉自己的上缘还显眼
+   (暗色实测:线 20% 白,上缘 12%),内部分界压过了外部分界。抽屉里其余元素都是
+   内缩的(手柄小胶囊、输入条左右各留 15px、顶部 1rem 圆角),通栏的线也不属于这套
+   语言。二段/三段消息区回来,线才重新有意义。
+
+   只改颜色不改宽度:head 高度是 --pm-header-h + 1px 定死的,删 border 会让内容盒
+   重排;改颜色纯属重绘,还能跟着吸附动画一起淡出(见 .aipm-chat__head 的 transition)。
+
+   量具态 .is-peek-measure 不跟这条:它只量尺寸,而这条规则不动尺寸;真跟了反而
+   在转屏/开合时会把线淡出又淡回,闪一下。 */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__head {
+  border-bottom-color: transparent;
+}
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__composer {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;             /* 单行:附件/发送与输入框垂直居中 */
+  margin: .3rem .75rem max(.5rem, env(safe-area-inset-bottom));
+  margin-top: auto;                /* 页面优先态输入条贴住抽屉底缘 */
+  padding: .2rem .3rem .2rem .2rem;
+  border-radius: 1.4rem;
+}
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__input,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__input,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.4rem;
+  max-height: 6rem;
+  padding: .55rem .3rem .55rem .85rem;
+  line-height: 1.4;
+}
+/* 输入框换行后按钮改为贴住最后一行(居中会让两个按钮悬在长输入的中段) */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__composer.is-multiline,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__composer.is-multiline,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__composer.is-multiline {
+  align-items: flex-end;
+}
+/* 输入条右侧:回形针 + 圆形发送(都靠右,紧挨着) */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__inputrow,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__inputrow,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__inputrow {
+  flex: none;
+  gap: .1rem;
+  padding: 0;
+  justify-content: flex-end;
+}
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__attach,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__attach,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__send,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__send,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__attach,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__send {
+  width: 2rem;
+  height: 2rem;
+}
+/* 待发送附件 chips:窄条里换行到输入框上方 */
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="peek"] .aipm-chat__attachbar,
+html.aipm-chat-mode--sheet .aipm-chat[data-snap="half"] .aipm-chat__attachbar,
+html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__attachbar {
+  order: -1;
+  width: 100%;
+  padding: .55rem .6rem .15rem;
+}
+
+/* ----------------------------------------------------------------------------
+   7. 消息区(常驻免责条 / 空态 / 气泡 / 操作行)
+   ---------------------------------------------------------------------------- */
+.aipm-chat__msgs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  padding: .25rem 1rem 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-default-fg-color--lighter) transparent;
+  /* 滚动条槽位常驻,理由与批注面板的 .aipm-anno__list 同一条(那边是收掉一栏时
+     跳,这边是历史第一次长过一屏时跳):overflow-y: auto 只在需要时才挂滚动条,
+     挂上/撤下都会把内容区改宽一条 —— 实测空态 clientWidth 402、塞满后 391,气泡
+     与免责条在消息进来的一瞬间集体缩 11px。stable 让槽位一直占着。
+     代价是消息列的右边界比输入卡片(.aipm-chat__composer,margin 12px)多让出
+     一条滚动条。这一条差在历史长过一屏之后本来就有,只是从「有时有」变成「一直
+     有」——换来的是消息列表在长与短之间不再横跳。 */
+  scrollbar-gutter: stable;
+}
+.aipm-chat__msgs::-webkit-scrollbar {
+  width: .3rem;
+}
+.aipm-chat__msgs::-webkit-scrollbar-thumb {
+  background: var(--md-default-fg-color--lightest);
+  border-radius: .3rem;
+}
+
+/* 常驻顶部免责条 */
+.aipm-chat__disclaimer {
+  margin: 0;
+  padding: .35rem 0 .2rem;
+  text-align: center;
+  font-size: .6875rem;
+  color: var(--md-default-fg-color--lighter);
+}
+
+/* 空态:欢迎语 + 建议问题 */
+.aipm-chat__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .8rem;
+  margin: auto 0;
+  padding: .5rem .25rem;
+  text-align: center;
+}
+.aipm-chat__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
+.aipm-chat__empty-icon svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: currentColor;
+}
+.aipm-chat__empty-text {
+  margin: 0;
+  color: var(--md-default-fg-color--light);
+}
+.aipm-chat__suggest {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  width: 100%;
+}
+.aipm-chat__suggest-btn {
+  width: 100%;
+  padding: .5rem .7rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .6rem;
+  background: transparent;
+  color: var(--md-default-fg-color);
+  font-family: inherit;
+  font-size: .75rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+.aipm-chat__suggest-btn:hover {
+  border-color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.aipm-chat__msg {
+  display: flex;
+}
+.aipm-chat__msg--user {
+  justify-content: flex-end;
+}
+.aipm-chat__msg--ai {
+  justify-content: flex-start;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.aipm-chat__bubble {
+  max-width: 94%;
+  padding: .5rem .75rem;
+  border-radius: .9rem;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.aipm-chat__msg--user .aipm-chat__bubble {
+  background: var(--md-accent-fg-color--transparent);
+  border: 1px solid var(--md-accent-fg-color--transparent);
+  border-bottom-right-radius: .25rem;
+}
+.aipm-chat__msg--ai .aipm-chat__bubble {
+  background: var(--md-default-bg-color--lighter);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-bottom-left-radius: .25rem;
+}
+.aipm-chat__bubble.is-error {
+  background: rgba(229, 72, 77, .1);
+  border-color: rgba(229, 72, 77, .45);
+  color: #e5484d;
+}
+
+/* 用户消息内的附件 chips(不可交互,仅展示) */
+.aipm-chat__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .45rem;
+}
+.aipm-chat__file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  max-width: 100%;
+  padding: .18rem .5rem;
+  border-radius: .35rem;
+  font-size: .75rem;
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.aipm-chat__file-chip svg {
+  width: .85rem;
+  height: .85rem;
+  flex: none;
+  fill: var(--md-default-fg-color--light);
+}
+.aipm-chat__file-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 消息内 markdown-lite 排版(不引库) */
+.aipm-chat__md p {
+  margin: 0 0 .4em;
+}
+.aipm-chat__md p:last-child {
+  margin-bottom: 0;
+}
+.aipm-chat__md ul,
+.aipm-chat__md ol {
+  margin: .2em 0 .4em;
+  padding-left: 1.2em;
+}
+.aipm-chat__md li {
+  margin: .15em 0;
+}
+.aipm-chat__md code {
+  font-family: var(--md-code-font-family, var(--md-code-font, ui-monospace, monospace));
+  font-size: .82em;
+  padding: .05em .35em;
+  border-radius: .2rem;
+  background: var(--md-code-bg-color);
+}
+.aipm-chat__md a {
+  color: var(--md-typeset-a-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.aipm-chat__md strong {
+  font-weight: 700;
+}
+
+/* 「思考中…」占位 */
+.aipm-chat__thinking {
+  color: var(--md-default-fg-color--light);
+  font-style: italic;
+}
+.aipm-chat__thinking .aipm-chat__dots::after {
+  content: "…";
+  animation: aipm-chat-blink 1.1s ease-in-out infinite;
+}
+@keyframes aipm-chat-blink {
+  0%, 100% { opacity: .25; }
+  50%      { opacity: 1; }
+}
+
+/* 来源链接 chips(气泡下方) */
+.aipm-chat__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .5rem;
+}
+.aipm-chat__chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: .18rem .55rem;
+  font-size: .75rem;
+  border-radius: 999px;
+  color: var(--md-typeset-a-color);
+  background: var(--md-accent-fg-color--transparent);
+  border: 1px solid var(--md-accent-fg-color--transparent);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: border-color .12s ease;
+}
+.aipm-chat__chip:hover {
+  border-color: var(--md-accent-fg-color);
+}
+
+/* done 一行的用量 */
+.aipm-chat__meta {
+  margin-top: .4rem;
+  font-size: .6875rem;
+  color: var(--md-default-fg-color--lighter);
+}
+
+/* AI 回答气泡下方常驻操作行:复制 / 重新生成(不随 hover 显隐) */
+.aipm-chat__actions {
+  display: flex;
+  align-items: center;
+  gap: .15rem;
+  margin-top: .35rem;
+}
+.aipm-chat__actions[hidden] {
+  display: none;
+}
+.aipm-chat__act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: .3rem;
+  color: var(--md-default-fg-color--lighter);
+  background: transparent;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease;
+}
+.aipm-chat__act:hover {
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-chat__act svg {
+  width: .95rem;
+  height: .95rem;
+  fill: currentColor;
+}
+/* 复制成功:勾替换剪贴板并短暂变 accent */
+.aipm-chat__act .aipm-chat__icon-check {
+  display: none;
+}
+.aipm-chat__act.is-copied .aipm-chat__icon-copy {
+  display: none;
+}
+.aipm-chat__act.is-copied .aipm-chat__icon-check {
+  display: block;
+}
+.aipm-chat__act.is-copied {
+  color: var(--md-accent-fg-color);
+}
+
+/* ----------------------------------------------------------------------------
+   8. 输入区(卡片式:附件 chips + 无边框 textarea + 底部图标行)
+   ---------------------------------------------------------------------------- */
+.aipm-chat__composer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin: .5rem .75rem .8rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .9rem;
+  background: transparent;
+  transition: border-color .12s ease, box-shadow .12s ease,
+              background-color .12s ease;
+}
+/* 软键盘抬起时给输入区留出安全区,避免被系统手势条遮挡 */
+html.aipm-chat-mode--sheet .aipm-chat__composer {
+  margin-bottom: max(.8rem, env(safe-area-inset-bottom));
+}
+.aipm-chat__composer:focus-within {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0 0 2px var(--md-accent-fg-color--transparent);
+}
+.aipm-chat__composer.is-dragover {
+  border-style: dashed;
+  border-color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
+/* 待发送附件 chips(可移除,内嵌卡片顶部) */
+.aipm-chat__attachbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  padding: .55rem .7rem 0;
+}
+.aipm-chat__attachbar[hidden] {
+  display: none;
+}
+.aipm-chat__attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  max-width: 100%;
+  padding: .22rem .3rem .22rem .5rem;
+  border-radius: .4rem;
+  font-size: .75rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  background: var(--md-default-bg-color--lighter);
+  white-space: nowrap;
+}
+.aipm-chat__attach-chip svg {
+  width: .85rem;
+  height: .85rem;
+  flex: none;
+  fill: var(--md-default-fg-color--light);
+}
+.aipm-chat__attach-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aipm-chat__attach-x {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-size: .8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease;
+}
+.aipm-chat__attach-x:hover {
+  color: #e5484d;
+  background: rgba(229, 72, 77, .12);
+}
+
+.aipm-chat__input {
+  width: 100%;
+  min-height: 3rem;
+  max-height: 10rem;
+  padding: .7rem .75rem .25rem;
+  border: 0;
+  background: transparent;
+  color: var(--md-default-fg-color);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  overflow-y: auto;
+}
+.aipm-chat__input::placeholder {
+  color: var(--md-default-fg-color--lighter);
+}
+
+/* 卡片底部图标行:左回形针、右圆形发送 */
+.aipm-chat__inputrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .25rem .5rem .55rem;
+}
+.aipm-chat__attach {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease;
+}
+.aipm-chat__attach:hover,
+.aipm-chat__attach.is-active {
+  color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+.aipm-chat__attach svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: currentColor;
+}
+.aipm-chat__send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+  cursor: pointer;
+  transition: opacity .12s ease, transform .12s ease,
+              color .12s ease, background-color .12s ease,
+              border-color .12s ease;
+}
+.aipm-chat__send:hover {
+  transform: scale(1.08);
+}
+/* 空内容:描边圆形弱化态 */
+.aipm-chat__send:disabled {
+  color: var(--md-default-fg-color--lighter);
+  background: transparent;
+  border-color: var(--md-default-fg-color--lightest);
+  cursor: default;
+  transform: none;
+}
+/* 发送中:按钮变「停止」 */
+.aipm-chat__send.is-stop {
+  color: #fff;
+  background: #e5484d;
+}
+.aipm-chat__send svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+
+/* ----------------------------------------------------------------------------
+   9. 与页面上其他浮层的关系
+   ---------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------
+   10. Netlify 预览站提示条(预览站不挂载 widget,仅显示一行说明)
+   ---------------------------------------------------------------------------- */
+.aipm-chat--netlify-note {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 80;
+  padding: .4rem .7rem;
+  font-size: .75rem;
+  border-radius: .5rem;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-default-bg-color--lighter);
+  border: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* ----------------------------------------------------------------------------
+   11. prefers-reduced-motion:禁用位移动画(停靠状态本身的变化即反馈)
+   ---------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .aipm-chat__fab,
+  /* 回弹那条规则带 !important 且选择器更具体(2 类),得在这里同样点名才压得住 */
+  .aipm-chat__fab.is-returning,
+  .aipm-chat,
+  .aipm-chat__scrim,
+  .md-header,
+  .md-container {
+    transition: none !important;
+  }
+  .aipm-chat__fab:hover,
+  .aipm-chat__fab:active,
+  .aipm-chat__send:hover {
+    transform: none;
+  }
+  .aipm-chat__thinking .aipm-chat__dots::after,
+  .aipm-chat__peek-dot {
+    animation: none;
+  }
+}
