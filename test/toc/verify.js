@@ -1,6 +1,7 @@
 const task = await taskSpace("AIPM TOC viewport and anchor regression")
 const page = task.page("p1")
 let checked = 0
+let skipped = 0
 
 for (const [width, height, position] of [
   [1646, 853, 600], [1646, 853, 1800],
@@ -36,6 +37,7 @@ for (const [width, height, position] of [
       }
     })
     return {
+      candidates: links.length,
       rows,
       marker: list.style.getPropertyValue("--pm-toc-marker-height"),
       clip: list.style.getPropertyValue("--pm-toc-marker-clip"),
@@ -46,6 +48,7 @@ for (const [width, height, position] of [
 
   if (!result.rows.length) throw new Error("All TOC rows skipped")
   checked += result.rows.length
+  skipped += result.candidates - result.rows.length
   const mismatch = result.rows.filter(row => row.expected !== row.actual)
   if (mismatch.length) throw new Error(JSON.stringify({ width, position, mismatch }))
   if (result.pseudo !== '""' || !result.clip.startsWith("polygon(") ||
@@ -166,6 +169,8 @@ for (const [width, height] of [[1646, 853], [390, 844]]) {
   console.log(`Tracking ${width}x${height}: ${JSON.stringify(result)}`)
 }
 
-if (checked === 0) throw new Error("No validated TOC rows")
-console.log(`TOTAL_ROWS_CHECKED=${checked} SKIPPED=0`)
+if (checked === 0 || skipped !== 0) {
+  throw new Error(`Invalid row coverage: checked=${checked} skipped=${skipped}`)
+}
+console.log(`TOTAL_ROWS_CHECKED=${checked} SKIPPED=${skipped}`)
 await task.finish({ keep: [] })
