@@ -323,36 +323,51 @@
   position: static;
 }
 
-/* 5.3.1 TOC 左侧指示条:轨道常驻,高亮段 = 当前视野覆盖的章节范围
-   (范围与折线形状由主题 toc 组件算出,写在列表的 --pm-toc-marker-top /
-   -height / -clip 与 --pm-toc-track-clip 上;嵌套章节处随缩进向内折;
-   视野内没有标题时该段落在最后读过的章节上,范围不会消失) */
+/* 5.3.1 TOC 左侧指示条:连续的曲线轨道与视野高亮段 */
 .md-nav--secondary > .md-nav__list {
   position: relative;
 }
 
-.md-nav--secondary > .md-nav__list::before,
-.md-nav--secondary > .md-nav__list::after {
-  content: "";
+.md-nav--secondary > .md-nav__list > .pm-toc-indicator {
   position: absolute;
   left: 0;
-  right: 0;
-  border-radius: 1px;
+  top: 0;
+  width: 100%;
+  list-style: none;
   pointer-events: none;
 }
 
-.md-nav--secondary > .md-nav__list::before {
-  top: 0;
-  bottom: 0;
-  background-color: var(--pm-line);
-  clip-path: var(--pm-toc-track-clip, polygon(0 0, 0 0, 0 0));
+.pm-toc-indicator svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.md-nav--secondary > .md-nav__list::after {
-  top: var(--pm-toc-marker-top, 0);
-  height: var(--pm-toc-marker-height, 0);
-  background-color: var(--pm-accent);
-  clip-path: var(--pm-toc-marker-clip, polygon(0 0, 0 0, 0 0));
+.pm-toc-indicator path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.pm-toc-track path {
+  stroke: var(--pm-line);
+  stroke-width: 1.5;
+}
+
+.pm-toc-marker path {
+  stroke: var(--pm-accent);
+  stroke-width: 2;
+}
+
+.pm-toc-marker {
+  transition: clip-path 260ms cubic-bezier(.22, 1, .36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-toc-marker { transition: none; }
 }
 
 /* 5.3.2 导航栏与文章交界线(粘性发丝线,由 header-line.js 注入,
