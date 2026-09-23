@@ -22,7 +22,7 @@ import unittest
 
 from playwright.sync_api import sync_playwright
 
-from harness import WORK, Browser, StaticSite, build_site
+from harness import WORK, Browser, StaticSite, assert_no_page_errors, build_site
 
 #: 「旧」取的是把 chat-widget.js 改掉却没 +1 版本号的那个提交 —— 也就是原审查
 #: 意见里复现出来的那个状态(`chat-widget.js?v=31` 一直命中旧缓存)。
@@ -113,7 +113,7 @@ class CacheUpgradeTest(unittest.TestCase):
                 self.cached(page, f"chat-widget.js?v={old_version}"),
                 "旧缓存被清掉了 —— 升级不该依赖清缓存",
             )
-            self.assertEqual(browser.errors, [], f"页面上有异常:{browser.errors}")
+            assert_no_page_errors(self, browser)
         finally:
             browser.close()
 

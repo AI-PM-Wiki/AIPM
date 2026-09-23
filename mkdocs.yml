@@ -819,7 +819,7 @@ extra_javascript:
   - '_static/js/context-item.js?v=3'
   # 图表语境（正文里的 mermaid / 图片 → 对话）：只读 context-item.js 与助手面板的
   # 公开入口，排在两者之间，与 hooks 追加的面板脚本无依赖关系
-  - '_static/js/chart-context.js?v=3'
+  - '_static/js/chart-context.js?v=4'
   - '_static/js/panel-shared.js?v=1'
 extra_css:
   - '_static/css/extra.css?v=40'

@@ -53,6 +53,15 @@
     一超限就地取消这条响应(reader.cancel()),剩下的字节既不进内存也不继续传。
     读完了再判的话,一份几百 MB 的响应会先整个落进浏览器内存,再由我们自己丢掉它。
 
+  读到一半断掉(响应头到手、正文没写完)与「取不到这张图」是同一个结果:退回替代
+  文本那条路,按钮回到能按的状态 —— 半份字节认不出类型,SVG 那支还会读出一句被
+  截断的话。
+
+  体积这一道要成立,取源那次请求就不能被站点的 Service Worker 接过去:它对同源
+  图片是 cache-first,命中时交出来的不是这一页此刻的字节,未命中时回填用的 clone
+  更会在页面取消之后照旧把整份读完 —— 一条响应两个消费者,上限只管得住一半。取源
+  因此带着 `cache: "no-store"`,SW 对这样的请求放行(见 docs/service-worker.js)。
+
   SVG 走的是同一个读取上限、同样在读取过程中停 —— 上限说的是「一次取源最多读多少
   字节」,与这张图是位图还是矢量图无关。
 */
@@ -192,9 +201,19 @@
    * 读到的就不是这一页的东西了。manual 之下重定向拿到的是一个不透明响应(状态 0、
    * 没有正文),`res.ok` 为假,自然落回替代文本那条路:跨源重定向因此**根本不会
    * 发生**,而不是发生之后再拦。
+   *
+   * `cache: "no-store"` 是不用也不要存那一份。这个响应接下来要按字节读、读到上限
+   * 就地停,而站点的 Service Worker 对同源图片是 cache-first —— 由它接管的话,拿到
+   * 的可能是缓存里那一份(读到的就不是这一页此刻的字节),回填用的 clone 更会在页面
+   * 取消之后照旧把整份读完。SW 对这条请求放行(见 docs/service-worker.js),这条
+   * 响应于是只有一个消费者,读多少只由 readCapped 决定。
    */
   function sourceRequest(url) {
-    return fetch(url.href, { credentials: "same-origin", redirect: "manual" });
+    return fetch(url.href, {
+      credentials: "same-origin",
+      redirect: "manual",
+      cache: "no-store"
+    });
   }
 
   /**
@@ -202,7 +221,11 @@
    *
    * 一超限就 `reader.cancel()`:这条响应就地断掉,剩下的字节既不进内存也不再传。
    * 读完再判体积的话,超限的那份会先整个落进内存,再由我们自己丢掉它 —— 上限就
-   * 形同虚设。返回 null 表示超限(或没有正文)。
+   * 形同虚设。返回 null 表示超限、没有正文,或者正文读到一半断了。
+   *
+   * 读到一半断掉(响应头已经拿到、`reader.read()` 拒绝)与「取不到这张图」在这条
+   * 路上是同一个结果:读到的那些字节不作数 —— 半份字节认不出类型,SVG 那支还会读
+   * 出一句被截断的话。
    */
   function readCapped(res, max) {
     if (!res.body) return Promise.resolve(null);
@@ -210,26 +233,31 @@
     var chunks = [];
     var total = 0;
     function step() {
-      return reader.read().then(function (part) {
-        if (part.done) {
-          var bytes = new Uint8Array(total);
-          var at = 0;
-          for (var i = 0; i < chunks.length; i++) {
-            bytes.set(chunks[i], at);
-            at += chunks[i].length;
+      return reader.read().then(
+        function (part) {
+          if (part.done) {
+            var bytes = new Uint8Array(total);
+            var at = 0;
+            for (var i = 0; i < chunks.length; i++) {
+              bytes.set(chunks[i], at);
+              at += chunks[i].length;
+            }
+            return bytes;
           }
-          return bytes;
-        }
-        total += part.value.byteLength;
-        if (total > max) {
-          /* 取消本身的结果无关紧要(这条响应已经不要了),但它可能带着上游的读
-             错误一起拒绝 —— 别把一个未处理的拒绝留在页面上。 */
-          reader.cancel().catch(function () {});
+          total += part.value.byteLength;
+          if (total > max) {
+            /* 取消本身的结果无关紧要(这条响应已经不要了),但它可能带着上游的读
+               错误一起拒绝 —— 别把一个未处理的拒绝留在页面上。 */
+            reader.cancel().catch(function () {});
+            return null;
+          }
+          chunks.push(part.value);
+          return step();
+        },
+        function () {
           return null;
         }
-        chunks.push(part.value);
-        return step();
-      });
+      );
     }
     return step();
   }

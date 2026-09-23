@@ -18,7 +18,11 @@
   - 只拦截同源 GET;非 GET / 跨源(如 Google Fonts、widget API)一律放行,
     交给浏览器默认处理,不缓存。
   - 不拦截 /service-worker.js:SW 脚本由浏览器走专用更新通道,cache-first
-    会把脚本钉死,发布后用户拿不到新策略。
+    会把脚本固定住,发布后用户拿不到新策略。
+  - 调用方声明 `cache: "no-store"` 的请求一律放行:页面代码自己按字节读的响应
+    (见 _static/js/chart-context.js 的取源)不能被缓存层接管 —— 命中时交给它的
+    是缓存里那一份,未命中时回填用的 clone 更会在页面取消之后照旧把整份读完,
+    读取上限因此只约束得住页面那一半。
   - 页面导航 HTML 先于 kindOf 短路判定:kindOf 对目录式页面 URL(/ai/rag/、
     /index.html)返回 null,若先短路则页面文档恒不拦截、不缓存;故 fetch
     监听内先按 navigate/document 识别页面导航,kindOf 只作用于非导航请求。
@@ -131,6 +135,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // 只处理同源
   if (url.pathname === "/service-worker.js") return; // SW 脚本走浏览器更新通道
+  /* 调用方明说「不要用存下来的那一份」:这条响应接下来由页面代码自己按字节读,
+     读多少由它定(见 chart-context.js 的取源与读取上限)。缓存层接过去就有了
+     第二个消费者 —— 未命中时回填用的那一份 clone 读多少由缓存层自己定,页面
+     那边的取消管不着它。 */
+  if (req.cache === "no-store") return;
   /* 页面文档导航先于 kindOf 短路识别:目录式 URL(/ai/rag/)与 /index.html
      在 kindOf 下返回 null,不先判 navigate 会被直接放行、永不缓存 */
   const pageDoc = req.mode === "navigate" || req.destination === "document";

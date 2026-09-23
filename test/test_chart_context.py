@@ -48,7 +48,7 @@ class TestChartContextAssets(unittest.TestCase):
 
     def test_assets_are_registered_with_cache_versions(self):
         scripts = self.config[self.config.index("extra_javascript:") :]
-        self.assertIn("_static/js/chart-context.js?v=3", scripts)
+        self.assertIn("_static/js/chart-context.js?v=4", scripts)
         self.assertIn("_static/css/chart-context.css?v=1", scripts)
         entries = [e.split("?", 1)[0] for e in re.findall(r"-\s*'([^']+)'", scripts)]
         self.assertLess(

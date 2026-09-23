@@ -87,9 +87,6 @@ class _Stream:
     `<img>` 那次加载是 SW 拿拦截到的请求重新发起的,而**重新发起时 destination
     是空的**(`Sec-Fetch-Dest: empty`)—— 两份内容会发错,而错的那一份(超大的)
     正好让「取源读了多少」量出个假数。`Sec-Fetch-Mode` 在这次重新发起里原样保留。
-
-    两份内容都带 `Cache-Control: no-store`:这条用例要的是「每次都由服务端给字节」,
-    落进浏览器的 HTTP 缓存就量不出来了(SW 那份 Cache Storage 不受它影响)。
     """
 
     def __init__(self, body: bytes, loader: bytes, content_type: str):
@@ -132,6 +129,12 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         if getattr(self.server, "cors", False):
             self.send_header("Access-Control-Allow-Origin", "*")
+        # 每次都由服务端给字节:这个底座换个根目录就换一版构建,端口不动 ——
+        # 浏览器那份 HTTP 缓存留着旧字节,换上去的新一版就看不见了。最要命的一处
+        # 是 service-worker.js:更新检查带着 If-Modified-Since 回来,服务端按 mtime
+        # 回 304,新脚本永远换不上(两份构建的 mtime 先后由建站顺序决定,与谁新谁旧
+        # 无关)。SW 那份 Cache Storage 不受这条头影响,缓存升级仍由它照原样演。
+        self.send_header("Cache-Control", "no-store")
         super().end_headers()
 
     def do_GET(self):
@@ -154,13 +157,12 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         super().do_GET()
 
     def _stream(self, path: str, stream: _Stream) -> None:
-        if self.headers.get("Sec-Fetch-Mode") != "no-cors":
+        if self.headers.get("Sec-Fetch-Mode") == "no-cors":
             self._write_all(stream.loader, stream.content_type)
             return
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", stream.content_type)
         self.send_header("Content-Length", str(len(stream.body)))
-        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         written = 0
         try:
@@ -181,14 +183,13 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         `Content-Length` 说的是整份,实际写出去一半,客户端因此拿到的是
         `ERR_CONTENT_LENGTH_MISMATCH` —— 取源那边 `reader.read()` 会拒绝。
         页面自己那次 `<img>` 加载照旧给 `loader`(见 `_Truncated`)。"""
-        if self.headers.get("Sec-Fetch-Mode") != "no-cors":
+        if self.headers.get("Sec-Fetch-Mode") == "no-cors":
             self._write_all(truncated.loader, "image/png")
             return
         body = truncated.body
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "image/png")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body[: len(body) // 2])
         self.wfile.flush()
@@ -198,7 +199,6 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -212,9 +212,9 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
 class StaticSite:
     """一个静态文件服务。
 
-    `serve(root)` 换根,端口不动 —— 对浏览器来说还是同一个 origin,缓存、Service
-    Worker、localStorage 全都留着。这正是「老用户升级」与「换了个新端口再看一眼」
-    的区别所在。
+    `serve(root)` 换根,端口不动 —— 对浏览器来说还是同一个 origin,Service Worker、
+    Cache Storage、localStorage 全都留着(只有 HTTP 缓存留不住,见 `end_headers`)。
+    这正是「老用户升级」与「换了个新端口再看一眼」的区别所在。
 
     `cors=True` 的实例给每个响应加 `Access-Control-Allow-Origin: *` —— 「同源地址
     重定向到允许 CORS 的跨域资源」那条用例需要一台**真的会放行**的跨域服务器,否则
@@ -497,6 +497,10 @@ class AgentServer:
 REASON_FOREIGN_SCRIPT = "third-party-script-error"
 REASON_FOREIGN_RESOURCE = "third-party-resource-failed"
 
+#: 浏览器自己报「资源没加载成」的那句话的形状(Chromium 的 console.error)。
+#: 页面代码弄不出它、也删不掉它 —— 网络层没成,浏览器就报一条。
+LOAD_FAILURE_PREFIX = "Failed to load resource: "
+
 #: 主题的脚本加载器取不到脚本时抛的那句话的**全部**内容(见 mkdocs-material 的
 #: browser/script/index.ts)。认的是这个形状:`Invalid script: <那个地址>`。
 INVALID_SCRIPT_RE = re.compile(r"^Invalid script: (\S+)$")
@@ -505,12 +509,19 @@ INVALID_SCRIPT_RE = re.compile(r"^Invalid script: (\S+)$")
 _STACK_FRAME_RE = re.compile(r"(https?://[^\s()]+?):\d+:\d+")
 
 
-def assert_no_page_errors(case: unittest.TestCase, browser: "Browser") -> None:
+def assert_no_page_errors(
+    case: unittest.TestCase, browser: "Browser", expected_load_failures: tuple[str, ...] = ()
+) -> None:
     """这条通路自己这一侧没有异常 —— 连同**被挡下来的那些记录**一起断言。
 
     挡下来的每一条都必须指得出一个不属于本站与问答后端的地址,理由只有两种(见
     Browser 的归类)。过滤挡错一次,一条真实失败就被藏起来了,所以这件事由断言
-    兜住:挡下来的记录要逐条站得住,站不住就地报出来。"""
+    兜住:挡下来的记录要逐条站得住,站不住就地报出来。
+
+    `expected_load_failures` 是**这条用例自己弄坏的那些地址**(「正文读到一半断掉」
+    那份素材就是这样):资源没加载成时浏览器自己会报一条 console.error,页面代码
+    既弄不出它、也删不掉它。报的正是这些地址才算数 —— 报的是别的地址、或者错的
+    地址没报出来,都由下面这条断言报出。"""
     for entry in browser.ignored:
         case.assertIn(
             entry["reason"],
@@ -521,10 +532,13 @@ def assert_no_page_errors(case: unittest.TestCase, browser: "Browser") -> None:
             browser.is_foreign(entry["origin"]),
             f"挡下来的记录指不出一个第三方地址:{entry}",
         )
+    broken = set(expected_load_failures)
+    tolerated = [entry["line"] for entry in browser.load_failures if entry["url"] in broken]
     case.assertEqual(
         browser.errors,
-        [],
-        f"页面上有异常:{browser.errors};被挡下的记录:{browser.ignored}",
+        tolerated,
+        f"页面上有异常:{browser.errors};用例自己弄坏的只有 {sorted(broken)},"
+        f"它们能留下的是 {tolerated};被挡下的记录:{browser.ignored}",
     )
 
 
@@ -552,6 +566,7 @@ class Browser:
         self.base = base
         self.errors: list[str] = []
         self.ignored: list[dict] = []
+        self.load_failures: list[dict] = []
         self.page.on("pageerror", self._on_pageerror)
         self.page.on("console", self._on_console)
         self.chat_bodies: list[dict] = []
@@ -600,6 +615,8 @@ class Browser:
         if self.is_foreign(url):
             self._ignore(line, url, REASON_FOREIGN_RESOURCE)
             return
+        if msg.text.startswith(LOAD_FAILURE_PREFIX):
+            self.load_failures.append({"line": line, "url": url, "text": msg.text})
         self.errors.append(line)
 
     def _on_request(self, request):

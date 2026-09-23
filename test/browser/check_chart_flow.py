@@ -53,6 +53,7 @@ OVERSIZED_TOTAL = 32 * 1024 * 1024
 
 #: 上一版构建(改动之前那个提交)。两个用例类都要拿它造出「老用户手里那一版」。
 #: 缓存升级那条用它当旧构建;Service Worker 那条用它当「带着旧缓存升级」的起点。
+#: 那一版里的 chart-context.js 是 `?v=3`,下面按旧构建的地址找缓存条目就照它找。
 OLD_REF = "5c76a4ba"
 
 #: 用例素材的站内路径。素材住在站点根目录里,每换一次根目录都要重放一遍
@@ -197,6 +198,15 @@ class ChartFlowCase(unittest.TestCase):
             }""",
             {"tag": tag, "src": src, "alt": alt},
         )
+        # 等这张图自己有结果(取到了,或者取不到)。取不到时浏览器摆出来的是 alt
+        # 文本,那个框决定了容器多高、按钮落在哪里 —— 不等它落地,下面「先悬停
+        # 再点」的两下会落在两个不同的位置上:悬停时容器还没有内容,鼠标落在别处,
+        # 点的时候按钮已经在新的位置上,而 CSS 那头没被悬停过,按钮仍是
+        # `pointer-events: none`,命中测试照到的就成了那张图自己。
+        self.page.wait_for_function(
+            "(tag) => { const img = document.querySelector(`img[data-probe=\"${tag}\"]`); return img !== null && img.complete; }",
+            arg=tag,
+        )
         self.ask_button(tag).wait_for(state="visible")
 
     def ask_button(self, tag: str):
@@ -207,6 +217,34 @@ class ChartFlowCase(unittest.TestCase):
             has=self.page.locator(f'img[data-probe="{tag}"]')
         )
 
+    def wait_still(self, tag: str) -> None:
+        """等这张图上的按钮连续若干帧不动。
+
+        页面上随时可能有东西在动:点第一张图会打开助手面板,面板开合会把正文里的
+        东西一起挪走;主题的 mermaid 也是一张一张渲染出来的。悬停与点击之间挪一下,
+        鼠标就不在这张图上了 —— 容器失去 `:hover`,按钮回到 `pointer-events: none`,
+        命中测试照到的成了图自己。用例要验的不是这条竞态,先把它等过去。"""
+        self.page.wait_for_function(
+            """async (tag) => {
+                const img = document.querySelector(`img[data-probe="${tag}"]`);
+                const btn = img.closest('.aipm-chart').querySelector('button.aipm-chart__ask');
+                const rect = () => {
+                    const b = btn.getBoundingClientRect();
+                    return [b.x, b.y, b.width, b.height].join(',');
+                };
+                let last = rect();
+                let still = 0;
+                while (still < 3) {
+                    await new Promise((resolve) => requestAnimationFrame(resolve));
+                    const now = rect();
+                    still = now === last ? still + 1 : 0;
+                    last = now;
+                }
+                return true;
+            }""",
+            arg=tag,
+        )
+
     def ask(self, tag: str) -> None:
         """点这张图的「问助手」。
 
@@ -214,6 +252,7 @@ class ChartFlowCase(unittest.TestCase):
         时现形可点(触摸设备上例外,见 chart-context.css)。真实用户也是这样点的,
         用例照做,不绕过命中测试。"""
         box = self.ask_box(tag)
+        self.wait_still(tag)
         box.hover()
         box.locator("button.aipm-chart__ask").click()
 
@@ -458,7 +497,11 @@ class ChartContextFlowTest(ChartFlowCase):
         self.assertEqual(item["mediaType"], "", "读到一半断掉的那份进了请求体")
         self.assertEqual(item["imageData"], "")
         self.assertEqual(self.images_in(self.model_requests()[0]["body"]), [])
-        assert_no_page_errors(self, self.browser)
+        # 这份素材是这条用例自己弄坏的,浏览器会为它自己报一条「资源没加载成」;
+        # 除此之外页面上不该有任何异常(见 assert_no_page_errors)。
+        assert_no_page_errors(
+            self, self.browser, expected_load_failures=(self.site.base + TRUNCATED_PNG,)
+        )
 
     # ---- 3. mermaid:渲染替换之前收下源码 ----
 
@@ -778,12 +821,16 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
             timeout=15000,
         )
 
-    def upgrade_service_worker(self) -> None:
-        """让浏览器把新的 service-worker.js 换上去,并等它接管本页。
+    def swap_service_worker(self) -> None:
+        """把服务端**此刻这一份** service-worker.js 换上去,并等它接管本页。
 
         不能只看 `controller` 非空 —— 新旧脚本的地址一样,从接口上看不出换没换。
-        靠 `reg.update()` 触发一次字节比对(此刻服务端给的已经是新构建那一份),
-        靠 `controllerchange` 确认接管完成:新脚本 activate 里 claim 的正是这一刻。"""
+        靠 `reg.update()` 触发一次字节比对(服务端此刻给的是哪一版,换上的就是哪
+        一版),靠 `controllerchange` 确认接管完成:脚本 activate 里 claim 的正是
+        这一刻。
+
+        导航那一侧的更新检查指望不上:同一份注册的软更新是节流的(24 小时一次),
+        几秒之内连着换两版构建,它一次也不会再查。"""
         self.page.evaluate(
             """() => new Promise((resolve, reject) => {
                 const guard = setTimeout(
@@ -862,6 +909,10 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
 
         self.page.goto(self.site.base + RAG_PAGE, wait_until="load")
         self.page.wait_for_function("() => navigator.serviceWorker.controller !== null")
+        # 先真的落到旧构建那一版 SW 上:导航触发的更新检查是节流的,而 setUp 那次
+        # 加载装的是新构建那一版 —— 不显式换一次,下面那头就还是新脚本,「升级」
+        # 根本无从发生。
+        self.swap_service_worker()
         # 首次加载时页面还没被接管,它请求的那些资源不过 SW;再加载一次,这一遍
         # 才走 cache-first,旧构建那一版脚本这才真正进了缓存。
         self.page.reload(wait_until="load")
@@ -870,7 +921,7 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
 
         # 同一个端口、同一个浏览器:把根换成新构建,再把新的 SW 换上去并等它接管
         self.site.serve(self.stack.site_dir)
-        self.upgrade_service_worker()
+        self.swap_service_worker()
         self.page.reload(wait_until="load")
         self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
 
