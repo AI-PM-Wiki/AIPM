@@ -60,7 +60,8 @@
   体积这一道要成立,取源那次请求就不能被站点的 Service Worker 接过去:它对同源
   图片是 cache-first,命中时交出来的不是这一页此刻的字节,未命中时回填用的 clone
   更会在页面取消之后照旧把整份读完 —— 一条响应两个消费者,上限只管得住一半。取源
-  因此带着 `cache: "no-store"`,SW 对这样的请求放行(见 docs/service-worker.js)。
+  因此带一个只属于它自己的标记头,SW 认这一对头才放行(见 docs/service-worker.js 与
+  sourceRequest),别的请求照旧走原来的缓存策略。
 
   SVG 走的是同一个读取上限、同样在读取过程中停 —— 上限说的是「一次取源最多读多少
   字节」,与这张图是位图还是矢量图无关。
@@ -70,6 +71,11 @@
 
   var CTX = window.__aipmContext || null;
   var READY_ATTR = "data-aipm-chart-ready";
+  /* 取源那条请求的标记头:告诉站点的 Service Worker「这一条由页面按字节读,别接管」。
+     名字与取值与 docs/service-worker.js 里那一对是同一对 —— 那边只认这一对,别的
+     请求照旧走原来的缓存策略(见 sourceRequest)。 */
+  var SOURCE_FETCH_HEADER = "X-AIPM-Source-Fetch";
+  var SOURCE_FETCH_VALUE = "chart-context";
   /* 与批注面板悬浮窗上那颗「问助手」同一张脸(四角星,与助手面板的 FAB 同源):
      两处指的是同一件事,图形就该是同一个。 */
   var ASK_ICON =
@@ -202,18 +208,25 @@
    * 没有正文),`res.ok` 为假,自然落回替代文本那条路:跨源重定向因此**根本不会
    * 发生**,而不是发生之后再拦。
    *
-   * `cache: "no-store"` 是不用也不要存那一份。这个响应接下来要按字节读、读到上限
-   * 就地停,而站点的 Service Worker 对同源图片是 cache-first —— 由它接管的话,拿到
-   * 的可能是缓存里那一份(读到的就不是这一页此刻的字节),回填用的 clone 更会在页面
-   * 取消之后照旧把整份读完。SW 对这条请求放行(见 docs/service-worker.js),这条
-   * 响应于是只有一个消费者,读多少只由 readCapped 决定。
+   * 标记头(SOURCE_FETCH_HEADER)是这条请求自己的名字:站点的 Service Worker 对同源
+   * 图片是 cache-first,由它接管的话,拿到的可能是缓存里那一份(读到的就不是这一页
+   * 此刻的字节),回填用的 clone 更会在页面取消之后照旧把整份读完。带上这一对头的
+   * 请求,SW 才放行(见 docs/service-worker.js),这条响应于是只有一个消费者,读多少
+   * 只由 readCapped 决定。放行认的是这个标记,不看别的请求怎么声明。
+   *
+   * `cache: "no-store"` 管的是没有 SW 接手时的浏览器那份 HTTP 缓存:取源要的是此刻
+   * 的字节,不是存下来的那一份。SW 放行之后这条请求回到浏览器的默认处理,这一句
+   * 仍然生效。
    */
   function sourceRequest(url) {
-    return fetch(url.href, {
+    var init = {
       credentials: "same-origin",
       redirect: "manual",
-      cache: "no-store"
-    });
+      cache: "no-store",
+      headers: {}
+    };
+    init.headers[SOURCE_FETCH_HEADER] = SOURCE_FETCH_VALUE;
+    return fetch(url.href, init);
   }
 
   /**

@@ -18,6 +18,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import http.server
 import json
 import os
@@ -30,6 +31,7 @@ import unittest
 import urllib.request
 from http import HTTPStatus
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 WORK = ROOT / "meta" / "browser"
@@ -108,10 +110,37 @@ class _Truncated:
         self.loader = loader
 
 
+class _Sequence:
+    """同一个地址,第 n 次请求给第 n 份字节(用完之后一直是最后那份)。
+
+    「这份响应是从缓存里拿的,还是从服务端拿的」没有别的接口可问 —— 字节自己就是
+    答案:拿到第 n 份,说明服务端被问过第 n 次;拿到旧的那一份,说明它来自缓存。
+    Service Worker 的缓存策略是「接没接管一条请求」,量的就是这个。"""
+
+    def __init__(self, bodies: list[bytes], content_type: str):
+        self.bodies = bodies
+        self.content_type = content_type
+
+
+#: 站点响应头按**项目部署约定**给:生产站 aipm.ac 走 GitHub Pages,源站把
+#: Cache-Control 钉成这一个(docs/service-worker.js 与 netlify.toml 里都记着同一句;
+#: Netlify 预览另有 netlify.toml 那张「先宽后窄」的路径表)。这里不把 HTTP 缓存统一
+#: 关掉 —— 关掉之后「换个根目录就换一版构建」这件事在测试里根本不存在,量的就不是
+#: 线上那条路。
+CACHE_CONTROL = "public, max-age=600"
+
+#: 取源那条请求的标记头,与 docs/_static/js/chart-context.js 和 docs/service-worker.js
+#: 里的那一对是同一对(头名在 Headers 里不分大小写,这里写小写)。用例按它认出
+#: 「页面上真正发出去的那条取源请求」,而不是只在字节上推断。
+SOURCE_FETCH_HEADER = "x-aipm-source-fetch"
+SOURCE_FETCH_VALUE = "chart-context"
+
+
 class _Handler(http.server.SimpleHTTPRequestHandler):
-    """静态文件。多三处:按路径覆盖 Content-Type(「类型限制」那条用例要一个名字
+    """静态文件。多几处:按路径覆盖 Content-Type(「类型限制」那条用例要一个名字
     像图、内容不是图的东西)、按路径回 302(「跨源重定向」那条用例)、按路径流式
-    写一份读不完的响应(「读取过程限额」那条用例)。"""
+    写一份读不完的响应(「读取过程限额」那条用例)、按路径每次换一份字节(「放行
+    范围」与「带着旧缓存升级」那两条用例)。"""
 
     #: 客户端中途取消时,写阻塞在这个上限上就该放手 —— 不让一条用例把整个跑挂住。
     timeout = 20
@@ -126,16 +155,46 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             return override[bare]
         return super().guess_type(path)
 
+    def send_header(self, keyword, value):
+        """`Last-Modified` 不发:它是文件 mtime,而两份构建的 mtime 先后由建站顺序
+        决定,与谁新谁旧无关 —— 换根之后新一版的文件完全可能更旧,浏览器按它回来
+        一问,服务端就照着回 304,新的那份字节永远换不上。校验符只由内容定(ETag),
+        内容变了校验符就变,这正是线上 CDN 的行为。"""
+        if keyword.lower() == "last-modified":
+            return
+        super().send_header(keyword, value)
+
     def end_headers(self):
         if getattr(self.server, "cors", False):
             self.send_header("Access-Control-Allow-Origin", "*")
-        # 每次都由服务端给字节:这个底座换个根目录就换一版构建,端口不动 ——
-        # 浏览器那份 HTTP 缓存留着旧字节,换上去的新一版就看不见了。最要命的一处
-        # 是 service-worker.js:更新检查带着 If-Modified-Since 回来,服务端按 mtime
-        # 回 304,新脚本永远换不上(两份构建的 mtime 先后由建站顺序决定,与谁新谁旧
-        # 无关)。SW 那份 Cache Storage 不受这条头影响,缓存升级仍由它照原样演。
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", CACHE_CONTROL)
+        etag = self._etag()
+        if etag is not None:
+            self.send_header("ETag", etag)
         super().end_headers()
+
+    def _etag(self) -> str | None:
+        """这个地址此刻那一份字节的校验符(路径上没有文件就不发)。"""
+        target = Path(self.translate_path(self.path))
+        if target.is_dir():
+            target = target / "index.html"
+        if not target.is_file():
+            return None
+        return '"' + hashlib.sha1(target.read_bytes()).hexdigest() + '"'
+
+    def log_request(self, code="-", size="-"):
+        """每次响应都记一笔(路径 + 状态 + 带回来的校验条件):用例要问的是「这一次
+        刷新,服务端有没有被问过、答的是哪一份」。"""
+        self.server.requests.append(
+            {
+                "path": self.path.split("?", 1)[0],
+                "query": self.path.split("?", 1)[1] if "?" in self.path else "",
+                "status": int(code) if str(code).isdigit() else 0,
+                "if_none_match": self.headers.get("If-None-Match"),
+                "if_modified_since": self.headers.get("If-Modified-Since"),
+                "source_fetch": self.headers.get(SOURCE_FETCH_HEADER),
+            }
+        )
 
     def do_GET(self):
         path = self.path.split("?", 1)[0]
@@ -154,7 +213,18 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         if truncated is not None:
             self._truncate(path, truncated)
             return
+        sequence = self.server.sequences.get(path)
+        if sequence is not None:
+            self._sequence(path, sequence)
+            return
         super().do_GET()
+
+    def _sequence(self, path: str, sequence: "_Sequence") -> None:
+        """第 n 次请求给第 n 份字节 —— 「这份响应是从缓存里拿的,还是从服务端拿的」
+        靠字节本身分辨。"""
+        served = self.server.sequence_hits.get(path, 0)
+        self.server.sequence_hits[path] = served + 1
+        self._write_all(sequence.bodies[min(served, len(sequence.bodies) - 1)], sequence.content_type)
 
     def _stream(self, path: str, stream: _Stream) -> None:
         if self.headers.get("Sec-Fetch-Mode") == "no-cors":
@@ -213,8 +283,9 @@ class StaticSite:
     """一个静态文件服务。
 
     `serve(root)` 换根,端口不动 —— 对浏览器来说还是同一个 origin,Service Worker、
-    Cache Storage、localStorage 全都留着(只有 HTTP 缓存留不住,见 `end_headers`)。
-    这正是「老用户升级」与「换了个新端口再看一眼」的区别所在。
+    Cache Storage、localStorage 全都留着。这正是「老用户升级」与「换了个新端口再看
+    一眼」的区别所在;HTTP 缓存也照线上那份约定活着(见 CACHE_CONTROL),换根之后
+    新一版能不能拿到,由服务和浏览器自己按线上那套规则决定。
 
     `cors=True` 的实例给每个响应加 `Access-Control-Allow-Origin: *` —— 「同源地址
     重定向到允许 CORS 的跨域资源」那条用例需要一台**真的会放行**的跨域服务器,否则
@@ -232,8 +303,11 @@ class StaticSite:
         self.redirects: dict[str, str] = {}
         self.streams: dict[str, _Stream] = {}
         self.truncated: dict[str, bytes] = {}
+        self.sequences: dict[str, _Sequence] = {}
+        self.sequence_hits: dict[str, int] = {}
         self.stream_written: dict[str, int] = {}
         self.stream_aborted: dict[str, bool] = {}
+        self.requests: list[dict] = []
         self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
         self.httpd.root = self.root
         self.httpd.content_types = self.content_types
@@ -241,8 +315,11 @@ class StaticSite:
         self.httpd.redirects = self.redirects
         self.httpd.streams = self.streams
         self.httpd.truncated = self.truncated
+        self.httpd.sequences = self.sequences
+        self.httpd.sequence_hits = self.sequence_hits
         self.httpd.stream_written = self.stream_written
         self.httpd.stream_aborted = self.stream_aborted
+        self.httpd.requests = self.requests
         self.port = self.httpd.server_address[1]
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self.thread.start()
@@ -290,6 +367,25 @@ class StaticSite:
         path = "/" + relpath
         self.truncated[path] = _Truncated(body, loader)
         return path
+
+    def sequence(self, relpath: str, bodies: list[bytes], content_type: str) -> str:
+        """一份「每问一次换一份字节」的资源,返回它的站内路径(见 `_Sequence`)。"""
+        path = "/" + relpath
+        self.sequences[path] = _Sequence(bodies, content_type)
+        return path
+
+    def reset_sequence(self, path: str) -> None:
+        """把「问到第几次」归零。同一个类里的几条用例共用这一台服务,计数器会跟着
+        串到后一条用例上 —— 每条用例自己开头归零。"""
+        self.sequence_hits[path] = 0
+
+    def sequence_count(self, path: str) -> int:
+        """这个地址被服务端问到过几次 —— 没被问过就是没被问过,缓存接管了它。"""
+        return self.sequence_hits.get(path, 0)
+
+    def requests_for(self, path: str) -> list[dict]:
+        """服务端收到的、路径等于 path 的那些请求(带状态与校验条件)。"""
+        return [r for r in self.requests if r["path"] == path]
 
     def bytes_read_by_fetch(self, path: str) -> int:
         """取源那一步从这份响应里实际读走的字节数。"""
@@ -491,9 +587,9 @@ class AgentServer:
             self.proc.wait(timeout=10)
 
 
-#: 被挡下来的记录的理由,只有这两种。两者认的都是**错误的出处**,不是「消息里
-#: 出现了网址」:一条本站脚本抛出的错误里照样可以有别人的网址,那种错误必须留在
-#: `errors` 里 —— 靠消息文本放行,一条真实失败就能靠这句话本身溜过去。
+#: 被挡下来的记录的理由,只有这两种。两者认的都是**错误的出处**:一条错误的出处是
+#: 「抛出它的那个脚本」,一条资源失败记录的出处是「浏览器自己报的那个地址」。消息里
+#: 出现了别人的网址不算数 —— 本站脚本抛出的错误里照样可以有别人的网址。
 REASON_FOREIGN_SCRIPT = "third-party-script-error"
 REASON_FOREIGN_RESOURCE = "third-party-resource-failed"
 
@@ -508,21 +604,81 @@ INVALID_SCRIPT_RE = re.compile(r"^Invalid script: (\S+)$")
 #: 堆栈里的一帧:`at fn (http://host/path:1:2)` 或 `at http://host/path:1:2`。
 _STACK_FRAME_RE = re.compile(r"(https?://[^\s()]+?):\d+:\d+")
 
+#: 没写端口时按协议补上的那个端口。
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def origin_of(url: str | None) -> tuple[str, str, int] | None:
+    """一个地址的出处:(协议, 主机, 端口)。严格按这三样比,不做字符串前缀比较 ——
+    `http://127.0.0.1:1234.example.com/` 与 `http://127.0.0.1:1234` 是两台机器。
+
+    解析不出来的(空串、相对地址、`blob:`、端口不是数字)返回 None:取不到出处也
+    就说不出「它在别人那里」,调用方按「出处无法确认」处理。"""
+    if not url:
+        return None
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+    except ValueError:
+        return None
+    if not parts.scheme or not parts.hostname:
+        return None
+    if port is None:
+        port = _DEFAULT_PORTS.get(parts.scheme.lower())
+        if port is None:
+            return None
+    return (parts.scheme.lower(), parts.hostname.lower(), port)
+
+
+#: 这条通路之外、页面还会碰到的几处服务,不是被测的东西:
+#:   - 批注后端(127.0.0.1:8788):这个底座里没有起它,页面一加载就去取批注,
+#:     拿到的是连接被拒(见 docs/_static/js/annotation-store.js 的地址);
+#:   - GitHub 的版本接口:主题的 bundle 自己会去问最新发布,匿名请求会回 403;
+#:   - giscus:评论区,这个仓库没有配 discussion,回 404。
+#: 它们的失败记录每次运行都在,条数还随页面加载次数变,用例没法逐条声明。这张单子
+#: 把它们点出来 —— 不是默默放过去:断言里照样逐条核对理由与出处,出处不在这张单子
+#: 上的记录必须由用例自己声明。
+AMBIENT_ORIGINS = tuple(
+    origin
+    for origin in (
+        origin_of("http://127.0.0.1:8788"),
+        origin_of("https://api.github.com"),
+        origin_of("https://giscus.app"),
+    )
+    if origin is not None
+)
+
 
 def assert_no_page_errors(
-    case: unittest.TestCase, browser: "Browser", expected_load_failures: tuple[str, ...] = ()
+    case: unittest.TestCase,
+    browser: "Browser",
+    expected_load_failures: tuple[str, ...] = (),
+    expected_ignored: tuple[tuple[str, str], ...] = (),
 ) -> None:
     """这条通路自己这一侧没有异常 —— 连同**被挡下来的那些记录**一起断言。
 
-    挡下来的每一条都必须指得出一个不属于本站与问答后端的地址,理由只有两种(见
-    Browser 的归类)。过滤挡错一次,一条真实失败就被藏起来了,所以这件事由断言
-    兜住:挡下来的记录要逐条站得住,站不住就地报出来。
+    挡下来的记录逐项核:理由只有两种;指出的那个地址确实在别人那里(按 origin 比);
+    而且那个地址在**这条记录自己身上**找得到 —— 过滤器不能凭空造一个地址出来。
+    `expected_ignored` 是这条用例知道会被挡下的那些(地址, 理由),与实际挡下的
+    (底座外面那两处服务的记录除外,见 AMBIENT_ORIGINS)逐条对齐,多了少了都报出来:
+    挡错一次,一条真实失败就被藏起来了。
 
     `expected_load_failures` 是**这条用例自己弄坏的那些地址**(「正文读到一半断掉」
     那份素材就是这样):资源没加载成时浏览器自己会报一条 console.error,页面代码
-    既弄不出它、也删不掉它。报的正是这些地址才算数 —— 报的是别的地址、或者错的
-    地址没报出来,都由下面这条断言报出。"""
-    for entry in browser.ignored:
+    既弄不出它、也删不掉它。声明的与实际报出来的必须一致 —— 声明了却没报出来,
+    同样算这条用例站不住。"""
+    errors, ignored, load_failures = browser.classify()
+
+    case.assertEqual(
+        tuple(expected_ignored),
+        tuple(
+            (entry["origin"], entry["reason"])
+            for entry in ignored
+            if not browser.is_ambient(entry["origin"])
+        ),
+        f"挡下来的记录与预期对不上;实际挡下的是 {ignored}",
+    )
+    for entry in ignored:
         case.assertIn(
             entry["reason"],
             (REASON_FOREIGN_SCRIPT, REASON_FOREIGN_RESOURCE),
@@ -532,98 +688,166 @@ def assert_no_page_errors(
             browser.is_foreign(entry["origin"]),
             f"挡下来的记录指不出一个第三方地址:{entry}",
         )
+        case.assertIn(
+            entry["origin"],
+            entry["line"],
+            f"挡下来的记录里找不到它指的那个地址:{entry}",
+        )
+
     broken = set(expected_load_failures)
-    tolerated = [entry["line"] for entry in browser.load_failures if entry["url"] in broken]
+    reported = {entry["url"] for entry in load_failures}
     case.assertEqual(
-        browser.errors,
+        sorted(broken),
+        sorted(reported),
+        f"用例自己弄坏的地址与实际报出来的对不上;浏览器实际报的是 {load_failures}",
+    )
+    tolerated = [entry["line"] for entry in load_failures if entry["url"] in broken]
+    case.assertEqual(
+        errors,
         tolerated,
-        f"页面上有异常:{browser.errors};用例自己弄坏的只有 {sorted(broken)},"
-        f"它们能留下的是 {tolerated};被挡下的记录:{browser.ignored}",
+        f"页面上有异常:{errors};用例自己弄坏的只有 {sorted(broken)},"
+        f"它们能留下的是 {tolerated};被挡下的记录:{ignored}",
     )
 
 
 class Browser:
     """一个 Chromium 与它的一个页面,顺带收页面上的报错。
 
-    `errors` 收**这条通路自己这一侧**的异常:未捕获异常、被拒的 Promise,以及
-    来自站点 origin 或问答后端 origin 的 console.error —— 一条通路里「悄悄抛了个
-    TypeError 但界面看起来没事」正是要靠它现形。
+    收到的异常分两类,分的时候只看**出处**:
 
-    别的 origin 上的失败不进 `errors`,进 `ignored`,每条带得住事的地址与理由:
+    - 出处是本站或问答后端的,或者**根本解析不出出处**的 → 这一侧的真实失败;
+      后者按失败计入 —— 「拿不准是不是别人的」不是放行的理由。
+    - 出处确实在别人那里的 → 挡下,每条带得住事的地址与理由:
+      - **第三方脚本抛出的错误**:堆栈第一帧(抛出它的那个脚本)不在本站与问答
+        后端上;
+      - **第三方资源加载失败**:浏览器自己报的那条,它报的地址是第三方的。
 
-    - **第三方脚本抛出的错误**:堆栈第一帧(抛错的那个脚本)不在本站与问答后端上;
-    - **第三方资源加载失败**:浏览器的 console.error,它自己报的地址是第三方的。
-
-    两处的依据都是**出处**,不是消息文本。主题那个 CDN 取不到 mermaid 时抛的
-    `Invalid script: <CDN 地址>` 是唯一一条出处在我们、指向别人的错误:认的是这
-    句话的完整形状,地址落在别人那里才挡下,落在这里就是「我们自己的脚本没加载成」,
-    照旧进 `errors`。`assert_no_page_errors` 逐条再审一遍这些记录。"""
+    主题那个 CDN 取不到 mermaid 时抛的 `Invalid script: <CDN 地址>` 是唯一一条
+    「出处在我们、说的是别人」的错误 —— 它抛在我们自己的 bundle 里。这一条不靠
+    消息里的那个地址放行,靠**证据**:浏览器自己得报过那个地址的资源没加载成,
+    两条对得上才挡下;对不上就是我们的错误,照旧计入失败。"""
 
     def __init__(self, playwright, base: str, service_workers: str = "allow"):
         self.browser = playwright.chromium.launch()
         self.context = self.browser.new_context(service_workers=service_workers)
         self.page = self.context.new_page()
         self.base = base
-        self.errors: list[str] = []
-        self.ignored: list[dict] = []
-        self.load_failures: list[dict] = []
+        self.ours = {o for o in (origin_of(base), origin_of(AGENT_ORIGIN)) if o is not None}
+        self.page_errors: list[dict] = []
+        self.console_errors: list[dict] = []
+        self.failed_requests: dict[str, str] = {}
         self.page.on("pageerror", self._on_pageerror)
         self.page.on("console", self._on_console)
+        self.page.on("requestfailed", self._on_requestfailed)
         self.chat_bodies: list[dict] = []
+        self.marked_requests: list[dict] = []
         self.page.on("request", self._on_request)
 
-    def is_foreign(self, url: str | None) -> bool:
-        """这个地址在不在这条通路之外。"""
-        return bool(url) and not self._ours(url)
-
-    def _ours(self, url: str) -> bool:
+    def is_ours(self, url: str | None) -> bool:
         """这个地址是不是这条通路自己的:本站,或问答后端。"""
-        return url.startswith(self.base) or url.startswith(AGENT_ORIGIN)
+        origin = origin_of(url)
+        return origin is not None and origin in self.ours
 
-    def _ignore(self, line: str, origin: str, reason: str) -> None:
-        self.ignored.append({"line": line, "origin": origin, "reason": reason})
+    def is_foreign(self, url: str | None) -> bool:
+        """这个地址确实在别人那里。解析不出出处的一律不算 —— 那种情况计入失败。"""
+        origin = origin_of(url)
+        return origin is not None and origin not in self.ours
+
+    def is_ambient(self, url: str | None) -> bool:
+        """这个地址属于底座外面还会被碰到的那些服务(见 AMBIENT_ORIGINS)。"""
+        origin = origin_of(url)
+        return origin is not None and origin in AMBIENT_ORIGINS
+
+    def _ignore(self, line: str, origin: str, reason: str) -> dict:
+        return {"line": line, "origin": origin, "reason": reason}
 
     @staticmethod
-    def _stack_origin(err) -> str:
-        """这条错误是从哪个脚本抛出来的:堆栈第一帧的地址(取不到就是空串)。"""
-        found = _STACK_FRAME_RE.search(getattr(err, "stack", "") or "")
-        return found.group(1) if found is not None else ""
+    def _throw_origin(err) -> str:
+        """抛出这条错误的脚本的地址:堆栈里的第一帧。
+
+        只从第二行起找 —— 第一行是消息本身,而消息里可以出现任何网址(一条本站
+        脚本抛出的错误里写着一个别人的地址,不能因此就算别人的)。堆栈里没有帧
+        (非 Error 的值、被浏览器抹掉细节的跨域脚本)就返回空串,由调用方按「出处
+        无法确认」计入失败。"""
+        for line in (getattr(err, "stack", "") or "").splitlines()[1:]:
+            found = _STACK_FRAME_RE.search(line)
+            if found is not None:
+                return found.group(1)
+        return ""
+
+    def _load_failed(self, url: str) -> bool:
+        """浏览器自己报过这个地址没加载成:网络层失败,或者它自己打的那条
+        console.error。两条都是浏览器给的,页面代码造不出来。"""
+        if url in self.failed_requests:
+            return True
+        return any(
+            entry["url"] == url and entry["text"].startswith(LOAD_FAILURE_PREFIX)
+            for entry in self.console_errors
+        )
 
     def _on_pageerror(self, err):
-        line = f"pageerror: {err}"
+        stack = getattr(err, "stack", "") or ""
         named = INVALID_SCRIPT_RE.match(str(err))
-        if named is not None:
-            # 主题的脚本加载器报告某个地址上的脚本没取到。它抛在我们自己的 bundle
-            # 里,指的却是那个地址 —— 地址是别人的就挡下,是自己的就是真实失败。
-            src = named.group(1)
-            if self._ours(src):
-                self.errors.append(line)
-            else:
-                self._ignore(line, src, REASON_FOREIGN_SCRIPT)
-            return
-        origin = self._stack_origin(err)
-        if origin and not self._ours(origin):
-            self._ignore(line, origin, REASON_FOREIGN_SCRIPT)
-            return
-        self.errors.append(line)
+        self.page_errors.append(
+            {
+                "line": f"pageerror: {err}\n{stack}" if stack else f"pageerror: {err}",
+                "throw_origin": self._throw_origin(err),
+                "named_url": named.group(1) if named is not None else "",
+            }
+        )
+
+    def _on_requestfailed(self, request):
+        self.failed_requests[request.url] = str(request.failure or "")
 
     def _on_console(self, msg):
         if msg.type != "error":
             return
         url = (msg.location or {}).get("url") or ""
-        line = f"console.error: {msg.text} [{url}]"
-        if self.is_foreign(url):
-            self._ignore(line, url, REASON_FOREIGN_RESOURCE)
-            return
-        if msg.text.startswith(LOAD_FAILURE_PREFIX):
-            self.load_failures.append({"line": line, "url": url, "text": msg.text})
-        self.errors.append(line)
+        self.console_errors.append(
+            {"line": f"console.error: {msg.text} [{url}]", "url": url, "text": msg.text}
+        )
+
+    def classify(self) -> tuple[list[str], list[dict], list[dict]]:
+        """把收到的异常分成三份:这一侧的真实失败、挡下来的记录、浏览器自己报的
+        「资源没加载成」。每次调用都从原始记录重算,判据只依赖记录本身。"""
+        errors: list[str] = []
+        ignored: list[dict] = []
+        load_failures: list[dict] = []
+        for entry in self.page_errors:
+            if self.is_foreign(entry["throw_origin"]):
+                ignored.append(
+                    self._ignore(entry["line"], entry["throw_origin"], REASON_FOREIGN_SCRIPT)
+                )
+                continue
+            if (
+                self.is_foreign(entry["named_url"])
+                and self._load_failed(entry["named_url"])
+            ):
+                ignored.append(
+                    self._ignore(entry["line"], entry["named_url"], REASON_FOREIGN_SCRIPT)
+                )
+                continue
+            errors.append(entry["line"])
+        for entry in self.console_errors:
+            if self.is_foreign(entry["url"]):
+                ignored.append(
+                    self._ignore(entry["line"], entry["url"], REASON_FOREIGN_RESOURCE)
+                )
+                continue
+            if entry["text"].startswith(LOAD_FAILURE_PREFIX):
+                load_failures.append(entry)
+            errors.append(entry["line"])
+        return errors, ignored, load_failures
 
     def _on_request(self, request):
         if request.method == "POST" and request.url.endswith("/api/chat"):
             payload = request.post_data
             if payload:
                 self.chat_bodies.append(json.loads(payload))
+            return
+        marker = request.headers.get(SOURCE_FETCH_HEADER)
+        if marker:
+            self.marked_requests.append({"url": request.url, "value": marker})
 
     def goto(self, path: str):
         self.page.goto(self.base + path, wait_until="load")

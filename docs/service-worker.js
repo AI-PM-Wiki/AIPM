@@ -19,10 +19,11 @@
     交给浏览器默认处理,不缓存。
   - 不拦截 /service-worker.js:SW 脚本由浏览器走专用更新通道,cache-first
     会把脚本固定住,发布后用户拿不到新策略。
-  - 调用方声明 `cache: "no-store"` 的请求一律放行:页面代码自己按字节读的响应
-    (见 _static/js/chart-context.js 的取源)不能被缓存层接管 —— 命中时交给它的
-    是缓存里那一份,未命中时回填用的 clone 更会在页面取消之后照旧把整份读完,
-    读取上限因此只约束得住页面那一半。
+  - 带取源标记头(SOURCE_FETCH_HEADER)的请求一律放行:页面代码自己按字节读的
+    响应(见 _static/js/chart-context.js 的取源)不能被缓存层接管 —— 命中时交给
+    它的是缓存里那一份,未命中时回填用的 clone 更会在页面取消之后照旧把整份读完,
+    读取上限因此只约束得住页面那一半。放行只认这一对头:别的请求即便同样声明了
+    cache: "no-store",照旧走下面的缓存策略。
   - 页面导航 HTML 先于 kindOf 短路判定:kindOf 对目录式页面 URL(/ai/rag/、
     /index.html)返回 null,若先短路则页面文档恒不拦截、不缓存;故 fetch
     监听内先按 navigate/document 识别页面导航,kindOf 只作用于非导航请求。
@@ -42,6 +43,11 @@
 const CACHE_STATIC = "aipm-static-v2";
 const CACHE_DYNAMIC = "aipm-dynamic-v2";
 const CACHE_MAX = 100; // 每个缓存的条目上限(FIFO 淘汰)
+
+/* 取源那条请求的标记头,与 _static/js/chart-context.js 里的那一对是同一对。
+   头名在 Headers 里不分大小写,这里写小写。 */
+const SOURCE_FETCH_HEADER = "x-aipm-source-fetch";
+const SOURCE_FETCH_VALUE = "chart-context";
 
 /* 静态资源:站内构建产物目录 / 版本化参数(?v=N)/ 常见静态扩展名 / 根层站点文件 */
 const STATIC_EXT_RE =
@@ -135,11 +141,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // 只处理同源
   if (url.pathname === "/service-worker.js") return; // SW 脚本走浏览器更新通道
-  /* 调用方明说「不要用存下来的那一份」:这条响应接下来由页面代码自己按字节读,
-     读多少由它定(见 chart-context.js 的取源与读取上限)。缓存层接过去就有了
-     第二个消费者 —— 未命中时回填用的那一份 clone 读多少由缓存层自己定,页面
-     那边的取消管不着它。 */
-  if (req.cache === "no-store") return;
+  /* 带取源标记头的请求:这条响应接下来由页面代码自己按字节读,读多少由它定
+     (见 chart-context.js 的取源与读取上限)。缓存层接过去就有了第二个消费者
+     —— 未命中时回填用的那一份 clone 读多少由缓存层自己定,页面那边的取消管
+     不着它。放行只认这一对头,别的请求照旧走下面那套策略。 */
+  if (req.headers.get(SOURCE_FETCH_HEADER) === SOURCE_FETCH_VALUE) return;
   /* 页面文档导航先于 kindOf 短路识别:目录式 URL(/ai/rag/)与 /index.html
      在 kindOf 下返回 null,不先判 navigate 会被直接放行、永不缓存 */
   const pageDoc = req.mode === "navigate" || req.destination === "document";

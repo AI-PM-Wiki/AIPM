@@ -48,7 +48,7 @@ class TestChartContextAssets(unittest.TestCase):
 
     def test_assets_are_registered_with_cache_versions(self):
         scripts = self.config[self.config.index("extra_javascript:") :]
-        self.assertIn("_static/js/chart-context.js?v=4", scripts)
+        self.assertIn("_static/js/chart-context.js?v=5", scripts)
         self.assertIn("_static/css/chart-context.css?v=1", scripts)
         entries = [e.split("?", 1)[0] for e in re.findall(r"-\s*'([^']+)'", scripts)]
         self.assertLess(
@@ -171,6 +171,26 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn('new DOMParser().parseFromString(markup, "image/svg+xml")', parse)
         self.assertIn('doc.querySelectorAll("title, desc, text")', parse)
         self.assertIn('doc.querySelector("parsererror")', parse, "不是 SVG 时返回空,交给兜底")
+
+    def test_source_fetch_carries_the_marker_the_service_worker_knows(self):
+        """取源那条请求带一个只属于它自己的标记头,站点的 Service Worker 认它才放行。
+
+        名字与取值在页面与 SW 两边各写一遍(两边不共享模块),所以由这条断言钉住:
+        两边必须还是同一对。对不上的后果是静默的 —— 放行失效,读取上限又只管得住
+        一半,而页面上看不出任何异常。"""
+        req = self._fn("function sourceRequest(url)")
+        self.assertIn("SOURCE_FETCH_HEADER", req)
+        self.assertIn("SOURCE_FETCH_VALUE", req)
+
+        header = re.search(r'var SOURCE_FETCH_HEADER = "([^"]+)"', self.js)
+        value = re.search(r'var SOURCE_FETCH_VALUE = "([^"]+)"', self.js)
+        self.assertIsNotNone(header, "取源标记头的名字没写在这份脚本里")
+        self.assertIsNotNone(value, "取源标记头的取值没写在这份脚本里")
+
+        sw = (ROOT / "docs" / "service-worker.js").read_text(encoding="utf-8")
+        self.assertIn(f'const SOURCE_FETCH_HEADER = "{header.group(1).lower()}"', sw)
+        self.assertIn(f'const SOURCE_FETCH_VALUE = "{value.group(1)}"', sw)
+        self.assertIn("req.headers.get(SOURCE_FETCH_HEADER) === SOURCE_FETCH_VALUE", sw)
 
     def test_source_fetch_never_follows_a_redirect(self):
         """重定向是「地址换了个地方」,去向在读之前看不见 —— 同源地址照样可以 302

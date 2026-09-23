@@ -13,8 +13,9 @@
   认,不看服务器说的)、**体积**(超过上限不取,而且是在**读的过程中**停 —— 超限的
   响应就地取消,不把整份拉进内存);
 - **正文读到一半断掉**:退回替代文本,按钮恢复可按,不留未处理的拒绝;
-- **Service Worker 接管之后**,上面那条体积限制在三种处境下都成立:这次读没命中
-  缓存、缓存里已经有这张图、老用户带着旧缓存升到新构建;
+- **Service Worker 接管之后**,上面那条体积限制在四种处境下都成立:这次读没命中
+  缓存、缓存里已经有这张图、放行范围只认取源那条请求(别的请求照旧走原策略)、
+  以及老用户带着旧缓存升到新构建(正常刷新那一下,不手动调更新);
 - mermaid 源码在渲染替换掉它之前收下来,收的是**逐字节相同**的那份源码;
 - 同源 SVG 取不到时回落到替代文本;
 - 不可信的 SVG 不执行 —— 同一份载荷,innerHTML 那条路是活的,取源那条路是死的;
@@ -35,6 +36,8 @@ from playwright.sync_api import sync_playwright
 import fixtures
 from harness import (
     ROOT,
+    SOURCE_FETCH_HEADER,
+    SOURCE_FETCH_VALUE,
     WORK,
     AgentServer,
     Browser,
@@ -55,6 +58,7 @@ OVERSIZED_TOTAL = 32 * 1024 * 1024
 #: 缓存升级那条用它当旧构建;Service Worker 那条用它当「带着旧缓存升级」的起点。
 #: 那一版里的 chart-context.js 是 `?v=3`,下面按旧构建的地址找缓存条目就照它找。
 OLD_REF = "5c76a4ba"
+OLD_CHART_VERSION = 3
 
 #: 用例素材的站内路径。素材住在站点根目录里,每换一次根目录都要重放一遍
 #: (见 `write_fixtures`),路径本身不变。
@@ -63,6 +67,12 @@ HUGE_SVG = "/probe/huge.svg"
 TRUNCATED_PNG = "/probe/half-there.png"
 REDIRECT_PNG = "/probe/redirect-to-far.png"
 REDIRECT_SVG = "/probe/redirect-to-far.svg"
+
+#: 「每问一次换一份字节」的那一份:第 n 次请求给第 n 份。缓存层接没接管一条请求,
+#: 看的就是拿回来的是第几份(见 harness 的 `_Sequence`)。
+SEQUENCE_PNG = "/probe/sequence.png"
+SEQUENCE_BODIES = [fixtures.png(8, 8, 11), fixtures.png(8, 8, 12), fixtures.png(8, 8, 13)]
+SEQUENCE_ALT = "一份每问一次换一份字节的图"
 
 
 def mermaid_blocks(markdown: Path) -> list[str]:
@@ -109,6 +119,8 @@ def write_fixtures(site: StaticSite, probe: StaticSite) -> None:
         fixtures.png(8, 8, 6) + b"\x00" * (128 * 1024),
         fixtures.png(8, 8, 7),
     )
+    # 每问一次换一份字节的那一份:位图,三次请求三份不同的字节。
+    site.sequence(SEQUENCE_PNG.lstrip("/"), SEQUENCE_BODIES, "image/png")
 
 
 class _Stack:
@@ -771,16 +783,16 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
     """Service Worker 接管之后,取源的读取限额仍然成立。
 
     上面那一组把 SW 关掉,量的是取源本身;线上跑的站点是有 SW 的,所以同一件事要
-    在三种处境下各验一遍:这次读没命中缓存、缓存里已经有这张图、以及老用户带着
-    旧缓存升到新构建。
+    在四种处境下各验一遍:这次读没命中缓存、缓存里已经有这张图、放行范围只认取源
+    那条请求、以及老用户带着旧缓存升到新构建。
 
     ── SW 与「读的过程中停」为什么是同一件事 ──
 
     cache-first 那一层回填时会把响应 clone 一份出去异步写入缓存,那份副本读多少由
     缓存层自己定,页面这边 `reader.cancel()` 管不着它 —— 取消掉页面这一半之后,
-    另一半照旧把整份读完,上限就只约束得住一半。所以取源那次请求**不经过那一层**
-    (见 service-worker.js 的放行),这条响应只有一个消费者,读多少只由取源那一处
-    决定。
+    另一半照旧把整份读完,上限就只约束得住一半。所以取源那条请求带着自己的标记头,
+    缓存层认这一对头才放行(见 service-worker.js 与 chart-context.js),这条响应
+    只有一个消费者,读多少只由取源那一处决定。
 
     这里不摘 SW,量「取源读了多少」的那两条仍然成立:两份内容按 `Sec-Fetch-Mode`
     分(SW 重新发起 `<img>` 那次加载时 `Sec-Fetch-Dest` 是空的,按那个分会发错),
@@ -821,28 +833,38 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
             timeout=15000,
         )
 
-    def swap_service_worker(self) -> None:
-        """把服务端**此刻这一份** service-worker.js 换上去,并等它接管本页。
+    def watch_controller_change(self) -> None:
+        """下一次导航之后,Service Worker 换了人就把 `window.__aipmSwChanged` 置上。
 
-        不能只看 `controller` 非空 —— 新旧脚本的地址一样,从接口上看不出换没换。
-        靠 `reg.update()` 触发一次字节比对(服务端此刻给的是哪一版,换上的就是哪
-        一版),靠 `controllerchange` 确认接管完成:脚本 activate 里 claim 的正是
-        这一刻。
-
-        导航那一侧的更新检查指望不上:同一份注册的软更新是节流的(24 小时一次),
-        几秒之内连着换两版构建,它一次也不会再查。"""
-        self.page.evaluate(
-            """() => new Promise((resolve, reject) => {
-                const guard = setTimeout(
-                    () => reject(new Error('新脚本 15 秒内没有接管本页')), 15000
-                );
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    clearTimeout(guard);
-                    resolve(true);
-                }, { once: true });
-                navigator.serviceWorker.getRegistration('/').then((reg) => reg && reg.update());
-            })"""
+        新旧脚本的地址一样,从接口上看不出换没换;`controllerchange` 是浏览器在
+        接管换人的那一刻给的信号(新脚本 activate 里 claim 的正是这一刻)。"""
+        self.page.add_init_script(
+            "navigator.serviceWorker.addEventListener('controllerchange',"
+            " function () { window.__aipmSwChanged = true; });"
         )
+
+    def fetch_bytes(self, path: str, *, marked: bool, cache: str) -> str:
+        """页面自己发一条请求,返回服务端(或缓存层)给的字节,base64。
+
+        `marked` 决定带不带取源那个标记头,`cache` 决定浏览器的 HTTP 缓存怎么用:
+        用 `reload` 时它不参与,量到的只剩 Service Worker 这一层接没接管 —— 接管了
+        给的是它缓存里那一份,放行了才是服务端此刻那一份。"""
+        headers = {SOURCE_FETCH_HEADER: SOURCE_FETCH_VALUE} if marked else {}
+        return self.page.evaluate(
+            """async (spec) => {
+                const res = await fetch(spec.url, { cache: spec.cache, headers: spec.headers });
+                const buf = new Uint8Array(await res.arrayBuffer());
+                let s = '';
+                for (let i = 0; i < buf.length; i++) s += String.fromCharCode(buf[i]);
+                return btoa(s);
+            }""",
+            {"url": self.site.base + path, "cache": cache, "headers": headers},
+        )
+
+    @staticmethod
+    def served(body: bytes) -> str:
+        """一份素材的字节,换成与 `fetch_bytes` 同一个写法。"""
+        return base64.b64encode(body).decode("ascii")
 
     def assert_cap_held(self, path: str, what: str) -> None:
         """取源从这份响应里读走的字节数停在上限附近,并且这条响应被就地取消了。"""
@@ -894,14 +916,87 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
         self.assert_cap_held(HUGE_PNG, "缓存命中")
         assert_no_page_errors(self, self.browser)
 
-    # ---- 3. 老用户带着旧缓存升级 ----
+    # ---- 3. 放行只认取源那条请求的标记 ----
+
+    def test_the_bypass_is_only_for_the_marked_source_fetch(self):
+        """放行认的是标记头,不是「这条请求声明了不用缓存」。
+
+        三条请求对着看:页面自己那次 `<img>` 加载(没标记)把这一版字节带进缓存;
+        页面再发一条**声明了 `cache: "no-store"`、但没有标记头**的请求 —— 回到的
+        还是缓存里那一份,声明本身不是放行的理由;最后点「问助手」,取源那条**带
+        标记**的请求穿过去,拿到的是服务端此刻那一份。
+
+        反例与正例用的是同一个地址,差别只有那个头。"""
+        self.site.reset_sequence(SEQUENCE_PNG)
+        seen = len(self.site.requests_for(SEQUENCE_PNG))
+        self.inject("seq", SEQUENCE_PNG, SEQUENCE_ALT)
+        # <img> 那次加载走的是 cache-first:这一遍没命中,服务端给了第 1 份并回填。
+        self.wait_cached(SEQUENCE_PNG)
+        served = self.site.sequence_count(SEQUENCE_PNG)
+        self.assertEqual(served, 1, "前提不成立:<img> 那次加载没有落到服务端上")
+
+        unmarked = self.fetch_bytes(SEQUENCE_PNG, marked=False, cache="no-store")
+        self.assertEqual(
+            self.site.sequence_count(SEQUENCE_PNG),
+            served,
+            "没带标记、只声明了 no-store 的请求被放行了 —— 别的请求没保留原策略",
+        )
+        self.assertEqual(
+            unmarked, self.served(SEQUENCE_BODIES[0]), "回到的不是缓存层里那一份"
+        )
+
+        self.ask("seq")
+        self.wait_chips(1)
+        wire = self.send("这张图里写了什么?")
+        item = wire["context"][0]
+        self.assertEqual(
+            self.site.sequence_count(SEQUENCE_PNG),
+            served + 1,
+            "取源那条请求没有穿到服务端 —— 标记头没起作用,读取上限又只管得住一半",
+        )
+        self.assertEqual(
+            item["imageData"],
+            self.served(SEQUENCE_BODIES[1]),
+            "取源拿到的不是服务端此刻那一份(缓存层接过去了)",
+        )
+        self.assertEqual(item["source"], SEQUENCE_ALT)
+        self.assertEqual(
+            [(entry["url"], entry["value"]) for entry in self.browser.marked_requests],
+            [(self.site.base + SEQUENCE_PNG, SOURCE_FETCH_VALUE)],
+            "页面上真正发出的取源请求不止这一条,或者它没带标记",
+        )
+        # 服务端那一侧对着看:带标记的请求也只有那一条,值就是约定好的那个。
+        self.assertEqual(
+            [
+                entry["source_fetch"]
+                for entry in self.site.requests_for(SEQUENCE_PNG)[seen:]
+                if entry["source_fetch"]
+            ],
+            [SOURCE_FETCH_VALUE],
+            "服务端收到的带标记请求不止一条",
+        )
+        assert_no_page_errors(self, self.browser)
+
+    # ---- 4. 老用户带着旧缓存升级 ----
 
     def test_read_limit_holds_after_an_upgrade_that_keeps_the_old_cache(self):
-        """带着旧缓存升级:旧构建缓存过的东西还在,新构建上的取源限额照样成立。
+        """带着旧缓存升级:发布新一版之后,老用户**正常刷新**这一下就得换上新脚本。
 
-        两件事叠在一起 —— 升级(SW 换成新脚本、页面换成新版本号)与旧缓存(旧构建
-        那次加载留下的条目)。升级之后点「问助手」,读的必须是此刻这一页上的字节,
-        并且读到上限就地停。"""
+        两件事叠在一起 —— 升级(页面换成新版本号、SW 换成新脚本)与旧缓存(旧构建
+        那次加载留下的条目)。走的是线上那条路:同一个端口把根目录换成新构建(等于
+        发布),页面照常刷新。刷新那一下会去问一次有没有新脚本,那是**站点自己的
+        行为**(主题 base.html 里注册完顺手 update 一次),这条用例不碰它 ——
+        从换根目录到确认新脚本接管,中间只有一次 `page.reload()`。
+
+        升级换没换人,拿旧脚本与新脚本**行为上的区别**来量:带取源标记头、但没声明
+        `cache: "no-store"` 的一条请求,旧脚本没有放行这一说(那时取源还只带
+        `redirect: "manual"`),新脚本认标记放行。同一条请求,升级前给的是缓存里
+        那一份,升级后给的是服务端那一刻那一份。
+
+        旧构建那一版 SW 怎么落进浏览器的:`build_site(ref=...)` 取的是旧**源码树**,
+        主题用的是当前子模块(见 harness 的软链),所以旧页面照样会做那次更新检查
+        —— 浏览器拿到的 `/service-worker.js` 是旧构建那一份,与前一刻在岗的新脚本
+        字节不同,于是装上来、接管本页。"""
         old_dir = build_site(WORK / "site-flow-old", ref=OLD_REF)
         self.addCleanup(self.site.serve, self.stack.site_dir)
         self.site.serve(old_dir)
@@ -909,21 +1004,49 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
 
         self.page.goto(self.site.base + RAG_PAGE, wait_until="load")
         self.page.wait_for_function("() => navigator.serviceWorker.controller !== null")
-        # 先真的落到旧构建那一版 SW 上:导航触发的更新检查是节流的,而 setUp 那次
-        # 加载装的是新构建那一版 —— 不显式换一次,下面那头就还是新脚本,「升级」
-        # 根本无从发生。
-        self.swap_service_worker()
         # 首次加载时页面还没被接管,它请求的那些资源不过 SW;再加载一次,这一遍
         # 才走 cache-first,旧构建那一版脚本这才真正进了缓存。
         self.page.reload(wait_until="load")
         self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
-        self.wait_cached("chart-context.js?v=3")
+        self.wait_cached(f"chart-context.js?v={OLD_CHART_VERSION}")
 
-        # 同一个端口、同一个浏览器:把根换成新构建,再把新的 SW 换上去并等它接管
+        self.site.reset_sequence(SEQUENCE_PNG)
+        self.inject("seq", SEQUENCE_PNG, SEQUENCE_ALT)
+        self.wait_cached(SEQUENCE_PNG)
+        served = self.site.sequence_count(SEQUENCE_PNG)
+        self.assertEqual(
+            self.fetch_bytes(SEQUENCE_PNG, marked=True, cache="reload"),
+            self.served(SEQUENCE_BODIES[0]),
+            "前提不成立:此刻在岗的不是旧构建那一版脚本(它对标记头没有放行这一说)",
+        )
+        self.assertEqual(
+            self.site.sequence_count(SEQUENCE_PNG),
+            served,
+            "前提不成立:旧脚本放行了那条请求",
+        )
+
+        # 发布:同一个端口,换根目录换成新构建
         self.site.serve(self.stack.site_dir)
-        self.swap_service_worker()
+        write_fixtures(self.site, self.probe)
+        self.watch_controller_change()
+        asked = len(self.site.requests_for("/service-worker.js"))
         self.page.reload(wait_until="load")
         self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
+
+        # 这一下刷新,浏览器真的去取了脚本,拿回来的必须是新构建那一份
+        fetched = self.site.requests_for("/service-worker.js")[asked:]
+        self.assertTrue(fetched, "刷新没有去取 service-worker.js,新版换不上来")
+        self.assertEqual(
+            fetched[-1]["status"], 200, f"新脚本没取到(答的是缓存里的那一份):{fetched}"
+        )
+        self.page.wait_for_function("() => window.__aipmSwChanged === true")
+
+        # 换上来的是新脚本:同一条带标记、没声明 no-store 的请求,这回穿过去了
+        self.assertEqual(
+            self.fetch_bytes(SEQUENCE_PNG, marked=True, cache="reload"),
+            self.served(SEQUENCE_BODIES[1]),
+            "刷新之后还是旧脚本在岗",
+        )
 
         self.inject("huge", HUGE_PNG, "升级之后送进来的读不完的位图")
         self.ask("huge")
@@ -932,11 +1055,12 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
 
         self.assert_cap_held(HUGE_PNG, "升级之后")
         self.assertIn(
-            "chart-context.js?v=3",
+            f"chart-context.js?v={OLD_CHART_VERSION}",
             " ".join(self.cached_urls()),
             "旧构建那份缓存没了 —— 这条用例的前提不成立",
         )
         assert_no_page_errors(self, self.browser)
+
 
 
 if __name__ == "__main__":

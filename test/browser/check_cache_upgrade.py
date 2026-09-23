@@ -11,9 +11,13 @@ Worker 对带版本参数的静态资源是 **cache-first** —— 老用户会�
 
 1. 建一份**旧构建**(改动之前那个提交的源码树),用**同一个端口**serve;
 2. 一个浏览器打开它,让 Service Worker 接管,确认旧脚本**已经进了缓存**;
-3. 把同一个端口的根换成**当前构建**,在**同一个浏览器**里重新加载;
+3. 把同一个端口的根换成**当前构建**(等于发布),在**同一个浏览器**里重新加载
+   —— 服务端这时候按线上那份约定给缓存头(`harness.CACHE_CONTROL`,GitHub Pages
+   钉的那个 `max-age=600`),没有哪一处把 HTTP 缓存统一关掉;
 4. 断言页面这次真正执行的是新脚本的字节,而旧的那份缓存**还留在那里**
-   —— 升级靠的是换 URL,不是靠清缓存。
+   —— 升级靠的是换 URL,不是靠清缓存;顺带断言这一下刷新**同时**把新的
+   `service-worker.js` 取了回来(那一份由浏览器自己的更新通道走,不受 HTTP 缓存
+   摆布,但要不要去问、什么时候问,是页面自己的事)。
 """
 from __future__ import annotations
 
@@ -88,10 +92,19 @@ class CacheUpgradeTest(unittest.TestCase):
             stale = self.cached(page, f"chat-widget.js?v={old_version}")
             self.assertIsNotNone(stale, "旧脚本没有进缓存 —— 这条用例的前提不成立")
 
-            # 同一个端口、同一个浏览器:把根换成新构建
+            # 同一个端口、同一个浏览器:把根换成新构建(等于发布),照常刷新
             self.site.serve(self.new_dir)
+            asked = len(self.site.requests_for("/service-worker.js"))
             page.reload(wait_until="load")
             page.wait_for_function("() => window.__aipmChat !== undefined")
+
+            # 这一下刷新把新脚本取了回来 —— SW 脚本走浏览器自己的更新通道,
+            # 要不要去问是页面自己的事(主题的 registration 加载完会 update 一次)
+            fetched = self.site.requests_for("/service-worker.js")[asked:]
+            self.assertTrue(fetched, "刷新没有去取 service-worker.js")
+            self.assertEqual(
+                fetched[-1]["status"], 200, f"新脚本没取到:{fetched}"
+            )
 
             src = page.evaluate("() => document.querySelector('script[src*=\"chat-widget.js\"]').src")
             self.assertIn(f"chat-widget.js?v={new_version}", src, "页面请求的还是旧 URL")
