@@ -256,16 +256,18 @@ class TestChatPanelConsumesContext(unittest.TestCase):
     def test_send_carries_context(self):
         post = self.js[self.js.index("const postUser = (text, files, context)") :]
         post = post[: post.index("\n  };") + 5]
-        self.assertIn("history.push({ role: \"user\", content: sent, context: ctxItems })", _squash(post))
-        self.assertIn("runTurn(sent, ctxItems)", post)
+        self.assertIn("history.push({ role: \"user\", content: sent, context: ctxItems, page })", _squash(post))
+        self.assertIn("CTX.normalizePage(location.pathname)", post)
+        self.assertIn("runTurn(sent, ctxItems, page)", post)
 
-        turn = self.js[self.js.index("const runTurn = async (message, context)") :]
+        turn = self.js[self.js.index("const runTurn = async (message, context, page)") :]
         turn = turn[: turn.index("\n  };") + 5]
         self.assertIn("CTX.toPayload(context)", turn)
         self.assertIn("if (wire.length) body.context = wire", turn, "没有语境时不带这个字段")
+        self.assertIn("if (typeof page === \"string\") body.page = page", turn)
 
     def test_history_sent_to_the_server_stays_two_fielded(self):
-        turn = self.js[self.js.index("const runTurn = async (message, context)") :]
+        turn = self.js[self.js.index("const runTurn = async (message, context, page)") :]
         turn = turn[: turn.index("\n  };") + 5]
         self.assertIn(
             ".map((m) => ({ role: m.role, content: m.content }))",
@@ -276,7 +278,7 @@ class TestChatPanelConsumesContext(unittest.TestCase):
     def test_regenerate_replays_the_same_context(self):
         fn = self.js[self.js.index("const regenerate = (aiWrap)") :]
         fn = fn[: fn.index("\n  };") + 5]
-        self.assertIn("runTurn(rec.content, rec.context || [])", fn)
+        self.assertIn("runTurn(rec.content, rec.context || [], rec.page)", fn)
 
     def test_user_bubble_keeps_a_record_of_the_context(self):
         fn = self.js[self.js.index("const addUserBubble = (text, files, context)") :]
@@ -544,9 +546,11 @@ class TestAgentWritesAnnotations(unittest.TestCase):
             )
         self.assertIn("visibility: z", schema)
 
-    def test_page_is_injected_from_the_request_context(self):
-        self.assertIn("proposalPage: proposalPage(input.context ?? [])", _squash(self.agent))
-        self.assertIn("if (proposalPage === null)", self.tools, "没有语境时必须拒绝,而不是随便挑一页")
+    def test_page_is_injected_from_the_validated_request(self):
+        server = _read(ROOT / "agent-server" / "src" / "server.ts")
+        self.assertIn("resolveRequestPage(parsed.page, parsed.context, index, config.siteBase)", _squash(server))
+        self.assertIn("proposalPage: currentPage", _squash(self.agent))
+        self.assertIn("if (proposalPage === null)", self.tools, "缺少页面时不得生成建议")
         self.assertIn("proposalPage: string | null", _squash(self.tools))
 
     def test_choices_match_the_panel(self):

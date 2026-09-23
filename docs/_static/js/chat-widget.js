@@ -30,7 +30,7 @@
   - 移动/浮层的系统返回:打开时 pushState 一条自家记录,返回键按
     expanded→half→peek→关闭 逐级回退(回退后补回记录,始终保持一条);
     从 UI 关闭时仅在自家记录仍是栈顶时 history.back(),避免连带退掉用户点开的文档页
-  - 与后端契约:POST {message, history, context?} → text/event-stream,帧事件
+  - 与后端请求:POST {message, history, page?, context?} → text/event-stream,帧事件
     ready / sources / delta / done / error;预校验失败返回纯 JSON(400/403/
     413/429/503),映射中文提示(429 附 Retry-After 重试时间)
   - 语境(与批注面板互通):批注面板点「问助手」调 window.__aipmChat.attachContext(item),
@@ -334,7 +334,10 @@
           const rec = { role: m.role, content: m.content };
           /* 语境随用户消息一起恢复:重新生成那一轮时要按原样重发,
              少了它就会答成另一个问题 */
-          if (m.role === "user") rec.context = sanitizeCtx(m.context);
+          if (m.role === "user") {
+            rec.context = sanitizeCtx(m.context);
+            if (typeof m.page === "string") rec.page = m.page;
+          }
           /* 批注建议随助手那条一起恢复:刷新之后卡片还在,没采纳的还能采纳。
              形状过不了的丢掉 —— 读的是 localStorage,不是本进程写下的东西。 */
           else if (Array.isArray(m.proposals)) {
@@ -865,7 +868,7 @@
     t.regen.onclick = () => regenerate(t.wrap);
   };
 
-  /* 重新生成:截断该回答之后的历史,重发其上方那条用户消息(连同它当时的语境) */
+  /* 重新生成:截断该回答之后的历史,重发其上方那条用户消息、页面与语境。 */
   const regenerate = (aiWrap) => {
     if (streaming) return;
     let prev = aiWrap.previousElementSibling;
@@ -882,7 +885,7 @@
       n.remove();
       n = nx;
     }
-    runTurn(rec.content, rec.context || []);
+    runTurn(rec.content, rec.context || [], rec.page);
   };
 
   /* ================================================================
@@ -1117,7 +1120,7 @@
 
   /* 一轮问答:用户消息已入 history(由 postUser / regenerate 负责),
      这里只负责 AI 气泡与流式接收。context 是这一轮随行的语境条目。 */
-  const runTurn = async (message, context) => {
+  const runTurn = async (message, context, page) => {
     const myTurn = ++turnSeq;             // 捕获本 turn 令牌:清空/新 turn 后本 turn 失效
     const ctx = { acc: "", sourceList: [], sourceSeen: new Set(), requestId: null, proposals: [] };
     const t = addAiBubble();
@@ -1135,7 +1138,8 @@
       history: history.slice(0, -1).slice(-HISTORY_SEND)
         .map((m) => ({ role: m.role, content: m.content })),
     };
-    /* 没有语境时不带这个字段:请求体与加这条通路之前逐字相同 */
+    if (typeof page === "string") body.page = page;
+    /* 显式语境为空时省略 context；本轮页面单独发送。 */
     const wire = CTX && context && context.length ? CTX.toPayload(context) : [];
     if (wire.length) body.context = wire;
 
@@ -1276,17 +1280,19 @@
       const note = files.map((f) => `${f.name}(${f.size != null ? fmtSize(f.size) : "?"})`).join(", ");
       sent = text ? `${text}\n\n[附件] ${note}` : `[附件] ${note}`;
     }
-    const ctxItems = context && context.length ? context.slice() : [];
-    history.push({ role: "user", content: sent, context: ctxItems });
+    const page = CTX ? CTX.normalizePage(location.pathname) : location.pathname;
+    const ctxItems = context && context.length ? context.filter((item) => item.page === page) : [];
+    history.push({ role: "user", content: sent, context: ctxItems, page });
     const wrap = addUserBubble(text, files, ctxItems);
     wrap.setAttribute("data-hidx", history.length - 1);
     persist();
     raiseForSend();
-    runTurn(sent, ctxItems);
+    runTurn(sent, ctxItems, page);
   };
 
   const submit = () => {
     if (streaming) return;
+    pruneCtxForPage();
     const text = els.input.value.trim();
     if (!text && !attachments.length) return;
     els.input.value = "";

@@ -194,7 +194,7 @@ class AgentAnnotationCase(unittest.TestCase):
         这正是真实用户会走的路(划一段话问助手,助手对这一段提建议)。要试别的引文
         (比如页面上根本没有的一句)就显式传 quote。
 
-        返回刚才划的那段引文 —— 服务端从语境里取页面,而语境就是这一次划选。"""
+        返回刚才划的那段引文；服务端核对当前页面与选区所属页面。"""
         anchor = self.ask_about_selection()
         tool_input = {
             "quote": anchor["quote"],
@@ -266,6 +266,63 @@ class AgentAnnotationCase(unittest.TestCase):
             }"""
         )
 
+    def test_current_page_without_selection_can_receive_a_page_proposal(self):
+        self.model.set_script([
+            {"tools": [{"name": TOOL, "input": {"scope": "page", "body": "补充适用范围"}}]},
+            {"text": "请确认建议。"},
+        ])
+        body = self.send("为当前文章提出一条评论建议")
+        self.assertEqual(body["page"], PAGE)
+        self.assertNotIn("context", body)
+        self.wait_card()
+        self.assertIn("整页", self.card().inner_text())
+        self.assertIn(self.site.base + PAGE, json.dumps(self.model.messages()[-2:], ensure_ascii=False))
+        self.adopt(visibility="local")
+        self.assertIn("已写入", self.settle())
+        self.assertEqual(self.local_annotations()[0]["page"], PAGE)
+        self.assertEqual(self.api.writes(), [])
+        assert_no_page_errors(self, self.browser)
+
+    def test_new_turn_tracks_the_page_after_navigation(self):
+        self.page.goto(self.site.base + "/ai/prompting/", wait_until="load")
+        self.open_chat()
+        self.model.set_script([
+            {"tools": [{"name": TOOL, "input": {"scope": "page", "body": "补充适用范围"}}]},
+            {"text": "请确认建议。"},
+        ])
+        body = self.send("针对当前文章提出建议")
+        self.assertEqual(body["page"], "/ai/prompting/")
+        self.assertNotIn("context", body)
+        self.wait_card()
+        self.adopt(visibility="local")
+        self.assertIn("已写入", self.settle())
+        self.assertEqual(self.local_annotations()[0]["page"], "/ai/prompting/")
+        assert_no_page_errors(self, self.browser)
+
+    def test_regeneration_keeps_the_original_page_after_navigation(self):
+        self.model.set_script([
+            {"tools": [{"name": TOOL, "input": {"scope": "page", "body": "补充适用范围"}}]},
+            {"text": "请确认建议。"},
+        ])
+        self.send("针对当前文章提出建议")
+        self.wait_card()
+        self.page.goto(self.site.base + "/ai/prompting/", wait_until="load")
+        self.open_chat()
+        self.model.set_script([
+            {"tools": [{"name": TOOL, "input": {"scope": "page", "body": "补充适用范围"}}]},
+            {"text": "请确认建议。"},
+        ])
+        before = len(self.browser.chat_bodies)
+        self.page.locator("[aria-label=\"重新生成回答\"]").last.click()
+        self.page.wait_for_function("() => !document.querySelector(\".aipm-chat__send\").classList.contains(\"is-stop\")")
+        self.assertEqual(len(self.browser.chat_bodies), before + 1)
+        self.assertEqual(self.browser.chat_bodies[-1]["page"], PAGE)
+        self.wait_card()
+        self.adopt()
+        self.assertIn("不在当前页面", self.settle())
+        self.assertEqual(self.api.writes(), [])
+        assert_no_page_errors(self, self.browser)
+
     # ---- 1. 真的写得下去 ----
 
     def test_a_proposal_is_written_by_the_users_own_session(self):
@@ -277,6 +334,8 @@ class AgentAnnotationCase(unittest.TestCase):
             visibility="public",
             note="建议标成结论色",
         )
+        self.assertEqual(self.browser.chat_bodies[-1]["page"], PAGE)
+        self.assertEqual(self.browser.chat_bodies[-1]["context"][0]["page"], PAGE)
         self.wait_card()
 
         card = self.card()
