@@ -182,8 +182,12 @@ class ChartFlowCase(unittest.TestCase):
         # 假模型 API 整类共用一份记录,每个用例只看自己这一段
         self.model_seen = len(self.model.messages())
         self.browser = Browser(self.pw, self.site.base, service_workers=self.service_workers)
+        self.configure_browser()
         self.page = self.browser.goto(RAG_PAGE)
         self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
+
+    def configure_browser(self):
+        pass
 
     def tearDown(self):
         self.browser.close()
@@ -800,6 +804,17 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
 
     service_workers = "allow"
 
+    def configure_browser(self):
+        if self._testMethodName != "test_read_limit_holds_after_an_upgrade_that_keeps_the_old_cache":
+            return
+        self.stats_intercepts = []
+
+        def abort_stats(route):
+            self.stats_intercepts.append(route.request.url)
+            route.abort()
+
+        self.browser.context.route("https://umami.nvc.ac/**", abort_stats)
+
     def setUp(self):
         super().setUp()
         self.page.wait_for_function("() => navigator.serviceWorker.controller !== null")
@@ -1064,7 +1079,18 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
             " ".join(self.cached_urls()),
             "旧构建那份缓存没了 —— 这条用例的前提不成立",
         )
-        assert_no_page_errors(self, self.browser)
+        assert_no_page_errors(
+            self, self.browser,
+            expected_ignored=tuple(
+                (url, "third-party-resource-failed") for url in self.stats_intercepts
+            ),
+        )
+        self.assertTrue(self.stats_intercepts, "统计请求没有进入当前 browser context 的拦截记录")
+        self.assertTrue(
+            all(url.startswith("https://umami.nvc.ac/") for url in self.stats_intercepts),
+            self.stats_intercepts,
+        )
+        print("ServiceWorkerReadLimitTest statistics interceptions:", self.stats_intercepts)
 
 
 

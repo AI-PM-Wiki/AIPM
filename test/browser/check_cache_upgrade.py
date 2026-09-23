@@ -171,6 +171,8 @@ class ServiceWorkerUpdateFailureTest(unittest.TestCase):
     def test_a_failed_update_leaves_a_record_that_says_what_failed(self):
         browser = Browser(self.pw, self.site.base)
         try:
+            # 本用例只验证站点的更新通道；隔离统计脚本及 recorder 的外部连接。
+            browser.context.route("https://umami.nvc.ac/**", lambda route: route.abort())
             page = browser.goto(PAGE)
             page.wait_for_function("() => navigator.serviceWorker.controller !== null")
             self.assertEqual(browser.page_errors, [], "前提不成立:第一次加载就有异常")

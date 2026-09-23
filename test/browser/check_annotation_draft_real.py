@@ -429,8 +429,11 @@ class RealDraftCase(unittest.TestCase):
                 page.locator(".aipm-chat__proposal-accept").click()
             self.assertEqual(login.value.status, 503)
             page.goto(self.site.base + "/ai/rag/", wait_until="load")
-            page.locator(".aipm-anno-entry").click()
-            page.wait_for_selector(".aipm-anno__save", state="attached")
+            entry = page.locator(".aipm-anno-entry")
+            if entry.get_attribute("aria-expanded") != "true":
+                entry.click()
+            page.locator(".aipm-anno__input--comment").wait_for(state="visible")
+            self.assertTrue(page.locator(".aipm-anno__input--comment").is_editable())
             draft = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft'))")
             self.assertEqual(draft["requestId"], proposal["requestId"])
             self.assertFalse(draft["resultUnknown"])
