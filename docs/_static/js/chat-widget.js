@@ -523,6 +523,7 @@
     budget_exhausted: "服务预算已用尽,请明天再试",
     max_turns: "本轮对话已到达轮次上限,请清空对话后重试",
     model_error: "模型服务暂时不可用,请稍后重试",
+    index_unavailable: "文章索引暂不可用,请稍后重试",
     image_unsupported: "当前模型不接受图像输入,去掉对话框上方的图片语境后再问一次",
     internal: "服务内部错误,请稍后重试",
     http_400: "请求格式有误,请重试",
@@ -1183,7 +1184,7 @@
       if (!res.ok || ctype.indexOf("text/event-stream") === -1) {
         // 预校验失败:纯 JSON 响应(400/403/413/429/503)
         let code = "";
-        try { const j = await res.json(); code = j.code || ""; } catch (e) { /* 非 JSON 也兜住 */ }
+        try { const j = await res.json(); code = j.error || j.code || ""; } catch (e) { /* 非 JSON 也兜住 */ }
         const msg = code && ERROR_TEXT[code]
           ? ERROR_TEXT[code] + (code === "rate_limited" && res.headers.get("Retry-After")
               ? `(${res.headers.get("Retry-After")} 秒后可重试)`

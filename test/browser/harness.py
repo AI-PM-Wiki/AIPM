@@ -852,7 +852,8 @@ class AgentServer:
     索引用**本地站点自己那份**(mkdocs 建出来的 search/search_index.json),
     模型地址指向假 API —— 整条链路因此不联网。"""
 
-    def __init__(self, site: StaticSite, model: StubModel, max_turns: int = 2):
+    def __init__(self, site: StaticSite, model: StubModel, max_turns: int = 2,
+                 search_index_url: str | None = None):
         self.proc = subprocess.Popen(
             ["npx", "tsx", "src/server.ts"],
             cwd=str(AGENT_SERVER),
@@ -864,7 +865,7 @@ class AgentServer:
                 "ANTHROPIC_API_KEY": "browser-check",
                 "ANTHROPIC_BASE_URL": model.base,
                 "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-                "SEARCH_INDEX_URL": f"{site.base}/search/search_index.json",
+                "SEARCH_INDEX_URL": search_index_url or f"{site.base}/search/search_index.json",
                 "ALLOWED_ORIGINS": f"{site.base},http://localhost:{site.port}",
                 "SITE_BASE": site.base,
                 "MODEL": "claude-opus-5",

@@ -570,5 +570,47 @@ def _js(value) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+class IndexUnavailableBrowserTest(unittest.TestCase):
+    def test_empty_index_reports_retryable_service_error(self):
+        tearDownModule()
+        site_dir = build_site(WORK / "site-index-empty")
+        site = StaticSite(site_dir)
+        site.write("search/index-empty.json", b'{"docs": []}', "application/json")
+        model = StubModel()
+        server = None
+        api = AnnotationApi()
+        browser = None
+        pw = sync_playwright().start()
+        try:
+            server = AgentServer(site, model, search_index_url=site.base + "/search/index-empty.json")
+            browser = Browser(pw, site.base, also_ours=(ANNO_ORIGIN,))
+            page = browser.page
+            page.goto(site.base + PAGE, wait_until="load")
+            page.click(".aipm-chat__fab")
+            page.fill(".aipm-chat__input", "为当前文章提出一条建议")
+            with page.expect_response(lambda res: res.url.endswith("/api/chat")) as response_event:
+                page.click(".aipm-chat__send")
+            response = response_event.value
+            self.assertEqual(response.status, 503)
+            self.assertEqual(response.json()["error"], "index_unavailable")
+            self.assertEqual(response.headers["retry-after"], "10")
+            bubble = page.locator(".aipm-chat__msg--ai .aipm-chat__bubble.is-error")
+            bubble.wait_for(state="visible")
+            self.assertIn("文章索引暂不可用", bubble.inner_text())
+            self.assertEqual(model.messages(), [])
+            assert_no_page_errors(
+                self, browser, expected_load_failures=("http://127.0.0.1:8787/api/chat",)
+            )
+        finally:
+            if browser is not None:
+                browser.close()
+            if server is not None:
+                server.close()
+            api.close()
+            model.close()
+            site.close()
+            pw.stop()
+
+
 if __name__ == "__main__":
     unittest.main()
