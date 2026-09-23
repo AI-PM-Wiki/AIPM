@@ -996,17 +996,22 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
         旧构建那一版 SW 怎么落进浏览器的:`build_site(ref=...)` 取的是旧**源码树**,
         主题用的是当前子模块(见 harness 的软链),所以旧页面照样会做那次更新检查
         —— 浏览器拿到的 `/service-worker.js` 是旧构建那一份,与前一刻在岗的新脚本
-        字节不同,于是装上来、接管本页。"""
+        字节不同,于是装上来、接管本页。
+
+        这几处 reload 等的是**文档与页面自己的入口**(`window.__aipmChat` 那一对),
+        不等 `load`:主题的 MathJax 由 jsdelivr 提供,`load` 事件因此挂在一条与本案
+        无关的外部请求上,它慢一下这条用例就跟着慢。页面自己那几份资源没到齐的话,
+        下面等入口的那一句照样会报出来。"""
         old_dir = build_site(WORK / "site-flow-old", ref=OLD_REF)
         self.addCleanup(self.site.serve, self.stack.site_dir)
         self.site.serve(old_dir)
         write_fixtures(self.site, self.probe)
 
-        self.page.goto(self.site.base + RAG_PAGE, wait_until="load")
+        self.page.goto(self.site.base + RAG_PAGE, wait_until="domcontentloaded")
         self.page.wait_for_function("() => navigator.serviceWorker.controller !== null")
         # 首次加载时页面还没被接管,它请求的那些资源不过 SW;再加载一次,这一遍
         # 才走 cache-first,旧构建那一版脚本这才真正进了缓存。
-        self.page.reload(wait_until="load")
+        self.page.reload(wait_until="domcontentloaded")
         self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
         self.wait_cached(f"chart-context.js?v={OLD_CHART_VERSION}")
 
@@ -1030,7 +1035,7 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
         write_fixtures(self.site, self.probe)
         self.watch_controller_change()
         asked = len(self.site.requests_for("/service-worker.js"))
-        self.page.reload(wait_until="load")
+        self.page.reload(wait_until="domcontentloaded")
         self.page.wait_for_function("() => window.__aipmChat && window.__aipmContext")
 
         # 这一下刷新,浏览器真的去取了脚本,拿回来的必须是新构建那一份
