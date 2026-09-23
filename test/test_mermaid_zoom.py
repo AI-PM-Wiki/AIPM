@@ -23,7 +23,7 @@ class TestMermaidZoomAssets(unittest.TestCase):
     def test_assets_are_registered_with_cache_versions(self):
         config_scripts = self.config[self.config.index("extra_javascript:") :]
         self.assertIn("_static/js/mermaid-zoom.js?v=4", config_scripts)
-        self.assertIn("_static/css/mermaid-zoom.css?v=4", config_scripts)
+        self.assertIn("_static/css/mermaid-zoom.css?v=5", config_scripts)
 
     def test_viewer_waits_for_rendered_mermaid_dom(self):
         self.assertIn('querySelectorAll(".mermaid")', self.javascript)
@@ -93,6 +93,13 @@ class TestMermaidZoomAssets(unittest.TestCase):
         self.assertIn("bottom: .4rem", self.stylesheet)
         self.assertIn("width: 2rem", self.stylesheet)
         self.assertIn("pointer-events: none", self.stylesheet)
+
+    def test_mobile_close_stays_beside_title_and_zoom_controls_stay_on_one_row(self):
+        mobile = self.stylesheet.split("@media (max-width: 44rem) {")[1].split("\n}\n", 1)[0]
+        self.assertRegex(mobile, r"\.mermaid-zoom__header\s*\{[^}]*position: relative;")
+        self.assertRegex(mobile, r"\.mermaid-zoom__title\s*\{[^}]*padding-right: 3rem;")
+        self.assertRegex(mobile, r"\.mermaid-zoom__actions\s*\{[^}]*flex-wrap: nowrap;")
+        self.assertRegex(mobile, r"\.mermaid-zoom__button--close\s*\{[^}]*position: absolute;")
 
     def test_styles_are_namespaced_and_respect_user_preferences(self):
         self.assertIn(".mermaid-zoom__", self.stylesheet)

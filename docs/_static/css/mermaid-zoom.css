@@ -203,6 +203,7 @@
   }
 
   .mermaid-zoom__header {
+    position: relative;
     align-items: flex-start;
     flex-wrap: wrap;
     gap: .5rem;
@@ -210,15 +211,26 @@
 
   .mermaid-zoom__title {
     flex-basis: 100%;
+    padding-right: 3rem;
   }
 
   .mermaid-zoom__actions {
     width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
     justify-content: flex-start;
   }
 
+  .mermaid-zoom__scale {
+    flex: 1;
+    min-width: 2.5rem;
+  }
+
   .mermaid-zoom__button--close {
-    margin-left: auto;
+    position: absolute;
+    top: .65rem;
+    right: .85rem;
+    margin-left: 0;
   }
 }
 
