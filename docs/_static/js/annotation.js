@@ -4147,7 +4147,8 @@
       }
       /* 按引文在正文里定位 —— 与恢复存量批注用的是同一套里的第一级
          (TextQuoteSelector:逐字引文,prefix / suffix 用来在重复句子里挑对那一段)。 */
-      var range = resolveRange([
+      var range = proposal.resultUnknown === true && Array.isArray(proposal.selectors) &&
+        proposal.selectors.length > 0 ? null : resolveRange([
         {
           type: "TextQuoteSelector",
           exact: quote,
@@ -4155,13 +4156,18 @@
           suffix: typeof proposal.suffix === "string" ? proposal.suffix : ""
         }
       ]);
-      if (range === null) {
+      if (range === null && !(proposal.resultUnknown === true &&
+          Array.isArray(proposal.selectors) && proposal.selectors.length > 0)) {
         return proposalFail(
           "not_on_page",
           "这段文字不在本页正文里(可能已经被改过),这条建议没有写成。"
         );
       }
-      selectors = computeSelectors(range);
+      selectors = range === null ? proposal.selectors : computeSelectors(range);
+    }
+
+    if (typeof proposal.persistSelectors === "function" && !proposal.persistSelectors(selectors)) {
+      return proposalFail("write_failed", "无法保存重试状态,请检查浏览器存储。");
     }
 
     /* 公开 / 私有都要服务端认人。没登录时不静默出网,也不把这条丢掉:
@@ -4179,7 +4185,8 @@
           resumeId: null,
           scope: pageScope ? "page" : null,
           selectors: pageScope ? null : selectors,
-          quote: pageScope ? "" : quote
+          quote: pageScope ? "" : quote,
+          resultUnknown: proposal.resultUnknown === true
         });
       }
       return proposalFail("login_required", "这条要先登录才能发出去:已存成草稿,登录回来接着发。");

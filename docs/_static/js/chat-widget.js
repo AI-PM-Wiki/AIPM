@@ -980,7 +980,7 @@
     state.className = "aipm-chat__proposal-state";
     foot.append(accept, dismiss, state);
     card.appendChild(foot);
-    if (proposal.requestId && !proposal.state) {
+    if (proposal.resultUnknown === true && !proposal.state) {
       for (const button of visButtons) button.disabled = true;
       dismiss.disabled = true;
       card.setAttribute("data-state", "unknown");
@@ -1010,7 +1010,7 @@
           settle("failed", "批注面板未加载,这条建议采纳不了。");
           return;
         }
-        const wasUncertain = !!proposal.requestId;
+        const wasUncertain = proposal.resultUnknown === true;
         if (!proposal.requestId) proposal.requestId = window.crypto.randomUUID();
         const submittedVisibility = chosen;
         proposal.visibility = submittedVisibility;
@@ -1020,13 +1020,29 @@
           state.textContent = "无法保存重试状态,请检查浏览器存储。";
           return;
         }
+        if (submittedVisibility !== "local" && window.__aipmAnnoAuth &&
+            window.__aipmAnnoAuth.token()) {
+          proposal.resultUnknown = true;
+          if (!persist()) {
+            proposal.resultUnknown = wasUncertain;
+            card.setAttribute("data-state", "failed");
+            state.textContent = "无法保存重试状态,请检查浏览器存储。";
+            return;
+          }
+        }
         for (const button of visButtons) button.disabled = true;
         accept.disabled = true;
         card.setAttribute("data-state", "writing");
         dismiss.disabled = true;
         state.textContent = "写入中…";
         Promise.resolve(
-          panel.acceptProposal(Object.assign({}, proposal, { visibility: submittedVisibility }))
+          panel.acceptProposal(Object.assign({}, proposal, {
+            visibility: submittedVisibility, resultUnknown: wasUncertain,
+            persistSelectors: (selectors) => {
+              proposal.selectors = selectors;
+              return persist();
+            }
+          }))
         ).then(
           (res) => {
             if (res && res.ok) {
@@ -1037,18 +1053,22 @@
             }
             const code = res && res.code;
             if (code === "login_required") {
+              proposal.resultUnknown = wasUncertain;
               proposal.state = "dismissed";
               persist();
               settle("login", "已存成草稿,登录回来接着发。");
               return;
             }
             if (code === "unknown" || wasUncertain) {
+              proposal.resultUnknown = true;
+              persist();
               card.setAttribute("data-state", "unknown");
               state.textContent = "写入结果未知,请保持可见范围并重试。";
               accept.disabled = false;
               return;
             }
             proposal.requestId = null;
+            proposal.resultUnknown = false;
             persist();
             card.setAttribute("data-state", "failed");
             state.textContent = (res && res.message) || "这条建议没能写成。";
@@ -1057,6 +1077,8 @@
             dismiss.disabled = false;
           },
           () => {
+            proposal.resultUnknown = true;
+            persist();
             card.setAttribute("data-state", "unknown");
             state.textContent = "写入结果未知,请保持可见范围并重试。";
             accept.disabled = false;

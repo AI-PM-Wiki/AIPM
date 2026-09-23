@@ -409,3 +409,167 @@ class RealDraftCase(unittest.TestCase):
         finally:
             context.close()
             browser.close()
+
+    def test_unsent_proposal_with_request_id_remains_editable_after_login_failure(self):
+        ResponseDropProxy.writes.clear()
+        ResponseDropProxy.drop_next = False
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        proposal = {"id": "unsent-proposal", "requestId": "unsent-proposal-id",
+                    "page": "/ai/rag/", "scope": "page", "quote": "", "body": "Unsent proposal",
+                    "color": "yellow", "style": "highlight", "visibility": "public"}
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.evaluate("proposal => localStorage.setItem('aipm-chat-history', JSON.stringify([{role: 'assistant', content: 'Unsent', proposals: [proposal]}]))", proposal)
+            page.reload(wait_until="load")
+            page.locator(".aipm-chat__fab").click()
+            self.assertTrue(page.locator(".aipm-chat__proposal-visbtn").first.is_enabled())
+            with page.expect_response(lambda r: "/api/auth/github/start" in r.url) as login:
+                page.locator(".aipm-chat__proposal-accept").click()
+            self.assertEqual(login.value.status, 503)
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.locator(".aipm-anno-entry").click()
+            page.wait_for_selector(".aipm-anno__save", state="attached")
+            draft = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft'))")
+            self.assertEqual(draft["requestId"], proposal["requestId"])
+            self.assertFalse(draft["resultUnknown"])
+            self.assertTrue(page.locator(".aipm-anno__visbtn").is_enabled())
+            self.assertTrue(page.locator(".aipm-anno__input--comment").is_editable())
+            page.locator(".aipm-anno__input--comment").fill("Edited unsent proposal")
+            page.evaluate("() => document.querySelector('.aipm-anno__visbtn').click()")
+            page.evaluate("() => document.querySelector('button[data-vis=local]').click()")
+            self.assertEqual(page.locator(".aipm-anno__input--comment").input_value(), "Edited unsent proposal")
+            self.assertTrue(page.locator(".aipm-anno__vislist button[data-vis=local]").evaluate("button => button.classList.contains('is-active')"))
+            self.assertEqual(ResponseDropProxy.writes, [])
+        finally:
+            context.close()
+            browser.close()
+
+    def test_unknown_proposal_login_failure_retains_original_request(self):
+        ResponseDropProxy.writes.clear()
+        ResponseDropProxy.drop_next = True
+        request = urllib.request.Request("http://127.0.0.1:18788/api/auth/dev", data=b"{}",
+                                         headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request) as response:
+            session = json.load(response)
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        body = "Proposal unknown login lifecycle"
+        proposal = {"id": "unknown-proposal", "page": "/ai/rag/", "scope": "page",
+                    "quote": "", "prefix": "", "suffix": "", "body": body,
+                    "color": "yellow", "style": "highlight", "visibility": "public"}
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.evaluate("([auth, proposal]) => { localStorage.setItem('aipm-anno-auth', JSON.stringify(auth)); localStorage.setItem('aipm-chat-history', JSON.stringify([{role: 'assistant', content: 'Stored proposal', proposals: [proposal]}])); }", [session, proposal])
+            page.reload(wait_until="load")
+            page.locator(".aipm-chat__fab").click()
+            with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
+                page.locator(".aipm-chat__proposal-accept").click()
+            page.wait_for_function("() => document.querySelector('.aipm-chat__proposal').dataset.state === 'unknown'")
+            before = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-chat-history'))[0].proposals[0]")
+            self.assertTrue(before["resultUnknown"])
+            self.assertEqual([w["status"] for w in ResponseDropProxy.writes], [201])
+            page.locator(".aipm-anno-entry").click()
+            page.locator(".aipm-anno__account").click()
+            page.locator(".aipm-anno__logout").click()
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-auth')")
+            page.locator(".aipm-chat__fab").click()
+            with page.expect_response(lambda r: "/api/auth/github/start" in r.url) as login:
+                page.locator(".aipm-chat__proposal-accept").click()
+            self.assertEqual(login.value.status, 503)
+            for _ in range(2):
+                page.goto(self.site.base + "/ai/rag/", wait_until="load")
+                page.locator(".aipm-anno-entry").click()
+                page.wait_for_selector(".aipm-anno__save", state="attached")
+                draft = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft'))")
+                self.assertEqual(draft["requestId"], before["requestId"])
+                self.assertEqual(draft["body"], body)
+                self.assertEqual(draft["visibility"], "public")
+                self.assertEqual(draft["scope"], "page")
+                self.assertTrue(draft["resultUnknown"])
+                self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
+                self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
+                self.assertEqual([w["status"] for w in ResponseDropProxy.writes], [201])
+            with urllib.request.urlopen(request) as response:
+                renewed = json.load(response)
+            page.evaluate("auth => localStorage.setItem('aipm-anno-auth', JSON.stringify(auth))", renewed)
+            with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/annotations")) as retry:
+                page.reload(wait_until="load")
+            self.assertEqual(retry.value.status, 200)
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-draft')")
+            page.reload(wait_until="networkidle")
+            self.assertEqual([w["status"] for w in ResponseDropProxy.writes], [201, 200])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"]["requestId"], before["requestId"])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"]["body"], body)
+            self.assertEqual(ResponseDropProxy.writes[0]["request"]["visibility"], "public")
+            self.assertEqual(ResponseDropProxy.writes[0]["request"]["target"], {"scope": "page", "selectors": []})
+            self.stop_service()
+            self.start_service()
+            with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
+                self.assertEqual(sum(a["body"] == body for a in json.load(response)["annotations"]), 1)
+        finally:
+            context.close()
+            browser.close()
+
+    def test_unknown_proposal_retry_login_failure_keeps_text_selection(self):
+        ResponseDropProxy.writes.clear()
+        ResponseDropProxy.drop_next = True
+        request = urllib.request.Request("http://127.0.0.1:18788/api/auth/dev", data=b"{}",
+                                         headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request) as response:
+            session = json.load(response)
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        quote = "检索增强生成"
+        body = "Proposal anchored text after login"
+        proposal = {"id": "text-proposal", "page": "/ai/rag/", "scope": "text",
+                    "quote": quote, "prefix": "", "suffix": "", "body": body,
+                    "color": "yellow", "style": "highlight", "visibility": "public"}
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.evaluate("([auth, proposal]) => { localStorage.setItem('aipm-anno-auth', JSON.stringify(auth)); localStorage.setItem('aipm-chat-history', JSON.stringify([{role: 'assistant', content: 'Text proposal', proposals: [proposal]}])); }", [session, proposal])
+            page.reload(wait_until="load")
+            page.locator(".aipm-chat__fab").click()
+            with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
+                page.locator(".aipm-chat__proposal-accept").click()
+            page.wait_for_function("() => document.querySelector('.aipm-chat__proposal').dataset.state === 'unknown'")
+            original = ResponseDropProxy.writes[0]["request"]
+            self.assertEqual(original["target"]["selectors"][0]["exact"], quote)
+            page.locator(".aipm-anno-entry").click()
+            page.locator(".aipm-anno__account").click()
+            page.locator(".aipm-anno__logout").click()
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-auth')")
+            page.locator(".aipm-chat__fab").click()
+            with page.expect_response(lambda r: "/api/auth/github/start" in r.url) as login:
+                page.locator(".aipm-chat__proposal-accept").click()
+            self.assertEqual(login.value.status, 503)
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            draft = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft'))")
+            self.assertTrue(draft["resultUnknown"])
+            self.assertEqual(draft["quote"], quote)
+            self.assertEqual(draft["selectors"], original["target"]["selectors"])
+            self.assertEqual(draft["body"], body)
+            self.assertEqual(draft["visibility"], "public")
+            self.assertEqual(draft["requestId"], original["requestId"])
+            self.assertEqual([w["status"] for w in ResponseDropProxy.writes], [201])
+            with urllib.request.urlopen(request) as response:
+                renewed = json.load(response)
+            page.evaluate("auth => localStorage.setItem('aipm-anno-auth', JSON.stringify(auth))", renewed)
+            with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/annotations")) as retry:
+                page.reload(wait_until="load")
+            self.assertEqual(retry.value.status, 200)
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-draft')")
+            page.reload(wait_until="networkidle")
+            self.assertEqual([w["status"] for w in ResponseDropProxy.writes], [201, 200])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            self.stop_service()
+            self.start_service()
+            with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
+                self.assertEqual(sum(a["body"] == body for a in json.load(response)["annotations"]), 1)
+        finally:
+            context.close()
+            browser.close()
