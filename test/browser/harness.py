@@ -587,11 +587,19 @@ class AgentServer:
             self.proc.wait(timeout=10)
 
 
-#: 被挡下来的记录的理由,只有这两种。两者认的都是**错误的出处**:一条错误的出处是
-#: 「抛出它的那个脚本」,一条资源失败记录的出处是「浏览器自己报的那个地址」。消息里
-#: 出现了别人的网址不算数 —— 本站脚本抛出的错误里照样可以有别人的网址。
+#: 被挡下来的记录的理由,只有这三种。每条认的都是**出处**:一条第三方错误的出处是
+#: 「抛出它的那个脚本」,一条第三方资源失败记录的出处是「浏览器自己报的那个地址」,
+#: 主题那句加载提示的出处是「主题自己那几份脚本」。消息里出现了别人的网址不算数 ——
+#: 本站脚本抛出的错误里照样可以有别人的网址。
 REASON_FOREIGN_SCRIPT = "third-party-script-error"
 REASON_FOREIGN_RESOURCE = "third-party-resource-failed"
+REASON_THEME_HINT = "theme-script-load-hint"
+
+#: 主题自己那几份脚本在站点里的位置。`Invalid script: <地址>` 那句话由主题的
+#: `watchScript` 抛出(mkdocs-material 的 browser/script/index.ts),它编进 bundle,
+#: 所以**抛出位置**一定在这里。页面里的内联脚本、`_static/js/` 下我们自己的脚本
+#: 都在这个位置之外 —— 它们抛一句形状一样的错,照旧算我们的失败。
+THEME_SCRIPT_PREFIX = "/assets/javascripts/"
 
 #: 浏览器自己报「资源没加载成」的那句话的形状(Chromium 的 console.error)。
 #: 页面代码弄不出它、也删不掉它 —— 网络层没成,浏览器就报一条。
@@ -657,7 +665,7 @@ def assert_no_page_errors(
 ) -> None:
     """这条通路自己这一侧没有异常 —— 连同**被挡下来的那些记录**一起断言。
 
-    挡下来的记录逐项核:理由只有两种;指出的那个地址确实在别人那里(按 origin 比);
+    挡下来的记录逐项核:理由只有三种;指出的那个地址确实在别人那里(按 origin 比);
     而且那个地址在**这条记录自己身上**找得到 —— 过滤器不能凭空造一个地址出来。
     `expected_ignored` 是这条用例知道会被挡下的那些(地址, 理由),与实际挡下的
     (底座外面那两处服务的记录除外,见 AMBIENT_ORIGINS)逐条对齐,多了少了都报出来:
@@ -681,7 +689,7 @@ def assert_no_page_errors(
     for entry in ignored:
         case.assertIn(
             entry["reason"],
-            (REASON_FOREIGN_SCRIPT, REASON_FOREIGN_RESOURCE),
+            (REASON_FOREIGN_SCRIPT, REASON_FOREIGN_RESOURCE, REASON_THEME_HINT),
             f"挡下来的记录理由不认识:{entry}",
         )
         case.assertTrue(
@@ -713,7 +721,7 @@ def assert_no_page_errors(
 class Browser:
     """一个 Chromium 与它的一个页面,顺带收页面上的报错。
 
-    收到的异常分两类,分的时候只看**出处**:
+    收到的异常分三类,分的时候只看**出处**:
 
     - 出处是本站或问答后端的,或者**根本解析不出出处**的 → 这一侧的真实失败;
       后者按失败计入 —— 「拿不准是不是别人的」不是放行的理由。
@@ -721,11 +729,13 @@ class Browser:
       - **第三方脚本抛出的错误**:堆栈第一帧(抛出它的那个脚本)不在本站与问答
         后端上;
       - **第三方资源加载失败**:浏览器自己报的那条,它报的地址是第三方的。
+    - **主题那句加载提示**:出处是主题自己那几份脚本(见 `is_theme_script`),
+      说的是别人、也有别人加载不成的证据 → 挡下。
 
     主题那个 CDN 取不到 mermaid 时抛的 `Invalid script: <CDN 地址>` 是唯一一条
-    「出处在我们、说的是别人」的错误 —— 它抛在我们自己的 bundle 里。这一条不靠
-    消息里的那个地址放行,靠**证据**:浏览器自己得报过那个地址的资源没加载成,
-    两条对得上才挡下;对不上就是我们的错误,照旧计入失败。"""
+    「出处在我们、说的是别人」的错误 —— 它抛在我们自己的 bundle 里。这一条要三样
+    同时成立才挡下:抛出位置在主题自己的脚本里、消息里那个地址确实在别人那里、
+    浏览器自己报过它没加载成。少一样就是我们的错误,照旧计入失败。"""
 
     def __init__(self, playwright, base: str, service_workers: str = "allow"):
         self.browser = playwright.chromium.launch()
@@ -757,6 +767,18 @@ class Browser:
         """这个地址属于底座外面还会被碰到的那些服务(见 AMBIENT_ORIGINS)。"""
         origin = origin_of(url)
         return origin is not None and origin in AMBIENT_ORIGINS
+
+    def is_theme_script(self, url: str | None) -> bool:
+        """这个地址是不是主题自己那几份脚本。
+
+        判的是**抛出位置**:地址得在本站上,并且路径是主题放自己脚本的地方
+        (见 `THEME_SCRIPT_PREFIX`)。内联脚本与 `_static/js/` 下我们自己的脚本
+        都抛不出堆栈第一帧在这里的错误 —— 页面代码写不出这个位置,所以它是可靠的。
+        解析不出出处的(空串、堆栈里没有帧)一律不算,由调用方计入失败。"""
+        origin = origin_of(url)
+        if origin is None or origin not in self.ours:
+            return False
+        return urlsplit(url).path.startswith(THEME_SCRIPT_PREFIX)
 
     def _ignore(self, line: str, origin: str, reason: str) -> dict:
         return {"line": line, "origin": origin, "reason": reason}
@@ -820,11 +842,12 @@ class Browser:
                 )
                 continue
             if (
-                self.is_foreign(entry["named_url"])
+                self.is_theme_script(entry["throw_origin"])
+                and self.is_foreign(entry["named_url"])
                 and self._load_failed(entry["named_url"])
             ):
                 ignored.append(
-                    self._ignore(entry["line"], entry["named_url"], REASON_FOREIGN_SCRIPT)
+                    self._ignore(entry["line"], entry["named_url"], REASON_THEME_HINT)
                 )
                 continue
             errors.append(entry["line"])

@@ -18,10 +18,14 @@ Worker 对带版本参数的静态资源是 **cache-first** —— 老用户会�
    —— 升级靠的是换 URL,不是靠清缓存;顺带断言这一下刷新**同时**把新的
    `service-worker.js` 取了回来(那一份由浏览器自己的更新通道走,不受 HTTP 缓存
    摆布,但要不要去问、什么时候问,是页面自己的事)。
+
+同一个通道失败的那一下也要说话(`ServiceWorkerUpdateFailureTest`):脚本取不回来时
+这一次发布换不上来,而界面上看不出任何区别 —— 那一处必须留下能照着查的记录。
 """
 from __future__ import annotations
 
 import re
+import shutil
 import unittest
 
 from playwright.sync_api import sync_playwright
@@ -33,6 +37,10 @@ from harness import WORK, Browser, StaticSite, assert_no_page_errors, build_site
 OLD_REF = "e3beab55"
 
 PAGE = "/ai/rag/"
+
+#: 更新失败那条记录的开头。主题的注册脚本自己写下来的(见 mkdocs-material 的
+#: base.html):哪个 scope、什么原因,都在这句话后面。
+UPDATE_FAILED = "PWA update failed for scope "
 
 
 def widget_version(site_dir) -> str:
@@ -129,6 +137,75 @@ class CacheUpgradeTest(unittest.TestCase):
                 "旧缓存被清掉了 —— 升级不该依赖清缓存",
             )
             assert_no_page_errors(self, browser)
+        finally:
+            browser.close()
+
+
+class ServiceWorkerUpdateFailureTest(unittest.TestCase):
+    """发布之后脚本取不回来:这一次换不上,得有能照着查的记录。
+
+    页面加载时那次 `update()` 失败不影响界面 —— 旧脚本还在岗,页面照常。所以它必须
+    **自己说话**:哪个 scope、什么原因。这条用例把同一个端口的根换成一份取不到
+    `/service-worker.js` 的站点(发布时把脚本弄丢就是这种样子),照常刷新,然后看
+    这条记录在不在、够不够照着查。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.site_dir = build_site(WORK / "site-sw-update")
+        #: 除那个脚本之外全是软链:页面照常打得开,唯独更新通道取不到东西。
+        cls.nosw_dir = WORK / "site-sw-update-nosw"
+        shutil.rmtree(cls.nosw_dir, ignore_errors=True)
+        cls.nosw_dir.mkdir(parents=True)
+        for entry in sorted(cls.site_dir.iterdir()):
+            if entry.name == "service-worker.js":
+                continue
+            (cls.nosw_dir / entry.name).symlink_to(entry)
+        cls.site = StaticSite(cls.site_dir)
+        cls.pw = sync_playwright().start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.site.close()
+        cls.pw.stop()
+
+    def test_a_failed_update_leaves_a_record_that_says_what_failed(self):
+        browser = Browser(self.pw, self.site.base)
+        try:
+            page = browser.goto(PAGE)
+            page.wait_for_function("() => navigator.serviceWorker.controller !== null")
+            self.assertEqual(browser.page_errors, [], "前提不成立:第一次加载就有异常")
+
+            self.addCleanup(self.site.serve, self.site_dir)
+            self.site.serve(self.nosw_dir)
+            page.reload(wait_until="domcontentloaded")
+            for _ in range(50):
+                if any(UPDATE_FAILED in entry["text"] for entry in browser.console_errors):
+                    break
+                page.wait_for_timeout(100)
+
+            records = [
+                entry
+                for entry in browser.console_errors
+                if entry["text"].startswith(UPDATE_FAILED)
+            ]
+            self.assertEqual(
+                len(records), 1, f"更新失败留下的记录不是一条:{browser.console_errors}"
+            )
+            record = records[0]["text"]
+            self.assertIn(self.site.base + "/", record, f"记录里没有失败的那个 scope:{record}")
+            self.assertIn("/service-worker.js", record, f"记录里没说取的是哪个脚本:{record}")
+            self.assertIn("404", record, f"记录里没有失败的原因:{record}")
+
+            # 记录要留在这一侧的失败里,而不是被当成外面的事故挡下去。
+            errors, _, _ = browser.classify()
+            self.assertEqual(
+                [line for line in errors if UPDATE_FAILED in line],
+                [records[0]["line"]],
+                f"这条记录没有计入失败:{errors}",
+            )
+            self.assertEqual(
+                browser.page_errors, [], f"更新失败漏成了未处理的异常:{browser.page_errors}"
+            )
         finally:
             browser.close()
 
