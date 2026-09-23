@@ -979,6 +979,12 @@
     state.className = "aipm-chat__proposal-state";
     foot.append(accept, dismiss, state);
     card.appendChild(foot);
+    if (proposal.requestId && !proposal.state) {
+      for (const button of visButtons) button.disabled = true;
+      dismiss.disabled = true;
+      card.setAttribute("data-state", "unknown");
+      state.textContent = "写入结果未知,请保持可见范围并重试。";
+    }
 
     /* 批注面板在不在,**点下去的那一刻**问一次 —— 不在创建卡片时问。
        两个面板的脚本由各自的 hook 追加,批注那一份排在助手之后:卡片刚建出来时
@@ -1003,38 +1009,54 @@
           settle("failed", "批注面板未加载,这条建议采纳不了。");
           return;
         }
+        const wasUncertain = !!proposal.requestId;
+        if (!proposal.requestId) proposal.requestId = window.crypto.randomUUID();
+        const submittedVisibility = chosen;
+        proposal.visibility = submittedVisibility;
+        persist();
+        for (const button of visButtons) button.disabled = true;
         accept.disabled = true;
+        dismiss.disabled = true;
         state.textContent = "写入中…";
         Promise.resolve(
-          panel.acceptProposal(Object.assign({}, proposal, { visibility: chosen }))
+          panel.acceptProposal(Object.assign({}, proposal, { visibility: submittedVisibility }))
         ).then(
           (res) => {
             if (res && res.ok) {
               proposal.state = "accepted";
-              proposal.visibility = chosen;
               persist();
-              settle("accepted", "已写入:" + PROPOSAL_VIS_LABEL[chosen]);
+              settle("accepted", "已写入:" + PROPOSAL_VIS_LABEL[submittedVisibility]);
               return;
             }
             const code = res && res.code;
-            /* 未登录选了公开/私有:草稿已经存好、页面正在去登录。这条不算失败,
-               回来说一句就行(用户回来会在批注面板里接着发)。 */
             if (code === "login_required") {
               proposal.state = "dismissed";
               persist();
               settle("login", "已存成草稿,登录回来接着发。");
               return;
             }
-            settle("failed", (res && res.message) || "这条建议没能写成。");
+            if (code === "unknown" || wasUncertain) {
+              card.setAttribute("data-state", "unknown");
+              state.textContent = (res && res.message) || "写入结果未知,请保持可见范围并重试。";
+              accept.disabled = false;
+              return;
+            }
+            proposal.requestId = null;
+            persist();
+            card.setAttribute("data-state", "failed");
+            state.textContent = (res && res.message) || "这条建议没能写成。";
+            for (const button of visButtons) button.disabled = false;
             accept.disabled = false;
-            if (code === "not_on_page" || code === "wrong_page") dismiss.disabled = false;
+            dismiss.disabled = false;
           },
           () => {
-            settle("failed", "这条建议没能写成。");
+            card.setAttribute("data-state", "unknown");
+            state.textContent = "写入结果未知,请保持可见范围并重试。";
             accept.disabled = false;
           }
         );
       });
+
       dismiss.addEventListener("click", () => {
         proposal.state = "dismissed";
         persist();

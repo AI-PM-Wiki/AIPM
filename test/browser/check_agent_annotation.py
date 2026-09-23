@@ -342,6 +342,79 @@ class AgentAnnotationCase(unittest.TestCase):
         self.wait_marks()
         assert_no_page_errors(self, self.browser)
 
+    def test_visibility_is_locked_while_accepting(self):
+        self.propose(visibility="public", body="公开建议")
+        self.wait_card()
+        result = self.page.evaluate("""() => {
+            const card = document.querySelector('.aipm-chat__proposal');
+            card.querySelector('.aipm-chat__proposal-accept').click();
+            const buttons = [...card.querySelectorAll('.aipm-chat__proposal-visbtn')];
+            const locked = buttons.every((button) => button.disabled);
+            buttons.find((button) => button.textContent === '仅本机').click();
+            const selected = card.querySelector('.aipm-chat__proposal-visbtn[aria-pressed="true"]');
+            return { locked, selected: selected.textContent };
+        }""")
+        self.assertTrue(result["locked"])
+        self.assertEqual(result["selected"], "公开")
+        self.assertIn("已写入:公开", self.settle())
+        self.assertEqual(len(self.api.writes()), 1)
+        self.assertEqual(self.api.writes()[0]["body"]["visibility"], "public")
+        assert_no_page_errors(self, self.browser)
+
+    def test_page_comment_login_resumes_without_selectors(self):
+        self.propose(scope="page", quote="", prefix="", suffix="", visibility="public", body="整页讨论")
+        self.wait_card()
+        self.logout()
+        self.open_chat()
+        self.wait_card()
+        self.adopt()
+        self.page.wait_for_function("""() => {
+            const auth = JSON.parse(localStorage.getItem('aipm-anno-auth') || '{}');
+            return !!auth.token && !localStorage.getItem('aipm-anno-draft');
+        }""", timeout=8000)
+        writes = self.api.writes()
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(writes[0]["body"]["target"], {"selectors": [], "scope": "page"})
+        self.assertEqual(writes[0]["body"]["body"], "整页讨论")
+        self.assertEqual(writes[0]["authorization"], f"Bearer {ANNO_TOKEN}")
+        assert_no_page_errors(self, self.browser)
+
+    def test_lost_response_keeps_original_visibility_after_reload(self):
+        self.propose(visibility="public", body="响应丢失后保持公开")
+        self.wait_card()
+        self.api.drop_next_write_response = True
+        self.adopt()
+        self.assertIn("结果未知", self.settle())
+        self.assertEqual(len(self.api.stored), 1)
+        self.assertEqual(self.api.stored[0]["visibility"], "public")
+        local_button = self.card().locator(".aipm-chat__proposal-visbtn", has_text="仅本机")
+        self.assertTrue(local_button.is_disabled())
+        self.page.reload(wait_until="load")
+        self.open_chat()
+        self.wait_card()
+        local_button = self.card().locator(".aipm-chat__proposal-visbtn", has_text="仅本机")
+        self.assertTrue(local_button.is_disabled())
+        self.assertTrue(self.card().locator(".aipm-chat__proposal-dismiss").is_disabled())
+        self.assertEqual(self.local_annotations(), [])
+
+
+    def test_failed_write_is_retried_after_reload(self):
+        self.propose(visibility="public", body="网络恢复后保存")
+        self.wait_card()
+        self.page.context.set_offline(True)
+        self.adopt()
+        self.assertIn("结果未知", self.settle())
+        self.assertEqual(self.api.writes(), [])
+        self.page.context.set_offline(False)
+        self.page.reload(wait_until="load")
+        self.open_chat()
+        self.wait_card()
+        self.adopt()
+        self.assertIn("已写入:公开", self.settle())
+        self.assertEqual(len(self.api.writes()), 1)
+        self.assertEqual(self.api.writes()[0]["body"]["body"], "网络恢复后保存")
+
+
     # ---- 4. 未登录选公开/私有:不静默出网 ----
 
     def test_a_public_proposal_without_login_goes_through_the_login_round_trip(self):

@@ -3695,7 +3695,9 @@
       return;
     }
     setBusy(true);
-    submitAnnotation(selectors, body, visibility, isPage).then(function (ok) {
+    submitAnnotation(
+      selectors, body, visibility, isPage, undefined, undefined, editorDraft.requestId
+    ).then(function (ok) {
       setBusy(false);
       if (ok) closeEditor();
     });
@@ -3774,7 +3776,7 @@
    * color / style 不给时用面板当前选中的那一对(手写批注走的就是这条路);
    * Agent 建议那条路把它们显式带进来 —— 颜色是那条建议的一部分。
    */
-  function submitAnnotation(selectors, body, visibility, pageScope, color, style) {
+  function submitAnnotation(selectors, body, visibility, pageScope, color, style, requestId, detailed) {
     var page = pagePath();
     var now = new Date().toISOString();
     var annoColor = colorOf(color);
@@ -3801,21 +3803,22 @@
         store.localAdd(anno);
       } catch (err) {
         setHint(err.message);
-        return Promise.resolve(false);
+        return Promise.resolve(detailed ? { ok: false, code: "write_failed" } : false);
       }
       refreshLocal();
-      return Promise.resolve(true);
+      return Promise.resolve(detailed ? { ok: true } : true);
     }
 
     if (!auth || !auth.token()) {
       setHint("登录已过期,请重新登录。");
-      return Promise.resolve(false);
+      return Promise.resolve(detailed ? { ok: false, code: "write_failed" } : false);
     }
     return store
       .request("/api/annotations", {
         method: "POST",
         token: auth.token(),
         body: {
+          requestId: requestId,
           page: page,
           body: body,
           color: annoColor,
@@ -3828,15 +3831,19 @@
         if (res.status === 401) {
           if (auth) auth.forget();
           setHint("登录已过期,请重新登录。");
-          return false;
+          return detailed ? { ok: false, code: "write_failed" } : false;
         }
         if (!res.ok) {
           setHint(serverFailText("保存失败", res));
+          if (detailed && res.status === 409 && res.body && res.body.error === "request_conflict") {
+            return { ok: false, code: "unknown" };
+          }
+          if (detailed) return { ok: false, code: res.status === 0 || (res.status >= 500 && (!res.body || res.body.error !== "storage_failed")) ? "unknown" : "write_failed" };
           return false;
         }
         invalidate();
         return ensureAnnotationsLoaded().then(function () {
-          return true;
+          return detailed ? { ok: true } : true;
         });
       });
   }
@@ -4059,6 +4066,7 @@
     if (proposal.visibility !== "local" && (!auth || !auth.token())) {
       if (auth) {
         auth.loginForDraft({
+          requestId: proposal.requestId || store.uid(),
           page: pagePath(),
           color: colorOf(proposal.color),
           style: styleIdOf(proposal.style),
@@ -4080,11 +4088,17 @@
       proposal.visibility,
       pageScope,
       proposal.color,
-      proposal.style
-    ).then(function (ok) {
-      return ok
-        ? { ok: true }
-        : { ok: false, code: "write_failed", message: "这条建议没能写成,请在批注面板里重试。" };
+      proposal.style,
+      proposal.requestId,
+      true
+    ).then(function (result) {
+      return result.ok ? { ok: true } : {
+        ok: false,
+        code: result.code === "unknown" ? "unknown" : "write_failed",
+        message: result.code === "unknown"
+          ? "写入结果未知,请保持可见范围并重试。"
+          : "这条建议没能写成,请在批注面板里重试。"
+      };
     });
   }
 
@@ -4749,6 +4763,7 @@
           ? { selectors: pendingSelection.selectors, quote: pendingSelection.range.toString() }
           : null;
     return {
+      requestId: store.uid(),
       page: pagePath(),
       color: activeColor,
       style: activeStyle,
@@ -4766,10 +4781,13 @@
     };
   }
 
+  var restoringDraft = false;
+
   /** OAuth 往返回来:草稿还在就恢复,并把待发布的那条补发出去。 */
   function maybeRestoreDraft() {
     var draft = store.peekDraft();
     if (!draft || draft.page !== pagePath()) return;
+    if (restoringDraft) return;
     if (!open && panels) panels.claim("annotation");
     else if (!open) openPanel();
     if (mode === "sheet") setSnap("expanded", false);
@@ -4789,6 +4807,7 @@
       placeholder: "",
       quote: draft.quote || "",
       body: draft.body || "",
+      requestId: draft.requestId,
       page: draft.scope === "page",
       draftId: DRAFT_ID
     };
@@ -4800,14 +4819,16 @@
     activeVis = draft.visibility || null;
     render();
     if (els.input) els.input.focus();
-    if (auth && auth.isLoggedIn() && draft.selectors && editorDraft.kind === "create") {
-      /* 登录回来了:按草稿把那条批注补发出去。
-         草稿**先取走再发**:ensureAnnotationsLoaded 每次有结果都会走到这里,而发送
-         是异步的 —— 留着的话这一份会被连发好几条(每有结果一次一条)。没发出去时
-         正文与编辑框里那份还在,用户重按一次就是。 */
-      store.clearDraft();
-      submitAnnotation(draft.selectors, draft.body, draft.visibility, false).then(function (ok) {
+    if (auth && auth.isLoggedIn() &&
+        (draft.selectors || draft.scope === "page") && editorDraft.kind === "create") {
+      restoringDraft = true;
+      submitAnnotation(
+        draft.selectors || [], draft.body, draft.visibility, draft.scope === "page",
+        draft.color, draft.style, draft.requestId
+      ).then(function (ok) {
+        restoringDraft = false;
         if (!ok) return;
+        store.clearDraft();
         closeEditor();
         setSmartbar("已按登录前的草稿保存:" + (draft.visibility === "private" ? "私有" : "公开"), "info");
       });

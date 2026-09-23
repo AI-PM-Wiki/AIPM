@@ -492,6 +492,21 @@ class TestAgentWritesAnnotations(unittest.TestCase):
         cls.check = _read(PROP_CHECK)
         cls.browser = _read(BROWSER_CASE)
 
+    def test_visibility_remains_stable_while_submitting(self):
+        self.assertIn('const submittedVisibility = chosen;', self.chat)
+        self.assertIn('for (const button of visButtons) button.disabled = true;', self.chat)
+        self.assertIn('proposal.visibility = submittedVisibility;', self.chat)
+        self.assertIn('for (const button of visButtons) button.disabled = false;', self.chat)
+
+    def test_page_comments_resume_after_login(self):
+        self.assertIn('(draft.selectors || draft.scope === "page")', self.anno)
+        self.assertIn('draft.scope === "page"', self.anno)
+
+    def test_login_draft_keeps_request_identity_on_retry(self):
+        self.assertIn('requestId: store.uid()', self.anno)
+        self.assertIn('draft.requestId', self.anno)
+        self.assertIn('requestId: requestId', self.anno)
+
     def body_of(self, src: str, head: str) -> str:
         """从一个函数头取到它那一层的大括号收尾,断言只读这一段。"""
         start = src.index(head)

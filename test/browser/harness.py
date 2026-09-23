@@ -633,6 +633,7 @@ class AnnotationApi:
     """
 
     def __init__(self):
+        self.drop_next_write_response = False
         self.stored: list[dict] = []
         self.requests: list[dict] = []
         self._httpd = http.server.ThreadingHTTPServer(("127.0.0.1", ANNO_PORT), _AnnoHandler)
@@ -646,6 +647,7 @@ class AnnotationApi:
 
     def reset(self) -> None:
         """每个用例开头清空:记录是整类共用的,不清会串到后一条用例上。"""
+        self.drop_next_write_response = False
         self.stored.clear()
         self.requests.clear()
 
@@ -829,6 +831,18 @@ class _AnnoHandler(http.server.BaseHTTPRequestHandler):
             "target": body.get("target", {}),
         }
         owner.stored.append(annotation)
+        if owner.drop_next_write_response:
+            owner.drop_next_write_response = False
+            self.send_response(HTTPStatus.CREATED)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", "1024")
+            self._cors()
+            self.end_headers()
+            self.wfile.flush()
+            self.close_connection = True
+            self.connection.shutdown(socket.SHUT_RDWR)
+            self.connection.close()
+            return
         self._json(HTTPStatus.CREATED, {"annotation": annotation})
 
 
