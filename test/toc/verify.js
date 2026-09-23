@@ -91,6 +91,53 @@ for (const [width, height, position] of [
   console.log(`TOC ${width}x${height} y=${position}: ${result.rows.length} rows checked`)
 }
 
+await page.cdp("Emulation.setDeviceMetricsOverride", {
+  width: 1646, height: 853, deviceScaleFactor: 1, mobile: false
+})
+await page.goto("http://127.0.0.1:8765/pm/monetization/")
+await page.evaluate(() => window.scrollTo(0, 600))
+await page.waitForTimeout(1100)
+const corners = await page.evaluate(() => {
+  const list = document.querySelector(
+    ".md-sidebar--secondary .md-nav--secondary > .md-nav__list"
+  )
+  const links = [...list.querySelectorAll(".md-nav__link")]
+  const active = links.filter(link => link.classList.contains("md-nav__link--active"))
+  const left = Math.min(...links.map(link => link.getBoundingClientRect().left))
+  const markerTop = parseFloat(list.style.getPropertyValue("--pm-toc-marker-top"))
+  const polygon = [...list.style.getPropertyValue("--pm-toc-marker-clip")
+    .matchAll(/(-?[\d.]+)px (-?[\d.]+)px/g)]
+    .map(([, x, y]) => [Number(x), Number(y)])
+  if (polygon.length < 4) throw new Error("Indicator polygon absent")
+
+  const contains = (x, y) => {
+    let inside = false
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [ax, ay] = polygon[i]
+      const [bx, by] = polygon[j]
+      if ((ay > y) !== (by > y) &&
+          x < (bx - ax) * (y - ay) / (by - ay) + ax) inside = !inside
+    }
+    return inside
+  }
+
+  return active.slice(1).flatMap((link, index) => {
+    const previous = active[index].getBoundingClientRect()
+    const next = link.getBoundingClientRect()
+    if (previous.left === next.left) return []
+    const x = (previous.left + next.left) / 2 - left + 1
+    const y = next.top - list.getBoundingClientRect().top - markerTop
+    return [{ from: active[index].textContent.trim(), to: link.textContent.trim(),
+      direction: Math.sign(next.left - previous.left),
+      above: contains(x, y - 0.5), below: contains(x, y + 0.5) }]
+  })
+})
+if (corners.length < 2 || new Set(corners.map(corner => corner.direction)).size !== 2 ||
+    corners.some(corner => !corner.above || !corner.below)) {
+  throw new Error(`Disconnected TOC corners: ${JSON.stringify(corners)}`)
+}
+console.log(`CONNECTED_CORNERS=${corners.length}: ${JSON.stringify(corners)}`)
+
 for (const [width, height] of [[1646, 853], [390, 844]]) {
   await page.cdp("Emulation.setDeviceMetricsOverride", {
     width, height, deviceScaleFactor: 1, mobile: width < 500
