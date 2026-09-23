@@ -324,32 +324,35 @@
 }
 
 /* 5.3.1 TOC 左侧指示条:轨道常驻,高亮段 = 当前视野覆盖的章节范围
-   (范围由主题 toc 组件算出,写在列表的 --pm-toc-marker-top / -height 上;
+   (范围与折线形状由主题 toc 组件算出,写在列表的 --pm-toc-marker-top /
+   -height / -clip 与 --pm-toc-track-clip 上;嵌套章节处随缩进向内折;
    视野内没有标题时该段落在最后读过的章节上,范围不会消失) */
-.md-sidebar--secondary .md-nav--secondary > .md-nav__list {
+.md-nav--secondary > .md-nav__list {
   position: relative;
 }
 
-.md-sidebar--secondary .md-nav--secondary > .md-nav__list::before,
-.md-sidebar--secondary .md-nav--secondary > .md-nav__list::after {
+.md-nav--secondary > .md-nav__list::before,
+.md-nav--secondary > .md-nav__list::after {
   content: "";
   position: absolute;
   left: 0;
-  width: 2px;
+  right: 0;
   border-radius: 1px;
   pointer-events: none;
 }
 
-.md-sidebar--secondary .md-nav--secondary > .md-nav__list::before {
-  top: .2rem;
-  bottom: .2rem;
+.md-nav--secondary > .md-nav__list::before {
+  top: 0;
+  bottom: 0;
   background-color: var(--pm-line);
+  clip-path: var(--pm-toc-track-clip, polygon(0 0, 0 0, 0 0));
 }
 
-.md-sidebar--secondary .md-nav--secondary > .md-nav__list::after {
+.md-nav--secondary > .md-nav__list::after {
   top: var(--pm-toc-marker-top, 0);
   height: var(--pm-toc-marker-height, 0);
   background-color: var(--pm-accent);
+  clip-path: var(--pm-toc-marker-clip, polygon(0 0, 0 0, 0 0));
 }
 
 /* 5.3.2 导航栏与文章交界线(粘性发丝线,由 header-line.js 注入,
