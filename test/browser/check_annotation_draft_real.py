@@ -125,7 +125,8 @@ class RealDraftCase(unittest.TestCase):
                      "scope": "page", "selectors": None, "quote": ""}
             page.evaluate("([auth, draft]) => { localStorage.setItem('aipm-anno-auth', JSON.stringify(auth)); localStorage.setItem('aipm-anno-draft', JSON.stringify(draft)); }",
                           [session, draft])
-            page.reload(wait_until="load")
+            with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
+                page.reload(wait_until="load")
             page.wait_for_function("() => JSON.parse(localStorage.getItem('aipm-anno-draft') || '{}').resultUnknown === true")
             self.assertEqual(len(ResponseDropProxy.writes), 1)
             self.assertEqual(ResponseDropProxy.writes[0]["status"], 201)
@@ -135,7 +136,8 @@ class RealDraftCase(unittest.TestCase):
             self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft')).visibility"), "public")
             self.assertIsNone(page.evaluate("() => localStorage.getItem('aipm-anno-local')"))
             ResponseDropProxy.drop_next = True
-            page.reload(wait_until="load")
+            with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
+                page.reload(wait_until="load")
             page.wait_for_function("() => JSON.parse(localStorage.getItem('aipm-anno-draft') || '{}').resultUnknown === true")
             self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
             page.locator(".aipm-anno__save").click()
@@ -244,6 +246,166 @@ class RealDraftCase(unittest.TestCase):
             self.start_service()
             with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
                 self.assertEqual(sum(a["body"] == "New editor interrupted response" for a in json.load(response)["annotations"]), 1)
+        finally:
+            context.close()
+            browser.close()
+
+    def test_unknown_login_logout_and_refresh_reuse_original_request(self):
+        ResponseDropProxy.writes.clear()
+        ResponseDropProxy.drop_next = True
+        request = urllib.request.Request("http://127.0.0.1:18788/api/auth/dev", data=b"{}",
+                                         headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request) as response:
+            session = json.load(response)
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        body = "Unknown login lifecycle"
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.evaluate("auth => localStorage.setItem('aipm-anno-auth', JSON.stringify(auth))", session)
+            page.reload(wait_until="load")
+            page.locator(".aipm-anno-entry").click()
+            page.locator(".aipm-anno__head-icon").click()
+            page.locator(".aipm-anno__newbtn").click()
+            page.locator(".aipm-anno__input--comment").fill(body)
+            with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
+                page.locator(".aipm-anno__save").click()
+            page.wait_for_function("() => !document.querySelector('.aipm-anno__save').disabled")
+            before = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft'))")
+            self.assertTrue(before["resultUnknown"])
+            page.locator(".aipm-anno__account").click()
+            page.locator(".aipm-anno__logout").click()
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-auth')")
+            with page.expect_response(lambda r: "/api/auth/github/start" in r.url) as login:
+                page.locator(".aipm-anno__account").click()
+            self.assertEqual(login.value.status, 503)
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.wait_for_selector(".aipm-anno__save")
+            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft')).requestId"), before["requestId"])
+            self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
+            self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
+            self.assertEqual(page.locator(".aipm-anno__input--comment").input_value(), body)
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201])
+            with urllib.request.urlopen(request) as response:
+                renewed = json.load(response)
+            page.evaluate("auth => localStorage.setItem('aipm-anno-auth', JSON.stringify(auth))", renewed)
+            with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/annotations")) as retry:
+                page.reload(wait_until="load")
+            self.assertEqual(retry.value.status, 200)
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-draft')")
+            page.reload(wait_until="networkidle")
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201, 200])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            self.stop_service()
+            self.start_service()
+            with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
+                self.assertEqual(sum(a["body"] == body for a in json.load(response)["annotations"]), 1)
+        finally:
+            context.close()
+            browser.close()
+
+    def test_definite_failure_local_save_consumes_matching_draft(self):
+        ResponseDropProxy.writes.clear()
+        ResponseDropProxy.drop_next = False
+        request = urllib.request.Request("http://127.0.0.1:18788/api/auth/dev", data=b"{}",
+                                         headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request) as response:
+            session = json.load(response)
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        obstruction = Path(self.data) / "store.json.tmp"
+        body = "Definite failure local choice"
+        draft = {"requestId": "draft-local-choice-20260923", "page": "/ai/rag/",
+                 "color": "yellow", "style": "highlight", "body": body,
+                 "visibility": "public", "resumeKind": "create", "resumeId": None,
+                 "scope": "page", "selectors": None, "quote": ""}
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.evaluate("([auth, draft]) => { localStorage.setItem('aipm-anno-auth', JSON.stringify(auth)); localStorage.setItem('aipm-anno-draft', JSON.stringify(draft)); }", [session, draft])
+            obstruction.mkdir()
+            with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/annotations")) as failed:
+                page.reload(wait_until="load")
+            self.assertEqual(failed.value.status, 503)
+            page.wait_for_function("() => document.querySelector('.aipm-anno__hint')?.textContent.includes('保存失败')")
+            self.assertFalse(page.locator(".aipm-anno__visbtn").is_disabled())
+            obstruction.rmdir()
+            page.locator(".aipm-anno__visbtn").click()
+            page.locator("button[data-vis=local]").click()
+            page.locator(".aipm-anno__save").click()
+            page.wait_for_function("() => !!localStorage.getItem('aipm-anno-local')")
+            self.assertIsNone(page.evaluate("() => localStorage.getItem('aipm-anno-draft')"))
+            page.reload(wait_until="networkidle")
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [503])
+            self.stop_service()
+            self.start_service()
+            with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
+                self.assertEqual(sum(a["body"] == body for a in json.load(response)["annotations"]), 0)
+        finally:
+            if obstruction.is_dir():
+                obstruction.rmdir()
+            context.close()
+            browser.close()
+
+    def test_manual_success_does_not_schedule_another_write(self):
+        ResponseDropProxy.writes.clear()
+        ResponseDropProxy.drop_next = True
+        request = urllib.request.Request("http://127.0.0.1:18788/api/auth/dev", data=b"{}",
+                                         headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request) as response:
+            session = json.load(response)
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        body = "Manual success exactly once"
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.evaluate("auth => localStorage.setItem('aipm-anno-auth', JSON.stringify(auth))", session)
+            page.reload(wait_until="load")
+            page.locator(".aipm-anno-entry").click()
+            page.locator(".aipm-anno__head-icon").click()
+            page.locator(".aipm-anno__newbtn").click()
+            page.locator(".aipm-anno__input--comment").fill(body)
+            with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
+                page.locator(".aipm-anno__save").click()
+            page.wait_for_function("() => !document.querySelector('.aipm-anno__save').disabled")
+            self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
+            with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/annotations")) as retry:
+                page.locator(".aipm-anno__save").click()
+            self.assertEqual(retry.value.status, 200)
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-draft')")
+            page.reload(wait_until="networkidle")
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201, 200])
+            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            self.stop_service()
+            self.start_service()
+            with urllib.request.urlopen("http://127.0.0.1:18788/api/annotations?page=/ai/rag/&scope=public") as response:
+                self.assertEqual(sum(a["body"] == body for a in json.load(response)["annotations"]), 1)
+        finally:
+            context.close()
+            browser.close()
+
+    def test_local_save_preserves_unrelated_draft(self):
+        ResponseDropProxy.writes.clear()
+        ResponseDropProxy.drop_next = False
+        browser = self.playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
+        other = {"requestId": "other-draft-20260923", "page": "/ai/rag/",
+                 "body": "Keep the other draft", "visibility": "public", "resultUnknown": True,
+                 "scope": "page", "selectors": None}
+        try:
+            page.goto(self.site.base + "/ai/rag/", wait_until="load")
+            page.locator(".aipm-anno-entry").click()
+            page.locator(".aipm-anno__head-icon").click()
+            page.locator(".aipm-anno__newbtn").click()
+            page.locator(".aipm-anno__input--comment").fill("Local while another draft exists")
+            page.evaluate("draft => localStorage.setItem('aipm-anno-draft', JSON.stringify(draft))", other)
+            page.locator(".aipm-anno__save").click()
+            page.wait_for_function("() => !!localStorage.getItem('aipm-anno-local')")
+            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft')).requestId"), other["requestId"])
+            self.assertEqual(len(ResponseDropProxy.writes), 0)
         finally:
             context.close()
             browser.close()

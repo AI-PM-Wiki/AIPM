@@ -503,7 +503,7 @@ class TestAgentWritesAnnotations(unittest.TestCase):
         self.assertIn('draft.scope === "page"', self.anno)
 
     def test_login_draft_keeps_request_identity_on_retry(self):
-        self.assertIn('requestId: store.uid()', self.anno)
+        self.assertIn('requestId: editorDraft && editorDraft.requestId || store.uid()', self.anno)
         self.assertIn('draft.requestId', self.anno)
         self.assertIn('requestId: requestId', self.anno)
 
@@ -622,15 +622,11 @@ class TestAgentWritesAnnotations(unittest.TestCase):
         self.assertIn("!auth.token()", gate[:120], "没登录时只有公开/私有那一档才需要登录")
         self.assertIn("loginForDraft(", fn, "没登录时不静默出网,走既有草稿通路")
 
-    def test_draft_is_taken_before_it_is_resent(self):
-        """登录回来的补发:草稿先取走再发,否则同一份会被连发几条。"""
+    def test_draft_replay_is_single_flight(self):
         fn = self.body_of(self.anno, "function maybeRestoreDraft()")
-        self.assertIn("store.clearDraft();", fn)
-        self.assertLess(
-            fn.index("store.clearDraft();"),
-            fn.index("submitAnnotation("),
-            "先取走再发:发送是异步的,留着就会被下一趟重复发出去",
-        )
+        self.assertIn("if (restoringDraft || busy) return;", fn)
+        self.assertIn("setBusy(true);", fn)
+        self.assertIn("clearMatchingDraft(draft);", fn)
 
     def test_proposal_check_is_wired(self):
         self.assertIn("Invalid option", self.check, "越权取值那一条要真的被 SDK 的 schema 挡下")

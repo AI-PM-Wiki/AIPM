@@ -1008,6 +1008,13 @@
       editorDraft.requestId === draft.requestId ? draft : null;
   }
 
+  function clearMatchingDraft(draft) {
+    var current = store.peekDraft();
+    if (current && current.page === draft.page && current.requestId === draft.requestId) {
+      store.clearDraft();
+    }
+  }
+
   /** 画法归一:不认识的 id 一律按高亮(与 store 的默认一致)。 */
   function styleOf(anno) {
     var st = anno && anno.style;
@@ -3656,7 +3663,7 @@
    * 新建(含全页评论)/ 编辑 / 回复,各自只碰自己该碰的东西。
    */
   function submitEditor() {
-    if (editorDraft === null) return;
+    if (editorDraft === null || busy || restoringDraft) return;
     var pending = uncertainDraft();
     if (pending) {
       setBusy(true);
@@ -3666,8 +3673,8 @@
       ).then(function (result) {
         setBusy(false);
         if (!result.ok) return;
-        store.clearDraft();
-        closeEditor();
+        clearMatchingDraft(pending);
+        if (editorDraft && editorDraft.requestId === pending.requestId) closeEditor();
       });
       return;
     }
@@ -3742,7 +3749,12 @@
       submitAnnotation(selectors, body, visibility, isPage, undefined, undefined, undefined, true)
         .then(function (result) {
           setBusy(false);
-          if (result.ok) closeEditor();
+          if (result.ok) {
+            var savedDraft = store.peekDraft();
+            if (savedDraft && editorDraft && savedDraft.page === pagePath() &&
+                savedDraft.requestId === editorDraft.requestId) clearMatchingDraft(savedDraft);
+            closeEditor();
+          }
         });
       return;
     }
@@ -3776,21 +3788,20 @@
     ).then(function (result) {
       setBusy(false);
       if (result.ok) {
-        store.clearDraft();
-        closeEditor();
+        clearMatchingDraft(draft);
+        if (editorDraft && editorDraft.requestId === draft.requestId) closeEditor();
         return;
       }
-      if (result.code === "unknown" || (previous && previous.resultUnknown)) {
+      var current = store.peekDraft();
+      if (!current || current.page !== draft.page || current.requestId !== draft.requestId) return;
+      if (result.code === "unknown" || (previous && previous.page === draft.page &&
+          previous.requestId === draft.requestId && previous.resultUnknown)) {
         render();
         setHint("写入结果未知,请保持原内容及可见范围重试。");
         return;
       }
-      if (previous && previous.requestId === draft.requestId) {
-        draft.resultUnknown = false;
-        store.saveDraft(draft);
-      } else {
-        store.clearDraft();
-      }
+      draft.resultUnknown = false;
+      store.saveDraft(draft);
       render();
     });
   }
@@ -4845,6 +4856,10 @@
    * 手上这份草稿必须存进 localStorage 才能扛过 OAuth 整轮往返。
    */
   function draftForLogin() {
+    var current = store.peekDraft();
+    if (current && current.page === pagePath() && (!editorDraft || current.resultUnknown)) {
+      return current;
+    }
     if (editorDraft === null && composerSelection === null && pendingSelection === null) {
       return null;
     }
@@ -4855,7 +4870,7 @@
           ? { selectors: pendingSelection.selectors, quote: pendingSelection.range.toString() }
           : null;
     return {
-      requestId: store.uid(),
+      requestId: editorDraft && editorDraft.requestId || store.uid(),
       page: pagePath(),
       color: activeColor,
       style: activeStyle,
@@ -4880,7 +4895,7 @@
   function maybeRestoreDraft() {
     var draft = store.peekDraft();
     if (!draft || draft.page !== pagePath()) return;
-    if (restoringDraft) return;
+    if (restoringDraft || busy) return;
     if (!open && panels) panels.claim("annotation");
     else if (!open) openPanel();
     if (mode === "sheet") setSnap("expanded", false);
@@ -4889,7 +4904,7 @@
       resume = annoById(draft.resumeId);
       if (resume === null) {
         // 那一条已经不在列表里了(换页 / 被删),草稿无从接续
-        store.clearDraft();
+        clearMatchingDraft(draft);
         return;
       }
     }
@@ -4926,26 +4941,30 @@
       render();
       restoringDraft = true;
       attemptedDraftRequestId = draft.requestId;
+      setBusy(true);
       submitAnnotation(
         draft.selectors || [], draft.body, draft.visibility, draft.scope === "page",
         draft.color, draft.style, draft.requestId, true
       ).then(function (result) {
         restoringDraft = false;
-        if (!result.ok) {
-          if (result.code === "unknown" || wasUnknown) {
-            render();
-            setHint("写入结果未知,请保持原内容及可见范围重试。");
-          } else {
-            draft.resultUnknown = false;
-            store.saveDraft(draft);
-            render();
-            setHint("保存失败,请重试。");
-          }
+        setBusy(false);
+        var current = store.peekDraft();
+        if (result.ok) {
+          clearMatchingDraft(draft);
+          if (editorDraft && editorDraft.requestId === draft.requestId) closeEditor();
+          setSmartbar("已按登录前的草稿保存:" + (draft.visibility === "private" ? "私有" : "公开"), "info");
           return;
         }
-        store.clearDraft();
-        closeEditor();
-        setSmartbar("已按登录前的草稿保存:" + (draft.visibility === "private" ? "私有" : "公开"), "info");
+        if (!current || current.page !== draft.page || current.requestId !== draft.requestId) return;
+        if (result.code === "unknown" || wasUnknown) {
+          render();
+          setHint("写入结果未知,请保持原内容及可见范围重试。");
+        } else {
+          draft.resultUnknown = false;
+          store.saveDraft(draft);
+          render();
+          setHint("保存失败,请重试。");
+        }
       });
     }
   }
