@@ -818,7 +818,7 @@ extra_javascript:
   # AI 助手面板与批注面板都用它，且必须排在 hooks 追加的两个面板脚本之前
   - '_static/js/panel-shared.js?v=1'
 extra_css:
-  - '_static/css/extra.css?v=40'
+  - '_static/css/extra.css?v=41'
   - '_static/css/mermaid-zoom.css?v=4'
 
 # Extensions
