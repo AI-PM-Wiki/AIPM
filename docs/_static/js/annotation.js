@@ -42,6 +42,9 @@
     与 aria-label 上 —— 那是图标唯一的可读副本。删除另加一道「再点一次」的确认:
     图标按钮比文字链好点错,而删掉的东西回不来。样式见 .aipm-anno__ibtn。
   - 未登录能做的:读公开批注、写「仅本机」批注、用智能高亮。
+  - 与助手的第二条通路(反方向):助手提的批注建议在对话里变成一张卡,用户点
+    「采纳」时由本文件写下去(见 acceptProposal)。**写入仍然只有 submitAnnotation
+    这一条路**,助手那一侧不持有任何凭据 —— 它给的是建议,写的是用户自己的会话。
 */
 (function () {
   "use strict";
@@ -3751,13 +3754,31 @@
       });
   }
 
+  /** 色板 id 归一:认不出的(或没给的)按当前选中的颜色走。 */
+  function colorOf(id) {
+    for (var i = 0; i < store.PALETTE.length; i++) {
+      if (store.PALETTE[i].id === id) return id;
+    }
+    return activeColor;
+  }
+
+  /** 画法 id 归一:认不出的(或没给的)按当前选中的画法走。 */
+  function styleIdOf(id) {
+    return store.ANNO_STYLES.indexOf(id) >= 0 ? id : activeStyle;
+  }
+
   /**
    * 新建一条(本机或服务端)。pageScope 为真 = 全页评论,此时 selectors 为空数组,
    * target 上带 scope:'page' 供服务端辨认。
+   *
+   * color / style 不给时用面板当前选中的那一对(手写批注走的就是这条路);
+   * Agent 建议那条路把它们显式带进来 —— 颜色是那条建议的一部分。
    */
-  function submitAnnotation(selectors, body, visibility, pageScope) {
+  function submitAnnotation(selectors, body, visibility, pageScope, color, style) {
     var page = pagePath();
     var now = new Date().toISOString();
+    var annoColor = colorOf(color);
+    var annoStyle = styleIdOf(style);
     var target = pageScope
       ? { selectors: selectors, scope: "page" }
       : { selectors: selectors };
@@ -3767,8 +3788,8 @@
         id: store.uid(),
         page: page,
         visibility: "local",
-        color: activeColor,
-        style: activeStyle,
+        color: annoColor,
+        style: annoStyle,
         body: body,
         author: { githubId: 0, login: auth && auth.user() ? auth.user().login : "本机" },
         target: target,
@@ -3797,8 +3818,8 @@
         body: {
           page: page,
           body: body,
-          color: activeColor,
-          style: activeStyle,
+          color: annoColor,
+          style: annoStyle,
           visibility: visibility,
           target: target
         }
@@ -3938,6 +3959,133 @@
         invalidate();
         return ensureAnnotationsLoaded();
       });
+  }
+
+  /* ================================================================
+     Agent 提的批注建议:用户点「采纳」之后的写入
+     ----------------------------------------------------------------
+     建议从问答后端来(SSE 的 proposal 帧),带着引文、正文、颜色、画法与可见范围,
+     在对话里变成一张卡(chat-widget.js)。卡片上的「采纳」调到这里。
+
+     这一条路的**写入仍然只有 submitAnnotation 一处**:公开/私有带用户自己的
+     bearer token 提交,仅本机只写 localStorage。助手那一侧不持有任何凭据,它给的是
+     建议 —— 写下去的是用户自己的会话,所以服务端那套归属与权限判断原样生效,
+     模型输出能到达的最远处,正好是用户点一下鼠标能到达的地方。
+
+     进来之前先校验,而且是**不信任**地校验:卡片上的东西一部分来自线上(SSE 帧,
+     刷新之后来自 localStorage),另一部分来自用户。三件事各自成立才写:
+       1. 形状与页面 —— 认不出的可见范围、不是本站的取值、不在当前页面的建议,一律不成;
+       2. 引文能在正文里找到 —— 锚不到就没有可写的位置,不进「未能定位」也不静默丢掉,
+          卡片上直接说这段文字不在页面上;
+       3. 可见范围由用户在卡上挑定的那一档说了算,模型说的只是缺省值。
+     公开/私有而用户还没登录时不静默出网:与技术上的写入口一样,存成草稿再去登录,
+     回跳之后由 maybeRestoreDraft 接着发。
+     ================================================================ */
+
+  /** 建议卡上能选的三档。与 store 里的写入路径一一对应,没有第四档。 */
+  var PROPOSAL_VISIBILITIES = ["local", "private", "public"];
+
+  function proposalFail(code, message) {
+    return Promise.resolve({ ok: false, code: code, message: message });
+  }
+
+  /** 建议说的那一页是不是当前这一页。两边都按「前导斜杠 + 尾斜杠」归一。 */
+  function onThisPage(path) {
+    var p = typeof path === "string" ? path : "";
+    if (p === "") return false;
+    if (p.charAt(0) !== "/") p = "/" + p;
+    if (p.charAt(p.length - 1) !== "/") p += "/";
+    return p === pagePath();
+  }
+
+  /**
+   * 采纳一条建议。返回 {ok, code?, message?}:
+   *   ok            —— 已经写下去了(仅本机进了 localStorage,公开/私有进了服务端)
+   *   wrong_page    —— 不是当前这一页(换页之后卡片还在,但这条建议已经无处可写)
+   *   not_on_page   —— 这段引文在正文里找不到
+   *   malformed     —— 形状不对(认不出的可见范围、缺引文、超长…)
+   *   login_required—— 公开/私有而没登录:草稿已存,页面正在去登录
+   *   write_failed  —— 写入那一步失败(服务端拒绝、配额满…)
+   */
+  function acceptProposal(proposal) {
+    if (!proposal || typeof proposal !== "object") {
+      return proposalFail("malformed", "这条建议读不出来。");
+    }
+    if (!onThisPage(proposal.page)) {
+      return proposalFail("wrong_page", "这条建议不在当前页面,回到它那一页再采纳。");
+    }
+    if (PROPOSAL_VISIBILITIES.indexOf(proposal.visibility) < 0) {
+      return proposalFail("malformed", "这条建议的可见范围读不出来,没有写成。");
+    }
+    var pageScope = proposal.scope === "page";
+    var body = typeof proposal.body === "string" ? proposal.body : "";
+    var quote = typeof proposal.quote === "string" ? proposal.quote.trim() : "";
+    var selectors;
+
+    if (pageScope) {
+      /* 全页评论不锚正文:带了引文反而说明这条建议的形状不对,不当成「顺手忽略」。 */
+      if (quote !== "") {
+        return proposalFail("malformed", "这条评论建议既锚了文字又说针对整页,没有写成。");
+      }
+      if (body.trim() === "") {
+        return proposalFail("malformed", "这条评论建议没有正文,没有写成。");
+      }
+      selectors = [];
+    } else {
+      if (quote === "") {
+        return proposalFail("malformed", "这条建议没有引文,没有写成。");
+      }
+      /* 按引文在正文里定位 —— 与恢复存量批注用的是同一套里的第一级
+         (TextQuoteSelector:逐字引文,prefix / suffix 用来在重复句子里挑对那一段)。 */
+      var range = resolveRange([
+        {
+          type: "TextQuoteSelector",
+          exact: quote,
+          prefix: typeof proposal.prefix === "string" ? proposal.prefix : "",
+          suffix: typeof proposal.suffix === "string" ? proposal.suffix : ""
+        }
+      ]);
+      if (range === null) {
+        return proposalFail(
+          "not_on_page",
+          "这段文字不在本页正文里(可能已经被改过),这条建议没有写成。"
+        );
+      }
+      selectors = computeSelectors(range);
+    }
+
+    /* 公开 / 私有都要服务端认人。没登录时不静默出网,也不把这条丢掉:
+       与手写批注同一条草稿通路,登录回跳之后接着发。 */
+    if (proposal.visibility !== "local" && (!auth || !auth.token())) {
+      if (auth) {
+        auth.loginForDraft({
+          page: pagePath(),
+          color: colorOf(proposal.color),
+          style: styleIdOf(proposal.style),
+          body: body,
+          visibility: proposal.visibility,
+          resumeKind: "create",
+          resumeId: null,
+          scope: pageScope ? "page" : null,
+          selectors: pageScope ? null : selectors,
+          quote: pageScope ? "" : quote
+        });
+      }
+      return proposalFail("login_required", "这条要先登录才能发出去:已存成草稿,登录回来接着发。");
+    }
+
+    return submitAnnotation(
+      selectors,
+      body,
+      proposal.visibility,
+      pageScope,
+      proposal.color,
+      proposal.style
+    ).then(function (ok) {
+      return ok
+        ? { ok: true }
+        : { ok: false, code: "write_failed", message: "这条建议没能写成,请在批注面板里重试。" };
+    });
   }
 
   /* ================================================================
@@ -4653,10 +4801,13 @@
     render();
     if (els.input) els.input.focus();
     if (auth && auth.isLoggedIn() && draft.selectors && editorDraft.kind === "create") {
-      // 登录回来了:按草稿把那条批注补发出去
+      /* 登录回来了:按草稿把那条批注补发出去。
+         草稿**先取走再发**:ensureAnnotationsLoaded 每次有结果都会走到这里,而发送
+         是异步的 —— 留着的话这一份会被连发好几条(每有结果一次一条)。没发出去时
+         正文与编辑框里那份还在,用户重按一次就是。 */
+      store.clearDraft();
       submitAnnotation(draft.selectors, draft.body, draft.visibility, false).then(function (ok) {
         if (!ok) return;
-        store.clearDraft();
         closeEditor();
         setSmartbar("已按登录前的草稿保存:" + (draft.visibility === "private" ? "私有" : "公开"), "info");
       });
@@ -4939,4 +5090,8 @@
   syncMode();
   syncComposer();
   applyMode();
+
+  /* 助手面板的采纳入口(见 acceptProposal)。导出面只有这一个成员:建议卡那边
+     拿不到别的,写批注这件事也就只有这一条路。 */
+  window.__aipmAnno = { acceptProposal: acceptProposal };
 })();

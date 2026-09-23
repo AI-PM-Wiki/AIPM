@@ -761,6 +761,112 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
   color: var(--md-accent-fg-color);
 }
 
+/* 批注建议卡(助手提建议 → 用户挑可见范围 → 采纳那一下由批注面板写入) */
+.aipm-chat__proposal {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  margin-top: .4rem;
+  padding: .6rem .7rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-left: 3px solid var(--md-accent-fg-color);
+  border-radius: .5rem;
+  background: var(--md-default-bg-color);
+}
+/* 有结果之后收掉强调色:已写入 / 已丢弃的卡不该继续抢视线 */
+.aipm-chat__proposal[data-state="accepted"] {
+  border-left-color: var(--md-default-fg-color--lighter);
+}
+.aipm-chat__proposal[data-state="dismissed"] {
+  border-left-color: var(--md-default-fg-color--lightest);
+  opacity: .7;
+}
+.aipm-chat__proposal[data-state="failed"] {
+  border-left-color: var(--md-default-fg-color);
+}
+.aipm-chat__proposal-head {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .6875rem;
+  letter-spacing: .02em;
+  color: var(--md-default-fg-color--light);
+}
+.aipm-chat__proposal-quote {
+  margin: 0;
+  padding: .35rem .5rem;
+  border-radius: .35rem;
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color--lighter);
+  /* 引文可能很长:卡片里最多露四行,细节留给正文里那一笔 */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.aipm-chat__proposal-body {
+  margin: 0;
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--md-default-fg-color);
+}
+.aipm-chat__proposal-note {
+  margin: 0;
+  font-size: .75rem;
+  line-height: 1.45;
+  color: var(--md-default-fg-color--light);
+}
+.aipm-chat__proposal-vis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+.aipm-chat__proposal-visbtn {
+  padding: .15rem .5rem;
+  font-size: .6875rem;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  border: 1px solid var(--md-default-fg-color--lightest);
+}
+.aipm-chat__proposal-visbtn[aria-pressed="true"] {
+  color: var(--md-primary-bg-color);
+  background: var(--md-accent-fg-color);
+  border-color: var(--md-accent-fg-color);
+}
+.aipm-chat__proposal-foot {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.aipm-chat__proposal-accept,
+.aipm-chat__proposal-dismiss {
+  padding: .18rem .6rem;
+  font-size: .75rem;
+  border-radius: .35rem;
+  cursor: pointer;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  background: transparent;
+  color: var(--md-default-fg-color);
+}
+.aipm-chat__proposal-accept {
+  color: var(--md-primary-bg-color);
+  background: var(--md-accent-fg-color);
+  border-color: var(--md-accent-fg-color);
+}
+.aipm-chat__proposal-accept:disabled,
+.aipm-chat__proposal-dismiss:disabled {
+  opacity: .45;
+  cursor: default;
+}
+.aipm-chat__proposal-state {
+  font-size: .6875rem;
+  color: var(--md-default-fg-color--light);
+}
+
 /* ----------------------------------------------------------------------------
    8. 输入区(卡片式:附件 chips + 无边框 textarea + 底部图标行)
    ---------------------------------------------------------------------------- */
