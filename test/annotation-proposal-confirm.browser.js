@@ -37,12 +37,13 @@ const prepare = async (visibility, options = {}) => page.evaluate(async ({ visib
 
 const inspect = async () => page.evaluate(() => {
   const { core, card, identity, session, proposal } = window.__confirmCase;
+  const store = window.__aipmAnnoStore;
   return { state: card.querySelector('[role="status"]').textContent,
     record: core.inspect({ identity, session, requestId: proposal.requestId }),
     requests: performance.getEntriesByType('resource').filter((entry) =>
       entry.name.includes('127.0.0.1:8788/api/annotations')).length,
     external: performance.getEntriesByType('resource').filter((entry) =>
-      new URL(entry.name).origin !== location.origin).length };
+      entry.name.startsWith(store.ANNO_API_BASE + '/api/')).length };
 });
 const clear = async () => page.evaluate(() => window.__confirmCase.card.remove());
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
