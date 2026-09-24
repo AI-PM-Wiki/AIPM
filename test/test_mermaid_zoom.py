@@ -22,8 +22,8 @@ class TestMermaidZoomAssets(unittest.TestCase):
 
     def test_assets_are_registered_with_cache_versions(self):
         config_scripts = self.config[self.config.index("extra_javascript:") :]
-        self.assertIn("_static/js/mermaid-zoom.js?v=5", config_scripts)
-        self.assertIn("_static/css/mermaid-zoom.css?v=7", config_scripts)
+        self.assertIn("_static/js/mermaid-zoom.js?v=6", config_scripts)
+        self.assertIn("_static/css/mermaid-zoom.css?v=8", config_scripts)
 
     def test_viewer_waits_for_rendered_mermaid_dom(self):
         self.assertIn('querySelectorAll(".mermaid")', self.javascript)
@@ -43,7 +43,6 @@ class TestMermaidZoomAssets(unittest.TestCase):
         for text in (
             'setAttribute("aria-modal", "true")',
             'setAttribute("aria-labelledby"',
-            'setAttribute("aria-describedby"',
             'setAttribute("aria-haspopup", "dialog")',
             'event.key !== "Tab"',
             'event.preventDefault();\n      closeViewer(true);',
@@ -52,6 +51,13 @@ class TestMermaidZoomAssets(unittest.TestCase):
         ):
             self.assertIn(text, self.javascript)
         self.assertIn("showModal", self.javascript)
+
+    def test_dialog_title_has_no_instruction_hint(self):
+        self.assertIn('"Mermaid 放大视图" +', self.javascript)
+        self.assertNotIn("Mermaid 图放大视图", self.javascript)
+        self.assertNotIn("可拖动图表查看不同区域", self.javascript)
+        self.assertNotIn("aipm-mermaid-dialog-hint", self.javascript)
+        self.assertNotIn("mermaid-zoom__hint", self.stylesheet)
 
     def test_viewer_supports_centering_and_pointer_drag(self):
         for text in (

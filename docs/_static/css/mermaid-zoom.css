@@ -169,15 +169,6 @@
   text-align: center;
 }
 
-.mermaid-zoom__hint {
-  flex: none;
-  margin: 0;
-  padding: .5rem 1rem;
-  color: var(--md-default-fg-color--light);
-  font-size: .75rem;
-  line-height: 1.5;
-}
-
 .mermaid-zoom__viewport {
   position: relative;
   flex: 1;
