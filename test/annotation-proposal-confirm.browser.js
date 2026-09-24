@@ -4,11 +4,14 @@ const task = existing ? await taskSpace(existing.id) : await taskSpace('AIPM iso
 console.log('spaceId', task.spaceId);
 const page = task.page('p1');
 await page.cdp('Network.enable');
+await page.cdp('Network.setBlockedURLs', { urls: ['*umami.nvc.ac*'] });
+
 await page.cdp('Network.setBypassServiceWorker', { bypass: true });
 await page.cdp('Network.setCacheDisabled', { cacheDisabled: true });
 await page.goto('http://127.0.0.1:18788/ai/rag/');
 
-const prepare = async (visibility, options = {}) => page.evaluate(async ({ visibility, options }) => {
+const prepare = async (visibility, options = {}) => {
+  const result = await page.evaluate(async ({ visibility, options }) => {
   if (!window.__confirmModules) {
     const { createConsentCore } = await import('/_static/js/annotation-consent-core.js');
     const { mountProposalConfirmation } = await import('/_static/js/annotation-proposal-confirm.js');
@@ -32,19 +35,26 @@ const prepare = async (visibility, options = {}) => page.evaluate(async ({ visib
   card.id = 'current-confirmation';
   window.__confirmCase = { core, card, proposal, identity: visibility === 'local' ? 'local' : String(auth.user().githubId),
     session: `session-${requestId}` };
-  return { requestId, visible: card.textContent, identity: window.__confirmCase.identity };
+  return { requestId, identity: window.__confirmCase.identity };
 }, { visibility, options });
+  await page.waitForSelector('text="同意并写入"');
+  return { ...result, visible: await page.snapshot({ scope: 'full_page' }) };
+};
 
-const inspect = async () => page.evaluate(() => {
+const inspect = async () => {
+  const result = await page.evaluate(() => {
   const { core, card, identity, session, proposal } = window.__confirmCase;
   const store = window.__aipmAnnoStore;
-  return { state: card.querySelector('[role="status"]').textContent,
+  return {
     record: core.inspect({ identity, session, requestId: proposal.requestId }),
     requests: performance.getEntriesByType('resource').filter((entry) =>
       entry.name.includes('127.0.0.1:8788/api/annotations')).length,
     external: performance.getEntriesByType('resource').filter((entry) =>
       entry.name.startsWith(store.ANNO_API_BASE + '/api/')).length };
-});
+  });
+  const snapshot = await page.snapshot({ scope: 'full_page' });
+  return { ...result, state: snapshot.match(/status\s*\n\s*text "([^"]+)"/)?.[1] ?? '' };
+};
 const clear = async () => page.evaluate(() => window.__confirmCase.card.remove());
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 const logged = [];
@@ -54,12 +64,12 @@ assert(target.visible.includes('目标：') && target.visible.includes('正文�
   target.visible.includes('最终可见范围：仅自己可见') &&
   target.visible.includes('同意并写入'), 'visible consent details');
 assert((await inspect()).record === null, 'display does not grant');
-await page.evaluate(() => window.__confirmCase.card.querySelector('button').click());
+await page.evaluate(() => window.__confirmCase.card.click());
 assert((await inspect()).record === null, 'scripted click is not user consent');
 assert((await page.evaluate(async (id) => window.__aipmAnnoStore.request(
   `/api/annotation-requests/${id}`, { token: window.__aipmAnnoAuth.token() }), target.requestId)).status === 404,
   'no creation before consent');
-await page.click('#current-confirmation button:nth-last-child(2)', { label: 'cancel unapproved proposal' });
+await page.click('text="取消"', { label: 'cancel unapproved proposal' });
 assert((await inspect()).record === null, 'cancel without write');
 logged.push({ scenario: 'unapproved and cancelled', result: await inspect() });
 await clear();
@@ -67,11 +77,11 @@ await clear();
 target = await prepare('private');
 const before = (await inspect()).requests;
 try {
-  await page.dblclick('#current-confirmation button:nth-last-child(3)', { label: 'approve proposal twice' });
+  await page.dblclick('text="同意并写入"', { label: 'approve proposal twice' });
 } catch (error) {
   if (!String(error).includes('element is disabled')) throw error;
 }
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.startsWith('已写入'));
+await page.waitForSelector('text="已写入：仅自己可见"');
 let outcome = await inspect();
 assert(outcome.record.status === 'succeeded' && outcome.record.permits.length === 1 &&
   outcome.requests === before + 1, 'single authenticated creation');
@@ -85,7 +95,7 @@ await clear();
 
 target = await prepare('private');
 await page.evaluate(() => window.__aipmAnnoAuth.forget());
-await page.click('#current-confirmation button:nth-last-child(3)', { label: 'reject stale identity' });
+await page.click('text="同意并写入"', { label: 'reject stale identity' });
 outcome = await inspect();
 assert(outcome.record === null && outcome.state.includes('未写入'), 'stale identity no permission');
 logged.push({ scenario: 'expired session', result: outcome.state });
@@ -94,8 +104,8 @@ await clear();
 target = await prepare('local');
 const outgoingBefore = (await inspect()).requests;
 const externalBefore = (await inspect()).external;
-await page.click('#current-confirmation button:nth-last-child(3)', { label: 'approve local proposal' });
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.startsWith('已写入'));
+await page.click('text="同意并写入"', { label: 'approve local proposal' });
+await page.waitForSelector('text="已写入：仅本机"');
 outcome = await inspect();
 assert(outcome.record.status === 'succeeded' && outgoingBefore === outcome.requests &&
   externalBefore === outcome.external, 'local zero outgoing traffic');
@@ -121,15 +131,15 @@ target = await prepare('private');
 await page.cdp('Network.enable');
 await page.cdp('Network.emulateNetworkConditions', { offline: true, latency: 0,
   downloadThroughput: 0, uploadThroughput: 0 });
-await page.click('#current-confirmation button:nth-last-child(3)', { label: 'approve while offline' });
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.includes('结果未知'));
+await page.click('text="同意并写入"', { label: 'approve while offline' });
+await page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"');
 outcome = await inspect();
 assert(outcome.record.status === 'unknown' && outcome.record.permits[0].used === true,
   'transport failure freezes original');
 await page.cdp('Network.emulateNetworkConditions', { offline: false, latency: 0,
   downloadThroughput: -1, uploadThroughput: -1 });
-await page.click('#current-confirmation button:last-child', { label: 'query unknown request' });
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.includes('仍未知'));
+await page.click('text="查询写入结果"', { label: 'query unknown request' });
+await page.waitForSelector('text="结果仍未知；请稍后查询。"');
 logged.push({ scenario: 'offline unknown and read-only lookup', result: await inspect() });
 await clear();
 
@@ -140,8 +150,8 @@ const quota = await page.evaluate(() => {
   localStorage.setItem('aipm-confirm-quota', 'x'.repeat(5_242_880 - existing - 100));
   return existing;
 });
-await page.click('#current-confirmation button:nth-last-child(3)', { label: 'reject storage exhaustion' });
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.includes('未写入'));
+await page.click('text="同意并写入"', { label: 'reject storage exhaustion' });
+await page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"');
 outcome = await inspect();
 assert(outcome.record === null && outcome.requests === baseline, 'storage failure stops before sending');
 await page.evaluate(() => localStorage.removeItem('aipm-confirm-quota'));
@@ -149,8 +159,8 @@ logged.push({ scenario: 'real storage quota', priorBytes: quota, result: outcome
 await clear();
 
 target = await prepare('private', { style: 'not-a-valid-style' });
-await page.click('#current-confirmation button:nth-last-child(3)', { label: 'observe rejected server write' });
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.includes('结果未知'));
+await page.click('text="同意并写入"', { label: 'observe rejected server write' });
+await page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"');
 outcome = await inspect();
 assert(outcome.record.status === 'unknown', 'rejected response does not certify success');
 const rejected = await page.evaluate(async (id) => window.__aipmAnnoStore.request(
@@ -162,11 +172,11 @@ await clear();
 target = await prepare('private');
 await page.cdp('Network.emulateNetworkConditions', { offline: false, latency: 2500,
   downloadThroughput: -1, uploadThroughput: -1 });
-await page.click('#current-confirmation button:nth-last-child(3)', { label: 'send then revoke identity' });
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.includes('写入中'));
+await page.click('text="同意并写入"', { label: 'send then revoke identity' });
+await page.waitForSelector('text="写入中…"');
 await page.evaluate(() => window.__aipmAnnoAuth.forget());
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.includes('结果未知'),
-  undefined, { timeout: 12000 });
+await page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"', { timeout: 12000 });
+
 outcome = await inspect();
 assert(outcome.record.status === 'unknown', 'late response does not override lost session');
 await page.cdp('Network.emulateNetworkConditions', { offline: false, latency: 0,
@@ -180,8 +190,8 @@ const lateReceipt = await page.evaluate(async (id) => {
   return store.request(`/api/annotation-requests/${id}`, { token: auth.token() });
 }, target.requestId);
 assert(lateReceipt.status === 200, 'late transport was persisted by service');
-await page.click('#current-confirmation button:last-child', { label: 'read late persisted receipt' });
-await page.waitForFunction(() => document.querySelector('#current-confirmation [role="status"]')?.textContent.startsWith('已写入'));
+await page.click('text="查询写入结果"', { label: 'read late persisted receipt' });
+await page.waitForSelector('text="已写入：仅自己可见"');
 logged.push({ scenario: 'late response, new session read-only reconciliation',
   annotationId: lateReceipt.body.operation.annotationId, result: (await inspect()).state });
 await clear();

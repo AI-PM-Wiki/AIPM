@@ -1,5 +1,6 @@
 // Isolated verification entry: no production bootstrap imports this module.
 import { createAnnotationRequestStatus } from './annotation-request-status.js';
+import { createConfirmationView } from './annotation-confirm-view.js';
 
 const LABELS = { local: '仅本机', private: '仅自己可见', public: '公开' };
 
@@ -33,35 +34,22 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
   if (core.inspect({ identity, session, requestId: request.requestId })) {
     throw new Error('request already recorded');
   }
-
-  const card = document.createElement('section');
-  card.setAttribute('role', 'region');
-  card.setAttribute('aria-label', '批注建议确认');
-  const title = document.createElement('strong');
-  title.textContent = '确认写入批注建议';
-  const target = document.createElement('p');
-  target.textContent = `目标：${request.page}${request.scope === 'text' ? ` · 引文：${request.quote}` : ' · 整篇文章'}`;
-  const body = document.createElement('p');
-  body.textContent = `正文：${request.body}`;
-  const visibility = document.createElement('p');
-  visibility.textContent = `最终可见范围：${LABELS[request.visibility]}`;
-  const notice = document.createElement('p');
-  notice.textContent = '取消只能停止后续发送；已经到达服务的请求无法撤回。';
-  const state = document.createElement('p');
-  state.setAttribute('role', 'status');
-  state.textContent = '等待同意';
-  const agree = document.createElement('button');
-  agree.type = 'button';
-  agree.textContent = '同意并写入';
-  const cancel = document.createElement('button');
-  cancel.type = 'button';
-  cancel.textContent = '取消';
-  const check = document.createElement('button');
-  check.type = 'button';
-  check.textContent = '查询写入结果';
-  check.hidden = true;
-  card.append(title, target, body, visibility, notice, state, agree, cancel, check);
-  host.append(card);
+  const actions = {};
+  const view = createConfirmationView(host, (action, trusted) => {
+    if (trusted && actions[action]) actions[action]({ isTrusted: true });
+  });
+  view.update({
+    target: `目标：${request.page}${request.scope === 'text' ? ` · 引文：${request.quote}` : ' · 整篇文章'}`,
+    body: `正文：${request.body}`,
+    visibility: `最终可见范围：${LABELS[request.visibility]}`
+  });
+  const state = { set textContent(value) { view.update({ state: value }); } };
+  const agree = { set disabled(value) { view.update({ agreeDisabled: value }); },
+    addEventListener(type, handler) { actions.agree = handler; } };
+  const cancel = { set disabled(value) { view.update({ cancelDisabled: value }); },
+    addEventListener(type, handler) { actions.cancel = handler; } };
+  const check = { set hidden(value) { view.update({ checkHidden: value }); },
+    addEventListener(type, handler) { actions.check = handler; } };
 
   let started = false;
   let cancelled = false;
@@ -165,5 +153,5 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       check.hidden = true;
     } else state.textContent = '结果仍未知；请稍后查询。';
   });
-  return card;
+  return view.frame;
 }

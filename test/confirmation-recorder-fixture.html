@@ -1,0 +1,23 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>隔离确认测试</title>
+<script src="/_static/js/annotation-store.js"></script>
+<script src="/_static/js/annotation-auth.js"></script>
+<script type="module">
+import { createConsentCore } from '/_static/js/annotation-consent-core.js';
+import { mountProposalConfirmation } from '/_static/js/annotation-proposal-confirm.js';
+window.prepareConfirmation = (visibility = 'local', body = `LOCAL_REVIEW_${crypto.randomUUID()}`) => {
+  const requestId = crypto.randomUUID();
+  const proposal = { requestId, proposalId: crypto.randomUUID(), page: location.pathname,
+    scope: 'text', quote: `PRIVATE_QUOTE_${requestId}`, body, visibility };
+  const core = createConsentCore({ storage: localStorage, clock: () => Date.now(),
+    site: location.origin, newId: () => crypto.randomUUID() });
+  const session = `session-${requestId}`;
+  const frame = mountProposalConfirmation({ core, proposal, session });
+  window.currentConfirmation = { frame, core, proposal, session,
+    identity: visibility === 'local' ? 'local' : String(window.__aipmAnnoAuth.user()?.githubId) };
+  return { requestId, body, quote: proposal.quote };
+};
+window.prepareConfirmation();
+</script>
+<script src="/review/script.js" data-website-id="15cfb770-15be-4652-b3d7-bc9409c7a5fa" data-host-url="http://127.0.0.1:18981"></script>
+<script src="/review/recorder.js" data-website-id="15cfb770-15be-4652-b3d7-bc9409c7a5fa" data-host-url="http://127.0.0.1:18981"></script>
+</html>
