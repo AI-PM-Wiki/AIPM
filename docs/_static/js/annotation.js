@@ -2579,9 +2579,8 @@
   }
 
   /**
-   * 点赞。**按账号记名**,所以未登录点不了 —— 服务端不知道你是谁,直接引导登录
-   * (与选了公开/私有时的处置一致)。登录后 PUT / DELETE 都幂等,连点与重试都不会
-   * 把计数点乱。
+   * 点赞按账号记名。未登录或服务端返回 401 时跳转登录,携带当前页面地址。
+   * 登录后 PUT / DELETE 都幂等,连点与重试保持计数一致。
    */
   function toggleLike(anno) {
     if (!auth || !auth.isLoggedIn()) {
@@ -2597,6 +2596,7 @@
       .then(function (res) {
         if (res.status === 401) {
           auth.forget();
+          auth.login(location.href);
           return;
         }
         if (!res.ok) {

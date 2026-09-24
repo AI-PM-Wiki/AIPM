@@ -1589,6 +1589,17 @@ class TestUiRoundFour(unittest.TestCase):
         # 就地更新,不整页重拉(点赞是高频轻动作,重拉会把列表滚回顶部)
         self.assertIn("anno.likeCount = res.body.annotation.likeCount", fn)
 
+    def test_like_expired_session_redirects_to_login(self):
+        fn = _block(self.js, "function toggleLike(")
+        unauthorized = _block(fn, "if (res.status === 401)")
+        self.assertIn("auth.forget();", unauthorized)
+        self.assertIn("auth.login(location.href);", unauthorized)
+        self.assertLess(
+            unauthorized.index("auth.forget();"),
+            unauthorized.index("auth.login(location.href);"),
+        )
+        self.assertIn("return;", unauthorized)
+
     # ---- 发出去的形状 ----
 
     def test_style_is_sent_on_create(self):
