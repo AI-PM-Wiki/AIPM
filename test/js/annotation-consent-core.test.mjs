@@ -104,3 +104,11 @@ test('real browser storage quota failure denies permission and preserves prior s
   assert.equal(await create().confirm(next), 'grant-3');
   assert.deepEqual(await create().claim({ ...context, grantId: first }), request);
 });
+
+test('corrupt persisted state and unexpected request fields fail closed', async () => {
+  const core = create();
+  await assert.rejects(core.confirm({ ...context, request: { ...request, author: 'github-1' } }), { name: 'TypeError' });
+  storage.setItem('aipm-anno-consent-v1', '{');
+  assert.throws(() => core.inspect({ ...context, requestId: request.requestId }), SyntaxError);
+  await assert.rejects(core.confirm(context), SyntaxError);
+});
