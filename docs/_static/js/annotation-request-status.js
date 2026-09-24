@@ -1,5 +1,7 @@
 // Read-only controller. Construct only with the site's authenticated annotation session.
-export function createAnnotationRequestStatus({ core, auth, store }) {
+export function createAnnotationRequestStatus({ core }) {
+  const auth = window.__aipmAnnoAuth;
+  const store = window.__aipmAnnoStore;
   if (!core || !auth || !store) throw new TypeError('dependencies');
 
   function actor() {
@@ -14,6 +16,10 @@ export function createAnnotationRequestStatus({ core, auth, store }) {
     if (typeof requestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(requestId)) {
       throw new TypeError('requestId');
     }
+    const local = core.inspectOwned({ identity: 'local', requestId });
+    if (local && (local.visibility === 'local' || local.request?.visibility === 'local')) {
+      return { status: local.status, annotationId: local.annotationId ?? null };
+    }
     const { identity, token } = actor();
     const original = core.inspectOwned({ identity, requestId });
     if (!original) return null;
@@ -24,7 +30,7 @@ export function createAnnotationRequestStatus({ core, auth, store }) {
       throw new Error('original visibility unavailable');
     }
     const response = await store.request(`/api/annotation-requests/${encodeURIComponent(requestId)}`, { token });
-    const current = actor();
+    const current = { identity: String(auth.user()?.githubId), token: auth.token() };
     if (current.identity !== identity || current.token !== token) return { status: 'indeterminate' };
     const latest = core.inspectOwned({ identity, requestId });
     if (!latest || latest.session !== original.session || latest.digest !== original.digest ||
