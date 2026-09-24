@@ -1,4 +1,4 @@
-// Local state only. A trusted browser controller must call confirm after a user gesture.
+// Local state only. The trusted controller verifies user confirmation and success evidence.
 const KEY = 'aipm-anno-consent-v1';
 const FIVE_MINUTES = 5 * 60 * 1000;
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
@@ -74,6 +74,7 @@ export function createConsentCore({ storage, clock, site, newId }) {
     const now = clock();
     if (record) {
       checked(record, identity, session, request, digest);
+      if (now - record.createdAt >= THIRTY_DAYS) throw new Error('recovery expired');
       if (unknown !== (record.status === 'unknown') ||
           !['unknown', 'awaiting_confirmation'].includes(record.status)) throw new Error('request already recorded');
       if (record.permit) {
@@ -104,6 +105,7 @@ export function createConsentCore({ storage, clock, site, newId }) {
     const record = state.records.find((entry) => match(entry, identity, request.requestId));
     checked(record, identity, session, request, digest);
     const permit = record.permits.find((item) => item.id === grantId);
+    if (clock() - record.createdAt >= THIRTY_DAYS) throw new Error('recovery expired');
     if (record.permit !== grantId || !permit || permit.used || permit.revoked || clock() >= permit.expiresAt ||
         !['awaiting_confirmation', 'unknown'].includes(record.status)) throw new Error('permission denied');
     permit.used = true;
@@ -127,16 +129,34 @@ export function createConsentCore({ storage, clock, site, newId }) {
     save(state);
   }
 
-  function settle({ identity, session, requestId, status, annotationId }) {
+  function settle({ identity, session, requestId, status, annotationId, evidence }) {
     if (!['unknown', 'succeeded', 'failed'].includes(status)) throw new TypeError('status');
     const state = read();
     const record = state.records.find((entry) => match(entry, identity, requestId));
-    if (!record || record.session !== session || record.status !== 'executing') throw new Error('no executing request');
-    record.status = status;
-    if (status === 'unknown') record.unknownRetained = true;
-    if (annotationId !== undefined) {
-      if (status !== 'succeeded') throw new TypeError('annotationId');
-      record.annotationId = requireText(annotationId, 'annotationId');
+    if (!record || record.session !== session || !['executing', 'unknown'].includes(record.status)) {
+      throw new Error('no active request');
+    }
+    if (annotationId !== undefined && status !== 'succeeded') throw new TypeError('annotationId');
+    if (status === 'succeeded') {
+      requireText(annotationId, 'annotationId');
+      if (record.status === 'unknown') {
+        if (!evidence || evidence.identity !== identity || evidence.session !== session ||
+            evidence.site !== site || evidence.requestId !== requestId || evidence.digest !== record.digest ||
+            evidence.annotationId !== annotationId || evidence.status !== 'succeeded' ||
+            !['read_result', 'in_flight'].includes(evidence.source)) throw new Error('success evidence mismatch');
+        if (evidence.source === 'in_flight' &&
+            !record.permits.some((permit) => permit.id === evidence.grantId && permit.used)) {
+          throw new Error('in-flight permit mismatch');
+        }
+      }
+      record.status = 'succeeded';
+      record.annotationId = annotationId;
+    } else if (record.unknownRetained || record.status === 'unknown') {
+      record.status = 'unknown';
+      record.unknownRetained = true;
+    } else {
+      record.status = status;
+      if (status === 'unknown') record.unknownRetained = true;
     }
     save(state);
   }
