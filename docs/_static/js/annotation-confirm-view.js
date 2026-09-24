@@ -8,6 +8,7 @@ const DOCUMENT = `<!doctype html><html lang="zh-CN"><head>
 <p id="visibility"></p><p id="notice"></p>
 <p id="state" role="status"></p>
 <button id="agree" type="button" disabled></button>
+<button id="retry" type="button" hidden disabled></button>
 <button id="cancel" type="button" disabled></button>
 <button id="check" type="button" hidden disabled></button>
 </section><script>
@@ -19,15 +20,15 @@ addEventListener('message', (event) => {
   if (!data || data.type !== 'confirmation-view') return;
   if (channel && data.channel !== channel) return;
   if (!channel) { channel = data.channel; origin = event.origin; }
-  for (const key of ['title', 'target', 'body', 'visibility', 'notice', 'state', 'agree', 'cancel', 'check']) {
+  for (const key of ['title', 'target', 'body', 'visibility', 'notice', 'state', 'agree', 'retry', 'cancel', 'check']) {
     if (Object.hasOwn(data, key)) document.getElementById(key).textContent = data[key];
   }
-  for (const key of ['agree', 'cancel', 'check']) {
+  for (const key of ['agree', 'retry', 'cancel', 'check']) {
     if (Object.hasOwn(data, key + 'Disabled')) document.getElementById(key).disabled = data[key + 'Disabled'];
     if (Object.hasOwn(data, key + 'Hidden')) document.getElementById(key).hidden = data[key + 'Hidden'];
   }
 });
-for (const action of ['agree', 'cancel', 'check']) {
+for (const action of ['agree', 'retry', 'cancel', 'check']) {
   document.getElementById(action).addEventListener('click', (event) => {
     parent.postMessage({ type: 'confirmation-action', channel, action, trusted: event.isTrusted }, origin);
   });
@@ -42,8 +43,9 @@ export function createConfirmationView(host, onAction) {
   const channel = crypto.randomUUID();
   const view = { title: '确认写入批注建议', target: '', body: '', visibility: '',
     notice: '取消只能停止后续发送；已经到达服务的请求无法撤回。',
-    state: '等待同意', agree: '同意并写入', cancel: '取消', check: '查询写入结果',
-    agreeDisabled: false, cancelDisabled: false, checkDisabled: false, checkHidden: true };
+    state: '等待同意', agree: '同意并写入', retry: '再次同意原请求并写入',
+    cancel: '取消', check: '查询写入结果', agreeDisabled: false,
+    retryDisabled: false, retryHidden: true, cancelDisabled: false, checkDisabled: false, checkHidden: true };
   let ready = false;
   function render() {
     if (ready && frame.isConnected) frame.contentWindow.postMessage({ type: 'confirmation-view', channel, ...view }, '*');

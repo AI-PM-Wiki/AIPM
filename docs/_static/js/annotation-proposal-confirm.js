@@ -1,10 +1,10 @@
-// Isolated verification entry: no production bootstrap imports this module.
+// An isolated confirmation entry. The production Agent bootstrap remains disabled.
 import { createAnnotationRequestStatus } from './annotation-request-status.js';
 import { createConfirmationView } from './annotation-confirm-view.js';
 
 const LABELS = { local: '仅本机', private: '仅自己可见', public: '公开' };
 
-export function mountProposalConfirmation({ core, proposal, session, host = document.body }) {
+export function mountProposalConfirmation({ core, proposal, session, host = document.body, resumeExisting = false }) {
   const auth = window.__aipmAnnoAuth;
   const store = window.__aipmAnnoStore;
   if (!core || !auth || !store || !host || typeof session !== 'string' || !session) {
@@ -31,9 +31,13 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       (!Number.isSafeInteger(initialUser?.githubId) || initialUser.githubId <= 0 || !initialToken)) {
     throw new Error('authentication required');
   }
-  if (core.inspect({ identity, session, requestId: request.requestId })) {
+  const existing = core.inspectOwned({ identity, requestId: request.requestId });
+  if (existing && !resumeExisting) {
     throw new Error('request already recorded');
   }
+  if (resumeExisting && (!existing || existing.session !== session ||
+      JSON.stringify(existing.request) !== JSON.stringify(request) ||
+      existing.site !== location.origin)) throw new Error('recovery evidence unavailable');
   const actions = {};
   const view = createConfirmationView(host, (action, trusted) => {
     if (trusted && actions[action]) actions[action]({ isTrusted: true });
@@ -46,6 +50,9 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
   const state = { set textContent(value) { view.update({ state: value }); } };
   const agree = { set disabled(value) { view.update({ agreeDisabled: value }); },
     addEventListener(type, handler) { actions.agree = handler; } };
+  const retry = { set disabled(value) { view.update({ retryDisabled: value }); },
+    set hidden(value) { view.update({ retryHidden: value }); },
+    addEventListener(type, handler) { actions.retry = handler; } };
   const cancel = { set disabled(value) { view.update({ cancelDisabled: value }); },
     addEventListener(type, handler) { actions.cancel = handler; } };
   const check = { set hidden(value) { view.update({ checkHidden: value }); },
@@ -54,6 +61,23 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
   let started = false;
   let cancelled = false;
   let claimed = false;
+  if (existing) {
+    agree.disabled = true;
+    if (existing.status === 'unknown' || existing.status === 'executing') {
+      state.textContent = '结果未知；请先查询原请求。再次提交须重新同意原请求。';
+      check.hidden = false;
+      retry.hidden = false;
+    } else if (existing.status === 'succeeded') {
+      state.textContent = `已写入：${LABELS[request.visibility]}`;
+      cancel.disabled = true;
+    } else if (existing.status === 'awaiting_confirmation') {
+      agree.disabled = false;
+      state.textContent = '等待再次同意原请求。';
+    } else {
+      state.textContent = '原请求已有记录；只能查询原请求。';
+      check.hidden = false;
+    }
+  }
   function sameContext() {
     return location.pathname === request.page &&
       auth.token() === initialToken && auth.user()?.githubId === initialUser?.githubId &&
@@ -70,11 +94,18 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     }
     state.textContent = '结果未知；只能查询原请求，不能再次提交。';
     check.hidden = false;
+    const current = core.inspect({ identity, session, requestId: request.requestId });
+    if (current?.request && ['unknown', 'executing'].includes(current.status) && !cancelled) {
+      started = false;
+      retry.disabled = false;
+      retry.hidden = false;
+    }
   }
 
   cancel.addEventListener('click', () => {
     cancelled = true;
     agree.disabled = true;
+    retry.disabled = true;
     cancel.disabled = true;
     const record = core.inspect({ identity, session, requestId: request.requestId });
     if (record) {
@@ -90,18 +121,28 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     if (claimed) unknown();
     else state.textContent = '已取消，未写入。';
   });
-  agree.addEventListener('click', async (event) => {
+  async function submit(event, retryUnknown) {
     if (!event.isTrusted) return;
     if (started || cancelled) return;
+    if (retryUnknown && (!resumeExisting || !['unknown', 'executing'].includes(
+      core.inspect({ identity, session, requestId: request.requestId })?.status))) return;
     started = true;
     agree.disabled = true;
+    retry.disabled = true;
     if (!sameContext()) {
       state.textContent = '页面或身份已变化，未写入。';
       return;
     }
     let grantId;
     try {
-      grantId = await core.confirm({ identity, session, request });
+      if (resumeExisting && !retryUnknown &&
+          core.inspect({ identity, session, requestId: request.requestId })?.status === 'awaiting_confirmation') {
+        core.revoke({ identity, session, requestId: request.requestId });
+      }
+      if (retryUnknown && core.inspect({ identity, session, requestId: request.requestId })?.status === 'executing') {
+        core.settle({ identity, session, requestId: request.requestId, status: 'unknown' });
+      }
+      grantId = await core.confirm({ identity, session, request, unknown: retryUnknown });
       if (!sameContext() || cancelled) {
         core.revoke({ identity, session, requestId: request.requestId });
         state.textContent = '页面或身份已变化，未写入。';
@@ -157,13 +198,16 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     } catch (error) {
       unknown();
     }
-  });
+  }
+  agree.addEventListener('click', (event) => submit(event, false));
+  retry.addEventListener('click', (event) => submit(event, true));
   check.addEventListener('click', async () => {
     try {
       const result = await createAnnotationRequestStatus({ core }).query(request.requestId);
       if (result?.status === 'succeeded') {
         state.textContent = `已写入：${LABELS[request.visibility]}`;
         check.hidden = true;
+        retry.hidden = true;
       } else state.textContent = '结果仍未知；请稍后查询。';
     } catch (error) {
       if (error.name !== 'QuotaExceededError') throw error;
