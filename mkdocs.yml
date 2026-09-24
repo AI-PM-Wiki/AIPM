@@ -825,6 +825,7 @@ extra_css:
   - '_static/css/extra.css?v=40'
   - '_static/css/mermaid-zoom.css?v=4'
   - '_static/css/chart-context.css?v=1'
+  - '_static/css/annotation-login-consent.css?v=1'
 
 # Extensions
 markdown_extensions:

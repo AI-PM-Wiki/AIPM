@@ -1004,11 +1004,12 @@
         !Number.isSafeInteger(Date.parse(draft.createdAt)) ||
         Date.now() - Date.parse(draft.createdAt) >= 30 * 86400000 ||
         Date.now() < Date.parse(draft.createdAt)) return false;
-    var user = auth && auth.user();
-    if (draft.identity === null && draft.loginStarted === true) {
-      return !user || (Number.isSafeInteger(user.githubId) &&
-        auth.wasAuthCallback());
+    if (draft.identity === null) {
+      return draft.loginStarted === true && draft.sendState === "unsent" &&
+        draft.resultUnknown === false && typeof draft.requestId === "string" &&
+        draft.requestId.length > 0;
     }
+    var user = auth && auth.user();
     return !!user && Number.isSafeInteger(user.githubId) &&
       draft.identity === String(user.githubId);
   }
@@ -3702,6 +3703,11 @@
   function submitEditor() {
     if (editorDraft === null || busy || restoringDraft) return;
     var storedDraft = store.peekDraft();
+    if (storedDraft && storedDraft.identity === null &&
+        editorDraft.requestId === storedDraft.requestId) {
+      setHint("请在登录返回后的确认界面查看账号和请求，再决定是否提交。");
+      return;
+    }
     if (storedDraft && editorDraft && storedDraft.requestId === editorDraft.requestId &&
         !resumableManualDraft(storedDraft)) {
       setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
@@ -4778,7 +4784,7 @@
   function draftForLogin() {
     var current = store.peekDraft();
     if (current && !resumableManualDraft(current)) return null;
-    if (current && current.page === pagePath() && (!editorDraft || current.resultUnknown)) {
+    if (current && current.page === pagePath() && current.sendState === "unsent") {
       return current;
     }
     if (editorDraft === null && composerSelection === null && pendingSelection === null) {
@@ -4795,6 +4801,8 @@
       site: location.origin,
       identity: auth && auth.user() ? String(auth.user().githubId) : null,
       loginStarted: true,
+      sendState: "unsent",
+      resultUnknown: false,
       createdAt: new Date().toISOString(),
       requestId: editorDraft && editorDraft.requestId || store.uid(),
       page: pagePath(),
@@ -4815,9 +4823,109 @@
   }
 
   var restoringDraft = false;
-  var attemptedDraftRequestId = null;
+  var pendingLoginConsent = null;
+  var loginConsentDialog = null;
 
-  /** OAuth 往返回来:草稿还在就恢复,并把待发布的那条补发出去。 */
+  function closeLoginConsent() {
+    pendingLoginConsent = null;
+    if (loginConsentDialog) loginConsentDialog.remove();
+    loginConsentDialog = null;
+  }
+
+  function showLoginConsent(draft, ticket) {
+    if (loginConsentDialog) return;
+    var user = auth.user();
+    var request = {
+      requestId: draft.requestId, page: draft.page, body: draft.body,
+      color: colorOf(draft.color), style: styleIdOf(draft.style),
+      visibility: draft.visibility,
+      target: { selectors: draft.selectors || [],
+        scope: draft.scope === "page" ? "page" : undefined }
+    };
+    pendingLoginConsent = { ticket: ticket, request: JSON.stringify(request) };
+    var dialog = document.createElement("section");
+    dialog.className = "aipm-anno__login-consent";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-label", "确认批注提交");
+    var heading = document.createElement("h2");
+    heading.textContent = "确认提交账号与请求";
+    dialog.appendChild(heading);
+    var account = document.createElement("p");
+    account.textContent = "当前账号：" + user.login + "（GitHub ID " + user.githubId + "）";
+    dialog.appendChild(account);
+    var payload = document.createElement("pre");
+    payload.textContent = pendingLoginConsent.request;
+    dialog.appendChild(payload);
+    var confirm = document.createElement("button");
+    confirm.type = "button";
+    confirm.textContent = "确认以此账号提交";
+    dialog.appendChild(confirm);
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "取消提交";
+    dialog.appendChild(cancel);
+    cancel.addEventListener("click", function (event) {
+      if (!event.isTrusted) return;
+      closeLoginConsent();
+      setHint("已取消提交，草稿保留。");
+    });
+    confirm.addEventListener("click", function (event) {
+      if (!event.isTrusted || !pendingLoginConsent || busy || restoringDraft) return;
+      var current = store.peekDraft();
+      var proof = pendingLoginConsent;
+      if (!current || !resumableManualDraft(current) ||
+          current.identity !== null || current.sendState !== "unsent" ||
+          current.resultUnknown !== false || current.page !== pagePath() ||
+          auth.draftSnapshot(current) !== proof.ticket.snapshot ||
+          Date.now() >= proof.ticket.expiresAt ||
+          !auth.sameStoredSession(proof.ticket.token, proof.ticket.githubId)) {
+        closeLoginConsent();
+        setHint("登录账号、会话或草稿已变化，请保留草稿重新登录。");
+        return;
+      }
+      current.identity = String(proof.ticket.githubId);
+      current.sendState = "attempted";
+      current.resultUnknown = true;
+      store.saveDraft(current);
+      var saved = store.peekDraft();
+      if (!saved || saved.requestId !== current.requestId ||
+          saved.identity !== current.identity || saved.sendState !== "attempted" ||
+          !saved.resultUnknown) throw new Error("draft submission persistence failed");
+      closeLoginConsent();
+      restoringDraft = true;
+      setBusy(true);
+      submitAnnotation(
+        current.selectors || [], current.body, current.visibility,
+        current.scope === "page", current.color, current.style,
+        current.requestId, true
+      ).then(function (result) {
+        restoringDraft = false;
+        setBusy(false);
+        if (result.ok) {
+          clearMatchingDraft(current);
+          if (editorDraft && editorDraft.requestId === current.requestId) closeEditor();
+          return;
+        }
+        var latest = store.peekDraft();
+        if (!latest || latest.requestId !== current.requestId) return;
+        if (result.code === "unknown") {
+          render();
+          setHint("写入结果未知，请保持原内容及可见范围重试。");
+          return;
+        }
+        latest.resultUnknown = false;
+        store.saveDraft(latest);
+        render();
+        setHint("保存失败，请检查后重试。");
+      });
+    });
+    document.body.appendChild(dialog);
+    loginConsentDialog = dialog;
+    confirm.focus();
+  }
+
+  /** OAuth 往返回来恢复草稿；首次身份绑定需要独立确认。 */
   function maybeRestoreDraft() {
     var draft = store.peekDraft();
     var legacy = store.peekLegacyDraft();
@@ -4871,50 +4979,18 @@
     activeVis = draft.visibility || null;
     render();
     if (els.input) els.input.focus();
-    if (auth && auth.isLoggedIn() &&
-        (draft.selectors || draft.scope === "page") && editorDraft.kind === "create" &&
-        attemptedDraftRequestId !== draft.requestId) {
-      var wasUnknown = !!draft.resultUnknown;
-      if (draft.identity === null && auth && auth.user()) {
-        draft.identity = String(auth.user().githubId);
+    if (draft.identity === null) {
+      var ticket = auth && auth.takeDraftLogin(draft);
+      if (ticket && auth.isLoggedIn() &&
+          (draft.selectors || draft.scope === "page") && editorDraft.kind === "create") {
+        showLoginConsent(draft, ticket);
+      } else {
+        setHint("草稿尚未提交，请重新登录并确认账号和请求。");
       }
-      draft.resultUnknown = true;
-      store.saveDraft(draft);
-      var saved = store.peekDraft();
-      if (!saved || saved.requestId !== draft.requestId ||
-          saved.identity !== draft.identity || saved.source !== "manual-v1" ||
-          !saved.resultUnknown) {
-        setHint("草稿未能保存,请检查浏览器存储后重试。");
-        return;
-      }
-      render();
-      restoringDraft = true;
-      attemptedDraftRequestId = draft.requestId;
-      setBusy(true);
-      submitAnnotation(
-        draft.selectors || [], draft.body, draft.visibility, draft.scope === "page",
-        draft.color, draft.style, draft.requestId, true
-      ).then(function (result) {
-        restoringDraft = false;
-        setBusy(false);
-        var current = store.peekDraft();
-        if (result.ok) {
-          clearMatchingDraft(draft);
-          if (editorDraft && editorDraft.requestId === draft.requestId) closeEditor();
-          setSmartbar("已按登录前的草稿保存:" + (draft.visibility === "private" ? "私有" : "公开"), "info");
-          return;
-        }
-        if (!current || current.page !== draft.page || current.requestId !== draft.requestId) return;
-        if (result.code === "unknown" || wasUnknown) {
-          render();
-          setHint("写入结果未知,请保持原内容及可见范围重试。");
-        } else {
-          draft.resultUnknown = false;
-          store.saveDraft(draft);
-          render();
-          setHint("保存失败,请重试。");
-        }
-      });
+      return;
+    }
+    if (draft.resultUnknown) {
+      setHint("写入结果未知，请保持原内容及可见范围重试。");
     }
   }
 
@@ -5185,6 +5261,9 @@
       if (open || store.peekDraft() || store.peekLegacyDraft()) ensureAnnotationsLoaded();
     });
     auth.onChange(function () {
+      if (pendingLoginConsent && !auth.sameStoredSession(
+        pendingLoginConsent.ticket.token, pendingLoginConsent.ticket.githubId
+      )) closeLoginConsent();
       syncComposer();
       syncHeadIcon();
     });
