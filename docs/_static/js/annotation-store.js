@@ -363,6 +363,7 @@
   }
 
   window.__aipmAnnoStore = {
+    assetVersion: 38,
     ANNO_API_BASE: ANNO_API_BASE,
     PALETTE: PALETTE,
     DEFAULT_COLOR: DEFAULT_COLOR,

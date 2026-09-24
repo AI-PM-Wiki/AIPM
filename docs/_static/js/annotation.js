@@ -50,6 +50,9 @@
   var store = window.__aipmAnnoStore;
   var auth = window.__aipmAnnoAuth;
   var panels = window.__aipmPanels;
+  if (store?.assetVersion !== 38 || auth?.assetVersion !== 38) {
+    throw new Error('annotation asset version mismatch');
+  }
 
   /* 预览站(Netlify)不挂载:后端在线上,预览站打过去会 403 且没有意义 */
   if (/\.netlify\.app$/i.test(location.hostname)) return;

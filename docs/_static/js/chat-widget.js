@@ -915,7 +915,7 @@
       open.disabled = true;
       let entry;
       try {
-        const { createAgentEntry } = await import('./annotation-agent-entry.js');
+        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=38');
         entry = createAgentEntry();
         entry.mount({ proposal, historical, host: protectedCard });
         notice.textContent = '';
