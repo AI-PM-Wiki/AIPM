@@ -61,9 +61,15 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
   }
   function unknown() {
     const record = core.inspect({ identity, session, requestId: request.requestId });
-    if (record?.status === 'executing') core.settle({ identity, session, requestId: request.requestId, status: 'unknown' });
+    if (record?.status === 'executing') {
+      try {
+        core.settle({ identity, session, requestId: request.requestId, status: 'unknown' });
+      } catch (error) {
+        if (error.name !== 'QuotaExceededError') throw error;
+      }
+    }
     state.textContent = '结果未知；只能查询原请求，不能再次提交。';
-    check.hidden = request.visibility === 'local';
+    check.hidden = false;
   }
 
   cancel.addEventListener('click', () => {
@@ -71,7 +77,16 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     agree.disabled = true;
     cancel.disabled = true;
     const record = core.inspect({ identity, session, requestId: request.requestId });
-    if (record) core.revoke({ identity, session, requestId: request.requestId });
+    if (record) {
+      try {
+        core.revoke({ identity, session, requestId: request.requestId });
+      } catch (error) {
+        if (error.name !== 'QuotaExceededError') throw error;
+        unknown();
+        return;
+      }
+    }
+
     if (claimed) unknown();
     else state.textContent = '已取消，未写入。';
   });
@@ -104,7 +119,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       const target = claimedRequest.scope === 'page' ? { scope: 'page', selectors } : { selectors };
       if (claimedRequest.visibility === 'local') {
         const id = store.uid();
-        store.localAdd({ id, page: claimedRequest.page, visibility: 'local',
+        store.localAdd({ id, requestId: claimedRequest.requestId, page: claimedRequest.page, visibility: 'local',
           color: claimedRequest.color, style: claimedRequest.style, body: claimedRequest.body, target,
           author: { githubId: 0, login: auth.user()?.login ?? '本机' },
           replies: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
@@ -140,18 +155,20 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       state.textContent = `已写入：${LABELS[claimedRequest.visibility]}`;
       cancel.disabled = true;
     } catch (error) {
-      const record = core.inspect({ identity, session, requestId: request.requestId });
-      if (record?.status === 'executing' || record?.status === 'unknown') unknown();
-      else state.textContent = '未写入：确认状态无法保存或许可失效。';
-      card.dataset.error = error.message;
+      unknown();
     }
   });
   check.addEventListener('click', async () => {
-    const result = await createAnnotationRequestStatus({ core }).query(request.requestId);
-    if (result?.status === 'succeeded') {
-      state.textContent = `已写入：${LABELS[request.visibility]}`;
-      check.hidden = true;
-    } else state.textContent = '结果仍未知；请稍后查询。';
+    try {
+      const result = await createAnnotationRequestStatus({ core }).query(request.requestId);
+      if (result?.status === 'succeeded') {
+        state.textContent = `已写入：${LABELS[request.visibility]}`;
+        check.hidden = true;
+      } else state.textContent = '结果仍未知；请稍后查询。';
+    } catch (error) {
+      if (error.name !== 'QuotaExceededError') throw error;
+      unknown();
+    }
   });
   return view.frame;
 }

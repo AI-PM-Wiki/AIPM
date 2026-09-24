@@ -1,6 +1,11 @@
 const task = await taskSpace('AIPM read-only annotation status verification');
 console.log('spaceId', task.spaceId);
 const page = task.page('p1');
+await page.cdp('Network.enable');
+await page.cdp('Network.setBlockedURLs', { urls: ['*umami.nvc.ac*'] });
+await page.cdp('Network.setBypassServiceWorker', { bypass: true });
+await page.cdp('Network.setCacheDisabled', { cacheDisabled: true });
+
 await page.goto('http://127.0.0.1:18788/');
 const result = await page.evaluate(async () => {
   const assert = (value, message) => { if (!value) throw new Error(message); };
@@ -11,10 +16,10 @@ const result = await page.evaluate(async () => {
     script.onerror = reject;
     document.head.append(script);
   });
-  await load('/docs/_static/js/annotation-store.js');
-  await load('/docs/_static/js/annotation-auth.js');
-  const { createConsentCore } = await import('/docs/_static/js/annotation-consent-core.js');
-  const { createAnnotationRequestStatus } = await import('/docs/_static/js/annotation-request-status.js');
+  await load('/_static/js/annotation-store.js');
+  await load('/_static/js/annotation-auth.js');
+  const { createConsentCore } = await import('/_static/js/annotation-consent-core.js');
+  const { createAnnotationRequestStatus } = await import('/_static/js/annotation-request-status.js');
   const store = window.__aipmAnnoStore;
   const auth = window.__aipmAnnoAuth;
   const session = await store.request('/api/auth/dev', { method: 'POST' });

@@ -18,8 +18,27 @@ export function createAnnotationRequestStatus({ core }) {
     }
     const local = core.inspectOwned({ identity: 'local', requestId });
     if (local && (local.visibility === 'local' || local.request?.visibility === 'local')) {
-      return { status: local.status, annotationId: local.annotationId ?? null };
+      if (!['unknown', 'executing'].includes(local.status)) {
+        return { status: local.status, annotationId: local.annotationId ?? null };
+      }
+      const matches = store.localList(local.page ?? local.request?.page)
+        .filter((item) => item.requestId === requestId);
+      if (matches.length !== 1 || !local.request || matches[0].visibility !== 'local' ||
+          matches[0].page !== local.request.page || matches[0].body !== local.request.body ||
+          matches[0].color !== local.request.color || matches[0].style !== local.request.style ||
+          matches[0].target?.scope !== (local.request.scope === 'page' ? 'page' : undefined) ||
+          JSON.stringify(matches[0].target?.selectors) !== JSON.stringify(local.request.scope === 'page' ? [] :
+            [{ type: 'TextQuoteSelector', exact: local.request.quote,
+              prefix: local.request.prefix, suffix: local.request.suffix }]) ||
+          typeof matches[0].id !== 'string' || !matches[0].id) return { status: 'indeterminate' };
+      const annotationId = matches[0].id;
+      const evidence = { identity: local.identity, session: local.session, site: local.site,
+        requestId, digest: local.digest, source: 'read_result', status: 'succeeded', annotationId };
+      core.settle({ identity: local.identity, session: local.session, requestId,
+        status: 'succeeded', annotationId, evidence });
+      return { status: 'succeeded', annotationId };
     }
+
     const { identity, token } = actor();
     const original = core.inspectOwned({ identity, requestId });
     if (!original) return null;
