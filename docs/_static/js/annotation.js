@@ -999,8 +999,40 @@
     return "public";
   }
 
+  function resumableManualDraft(draft) {
+    if (!draft || draft.source !== "manual-v1" || draft.site !== location.origin ||
+        !Number.isSafeInteger(Date.parse(draft.createdAt)) ||
+        Date.now() - Date.parse(draft.createdAt) >= 30 * 86400000 ||
+        Date.now() < Date.parse(draft.createdAt)) return false;
+    var user = auth && auth.user();
+    if (draft.identity === null && draft.loginStarted === true) {
+      return !user || (Number.isSafeInteger(user.githubId) &&
+        auth.wasAuthCallback());
+    }
+    return !!user && Number.isSafeInteger(user.githubId) &&
+      draft.identity === String(user.githubId);
+  }
+
+  function prunePendingContent(draft, legacy) {
+    if (!draft) return;
+    var originalTime = draft.retentionSavedAt || draft.createdAt || draft.savedAt;
+    var savedTime = Date.parse(originalTime);
+    if (Number.isSafeInteger(savedTime) && Date.now() >= savedTime &&
+        Date.now() - savedTime < 30 * 86400000) return;
+    if (!draft.body && !draft.quote && !draft.selectors) return;
+    (legacy ? store.saveLegacyDraft : store.saveDraft)(Object.assign({}, draft, {
+      retentionSavedAt: originalTime || null,
+      body: "", quote: "", selectors: null
+    }));
+    var saved = legacy ? store.peekLegacyDraft() : store.peekDraft();
+    if (!saved || saved.requestId !== draft.requestId || saved.body ||
+        saved.quote || saved.selectors) throw new Error("draft retention failed");
+  }
+
+
   function uncertainDraft() {
     var draft = store.peekDraft();
+    if (!resumableManualDraft(draft)) return null;
     return draft && draft.resultUnknown && draft.page === pagePath() &&
       editorDraft && editorDraft.kind === "create" &&
       editorDraft.requestId === draft.requestId ? draft : null;
@@ -1008,7 +1040,8 @@
 
   function clearMatchingDraft(draft) {
     var current = store.peekDraft();
-    if (current && current.page === draft.page && current.requestId === draft.requestId) {
+    if (resumableManualDraft(current) && current.page === draft.page &&
+        current.requestId === draft.requestId) {
       store.clearDraft();
     }
   }
@@ -3478,6 +3511,12 @@
   }
 
   function beginEditor(opts) {
+    var stored = store.peekDraft();
+    if (stored && !resumableManualDraft(stored)) {
+      maybeRestoreDraft();
+      setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      return;
+    }
     if (store.peekDraft() && store.peekDraft().resultUnknown &&
         store.peekDraft().page === pagePath()) {
       maybeRestoreDraft();
@@ -3662,6 +3701,12 @@
    */
   function submitEditor() {
     if (editorDraft === null || busy || restoringDraft) return;
+    var storedDraft = store.peekDraft();
+    if (storedDraft && editorDraft && storedDraft.requestId === editorDraft.requestId &&
+        !resumableManualDraft(storedDraft)) {
+      setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      return;
+    }
     var pending = uncertainDraft();
     if (pending) {
       setBusy(true);
@@ -3757,6 +3802,10 @@
       return;
     }
     var previous = store.peekDraft();
+    if (previous && !resumableManualDraft(previous)) {
+      setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      return;
+    }
     editorDraft.body = body;
     editorDraft.requestId = editorDraft.requestId || store.uid();
     var draft = {
@@ -3771,11 +3820,18 @@
       scope: isPage ? "page" : null,
       selectors: isPage ? null : selectors,
       quote: composerSelection ? composerSelection.quote || "" : "",
+      source: "manual-v1",
+      site: location.origin,
+      identity: auth && auth.user() ? String(auth.user().githubId) : null,
+      loginStarted: false,
+      createdAt: new Date().toISOString(),
       resultUnknown: true
     };
     store.saveDraft(draft);
     var saved = store.peekDraft();
-    if (!saved || saved.requestId !== draft.requestId || !saved.resultUnknown) {
+    if (!saved || saved.requestId !== draft.requestId ||
+        saved.identity !== draft.identity || saved.source !== "manual-v1" ||
+        !saved.resultUnknown) {
       setHint("草稿未能保存,请检查浏览器存储后重试。");
       return;
     }
@@ -4721,6 +4777,7 @@
    */
   function draftForLogin() {
     var current = store.peekDraft();
+    if (current && !resumableManualDraft(current)) return null;
     if (current && current.page === pagePath() && (!editorDraft || current.resultUnknown)) {
       return current;
     }
@@ -4734,6 +4791,11 @@
           ? { selectors: pendingSelection.selectors, quote: pendingSelection.range.toString() }
           : null;
     return {
+      source: "manual-v1",
+      site: location.origin,
+      identity: auth && auth.user() ? String(auth.user().githubId) : null,
+      loginStarted: true,
+      createdAt: new Date().toISOString(),
       requestId: editorDraft && editorDraft.requestId || store.uid(),
       page: pagePath(),
       color: activeColor,
@@ -4758,7 +4820,25 @@
   /** OAuth 往返回来:草稿还在就恢复,并把待发布的那条补发出去。 */
   function maybeRestoreDraft() {
     var draft = store.peekDraft();
-    if (!draft || draft.page !== pagePath()) return;
+    var legacy = store.peekLegacyDraft();
+    prunePendingContent(legacy, true);
+    prunePendingContent(draft, false);
+    draft = store.peekDraft();
+    if (!draft) {
+      if (legacy && legacy.page === pagePath()) {
+        if (!open && panels) panels.claim("annotation");
+        else if (!open) openPanel();
+        setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      }
+      return;
+    }
+    if (draft.page !== pagePath()) return;
+    if (!resumableManualDraft(draft)) {
+      if (!open && panels) panels.claim("annotation");
+      else if (!open) openPanel();
+      setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      return;
+    }
     if (restoringDraft || busy) return;
     if (!open && panels) panels.claim("annotation");
     else if (!open) openPanel();
@@ -4795,10 +4875,15 @@
         (draft.selectors || draft.scope === "page") && editorDraft.kind === "create" &&
         attemptedDraftRequestId !== draft.requestId) {
       var wasUnknown = !!draft.resultUnknown;
+      if (draft.identity === null && auth && auth.user()) {
+        draft.identity = String(auth.user().githubId);
+      }
       draft.resultUnknown = true;
       store.saveDraft(draft);
       var saved = store.peekDraft();
-      if (!saved || saved.requestId !== draft.requestId || !saved.resultUnknown) {
+      if (!saved || saved.requestId !== draft.requestId ||
+          saved.identity !== draft.identity || saved.source !== "manual-v1" ||
+          !saved.resultUnknown) {
         setHint("草稿未能保存,请检查浏览器存储后重试。");
         return;
       }
@@ -5097,7 +5182,7 @@
       syncComposer();
       syncHeadIcon();
       if (auth.isLoggedIn()) invalidate();
-      if (open || store.peekDraft()) ensureAnnotationsLoaded();
+      if (open || store.peekDraft() || store.peekLegacyDraft()) ensureAnnotationsLoaded();
     });
     auth.onChange(function () {
       syncComposer();

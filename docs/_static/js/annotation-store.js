@@ -46,7 +46,8 @@
 
   var K_LOCAL = "aipm-anno-local";
   var K_MAP = "aipm-anno-map";
-  var K_DRAFT = "aipm-anno-draft";
+  var K_DRAFT = "aipm-anno-manual-draft-v1";
+  var K_LEGACY_DRAFT = "aipm-anno-draft";
   var K_LAST_COLOR = "aipm-anno-last-color";
   var K_PREFS = "aipm-anno-prefs";
   var K_SMART = "aipm-anno-smart";
@@ -224,6 +225,17 @@
     return readJson(K_DRAFT, null);
   }
 
+  function peekLegacyDraft() {
+    return readJson(K_LEGACY_DRAFT, null);
+  }
+
+  function saveLegacyDraft(draft) {
+    writeJson(K_LEGACY_DRAFT, Object.assign({}, draft, {
+      savedAt: new Date().toISOString()
+    }));
+  }
+
+
   function clearDraft() {
     try {
       localStorage.removeItem(K_DRAFT);
@@ -373,6 +385,8 @@
     saveDraft: saveDraft,
     peekDraft: peekDraft,
     clearDraft: clearDraft,
+    peekLegacyDraft: peekLegacyDraft,
+    saveLegacyDraft: saveLegacyDraft,
 
     ANNO_STYLES: ANNO_STYLES,
     DEFAULT_STYLE: DEFAULT_STYLE,

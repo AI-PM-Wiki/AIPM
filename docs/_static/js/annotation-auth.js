@@ -25,6 +25,7 @@
   var session = null; // {token, user}
   var listeners = [];
   var mePromise = null;
+  var authenticatedCallback = false;
 
   function readSession() {
     try {
@@ -113,6 +114,7 @@
       .then(function (res) {
         if (!res.ok || !res.body || !res.body.token) return false;
         writeSession({ token: res.body.token, user: res.body.user, admin: res.body.admin === true });
+        authenticatedCallback = true;
         /* 换到 token 之后这个 code 已作废;如服务端因异常仍留着,过期也只有 60 秒 */
         return true;
       });
@@ -190,6 +192,7 @@
 
   window.__aipmAnnoAuth = {
     ready: ready,
+    wasAuthCallback: function () { return authenticatedCallback; },
     token: token,
     user: user,
     isLoggedIn: isLoggedIn,
