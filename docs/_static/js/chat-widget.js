@@ -913,12 +913,24 @@
     open.addEventListener('click', async (event) => {
       if (!event.isTrusted || open.disabled) return;
       open.disabled = true;
+      let entry;
       try {
         const { createAgentEntry } = await import('./annotation-agent-entry.js');
-        const entry = createAgentEntry();
+        entry = createAgentEntry();
         entry.mount({ proposal, historical, host: protectedCard });
         notice.textContent = '';
       } catch (error) {
+        if (!historical && ['authentication required', 'original identity unavailable'].includes(error.message)) {
+          const login = document.createElement('button');
+          login.type = 'button';
+          login.textContent = '登录后手动恢复';
+          login.addEventListener('click', (action) => {
+            if (action.isTrusted) entry.loginDraft(proposal);
+          });
+          protectedCard.append(login);
+          notice.textContent = '登录回跳后，请在历史建议卡中手动确认。';
+          return;
+        }
         if (!['original proposal evidence unavailable', 'unknown request evidence unavailable',
           'original identity unavailable', 'recovery evidence unavailable', 'authentication required',
           'request already recorded'].includes(error.message)) throw error;
