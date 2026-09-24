@@ -915,7 +915,11 @@
       open.disabled = true;
       let entry;
       try {
-        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=38');
+        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=40').catch((error) => {
+          window.__aipmIntegrityFailed = true;
+          notice.textContent = '批注资源未通过完整性校验，请刷新页面重试。';
+          throw error;
+        });
         entry = createAgentEntry();
         entry.mount({ proposal, historical, host: protectedCard });
         notice.textContent = '';

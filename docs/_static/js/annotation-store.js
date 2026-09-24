@@ -26,6 +26,7 @@
 */
 (function () {
   "use strict";
+  if (window.__aipmIntegrityFailed) throw new Error("annotation asset integrity failure");
 
   var ANNO_API_BASE =
     location.hostname === "localhost" || location.hostname === "127.0.0.1"
@@ -78,6 +79,7 @@
   }
 
   function writeJson(key, value) {
+    if (window.__aipmIntegrityFailed) throw new Error("annotation asset integrity failure");
     var text = JSON.stringify(value);
     try {
       localStorage.setItem(key, text);
@@ -98,6 +100,9 @@
 
   function request(path, opts) {
     opts = opts || {};
+    if (window.__aipmIntegrityFailed && (opts.method || "GET") !== "GET") {
+      throw new Error("annotation asset integrity failure");
+    }
     var headers = { Accept: "application/json" };
     if (opts.body !== undefined) headers["Content-Type"] = "application/json";
     if (opts.token) headers.Authorization = "Bearer " + opts.token;
@@ -363,7 +368,7 @@
   }
 
   window.__aipmAnnoStore = {
-    assetVersion: 38,
+    assetVersion: 40,
     ANNO_API_BASE: ANNO_API_BASE,
     PALETTE: PALETTE,
     DEFAULT_COLOR: DEFAULT_COLOR,

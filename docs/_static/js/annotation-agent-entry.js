@@ -1,5 +1,5 @@
-import { createConsentCore } from './annotation-consent-core.js?v=38';
-import { mountProposalConfirmation } from './annotation-proposal-confirm.js?v=38';
+import { createConsentCore } from './annotation-consent-core.js?v=40';
+import { mountProposalConfirmation } from './annotation-proposal-confirm.js?v=40';
 
 export function createAgentEntry({ storage = localStorage, site = location.origin } = {}) {
   const core = createConsentCore({ storage, clock: () => Date.now(), site,
