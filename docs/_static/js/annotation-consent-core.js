@@ -86,6 +86,7 @@ export function createConsentCore({ storage, clock, site, newId }) {
     } else {
       if (unknown) throw new Error('unknown request absent');
       record = { site, identity, session, requestId: request.requestId, digest, request,
+        page: request.page, visibility: request.visibility,
         createdAt: now, status: 'awaiting_confirmation', permits: [], permit: null };
       state.records.push(record);
     }
@@ -180,5 +181,12 @@ export function createConsentCore({ storage, clock, site, newId }) {
     return structuredClone(record);
   }
 
-  return Object.freeze({ confirm, claim, revoke, settle, prune, inspect });
+  function inspectOwned({ identity, requestId }) {
+    requireText(identity, 'identity');
+    requireText(requestId, 'requestId');
+    const record = read().records.find((entry) => match(entry, identity, requestId));
+    return record ? structuredClone(record) : null;
+  }
+
+  return Object.freeze({ confirm, claim, revoke, settle, prune, inspect, inspectOwned });
 }
