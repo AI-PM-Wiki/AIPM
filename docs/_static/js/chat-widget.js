@@ -38,10 +38,8 @@
     去重在 context-item.js(同一条来源连着送两次只有一条),「仅本机」的批注在那里
     就不会成为语境。语境条里的条目一直留到被逐条移除或换了页 —— 追问同一段话
     不必每次重新送一遍
-  - 批注建议(反方向:助手 → 批注面板):后端 SSE 的 proposal 帧在这里变成一张卡
-    (引文 / 正文 / 可见范围三选一 / 采纳 / 丢弃),随回答一起进会话历史,刷新后还在。
-    采纳那一下调 window.__aipmAnno.acceptProposal,由批注面板走它自己那条写入通路
-    写进服务端 —— 助手这一侧不持有任何凭据,可见范围在卡上由用户挑定,模型给的只是缺省值
+  - 批注建议(反方向:助手 → 批注):SSE 建议只生成不含正文的入口;
+    用户在隔离确认界面同意后由批注会话执行,默认禁止执行。
   - FAB 可拖拽(issue #72):外观与位置一律照旧,加的只是交互。锚点在 CSS
     (right/bottom),JS 只写 transform,所以「松手回原位」= 清掉 inline transform
     交回 CSS 过渡 —— JS 不需要知道锚点在哪,锚点被别的面板改(批注面板停靠时让位,
@@ -889,23 +887,7 @@
     runTurn(rec.content, rec.context || [], rec.page);
   };
 
-  /* ================================================================
-     批注建议卡(Agent 提建议 → 用户确认 → 批注面板写入)
-     ----------------------------------------------------------------
-     助手在回答里提的批注建议在这里变成一张卡:引文、正文、以及**可见范围**。
-     采纳那一下由批注面板执行(window.__aipmAnno.acceptProposal),走的正是手写
-     批注那条写入通路 —— 公开/私有带用户自己的 bearer token 提交,仅本机只写
-     localStorage。助手这一侧不持有任何凭据,它只把建议摆出来。
-
-     可见范围在卡上是**由用户选的**,模型说的那一档只是缺省值:出不出本机这件事
-     得由用户在看得见的地方点下去。
-     ================================================================ */
-  const PROPOSAL_VIS = [
-    { id: "local", label: "仅本机", title: "只存在这台设备上,不发往任何服务" },
-    { id: "private", label: "仅自己可见", title: "发往批注服务,只有你自己登录后看得到" },
-    { id: "public", label: "公开", title: "发往批注服务,任何访客都能读到" }
-  ];
-  const PROPOSAL_VIS_LABEL = Object.fromEntries(PROPOSAL_VIS.map((v) => [v.id, v.label]));
+  const PROPOSAL_VISIBILITIES = ['local', 'private', 'public'];
 
   /** 一条建议读不读得出来。线上的东西(SSE 帧 / localStorage 里的历史)都要过这里,
       过不了的不渲染成卡 —— 面板那边还会再校验一遍,两边各自成立。 */
@@ -915,191 +897,36 @@
     typeof p.page === "string" &&
     typeof p.quote === "string" &&
     (p.scope === "text" || p.scope === "page") &&
-    !!PROPOSAL_VIS_LABEL[p.visibility];
+    PROPOSAL_VISIBILITIES.includes(p.visibility);
 
-  const addProposalCard = (wrap, proposal) => {
-    const card = document.createElement("div");
-    card.className = "aipm-chat__proposal";
-    card.setAttribute("data-proposal-id", proposal.id);
-
-    const head = document.createElement("div");
-    head.className = "aipm-chat__proposal-head";
-    const title = document.createElement("span");
-    title.className = "aipm-chat__proposal-title";
-    title.textContent = proposal.scope === "page" ? "评论建议 · 整页" : "批注建议";
-    head.appendChild(title);
-    card.appendChild(head);
-
-    if (proposal.scope === "text") {
-      const quote = document.createElement("blockquote");
-      quote.className = "aipm-chat__proposal-quote";
-      quote.textContent = proposal.quote;
-      card.appendChild(quote);
-    }
-    if (proposal.body) {
-      const body = document.createElement("p");
-      body.className = "aipm-chat__proposal-body";
-      body.textContent = proposal.body;
-      card.appendChild(body);
-    }
-    if (proposal.note) {
-      const note = document.createElement("p");
-      note.className = "aipm-chat__proposal-note";
-      note.textContent = proposal.note;
-      card.appendChild(note);
-    }
-
-    /* 可见范围:三档由用户挑,缺省是模型说的那一档。挑中哪一档就写哪一档 ——
-       卡片上写着「公开」而实际写下去的是别的,与反过来的差别都在这里定。 */
-    let chosen = proposal.visibility;
-    const visRow = document.createElement("div");
-    visRow.className = "aipm-chat__proposal-vis";
-    const visButtons = PROPOSAL_VIS.map((v) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "aipm-chat__proposal-visbtn";
-      b.textContent = v.label;
-      b.title = v.title;
-      b.setAttribute("aria-pressed", String(v.id === chosen));
-      b.addEventListener("click", () => {
-        chosen = v.id;
-        for (const other of visButtons) other.setAttribute("aria-pressed", String(other === b));
-      });
-      visRow.appendChild(b);
-      return b;
+  const addProposalCard = (wrap, proposal, historical = false) => {
+    const protectedCard = document.createElement('div');
+    protectedCard.className = 'aipm-chat__proposal';
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.textContent = '查看批注建议';
+    const notice = document.createElement('span');
+    notice.textContent = window.__aipmAnnoAgentEnabled === true ? '' : '建议写入未启用';
+    open.disabled = window.__aipmAnnoAgentEnabled !== true;
+    protectedCard.append(open, notice);
+    wrap.appendChild(protectedCard);
+    open.addEventListener('click', async (event) => {
+      if (!event.isTrusted || open.disabled) return;
+      open.disabled = true;
+      try {
+        const { createAgentEntry } = await import('./annotation-agent-entry.js');
+        const entry = createAgentEntry();
+        entry.mount({ proposal, historical, host: protectedCard });
+        notice.textContent = '';
+      } catch (error) {
+        if (!['original proposal evidence unavailable', 'unknown request evidence unavailable',
+          'original identity unavailable', 'recovery evidence unavailable', 'authentication required',
+          'request already recorded'].includes(error.message)) throw error;
+        notice.textContent = '原请求依据不足或身份已变化；未提交。';
+      }
     });
-    card.appendChild(visRow);
-
-    const foot = document.createElement("div");
-    foot.className = "aipm-chat__proposal-foot";
-    const accept = document.createElement("button");
-    accept.type = "button";
-    accept.className = "aipm-chat__proposal-accept";
-    accept.textContent = "采纳";
-    const dismiss = document.createElement("button");
-    dismiss.type = "button";
-    dismiss.className = "aipm-chat__proposal-dismiss";
-    dismiss.textContent = "丢弃";
-    const state = document.createElement("span");
-    state.className = "aipm-chat__proposal-state";
-    foot.append(accept, dismiss, state);
-    card.appendChild(foot);
-    if (proposal.resultUnknown === true && !proposal.state) {
-      for (const button of visButtons) button.disabled = true;
-      dismiss.disabled = true;
-      card.setAttribute("data-state", "unknown");
-      state.textContent = "写入结果未知,请保持可见范围并重试。";
-    }
-
-    /* 批注面板在不在,**点下去的那一刻**问一次 —— 不在创建卡片时问。
-       两个面板的脚本由各自的 hook 追加,批注那一份排在助手之后:卡片刚建出来时
-       `window.__aipmAnno` 还没挂上,那时候判一次会把整批卡片一律按成「面板未加载」
-       (恢复历史里那几张就是这样)。批注面板真的没加载时(extra.annotation 关掉、
-       或脚本没到),点采纳会说清楚,而不是什么都不发生。 */
-    const settle = (kind, text) => {
-      card.setAttribute("data-state", kind);
-      state.textContent = text;
-      accept.disabled = true;
-      dismiss.disabled = true;
-    };
-
-    if (proposal.state === "accepted") {
-      settle("accepted", "已写入:" + (PROPOSAL_VIS_LABEL[proposal.visibility] || ""));
-    } else if (proposal.state === "dismissed") {
-      settle("dismissed", "已丢弃");
-    } else {
-      accept.addEventListener("click", () => {
-        const panel = window.__aipmAnno;
-        if (!panel || typeof panel.acceptProposal !== "function") {
-          settle("failed", "批注面板未加载,这条建议采纳不了。");
-          return;
-        }
-        const wasUncertain = proposal.resultUnknown === true;
-        if (!proposal.requestId) proposal.requestId = window.crypto.randomUUID();
-        const submittedVisibility = chosen;
-        proposal.visibility = submittedVisibility;
-        if (!persist()) {
-          if (!wasUncertain) proposal.requestId = null;
-          card.setAttribute("data-state", "failed");
-          state.textContent = "无法保存重试状态,请检查浏览器存储。";
-          return;
-        }
-        if (submittedVisibility !== "local" && window.__aipmAnnoAuth &&
-            window.__aipmAnnoAuth.token()) {
-          proposal.resultUnknown = true;
-          if (!persist()) {
-            proposal.resultUnknown = wasUncertain;
-            card.setAttribute("data-state", "failed");
-            state.textContent = "无法保存重试状态,请检查浏览器存储。";
-            return;
-          }
-        }
-        for (const button of visButtons) button.disabled = true;
-        accept.disabled = true;
-        card.setAttribute("data-state", "writing");
-        dismiss.disabled = true;
-        state.textContent = "写入中…";
-        Promise.resolve(
-          panel.acceptProposal(Object.assign({}, proposal, {
-            visibility: submittedVisibility, resultUnknown: wasUncertain,
-            persistSelectors: (selectors) => {
-              proposal.selectors = selectors;
-              return persist();
-            }
-          }))
-        ).then(
-          (res) => {
-            if (res && res.ok) {
-              proposal.state = "accepted";
-              persist();
-              settle("accepted", "已写入:" + PROPOSAL_VIS_LABEL[submittedVisibility]);
-              return;
-            }
-            const code = res && res.code;
-            if (code === "login_required") {
-              proposal.resultUnknown = wasUncertain;
-              proposal.state = "dismissed";
-              persist();
-              settle("login", "已存成草稿,登录回来接着发。");
-              return;
-            }
-            if (code === "unknown" || wasUncertain) {
-              proposal.resultUnknown = true;
-              persist();
-              card.setAttribute("data-state", "unknown");
-              state.textContent = "写入结果未知,请保持可见范围并重试。";
-              accept.disabled = false;
-              return;
-            }
-            proposal.requestId = null;
-            proposal.resultUnknown = false;
-            persist();
-            card.setAttribute("data-state", "failed");
-            state.textContent = (res && res.message) || "这条建议没能写成。";
-            for (const button of visButtons) button.disabled = false;
-            accept.disabled = false;
-            dismiss.disabled = false;
-          },
-          () => {
-            proposal.resultUnknown = true;
-            persist();
-            card.setAttribute("data-state", "unknown");
-            state.textContent = "写入结果未知,请保持可见范围并重试。";
-            accept.disabled = false;
-          }
-        );
-      });
-
-      dismiss.addEventListener("click", () => {
-        proposal.state = "dismissed";
-        persist();
-        settle("dismissed", "已丢弃");
-      });
-    }
-
-    wrap.appendChild(card);
     scrollBottom(false);
-    return card;
+    return protectedCard;
   };
 
   /* ================================================================
@@ -1216,6 +1043,7 @@
             /* 一条待确认的批注建议。形状过不了的直接不渲染 —— 采纳那一步在批注
                面板里还会再校验一遍,两边各自成立。 */
             if (isProposalShaped(data) && !ctx.proposals.some((p) => p.id === data.id)) {
+              data.requestId = crypto.randomUUID();
               ctx.proposals.push(data);
               addProposalCard(t.wrap, data);
             }
@@ -1743,7 +1571,7 @@
         t.md.innerHTML = mdLite(m.content);
         t.wrap.setAttribute("data-hidx", i);
         /* 建议卡在回答下面,与它刚才那一轮里的位置一致 */
-        for (const p of (m.proposals || [])) addProposalCard(t.wrap, p);
+        for (const p of (m.proposals || [])) addProposalCard(t.wrap, p, true);
         showActions(t, m.content);
       }
     });
