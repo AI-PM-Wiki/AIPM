@@ -900,22 +900,73 @@
     PROPOSAL_VISIBILITIES.includes(p.visibility);
 
   const addProposalCard = (wrap, proposal, historical = false) => {
+    if (typeof proposal.requestId !== 'string' ||
+        !/^[A-Za-z0-9_-]{8,128}$/.test(proposal.requestId)) {
+      throw new Error('proposal request identity unavailable');
+    }
     const protectedCard = document.createElement('div');
     protectedCard.className = 'aipm-chat__proposal';
+    const choiceKey = `aipm-agent-visibility:${proposal.requestId}`;
+    const savedChoice = localStorage.getItem(choiceKey);
+    let selectedVisibility = proposal.visibility;
+    let choiceLocked = false;
+    if (savedChoice) {
+      const choice = JSON.parse(savedChoice);
+      if (choice.proposalId !== proposal.id || choice.page !== proposal.page ||
+          !PROPOSAL_VISIBILITIES.includes(choice.visibility)) {
+        throw new Error('proposal visibility evidence mismatch');
+      }
+      selectedVisibility = choice.visibility;
+      choiceLocked = choice.locked === true;
+    }
+    const choices = document.createElement('div');
+    choices.setAttribute('role', 'group');
+    choices.setAttribute('aria-label', '批注可见范围');
+    const visButtons = [
+      { visibility: 'local', label: '仅本机' },
+      { visibility: 'private', label: '仅自己可见' },
+      { visibility: 'public', label: '公开' }
+    ].map(({ visibility, label }) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.disabled = choiceLocked || window.__aipmAnnoAgentEnabled !== true;
+      button.setAttribute('aria-pressed', String(selectedVisibility === visibility));
+      button.addEventListener('click', (event) => {
+        if (!event.isTrusted || open.disabled || choiceLocked) return;
+        localStorage.setItem(choiceKey, JSON.stringify({
+          proposalId: proposal.id, page: proposal.page, visibility
+        }));
+        selectedVisibility = visibility;
+        for (const item of visButtons) {
+          item.setAttribute('aria-pressed', String(item === button));
+        }
+      });
+      return button;
+    });
+    choices.append(...visButtons);
     const open = document.createElement('button');
     open.type = 'button';
     open.textContent = '查看批注建议';
     const notice = document.createElement('span');
     notice.textContent = window.__aipmAnnoAgentEnabled === true ? '' : '建议写入未启用';
     open.disabled = window.__aipmAnnoAgentEnabled !== true;
-    protectedCard.append(open, notice);
+    protectedCard.append(choices, open, notice);
     wrap.appendChild(protectedCard);
     open.addEventListener('click', async (event) => {
       if (!event.isTrusted || open.disabled) return;
+      localStorage.setItem(choiceKey, JSON.stringify({
+        proposalId: proposal.id, page: proposal.page,
+        visibility: selectedVisibility, locked: true
+      }));
+      choiceLocked = true;
       open.disabled = true;
+      for (const button of visButtons) button.disabled = true;
+      const submittedVisibility = selectedVisibility;
+      const chosenProposal = { ...proposal, visibility: submittedVisibility };
       let entry;
       try {
-        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=41').catch((error) => {
+        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=42').catch((error) => {
           window.__aipmIntegrityFailed = true;
           window.__aipmIntegrityReady = false;
           window.dispatchEvent(new Event('aipm-integrity-change'));
@@ -923,7 +974,7 @@
           throw error;
         });
         entry = createAgentEntry();
-        entry.mount({ proposal, historical, host: protectedCard });
+        entry.mount({ proposal: chosenProposal, historical, host: protectedCard });
         notice.textContent = '';
       } catch (error) {
         if (!historical && ['authentication required', 'original identity unavailable'].includes(error.message)) {
@@ -931,7 +982,7 @@
           login.type = 'button';
           login.textContent = '登录后手动恢复';
           login.addEventListener('click', (action) => {
-            if (action.isTrusted) entry.loginDraft(proposal);
+            if (action.isTrusted) entry.loginDraft(chosenProposal);
           });
           protectedCard.append(login);
           notice.textContent = '登录回跳后，请在历史建议卡中手动确认。';

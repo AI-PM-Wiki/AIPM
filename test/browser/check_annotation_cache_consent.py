@@ -1,6 +1,6 @@
 """同源旧 SW 缓存升级后的手写公开批注确认与关键资源故障。
 
-运行时批注服务子模块需检出 484467e640a144eeac1c426707c89a330d4295a8。
+运行时批注服务子模块需检出 fd3bc1fc94995c5eed06fec5ffc68b8dacb47c46。
 """
 import base64
 import hashlib
@@ -24,7 +24,7 @@ from harness import ROOT, WORK, build_site
 
 OLD_REF = "b53084cdb700f513a4767065251036254f370105"
 BASE_REF = "2e44ae006abf906fa455bd94ddfbd5f99dcfe0d8"
-SERVICE_REF = "484467e640a144eeac1c426707c89a330d4295a8"
+SERVICE_REF = "fd3bc1fc94995c5eed06fec5ffc68b8dacb47c46"
 PAGE = "/ai/rag/"
 
 
@@ -223,7 +223,8 @@ class AnnotationCacheConsent(unittest.TestCase):
                 page.on("request", lambda req: entries["requests"].append({"method": req.method,
                         "url": req.url, "postData": req.post_data}))
                 page.on("response", lambda res: (entries["responses"].append(res),
-                        entries["statuses"].append({"url": res.url, "status": res.status})))
+                        entries["statuses"].append({"method": res.request.method,
+                                                     "url": res.url, "status": res.status})))
                 self.site.root = self.old
                 self.site.stage = "old"
                 self.site.fail_auth = False
@@ -274,9 +275,9 @@ class AnnotationCacheConsent(unittest.TestCase):
                 current = self.snapshot(page, entries, label + "-unconfirmed")
                 self.assertEqual(current["resources"][0]["sha256"], hashlib.sha256(
                     (target / "ai" / "rag" / "index.html").read_bytes()).hexdigest())
-                expected_version = "37" if label == "baseline" else "41"
-                self.assertTrue(all(f"?v={expected_version}" in src
-                                    for src in current["browser"]["scripts"]))
+                script_versions = {parse_qs(urlsplit(src).query).get("v", [None])[0]
+                                   for src in current["browser"]["scripts"]}
+                self.assertEqual(len(script_versions), 1)
                 for resource in current["resources"][1:]:
                     filename = urlsplit(resource["url"]).path.rsplit("/", 1)[-1]
                     source = self.old if label == "baseline" else self.candidate
@@ -290,8 +291,13 @@ class AnnotationCacheConsent(unittest.TestCase):
                 writes = [r for r in current["requests"] if r["method"] == "POST" and
                           r["url"].endswith("/api/annotations")]
                 self.assertEqual(len(writes), 1 if label == "baseline" else 0)
-                self.assertEqual(current["annotationCount"] - old["annotationCount"], len(writes))
-                self.assertEqual(current["operationCount"] - old["operationCount"], len(writes))
+                annotation_responses = [r for r in current["responses"] if
+                                        r["method"] == "POST" and
+                                        urlsplit(r["url"]).path == "/api/annotations"]
+                self.assertEqual([r["status"] for r in annotation_responses],
+                                 [403] if label == "baseline" else [])
+                self.assertEqual(current["annotationCount"] - old["annotationCount"], 0)
+                self.assertEqual(current["operationCount"] - old["operationCount"], 0)
                 if label == "candidate":
                     self.assertIsNotNone(current["browser"]["consent"])
                     page.get_by_role("button", name="确认以此账号提交").click()
@@ -360,8 +366,7 @@ class AnnotationCacheConsent(unittest.TestCase):
                 navigation = page.reload(wait_until="load")
                 page.wait_for_timeout(1000)
                 panel = next(response for response in responses
-                             if urlsplit(response.url).path == "/_static/js/annotation.js" and
-                             f"?v={38 if label == 'frozen' else 41}" in response.url)
+                             if urlsplit(response.url).path == "/_static/js/annotation.js")
                 expected_html = (target / "ai/rag/index.html").read_bytes()
                 self.assertEqual(hashlib.sha256(navigation.body()).hexdigest(), hashlib.sha256(expected_html).hexdigest())
                 self.assertEqual(hashlib.sha256(panel.body()).hexdigest(), hashlib.sha256(old_panel).hexdigest())
@@ -388,8 +393,10 @@ class AnnotationCacheConsent(unittest.TestCase):
                 record["operationsAfter"] = len(after["operations"])
                 (self.work / f"mixed-{label}.json").write_text(json.dumps(record, ensure_ascii=False, indent=2))
                 self.assertEqual(len(writes), 1 if label == "frozen" else 0)
-                self.assertEqual(len(after["annotations"]) - len(before["annotations"]), len(writes))
-                self.assertEqual(len(after["operations"]) - len(before["operations"]), len(writes))
+                self.assertEqual([item["status"] for item in record["postResponses"]],
+                                 [403] if label == "frozen" else [])
+                self.assertEqual(len(after["annotations"]) - len(before["annotations"]), 0)
+                self.assertEqual(len(after["operations"]) - len(before["operations"]), 0)
                 context.close()
         finally:
             self.site.faults = {}
@@ -421,11 +428,23 @@ class AnnotationCacheConsent(unittest.TestCase):
                 page.on("requestfailed", lambda request: failures.append({"url": request.url,
                                                                             "error": request.failure}))
                 page.goto(self.base + PAGE, wait_until="load")
-                result = page.evaluate("""async path => {
-                    try { await import(path); return { accepted: true }; }
-                    catch (error) { return { accepted: false, error: error.message }; }
-                }""", path + "?v=41")
+                page.wait_for_function("() => window.__aipmIntegrityFailed === true")
+                module_url = page.evaluate("""name => {
+                    const map = JSON.parse(document.querySelector('script[type="importmap"]').textContent);
+                    const url = Object.keys(map.integrity).find(value =>
+                        new URL(value, location.href).pathname.endsWith('/' + name));
+                    if (!url) throw new Error('module missing from integrity map: ' + name);
+                    return url;
+                }""", name)
+                result = page.evaluate("""() => ({
+                    ready: window.__aipmIntegrityReady,
+                    failed: window.__aipmIntegrityFailed,
+                    chat: !!window.__aipmChat,
+                    store: !!window.__aipmAnnoStore,
+                    auth: !!window.__aipmAnnoAuth
+                })""")
                 record = {"module": name, "result": result,
+                          "moduleURL": module_url,
                           "servedSha256": hashlib.sha256(payload).hexdigest(),
                           "builtSha256": hashlib.sha256((self.candidate / path.lstrip("/")).read_bytes()).hexdigest(),
                           "browserRequests": [request.url for request in requests
@@ -437,9 +456,12 @@ class AnnotationCacheConsent(unittest.TestCase):
                           "annotationPosts": [request.post_data for request in requests if request.method == "POST" and
                                               urlsplit(request.url).path == "/api/annotations"]}
                 (self.work / f"module-{name}.json").write_text(json.dumps(record, ensure_ascii=False, indent=2))
-                self.assertFalse(result["accepted"], record)
+                self.assertTrue(result["failed"], record)
+                self.assertFalse(result["ready"], record)
+                self.assertFalse(result["chat"], record)
+                self.assertFalse(result["store"], record)
+                self.assertFalse(result["auth"], record)
                 self.assertTrue(record["browserRequests"], record)
-                self.assertTrue(record["browserFailures"], record)
                 self.assertTrue(record["serverRequests"], record)
                 self.assertFalse(record["annotationPosts"])
                 context.close()
@@ -449,8 +471,13 @@ class AnnotationCacheConsent(unittest.TestCase):
                           urlsplit(route.request.url).hostname == "127.0.0.1" else route.abort())
             page = context.new_page()
             page.goto(self.base + PAGE, wait_until="load")
-            result = page.evaluate("""async () => typeof (await import(
-                '/_static/js/annotation-agent-entry.js?v=41')).createAgentEntry""")
+            page.wait_for_function("() => window.__aipmIntegrityReady === true")
+            module_url = page.evaluate("""() => {
+                const map = JSON.parse(document.querySelector('script[type="importmap"]').textContent);
+                return Object.keys(map.integrity).find(value =>
+                    new URL(value, location.href).pathname.endsWith('/annotation-agent-entry.js'));
+            }""")
+            result = page.evaluate("""async path => typeof (await import(path)).createAgentEntry""", module_url)
             self.assertEqual(result, "function")
             context.close()
         finally:
@@ -530,16 +557,30 @@ class AnnotationCacheConsent(unittest.TestCase):
                 self.site.requests.clear()
                 page = context.new_page()
                 page.goto(self.base + PAGE, wait_until="load")
-                result = page.evaluate("""async path => {
-                    try { await import(path); return { accepted: true }; }
-                    catch (error) { return { accepted: false, error: error.message }; }
-                }""", path + "?v=41")
+                page.wait_for_function("() => window.__aipmIntegrityFailed === true")
+                module_url = page.evaluate("""name => {
+                    const map = JSON.parse(document.querySelector('script[type="importmap"]').textContent);
+                    return Object.keys(map.integrity).find(value =>
+                        new URL(value, location.href).pathname.endsWith('/' + name));
+                }""", name)
+                result = page.evaluate("""() => ({
+                    ready: window.__aipmIntegrityReady,
+                    failed: window.__aipmIntegrityFailed,
+                    chat: !!window.__aipmChat,
+                    store: !!window.__aipmAnnoStore,
+                    auth: !!window.__aipmAnnoAuth
+                })""")
                 record = {"module": name, "result": result,
+                          "moduleURL": module_url,
                           "serverRequests": [entry["path"] for entry in self.site.requests
                                              if urlsplit(entry["path"]).path == path]}
                 (self.work / f"module-missing-{name}.json").write_text(
                     json.dumps(record, ensure_ascii=False, indent=2))
-                self.assertFalse(result["accepted"], record)
+                self.assertTrue(result["failed"], record)
+                self.assertFalse(result["ready"], record)
+                self.assertFalse(result["chat"], record)
+                self.assertFalse(result["store"], record)
+                self.assertFalse(result["auth"], record)
                 self.assertTrue(record["serverRequests"], record)
                 context.close()
         finally:

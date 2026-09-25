@@ -526,9 +526,10 @@ class TestThreeVisibilities(unittest.TestCase):
             self.assertIn("return", segment, "「仅本机」分支必须直接返回")
         # 请求体里的 visibility 用的是参数,不是字面量 —— 配合上面的提前返回,
         # 到得了 POST 的只可能是 public / private
-        request_part = block[server_call:]
-        self.assertIn("visibility: visibility", request_part)
-        self.assertNotIn('visibility: "local"', request_part)
+        payload = block[block.index("var payload = {"):server_call]
+        self.assertIn("visibility: visibility", payload)
+        self.assertNotIn('visibility: "local"', payload)
+        self.assertLess(payload.index('"/api/annotation-permits"'), len(payload))
 
     def test_local_store_never_talks_to_the_network(self):
         for fn in ("localAdd", "localUpdate", "localRemove", "localList"):

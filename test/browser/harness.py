@@ -615,27 +615,15 @@ INVALID_VISIBILITY_MESSAGE = "visibility 只能是 public 或 private"
 
 
 class AnnotationApi:
-    """批注服务的一份夹具:真 HTTP、真跨源请求,不联网也不需要 GitHub 登录。
-
-    回话按批注服务的约定来。存的是**三态里的两态**:
-
-      public  匿名就能读(scope=public),写要令牌;
-      private 只有作者本人读得到(scope=mine 要令牌),写要令牌;
-      local   本服务没有这条写入路径 —— 提交它一律 400 invalid_visibility,
-              与线上的 normalizeVisibility 同一个码、同一句话。
-
-    跨源这件事是真的(页面在站点那个端口上,批注服务在这个端口上):预检、
-    Authorization 头、CORS 响应头都照线上那套走,不加这些的话挡住请求的会是
-    浏览器自己,被测的那条写入通路就轮不到。
-
-    请求逐条记进 `requests`(方法、路径、请求体、Authorization)。**「页面上点一下」
-    有没有出网,只有服务端这一侧的记录说得清** —— 客户端本地的东西证明不了这件事。
-    """
+    """批注 API 的回环协议夹具，记录跨源 HTTP 请求及一次性许可。"""
 
     def __init__(self):
         self.drop_next_write_response = False
         self.stored: list[dict] = []
         self.requests: list[dict] = []
+        self.permits: dict[str, dict] = {}
+        self.operations: dict[str, dict] = {}
+        self.next_permit_id = 1
         self._httpd = http.server.ThreadingHTTPServer(("127.0.0.1", ANNO_PORT), _AnnoHandler)
         self._httpd.owner = self
         self.port = self._httpd.server_address[1]
@@ -650,6 +638,9 @@ class AnnotationApi:
         self.drop_next_write_response = False
         self.stored.clear()
         self.requests.clear()
+        self.permits.clear()
+        self.operations.clear()
+        self.next_permit_id = 1
 
     def writes(self) -> list[dict]:
         """服务端收到的写入请求(POST /api/annotations),按先后。"""
@@ -706,6 +697,7 @@ class _AnnoHandler(http.server.BaseHTTPRequestHandler):
                 "params": {k: v[0] for k, v in parse_qs(query, keep_blank_values=True).items()},
                 "body": body,
                 "authorization": self.headers.get("authorization") or "",
+                "permit": self.headers.get("x-annotation-permit") or "",
             }
         )
 
@@ -719,7 +711,7 @@ class _AnnoHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.NO_CONTENT)
         self.send_header("Content-Length", "0")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Annotation-Permit")
         self.send_header("Access-Control-Max-Age", "86400")
         self._cors()
         self.end_headers()
@@ -737,6 +729,8 @@ class _AnnoHandler(http.server.BaseHTTPRequestHandler):
             self._list(params)
         elif path == "/api/auth/me":
             self._me()
+        elif path.startswith("/api/annotation-requests/"):
+            self._operation(path.rsplit("/", 1)[-1])
         elif path == "/api/auth/github/start":
             # 登录起点。真实那一条是 302 去 GitHub 授权页,用户点完再回到本服务的
             # 回调,回调换完会话把用户送回站点并在 URL 上带一个一次性的
@@ -762,7 +756,9 @@ class _AnnoHandler(http.server.BaseHTTPRequestHandler):
         body = self._read_body()
         self._record(body, query)
 
-        if path == "/api/annotations":
+        if path == "/api/annotation-permits":
+            self._issue_permit(body)
+        elif path == "/api/annotations":
             self._create(body)
         elif path == "/api/highlight/suggest":
             # 智能高亮的判分夹具没有(也不需要)判分密钥:这一页给一份空结果 ——
@@ -811,6 +807,41 @@ class _AnnoHandler(http.server.BaseHTTPRequestHandler):
             return
         self._json(HTTPStatus.OK, {"user": ANNO_USER, "admin": False})
 
+    def _issue_permit(self, body: dict) -> None:
+        if not self._mine():
+            self._error(HTTPStatus.UNAUTHORIZED, "unauthorized", "需要登录")
+            return
+        if body.get("visibility") not in ("public", "private"):
+            self._error(HTTPStatus.BAD_REQUEST, "invalid_visibility", INVALID_VISIBILITY_MESSAGE)
+            return
+        owner = self.server.owner
+        permit = f"fixture-permit-{owner.next_permit_id}"
+        owner.next_permit_id += 1
+        owner.permits[permit] = {
+            "authorization": self.headers.get("authorization") or "",
+            "payload": json.dumps(body, sort_keys=True, separators=(",", ":")),
+            "used": False,
+        }
+        self._json(HTTPStatus.CREATED, {"permit": permit})
+
+    def _operation(self, request_id: str) -> None:
+        if not self._mine():
+            self._error(HTTPStatus.UNAUTHORIZED, "unauthorized", "需要登录")
+            return
+        operation = self.server.owner.operations.get(request_id)
+        if operation is None:
+            self._error(HTTPStatus.NOT_FOUND, "not_found", "操作记录不存在")
+            return
+        annotation = operation["annotation"]
+        self._json(HTTPStatus.OK, {"operation": {
+            "status": "succeeded",
+            "annotationId": annotation["id"],
+            "page": annotation["page"],
+            "visibility": annotation["visibility"],
+            "createdAt": "2026-09-25T00:00:00.000Z",
+            "deleted": False,
+        }})
+
     def _create(self, body: dict) -> None:
         if not self._mine():
             self._error(HTTPStatus.UNAUTHORIZED, "unauthorized", "需要登录")
@@ -820,6 +851,23 @@ class _AnnoHandler(http.server.BaseHTTPRequestHandler):
             self._error(HTTPStatus.BAD_REQUEST, INVALID_VISIBILITY_CODE, INVALID_VISIBILITY_MESSAGE)
             return
         owner = self.server.owner
+        permit_id = self.headers.get("x-annotation-permit") or ""
+        permit = owner.permits.get(permit_id)
+        payload = json.dumps(body, sort_keys=True, separators=(",", ":"))
+        if (permit is None or permit["used"] or
+                permit["authorization"] != (self.headers.get("authorization") or "") or
+                permit["payload"] != payload):
+            self._error(HTTPStatus.FORBIDDEN, "permit_required", "需要匹配的确认许可")
+            return
+        permit["used"] = True
+        request_id = body.get("requestId")
+        existing = owner.operations.get(request_id)
+        if existing is not None:
+            if existing["payload"] != payload:
+                self._error(HTTPStatus.CONFLICT, "request_conflict", "原请求已有结果")
+                return
+            self._json(HTTPStatus.OK, {"annotation": existing["annotation"]})
+            return
         annotation = {
             "id": f"a{len(owner.stored) + 1}",
             "page": body.get("page", ""),
@@ -831,6 +879,7 @@ class _AnnoHandler(http.server.BaseHTTPRequestHandler):
             "target": body.get("target", {}),
         }
         owner.stored.append(annotation)
+        owner.operations[request_id] = {"payload": payload, "annotation": annotation}
         if owner.drop_next_write_response:
             owner.drop_next_write_response = False
             self.send_response(HTTPStatus.CREATED)

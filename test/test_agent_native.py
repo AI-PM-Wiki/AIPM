@@ -41,6 +41,8 @@ MKCONFIG = ROOT / "mkdocs.yml"
 ANNO_JS = ROOT / "docs" / "_static" / "js" / "annotation.js"
 ANNO_CSS = ROOT / "docs" / "_static" / "css" / "annotation.css"
 CHAT_JS = ROOT / "docs" / "_static" / "js" / "chat-widget.js"
+AGENT_ENTRY_JS = ROOT / "docs" / "_static" / "js" / "annotation-agent-entry.js"
+CONFIRM_JS = ROOT / "docs" / "_static" / "js" / "annotation-proposal-confirm.js"
 CHAT_CSS = ROOT / "docs" / "_static" / "css" / "chat-widget.css"
 CTX_JS = ROOT / "docs" / "_static" / "js" / "context-item.js"
 CTX_CHECK = ROOT / "test" / "js" / "context-item-check.mjs"
@@ -490,15 +492,18 @@ class TestAgentWritesAnnotations(unittest.TestCase):
         cls.srv = _strip_comments(_read(SRV_TS))
         cls.anno = _strip_comments(_read(ANNO_JS))
         cls.chat = _strip_comments(_read(CHAT_JS))
+        cls.entry = _strip_comments(_read(AGENT_ENTRY_JS))
+        cls.confirm = _strip_comments(_read(CONFIRM_JS))
         cls.store = _strip_comments(_read(STORE_JS))
         cls.check = _read(PROP_CHECK)
         cls.browser = _read(BROWSER_CASE)
 
     def test_visibility_remains_stable_while_submitting(self):
-        self.assertIn('const submittedVisibility = chosen;', self.chat)
+        self.assertIn('const submittedVisibility = selectedVisibility;', self.chat)
+        self.assertIn('visibility: selectedVisibility, locked: true', self.chat)
         self.assertIn('for (const button of visButtons) button.disabled = true;', self.chat)
-        self.assertIn('proposal.visibility = submittedVisibility;', self.chat)
-        self.assertIn('for (const button of visButtons) button.disabled = false;', self.chat)
+        self.assertIn('const chosenProposal = { ...proposal, visibility: submittedVisibility };', self.chat)
+        self.assertIn('entry.mount({ proposal: chosenProposal, historical, host: protectedCard });', self.chat)
 
     def test_page_comments_resume_after_login(self):
         self.assertIn('(draft.selectors || draft.scope === "page")', self.anno)
@@ -601,36 +606,44 @@ class TestAgentWritesAnnotations(unittest.TestCase):
         self.assertIn('case "proposal":', self.chat)
         self.assertIn("isProposalShaped(data)", self.chat, "形状过不了的帧不渲染成卡")
         for label in ("仅本机", "仅自己可见", "公开"):
-            self.assertIn(f'label: "{label}"', self.chat, f"卡上少了「{label}」这一档")
-        self.assertIn('settle("login", "已存成草稿,登录回来接着发。")', self.chat)
+            self.assertIn(f"label: '{label}'", self.chat, f"卡上少了「{label}」这一档")
+        self.assertIn("entry.loginDraft(chosenProposal)", self.chat)
+        self.assertIn("登录回跳后，请在历史建议卡中手动确认。", self.chat)
 
-    def test_panel_exports_only_the_accept_entry(self):
-        export = re.search(r"window\.__aipmAnno = \{(.*?)\};", self.anno, flags=re.S).group(1)
-        self.assertEqual(
-            re.findall(r"(\w+):", export),
-            ["acceptProposal"],
-            "导出的成员变了:助手那一侧只该有「采纳」这一个入口",
-        )
+    def test_widget_uses_only_the_confirmation_entry(self):
+        self.assertIn("entry.mount({ proposal: chosenProposal", self.chat)
+        self.assertIn("entry.loginDraft(chosenProposal)", self.chat)
+        self.assertNotIn("store.request(", self.chat)
+        self.assertNotIn("/api/annotations", self.chat)
+        self.assertIn("mountProposalConfirmation({ core, proposal:", self.entry)
 
-    def test_accept_writes_only_through_submit_annotation(self):
-        fn = self.body_of(self.anno, "function acceptProposal(proposal)")
-        self.assertIn("submitAnnotation(", fn)
-        self.assertNotIn("/api/annotations", fn, "写入只能走 submitAnnotation,面板里不另发一条请求")
+    def test_accept_writes_only_after_bound_confirmation(self):
+        fn = self.body_of(self.confirm, "async function submit(event, retryUnknown)")
+        self.assertIn("if (!event.isTrusted) return;", fn)
+        self.assertIn("core.confirm({ identity, session, request })", fn)
+        self.assertIn("core.claim({ identity, session, request, grantId })", fn)
+        self.assertIn("store.localAdd(", fn)
+        self.assertLess(fn.index("'/api/annotation-permits'"), fn.index("'/api/annotations'"))
         self.assertNotIn("fetch(", fn)
-        for code in ("wrong_page", "not_on_page", "malformed", "login_required", "write_failed"):
-            self.assertIn(f'"{code}"', fn, f"采纳的失败分档少了 {code}")
+        self.assertIn("if (!sameContext() || cancelled || !integrityReady())", fn)
 
     def test_local_proposal_never_goes_to_the_server(self):
-        fn = self.body_of(self.anno, "function acceptProposal(proposal)")
-        gate = fn[fn.index('proposal.visibility !== "local"') :]
-        self.assertIn("!auth.token()", gate[:120], "没登录时只有公开/私有那一档才需要登录")
-        self.assertIn("loginForDraft(", fn, "没登录时不静默出网,走既有草稿通路")
+        fn = self.body_of(self.confirm, "async function submit(event, retryUnknown)")
+        local = fn.index("if (claimedRequest.visibility === 'local')")
+        permit = fn.index("'/api/annotation-permits'")
+        self.assertLess(local, permit)
+        self.assertIn("store.localAdd(", fn[local:permit])
+        self.assertIn("return;", fn[local:permit])
+        self.assertIn("request.visibility !== 'local'", self.confirm)
 
     def test_draft_replay_is_single_flight(self):
         fn = self.body_of(self.anno, "function maybeRestoreDraft()")
         self.assertIn("if (restoringDraft || busy) return;", fn)
-        self.assertIn("setBusy(true);", fn)
-        self.assertIn("clearMatchingDraft(draft);", fn)
+        consent = self.body_of(self.anno, "function showLoginConsent(draft, ticket)")
+        self.assertIn("busy || restoringDraft", consent)
+        self.assertIn("restoringDraft = true;", consent)
+        self.assertIn("setBusy(true);", consent)
+        self.assertIn("clearMatchingDraft(current);", consent)
 
     def test_proposal_check_is_wired(self):
         self.assertIn("Invalid option", self.check, "越权取值那一条要真的被 SDK 的 schema 挡下")
