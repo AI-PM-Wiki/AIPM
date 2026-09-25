@@ -1,6 +1,6 @@
 // An isolated confirmation entry. The production Agent bootstrap remains disabled.
-import { createAnnotationRequestStatus } from './annotation-request-status.js?v=41';
-import { createConfirmationView } from './annotation-confirm-view.js?v=41';
+import { createAnnotationRequestStatus } from './annotation-request-status.js?v=42';
+import { createConfirmationView } from './annotation-confirm-view.js?v=42';
 
 const LABELS = { local: '仅本机', private: '仅自己可见', public: '公开' };
 
@@ -184,9 +184,15 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
         return;
       }
       if (!integrityReady()) throw new Error('unsent request blocked');
+      const payload = { requestId: claimedRequest.requestId, page: claimedRequest.page,
+        body: claimedRequest.body, color: claimedRequest.color, style: claimedRequest.style,
+        visibility: claimedRequest.visibility, target };
+      const issued = await store.request('/api/annotation-permits', {
+        method: 'POST', token: initialToken, body: payload });
+      if (issued.status !== 201 || !issued.body?.permit) throw new Error('confirmation permit unavailable');
+      if (!sameContext() || cancelled || !integrityReady()) throw new Error('unsent request blocked');
       const pending = store.request('/api/annotations', { method: 'POST', token: initialToken,
-        body: { requestId: claimedRequest.requestId, page: claimedRequest.page, body: claimedRequest.body,
-          color: claimedRequest.color, style: claimedRequest.style, visibility: claimedRequest.visibility, target } });
+        permit: issued.body.permit, body: payload });
       sent = true;
       const response = await pending;
       if (!sameContext() || cancelled) {

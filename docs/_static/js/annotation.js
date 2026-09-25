@@ -3719,12 +3719,15 @@
     var pending = uncertainDraft();
     if (pending) {
       setBusy(true);
-      submitAnnotation(
-        pending.selectors || [], pending.body, pending.visibility,
-        pending.scope === "page", pending.color, pending.style, pending.requestId, true
-      ).then(function (result) {
+      store.request("/api/annotation-requests/" + encodeURIComponent(pending.requestId), {
+        token: auth.token()
+      }).then(function (result) {
         setBusy(false);
-        if (!result.ok) return;
+        if (!result.ok || !result.body || !result.body.operation ||
+            result.body.operation.status !== "succeeded") {
+          setHint("原请求结果尚未确认，请保留草稿与请求标识。");
+          return;
+        }
         clearMatchingDraft(pending);
         if (editorDraft && editorDraft.requestId === pending.requestId) closeEditor();
       });
@@ -3899,12 +3902,18 @@
       setHint("登录后才能回复别人的批注。");
       return Promise.resolve(false);
     }
-    return store
-      .request("/api/annotations/" + encodeURIComponent(anno.id) + "/replies", {
-        method: "POST",
-        token: auth.token(),
-        body: { body: body, parentId: parentId || undefined }
-      })
+    var token = auth.token();
+    var payload = { body: body, parentId: parentId || undefined };
+    return store.request("/api/reply-permits", {
+      method: "POST", token: token, body: { annotationId: anno.id, body: body,
+        parentId: parentId || undefined }
+    }).then(function (issued) {
+      if (issued.status !== 201 || !issued.body || !issued.body.permit || auth.token() !== token)
+        return { ok: false, status: issued.status, body: issued.body };
+      return store.request("/api/annotations/" + encodeURIComponent(anno.id) + "/replies", {
+        method: "POST", token: token, permit: issued.body.permit, body: payload
+      });
+    })
       .then(function (res) {
         if (res.status === 401) {
           auth.forget();
@@ -3979,20 +3988,25 @@
       setHint("登录已过期,请重新登录。");
       return Promise.resolve(detailed ? { ok: false, code: "write_failed" } : false);
     }
-    return store
-      .request("/api/annotations", {
-        method: "POST",
-        token: auth.token(),
-        body: {
-          requestId: requestId,
+    var token = auth.token();
+    var payload = {
+          requestId: requestId || store.uid(),
           page: page,
           body: body,
           color: annoColor,
           style: annoStyle,
           visibility: visibility,
           target: target
-        }
-      })
+        };
+    return store.request("/api/annotation-permits", {
+      method: "POST", token: token, body: payload
+    }).then(function (issued) {
+      if (issued.status !== 201 || !issued.body || !issued.body.permit || auth.token() !== token)
+        return { ok: false, status: issued.status, body: issued.body };
+      return store.request("/api/annotations", {
+        method: "POST", token: token, permit: issued.body.permit, body: payload
+      });
+    })
       .then(function (res) {
         if (res.status === 401) {
           if (auth) auth.forget();
@@ -4109,17 +4123,25 @@
     var token = auth ? auth.token() : null;
     if (!token) return;
     setBusy(true);
-    store
-      .request("/api/annotations", {
-        method: "POST",
-        token: token,
-        body: {
+    var payload = {
+          requestId: store.uid(),
           page: anno.page,
           body: anno.body,
           color: anno.color,
+          style: anno.style,
           visibility: visibility,
           target: anno.target
-        }
+        };
+    store.request("/api/annotation-permits", { method: "POST", token: token, body: payload })
+      .then(function (issued) {
+        if (issued.status !== 201 || !issued.body || !issued.body.permit || auth.token() !== token)
+          return { ok: false, status: issued.status, body: issued.body };
+        return store.request("/api/annotations", {
+        method: "POST",
+        token: token,
+        permit: issued.body.permit,
+        body: payload
+        });
       })
       .then(function (res) {
         setBusy(false);

@@ -102,12 +102,14 @@
     opts = opts || {};
     if ((window.__aipmIntegrityFailed || window.__aipmIntegrityReady !== true) &&
         (opts.method || "GET") !== "GET" &&
-        (path.startsWith("/api/annotations") || path.startsWith("/api/annotation-requests"))) {
+        (path.startsWith("/api/annotations") || path.startsWith("/api/annotation-requests") ||
+         path === "/api/annotation-permits" || path === "/api/reply-permits")) {
       throw new Error("annotation asset integrity failure");
     }
     var headers = { Accept: "application/json" };
     if (opts.body !== undefined) headers["Content-Type"] = "application/json";
     if (opts.token) headers.Authorization = "Bearer " + opts.token;
+    if (opts.permit) headers["X-Annotation-Permit"] = opts.permit;
     return fetch(ANNO_API_BASE + path, {
       method: opts.method || "GET",
       headers: headers,
