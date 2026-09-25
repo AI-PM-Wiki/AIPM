@@ -1,6 +1,6 @@
 // An isolated confirmation entry. The production Agent bootstrap remains disabled.
-import { createAnnotationRequestStatus } from './annotation-request-status.js?v=40';
-import { createConfirmationView } from './annotation-confirm-view.js?v=40';
+import { createAnnotationRequestStatus } from './annotation-request-status.js?v=41';
+import { createConfirmationView } from './annotation-confirm-view.js?v=41';
 
 const LABELS = { local: '仅本机', private: '仅自己可见', public: '公开' };
 
@@ -61,12 +61,26 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
   let started = false;
   let cancelled = false;
   let claimed = false;
+  let sent = false;
+  function integrityReady() {
+    return window.__aipmIntegrityReady === true && !window.__aipmIntegrityFailed;
+  }
+  function refreshIntegrity() {
+    const record = core.inspect({ identity, session, requestId: request.requestId });
+    const ready = integrityReady();
+    agree.disabled = !ready || started || cancelled || Boolean(record && record.status !== 'awaiting_confirmation');
+    retry.disabled = true;
+    if (!started && !cancelled && (!record || record.status === 'awaiting_confirmation')) {
+      state.textContent = ready ? '等待同意' :
+        (window.__aipmIntegrityFailed ? '资源校验失败，未提交。' : '资源校验中，未提交。');
+    }
+  }
+  window.addEventListener('aipm-integrity-change', refreshIntegrity);
   if (existing) {
     agree.disabled = true;
     if (existing.status === 'unknown' || existing.status === 'executing') {
-      state.textContent = '结果未知；请先查询原请求。再次提交须重新同意原请求。';
+      state.textContent = '结果未知；只能查询原请求，不能再次提交。';
       check.hidden = false;
-      retry.hidden = false;
     } else if (existing.status === 'succeeded') {
       state.textContent = `已写入：${LABELS[request.visibility]}`;
       cancel.disabled = true;
@@ -78,6 +92,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       check.hidden = false;
     }
   }
+  refreshIntegrity();
   function sameContext() {
     return location.pathname === request.page &&
       auth.token() === initialToken && auth.user()?.githubId === initialUser?.githubId &&
@@ -94,12 +109,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     }
     state.textContent = '结果未知；只能查询原请求，不能再次提交。';
     check.hidden = false;
-    const current = core.inspect({ identity, session, requestId: request.requestId });
-    if (current?.request && ['unknown', 'executing'].includes(current.status) && !cancelled) {
-      started = false;
-      retry.disabled = false;
-      retry.hidden = false;
-    }
+    started = false;
   }
 
   cancel.addEventListener('click', () => {
@@ -110,7 +120,10 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     const record = core.inspect({ identity, session, requestId: request.requestId });
     if (record) {
       try {
-        core.revoke({ identity, session, requestId: request.requestId });
+        if (record.status === 'executing' && !sent) {
+          core.abortUnsent({ identity, session, requestId: request.requestId });
+        }
+        else core.revoke({ identity, session, requestId: request.requestId });
       } catch (error) {
         if (error.name !== 'QuotaExceededError') throw error;
         unknown();
@@ -118,15 +131,17 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       }
     }
 
-    if (claimed) unknown();
+    if (claimed && sent) unknown();
     else state.textContent = '已取消，未写入。';
   });
   async function submit(event, retryUnknown) {
     if (!event.isTrusted) return;
     if (started || cancelled) return;
-    if (retryUnknown && (!resumeExisting || !['unknown', 'executing'].includes(
-      core.inspect({ identity, session, requestId: request.requestId })?.status))) return;
+    if (!integrityReady()) { refreshIntegrity(); return; }
+    if (retryUnknown) return;
     started = true;
+    sent = false;
+    claimed = false;
     agree.disabled = true;
     retry.disabled = true;
     if (!sameContext()) {
@@ -139,21 +154,16 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
           core.inspect({ identity, session, requestId: request.requestId })?.status === 'awaiting_confirmation') {
         core.revoke({ identity, session, requestId: request.requestId });
       }
-      if (retryUnknown && core.inspect({ identity, session, requestId: request.requestId })?.status === 'executing') {
-        core.settle({ identity, session, requestId: request.requestId, status: 'unknown' });
-      }
-      grantId = await core.confirm({ identity, session, request, unknown: retryUnknown });
-      if (!sameContext() || cancelled) {
+      grantId = await core.confirm({ identity, session, request });
+      if (!sameContext() || cancelled || !integrityReady()) {
         core.revoke({ identity, session, requestId: request.requestId });
-        state.textContent = '页面或身份已变化，未写入。';
+        started = false;
+        refreshIntegrity();
         return;
       }
       const claimedRequest = await core.claim({ identity, session, request, grantId });
       claimed = true;
-      if (!sameContext() || cancelled) {
-        unknown();
-        return;
-      }
+      if (!sameContext() || cancelled || !integrityReady()) throw new Error('unsent request blocked');
       state.textContent = '写入中…';
       const selectors = claimedRequest.scope === 'page' ? [] : [{ type: 'TextQuoteSelector',
         exact: claimedRequest.quote, prefix: claimedRequest.prefix, suffix: claimedRequest.suffix }];
@@ -164,6 +174,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
           color: claimedRequest.color, style: claimedRequest.style, body: claimedRequest.body, target,
           author: { githubId: 0, login: auth.user()?.login ?? '本机' },
           replies: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+        sent = true;
         const saved = store.localList(claimedRequest.page).find((item) => item.id === id);
         if (!saved) throw new Error('local write missing');
         core.settle({ identity, session, requestId: claimedRequest.requestId,
@@ -172,9 +183,12 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
         cancel.disabled = true;
         return;
       }
-      const response = await store.request('/api/annotations', { method: 'POST', token: initialToken,
+      if (!integrityReady()) throw new Error('unsent request blocked');
+      const pending = store.request('/api/annotations', { method: 'POST', token: initialToken,
         body: { requestId: claimedRequest.requestId, page: claimedRequest.page, body: claimedRequest.body,
           color: claimedRequest.color, style: claimedRequest.style, visibility: claimedRequest.visibility, target } });
+      sent = true;
+      const response = await pending;
       if (!sameContext() || cancelled) {
         unknown();
         return;
@@ -196,6 +210,14 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       state.textContent = `已写入：${LABELS[claimedRequest.visibility]}`;
       cancel.disabled = true;
     } catch (error) {
+      if (!sent) {
+        const record = core.inspect({ identity, session, requestId: request.requestId });
+        if (record?.status === 'executing') core.abortUnsent({ identity, session, requestId: request.requestId });
+        started = false;
+        claimed = false;
+        refreshIntegrity();
+        return;
+      }
       unknown();
     }
   }

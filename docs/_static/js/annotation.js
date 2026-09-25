@@ -50,7 +50,7 @@
   var store = window.__aipmAnnoStore;
   var auth = window.__aipmAnnoAuth;
   var panels = window.__aipmPanels;
-  if (store?.assetVersion !== 40 || auth?.assetVersion !== 40) {
+  if (store?.assetVersion !== 41 || auth?.assetVersion !== 41) {
     throw new Error('annotation asset version mismatch');
   }
 
@@ -4908,6 +4908,7 @@
         if (result.ok) {
           clearMatchingDraft(current);
           if (editorDraft && editorDraft.requestId === current.requestId) closeEditor();
+          flash("已写入：" + groupTitle(current.visibility), "success");
           return;
         }
         var latest = store.peekDraft();
@@ -4951,6 +4952,10 @@
       return;
     }
     if (restoringDraft || busy) return;
+    if (draft.scope === "page" && panelMode !== "comments") {
+      panelMode = "comments";
+      syncMode();
+    }
     if (!open && panels) panels.claim("annotation");
     else if (!open) openPanel();
     if (mode === "sheet") setSnap("expanded", false);

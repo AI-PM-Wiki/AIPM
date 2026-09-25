@@ -71,10 +71,13 @@ def on_env(env, config, **kwargs):
         loader = Markup('''<script>
 (function () {
   'use strict';
+  window.__aipmIntegrityReady = false;
   const plan = ''') + Markup(plan) + Markup(''';
   function failure() {
     if (window.__aipmIntegrityFailed) return;
     window.__aipmIntegrityFailed = true;
+    window.__aipmIntegrityReady = false;
+    window.dispatchEvent(new Event('aipm-integrity-change'));
     const banner = document.createElement('div');
     banner.setAttribute('role', 'alert');
     banner.textContent = '批注资源未通过完整性校验，请刷新页面重试。';
@@ -119,7 +122,11 @@ def on_env(env, config, **kwargs):
       });
     }
   }
-  load().catch(failure);
+  load().then(() => {
+    if (window.__aipmIntegrityFailed) return;
+    window.__aipmIntegrityReady = true;
+    window.dispatchEvent(new Event('aipm-integrity-change'));
+  }).catch(failure);
 })();
 </script>''')
         return importmap + loader

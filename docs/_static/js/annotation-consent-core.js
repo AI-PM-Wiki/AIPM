@@ -65,6 +65,7 @@ export function createConsentCore({ storage, clock, site, newId }) {
   }
 
   async function confirm({ identity, session, request, unknown = false }) {
+    if (unknown) throw new Error('unknown request is read-only');
     requireText(identity, 'identity');
     requireText(session, 'session');
     request = canonical(request);
@@ -75,16 +76,14 @@ export function createConsentCore({ storage, clock, site, newId }) {
     if (record) {
       checked(record, identity, session, request, digest);
       if (now - record.createdAt >= THIRTY_DAYS) throw new Error('recovery expired');
-      if (unknown !== (record.status === 'unknown') ||
-          !['unknown', 'awaiting_confirmation'].includes(record.status)) throw new Error('request already recorded');
+      if (record.status !== 'awaiting_confirmation') throw new Error('request already recorded');
       if (record.permit) {
         const prior = record.permits.find((item) => item.id === record.permit);
         if (!prior || (!prior.revoked && now < prior.expiresAt)) throw new Error('permission already active');
         prior.revoked = true;
       }
-      if (record.permits.some((item) => item.used) && record.status !== 'unknown') throw new Error('request already used');
+      if (record.permits.some((item) => item.used && !item.unsent) && record.status !== 'unknown') throw new Error('request already used');
     } else {
-      if (unknown) throw new Error('unknown request absent');
       record = { site, identity, session, requestId: request.requestId, digest, request,
         page: request.page, visibility: request.visibility,
         createdAt: now, status: 'awaiting_confirmation', permits: [], permit: null };
@@ -108,7 +107,7 @@ export function createConsentCore({ storage, clock, site, newId }) {
     const permit = record.permits.find((item) => item.id === grantId);
     if (clock() - record.createdAt >= THIRTY_DAYS) throw new Error('recovery expired');
     if (record.permit !== grantId || !permit || permit.used || permit.revoked || clock() >= permit.expiresAt ||
-        !['awaiting_confirmation', 'unknown'].includes(record.status)) throw new Error('permission denied');
+        record.status !== 'awaiting_confirmation') throw new Error('permission denied');
     permit.used = true;
     record.permit = null;
     if (record.status === 'unknown') record.unknownRetained = true;
@@ -127,6 +126,21 @@ export function createConsentCore({ storage, clock, site, newId }) {
       record.status = 'unknown';
       record.unknownRetained = true;
     }
+    save(state);
+  }
+
+  function abortUnsent({ identity, session, requestId }) {
+    const state = read();
+    const record = state.records.find((entry) => match(entry, identity, requestId));
+    if (!record || record.session !== session || record.status !== 'executing') {
+      throw new Error('no unsent request');
+    }
+    const permit = record.permits.findLast((item) => item.used && !item.revoked);
+    if (!permit) throw new Error('no active permission');
+    permit.revoked = true;
+    permit.unsent = true;
+    record.permit = null;
+    record.status = record.unknownRetained ? 'unknown' : 'awaiting_confirmation';
     save(state);
   }
 
@@ -188,5 +202,5 @@ export function createConsentCore({ storage, clock, site, newId }) {
     return record ? structuredClone(record) : null;
   }
 
-  return Object.freeze({ confirm, claim, revoke, settle, prune, inspect, inspectOwned });
+  return Object.freeze({ confirm, claim, revoke, abortUnsent, settle, prune, inspect, inspectOwned });
 }

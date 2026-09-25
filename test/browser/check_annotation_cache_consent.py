@@ -274,7 +274,7 @@ class AnnotationCacheConsent(unittest.TestCase):
                 current = self.snapshot(page, entries, label + "-unconfirmed")
                 self.assertEqual(current["resources"][0]["sha256"], hashlib.sha256(
                     (target / "ai" / "rag" / "index.html").read_bytes()).hexdigest())
-                expected_version = "37" if label == "baseline" else "40"
+                expected_version = "37" if label == "baseline" else "41"
                 self.assertTrue(all(f"?v={expected_version}" in src
                                     for src in current["browser"]["scripts"]))
                 for resource in current["resources"][1:]:
@@ -361,7 +361,7 @@ class AnnotationCacheConsent(unittest.TestCase):
                 page.wait_for_timeout(1000)
                 panel = next(response for response in responses
                              if urlsplit(response.url).path == "/_static/js/annotation.js" and
-                             f"?v={38 if label == 'frozen' else 40}" in response.url)
+                             f"?v={38 if label == 'frozen' else 41}" in response.url)
                 expected_html = (target / "ai/rag/index.html").read_bytes()
                 self.assertEqual(hashlib.sha256(navigation.body()).hexdigest(), hashlib.sha256(expected_html).hexdigest())
                 self.assertEqual(hashlib.sha256(panel.body()).hexdigest(), hashlib.sha256(old_panel).hexdigest())
@@ -424,7 +424,7 @@ class AnnotationCacheConsent(unittest.TestCase):
                 result = page.evaluate("""async path => {
                     try { await import(path); return { accepted: true }; }
                     catch (error) { return { accepted: false, error: error.message }; }
-                }""", path + "?v=40")
+                }""", path + "?v=41")
                 record = {"module": name, "result": result,
                           "servedSha256": hashlib.sha256(payload).hexdigest(),
                           "builtSha256": hashlib.sha256((self.candidate / path.lstrip("/")).read_bytes()).hexdigest(),
@@ -450,7 +450,7 @@ class AnnotationCacheConsent(unittest.TestCase):
             page = context.new_page()
             page.goto(self.base + PAGE, wait_until="load")
             result = page.evaluate("""async () => typeof (await import(
-                '/_static/js/annotation-agent-entry.js?v=40')).createAgentEntry""")
+                '/_static/js/annotation-agent-entry.js?v=41')).createAgentEntry""")
             self.assertEqual(result, "function")
             context.close()
         finally:
@@ -533,7 +533,7 @@ class AnnotationCacheConsent(unittest.TestCase):
                 result = page.evaluate("""async path => {
                     try { await import(path); return { accepted: true }; }
                     catch (error) { return { accepted: false, error: error.message }; }
-                }""", path + "?v=40")
+                }""", path + "?v=41")
                 record = {"module": name, "result": result,
                           "serverRequests": [entry["path"] for entry in self.site.requests
                                              if urlsplit(entry["path"]).path == path]}
