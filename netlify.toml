@@ -12,8 +12,11 @@
 # 默认 /* 强制重新验证,保证 HTML / 搜索索引 / service-worker.js 随发布更新。
 # 随后更具体的路径覆盖为长缓存:
 #   - 主题 assets 文件名含内容哈希 → 1 年 + immutable
-#   - _static CSS/JS 由 HTML 里 ?v= 击穿 → 1 年(查询串参与缓存键)
-#   - 未哈希的 toggle-sidebar.js → 1 天,不用 immutable
+#   - _static CSS/JS 由 HTML 里 ?v=<产物内容哈希> 击穿(哈希由 hooks/on_env.py
+#     构建后写入)→ 1 年(查询串参与缓存键)
+#   - 未哈希的 toggle-sidebar.js / lunr 语言包 → 1 天,不用 immutable:
+#     immutable 只在「文件名随内容变」时成立,这两类文件名固定,
+#     标 immutable 会让主题升级后返回缓存里一年的旧文件
 #
 # 生产站 aipm.ac 走 GitHub Pages,源站 Cache-Control 被钉死 max-age=600,
 # 本段只对 Netlify 预览生效;生产回访靠 docs/service-worker.js 的 cache-first。
@@ -40,20 +43,24 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# lunr 语言包文件名不含哈希(lunr.zh.min.js 等),且由主题升级而非本仓库改写:
+# 标 immutable 会把旧文件钉在用户侧一年,与 worker(search.<hash>.min.js,有哈希)
+# 版本错配时可能直接搜不出结果。按 toggle-sidebar.js 同款处理:只给 1 天。
 [[headers]]
   for = "/assets/javascripts/lunr/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400"
 
 [[headers]]
   for = "/assets/javascripts/lunr/min/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400"
 
+# 未哈希的同理:文件名不变,不给 immutable
 [[headers]]
   for = "/assets/images/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400"
 
 [[headers]]
   for = "/assets/javascripts/toggle-sidebar.js"
@@ -70,25 +77,27 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000"
 
+# favicon 文件名固定(不含内容哈希),换标时旧图标会在用户侧留很久;
+# 收到 7 天:仍是长缓存,换标最多一周生效
 [[headers]]
   for = "/favicon.ico"
   [headers.values]
-    Cache-Control = "public, max-age=31536000"
+    Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/favicon.svg"
   [headers.values]
-    Cache-Control = "public, max-age=31536000"
+    Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/favicon_192x192.png"
   [headers.values]
-    Cache-Control = "public, max-age=31536000"
+    Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/favicon_512x512.png"
   [headers.values]
-    Cache-Control = "public, max-age=31536000"
+    Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/manifest.webmanifest"
