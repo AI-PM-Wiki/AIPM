@@ -1,85 +1,46 @@
 # 浏览器用例
 
-跑真实浏览器的用例,覆盖那些静态断言看不出来的东西:渲染时序、缓存、真实的网络
-请求、页面上到底执行了哪份脚本。
+用例使用真实构建产物、Chromium、Agent 服务和批注服务。模型请求经记录代理发送到明确授权的 HTTPS 端点，响应按原始字节转发。工具参数要求通过用户消息提交给模型，断言检查模型的实际行为。
 
 ```bash
-uv sync --group browser                       # 装 Playwright(默认安装不含它)
-uv run playwright install chromium            # 下载 Chromium,约 150 MB,一次性
-uv run python3 test/browser/run.py            # 全部
-uv run python3 test/browser/run.py chart      # 只跑文件名里带 chart 的那个文件
+uv sync --group browser
+uv run playwright install chromium
+mkdir -p meta/r
+TMPDIR=meta/r uv run python3 test/browser/run.py
+TMPDIR=meta/r uv run python3 test/browser/run.py draft_real
 ```
 
-## 为什么不在默认门禁里
+## 模型配置
 
-`uv run python3 -m unittest` 是每次改动都要跑的门禁,那份门禁刻意保持零浏览器依赖
-(Playwright 因此单独一组 `browser`,不进 `uv sync` 的默认安装)。这里的文件名不以
-`test_` 开头,默认发现也不会碰到它们;要跑就显式跑上面那几条。两者覆盖的东西不同,
-不是快慢之分:静态断言锁形状,这里锁行为。
+运行模型相关用例需要显式提供以下环境变量。配置缺少时快速失败，记录为未运行。
 
-## 底座(`harness.py`)
+| 环境变量 | 用途 |
+| --- | --- |
+| `AIPM_REAL_MODEL_API_KEY` | 已获授权的模型凭据 |
+| `AIPM_REAL_MODEL_BASE_URL` | Anthropic Messages 兼容的 HTTPS 端点，不含 `/v1` |
+| `AIPM_REAL_MODEL_NAME` | 获授权的模型名称 |
+| `AIPM_REAL_TEXT_ONLY_MODEL` | 图像拒收用例使用的真实模型 |
 
-- **建站**:`mkdocs build` 出一份真的 `site/`,与线上同一条构建路径(hooks 注入的
-  `?v=`、Service Worker、主题都在里面)。传 `ref` 时先用 `git archive` 取出那个提交
-  的源码树再建 —— 缓存那条用例要靠它造出「用户升级前的那一版」。
-- **服务**:一个静态文件服务,`serve(root)` 换根而**不换端口**。对浏览器来说还是
-  同一个 origin,Service Worker 与 Cache Storage 都留着 —— 这正是「老用户升级」与
-  「开个新端口再看一眼」的区别。HTTP 缓存也照**项目部署约定**活着
-  (`harness.CACHE_CONTROL`:生产站 GitHub Pages 把响应钉成 `max-age=600`),校验符
-  只由内容定(`ETag`,不发 `Last-Modified`)—— 两份构建的 mtime 先后与谁新谁旧无关,
-  按 mtime 回来一问就会答 304,新的那份字节永远换不上。测试里没有哪一处统一关掉
-  HTTP 缓存。
-- **链路**:一个假的模型 API(把收到的请求体抄下来)加一个真的 agent-server
-  (`SEARCH_INDEX_URL` 指向本地站点自己的索引,`ANTHROPIC_BASE_URL` 指向假 API)。
-  不联网,也不需要真的 `ANTHROPIC_API_KEY`。聊天 widget 在 localhost 上写死请求
-  `127.0.0.1:8787`,agent-server 因此固定跑在那个端口上。
-- **批注服务夹具**(`AnnotationApi`):批注功能那条通路自己的一个真 HTTP 服务,
-  跨源、带 CORS 与鉴权,跑在 `127.0.0.1:8788`(前端在 localhost 上写死这个地址)。
-  它按批注服务的约定回话:公开批注匿名可读、私有批注只有作者读得到、写入要
-  `Authorization: Bearer`,而 `visibility: "local"` 一律 400 —— 线上没有这条写入路径。
-  请求逐条记进 `requests`(方法、路径、**解码后的查询参数**、请求体、Authorization):
-  「页面上点一下有没有出网」只有服务端这一侧的记录说得清,客户端本地的证明不了。
-  登录起点那一跳它不含 GitHub(那一半要人点、要真账号),直接把回跳那半段照真实形状
-  走完 —— 带着一次性的 `aipm_auth_code` 回到 `return` 那一页,于是「未登录点采纳 →
-  存草稿 → 登录 → 回跳 → 草稿自动补发」是一条能在浏览器里跑完的路。
-- **异常分拣**:页面上的报错按**出处**分成「这条通路自己的」与「别人的」。出处按
-  协议+主机+端口严格比,不看消息里出现了什么网址;拿不准的(堆栈里没有帧)计入
-  失败。主题那句 `Invalid script: <地址>` 是唯一一条「出处在我们、说的是别人」的
-  报错,它的出处因此卡得更紧:堆栈第一帧(抛出位置)得在主题自己那几份脚本上
-  (`THEME_SCRIPT_PREFIX`),再加上那个地址确实在别人那里、浏览器自己报过它没加载成
-  —— 三样齐了才挡下。挡下来的记录由 `assert_no_page_errors` 逐条核对,并与用例
-  声明的对齐。用例自己起的夹具(如那个批注服务)通过 `also_ours` 声明成「我们这侧
-  的」:它们上面的报错计入失败,不会被当成第三方的记录挡下。
+真实 GitHub OAuth 用例需要 `AIPM_REAL_GITHUB_CLIENT_ID`、`AIPM_REAL_GITHUB_CLIENT_SECRET` 和 `AIPM_REAL_GITHUB_ID`，并需要对应账号完成浏览器授权。批注服务的开发登录接口只用于隔离服务的许可与持久化检查；该结果不覆盖 GitHub OAuth。
 
-## 四个文件
+## 端口与数据
 
-- `check_chart_flow.py` —— 图表语境。21 条,分两类。`ChartContextFlowTest` 那 16 条
-  把 Service Worker 关掉(站点那个按地址做 cache-first,会把「读不完的响应」第二次
-  请求挡回第一次的响应,两分量根本到不了服务端,见 `_Stream`):位图送的是图像本身
-  且模型确实收到了、取图的三道限制(来源 / 类型 / 体积,含跨源重定向与读取中途取消)、
-  Mermaid 取源时序、SVG 取不到时的回落、不可信 SVG 不执行、「仅本机」那条边界、配额
-  降级之后重新生成、模型不收图时的反馈。`ServiceWorkerReadLimitTest` 那 5 条不关 SW,
-  量的是同一件事在四种处境下还成不成立:这次读没命中缓存、缓存里已经有那张图、
-  **放行范围只认取源那条请求的标记头**(同一地址发一条没带标记、只声明了
-  `cache: "no-store"` 的请求作反例)、以及老用户带着旧缓存升到新构建。
-- `check_cache_upgrade.py` —— 缓存升级:老用户在**同一个浏览器、同一个端口**上带着
-  旧缓存刷新,必须换到新脚本,而且旧缓存不必被清掉;顺带断言这一下刷新把新的
-  `service-worker.js` 取了回来。`ServiceWorkerUpdateFailureTest` 走这条通道失败的那
-  一下:脚本取不回来时这一次发布换不上来,页面必须留下能照着查的记录(哪个 scope、
-  哪个脚本、什么原因),而不是静默过去。
-- `check_error_filter.py` —— 异常分拣本身:本站脚本抛错时消息里带着别人的网址照样
-  算我们的(哪怕形状与主题那句 `Invalid script: <地址>` 一模一样、那个地址也确实
-  没加载成)、抛出位置在主题脚本上且证据齐了才挡得下、位置对了而证据不在照旧算
-  我们的、出处拿不准的按失败计入、声明的「弄坏的地址」必须与浏览器实际报出来的一致。
-  末一条另有真站点那一组:拦掉主题取 mermaid 的 CDN,证明那句话真的抛在主题自己的
-  bundle 里。
-- `check_agent_annotation.py` —— Agent 写批注这条通路,13 条。隔离模型服务返回一个
-  `propose_annotation` 的 tool_use,agent-server 真的执行它、把建议经 SSE 交给页面;
-  页面上出现一张卡,点「采纳」之后由批注面板写下去。于是「模型提了什么」「页面上
-  点了什么」「批注服务收到了什么」是同一次运行里能对着看的三端。锁住的是:写入真的
-  发生而且带**用户自己的** bearer token(助手那一侧不持有凭据)、可见范围以用户在
-  卡上挑的那一档为准(模型给公开、用户改私有,写下去的就是私有)、仅本机那一档
-  批注服务**一条写入记录都没有**、未登录选公开不静默出网而是存草稿走登录往返
-  (回跳之后**只**补发一条)、引文不在正文里就不写、换页之后那条建议写不下去。
-  它用真选区(`selectionchange`)走「划选 → 问助手 → 语境进对话」这一段,不用内部
-  函数。当前页面独立于选区传递；无语境、换页和历史重新生成都核对页面路径。
+静态站点通过操作系统分配回环端口。Agent、批注记录代理与服务端口均可由环境变量指定，缺省使用操作系统分配的端口。绑定失败即终止，测试不停止已有服务。
+
+| 环境变量 | 用途 |
+| --- | --- |
+| `AIPM_TEST_AGENT_PORT` | Agent 服务 |
+| `AIPM_TEST_ANNOTATION_PORT` | 批注请求记录代理 |
+| `AIPM_TEST_MODEL_PROXY_PORT` | 模型请求记录代理 |
+| `AIPM_TEST_ANNOTATION_SERVICE_PORT` | 公共底座的真实批注服务 |
+| `AIPM_TEST_CONFIRMATION_SERVICE_PORT` | 确认流程的真实批注服务 |
+| `AIPM_TEST_DRAFT_SERVICE_PORT` | 草稿流程的真实批注服务 |
+| `AIPM_TEST_LEGACY_ANNOTATION_PORT` | 历史构建内的 URL，用浏览器请求转发到隔离服务 |
+
+前端在回环页面读取 `window.__aipmLocalApi` 中的 `agent` 和 `annotation`。测试通过页面初始化脚本提供配置，生产 URL 保持现有设置。新目录与日志保存在忽略的 `meta/browser/` 中。
+
+响应中断检查使用代理转发真实服务结果，然后中断连接。持久化故障检查在隔离数据目录制造文件系统故障。两类检查都保留原始 HTTP 状态和服务数据。
+
+## 结果范围
+
+`run.py` 显式发现 `check_*.py`；默认 Python 单测发现 `test_*.py`。完整报告分别记录单测、构建、许可／持久化、模型、OAuth、缓存升级和浏览器结果。失败及缺配置均不能计为通过。

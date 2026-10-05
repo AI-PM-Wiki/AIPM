@@ -6,7 +6,7 @@ import unittest
 from playwright.sync_api import sync_playwright
 
 from check_agent_annotation import PAGE, TOOL, _Stack, _js
-from harness import ANNO_ORIGIN, ANNO_TOKEN, ANNO_USER, Browser, assert_no_page_errors
+from harness import ANNO_ORIGIN, Browser, assert_no_page_errors
 
 
 class AgentConfirmationAcceptance(unittest.TestCase):
@@ -24,11 +24,11 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.addCleanup(self.browser.close)
         self.page = self.browser.page
         self.page.goto(self.stack.site.base + PAGE, wait_until="load")
+        self.session = self.stack.api.login()
         self.page.evaluate(
             "(raw) => localStorage.setItem('aipm-anno-auth', raw)",
-            _js({"token": ANNO_TOKEN, "user": ANNO_USER, "admin": False}),
+            _js(self.session),
         )
-        self.session = {"token": ANNO_TOKEN, "user": ANNO_USER, "admin": False}
         self.page.add_init_script("window.__aipmAnnoAgentEnabled = true")
         self.page.reload(wait_until="load")
         self.page.wait_for_function(
@@ -75,7 +75,8 @@ class AgentConfirmationAcceptance(unittest.TestCase):
             {"tools": [{"name": TOOL, "input": {**anchor, "visibility": visibility, "body": body}}]},
             {"text": "请在确认卡片核对这条建议。"},
         ])
-        self.page.fill(".aipm-chat__input", "请结合所选内容提出一条批注建议")
+        self.page.fill(".aipm-chat__input", "请结合所选内容提出一条批注建议。" + self.stack.model.instruction)
+        self.stack.model.instruction = ""
         self.page.click(".aipm-chat__send")
         self.page.wait_for_function(
             "() => !document.querySelector('.aipm-chat__send').classList.contains('is-stop')"

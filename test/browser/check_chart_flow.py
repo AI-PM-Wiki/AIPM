@@ -42,7 +42,7 @@ from harness import (
     AgentServer,
     Browser,
     StaticSite,
-    StubModel,
+    RealModel,
     assert_no_page_errors,
     build_site,
 )
@@ -124,17 +124,17 @@ def write_fixtures(site: StaticSite, probe: StaticSite) -> None:
 
 
 class _Stack:
-    """一整套跑得起来的东西:真站点、跨域探针、假模型、真的 agent-server、浏览器引擎。
+    """站点、跨域资源、授权模型、Agent 服务与浏览器引擎。
 
     整个模块共用一份 —— 建站要几十秒,两个用例类各建一份没有意义。"""
 
     def __init__(self):
+        self.model = RealModel()
         self.site_dir = build_site(WORK / "site-flow")
         self.site = StaticSite(self.site_dir)
         # 跨域那一台**加 CORS 头**:不加的话,挡住「同源重定向到跨域资源」那一步的是
         # CORS 自己,被测的那道来源判断就轮不到 —— 用例必须让跨域那一侧真的放行。
         self.probe = StaticSite(self.site_dir / "probe", cors=True)
-        self.model = StubModel()
         self.server = AgentServer(self.site, self.model)
         self.pw = sync_playwright().start()
         write_fixtures(self.site, self.probe)
@@ -179,7 +179,7 @@ class ChartFlowCase(unittest.TestCase):
         self.model = self.stack.model
         self.server = self.stack.server
         self.pw = self.stack.pw
-        # 假模型 API 整类共用一份记录,每个用例只看自己这一段
+        # 记录代理共用请求记录，每个用例检查当前范围。
         self.model_seen = len(self.model.messages())
         self.browser = Browser(self.pw, self.site.base, service_workers=self.service_workers)
         self.configure_browser()
@@ -777,7 +777,9 @@ class ChartContextFlowTest(ChartFlowCase):
         self.assertIn("图像", text, f"没有说清是图像的问题:{text!r}")
         self.assertIn("去掉", text, f"没有告诉用户怎么继续:{text!r}")
         self.assertNotIn("收到。", text, "上游摘掉图之后那轮回答还是发了出去,用户以为模型看过图")
-        self.assertNotIn("req_01STUBIMAGE", text, "上游报错里的请求编号走到了用户眼前")
+        rejection = next(response for response in reversed(self.model.responses) if response["status"] >= 400)
+        self.assertTrue(rejection["requestId"], "真实拒收响应缺少请求编号")
+        self.assertNotIn(rejection["requestId"], text, "上游报错里的请求编号走到了用户眼前")
         self.assertNotIn("does not support image inputs", text, "上游报错的原文走到了用户眼前")
         self.assertNotIn("模型服务暂时不可用", text, "还停在通用提示上,用户不知道要做什么")
         assert_no_page_errors(self, self.browser)

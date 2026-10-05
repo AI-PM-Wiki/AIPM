@@ -70,9 +70,16 @@
   /* ================================================================
      常量与配置
      ================================================================ */
-  const API_BASE = location.hostname === "localhost" || location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:8787"
-    : "https://docs-agent.nvc.ac";
+  const localHost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  const API_BASE = localHost && window.__aipmLocalApi?.agent
+    ? window.__aipmLocalApi.agent
+    : localHost ? "http://127.0.0.1:8787" : "https://docs-agent.nvc.ac";
+  if (localHost && window.__aipmLocalApi?.agent) {
+    const endpoint = new URL(API_BASE);
+    if (endpoint.protocol !== "http:" || endpoint.hostname !== "127.0.0.1" ||
+        endpoint.pathname !== "/" || endpoint.search || endpoint.hash ||
+        endpoint.username || endpoint.password) throw new Error("invalid local Agent endpoint");
+  }
   const HISTORY_KEY = "aipm-chat-history";
   const HISTORY_MAX = 20;              // localStorage 条数上限
   const HISTORY_SEND = 8;              // 每次请求携带的最近历史条数

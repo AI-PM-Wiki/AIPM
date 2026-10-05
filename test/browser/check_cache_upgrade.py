@@ -25,8 +25,12 @@ Worker 对带版本参数的静态资源是 **cache-first** —— 老用户会�
 from __future__ import annotations
 
 import re
+import json
 import shutil
 import unittest
+from urllib.parse import urlsplit, parse_qs
+
+from bs4 import BeautifulSoup
 
 from playwright.sync_api import sync_playwright
 
@@ -46,10 +50,24 @@ UPDATE_FAILED = "PWA update failed for scope "
 def widget_version(site_dir) -> str:
     """这份构建的页面请求的是哪个版本号。"""
     html = (site_dir / "ai" / "rag" / "index.html").read_text(encoding="utf-8")
+    document = BeautifulSoup(html, "html.parser")
+    plan = document.select_one("script[data-aipm-integrity-plan]")
+    if plan is not None:
+        return str(json.loads(plan.string)["version"])
     found = re.search(r"chat-widget\.js\?v=(\d+)", html)
     if found is None:
         raise AssertionError(f"页面里没有 chat-widget.js 的版本参数:{site_dir}")
     return found.group(1)
+
+
+def widget_url(site_dir) -> str:
+    html = (site_dir / "ai" / "rag" / "index.html").read_text(encoding="utf-8")
+    document = BeautifulSoup(html, "html.parser")
+    plan = document.select_one("script[data-aipm-integrity-plan]")
+    if plan is not None:
+        return next(resource["url"] for resource in json.loads(plan.string)["scripts"]
+                    if urlsplit(resource["url"]).path.endswith("/chat-widget.js"))
+    return document.select_one('script[src*="chat-widget.js"]')["src"]
 
 
 class CacheUpgradeTest(unittest.TestCase):
@@ -84,11 +102,15 @@ class CacheUpgradeTest(unittest.TestCase):
     def test_the_widget_users_already_cached_is_replaced(self):
         old_version = widget_version(self.old_dir)
         new_version = widget_version(self.new_dir)
+        old_asset = widget_url(self.old_dir)
+        new_asset = widget_url(self.new_dir)
         self.assertGreater(
             int(new_version),
             int(old_version),
             f"chat-widget.js 改了但版本号还是 {new_version}:老用户的缓存会一直命中旧脚本",
         )
+        self.assertNotEqual(old_asset, new_asset)
+        self.assertTrue(parse_qs(urlsplit(new_asset).query).get("v"))
 
         browser = Browser(self.pw, self.site.base)
         try:
@@ -117,7 +139,7 @@ class CacheUpgradeTest(unittest.TestCase):
             )
 
             src = page.evaluate("() => document.querySelector('script[src*=\"chat-widget.js\"]').src")
-            self.assertIn(f"chat-widget.js?v={new_version}", src, "页面请求的还是旧 URL")
+            self.assertIn(new_asset, src, "页面请求的还是旧 URL")
 
             loaded = page.evaluate(
                 """async () => {

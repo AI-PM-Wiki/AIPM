@@ -2,11 +2,8 @@
 
     uv run python3 test/browser/run.py annotation
 
-跑的是完整一条路:真站点(mkdocs build 出来的那份)、真浏览器、真 agent-server、
-假模型 API、以及一份**真的批注服务夹具**(真 HTTP、真跨源)。假模型那一轮里回一个
-tool_use,agent-server 那边真的执行工具、把建议经 SSE 交给页面;页面上出现一张卡,
-点「采纳」之后由批注面板写下去。于是「模型提了什么」「页面上点了什么」「批注服务
-收到了什么」是同一次运行里可以对着看的三端。
+使用构建产物、浏览器、Agent 服务、授权模型与真实批注服务。
+工具参数要求通过用户消息提供，断言核对模型、页面与服务的实际行为。
 
 覆盖这条通路要锁住的每一件事:
 
@@ -27,15 +24,14 @@ import unittest
 from playwright.sync_api import sync_playwright
 
 from harness import (
+    AGENT_ORIGIN,
     ANNO_ORIGIN,
-    ANNO_TOKEN,
-    ANNO_USER,
     WORK,
     AgentServer,
     AnnotationApi,
     Browser,
     StaticSite,
-    StubModel,
+    RealModel,
     assert_no_page_errors,
     build_site,
 )
@@ -48,18 +44,18 @@ TOOL = "mcp__wiki__propose_annotation"
 
 
 class _Stack:
-    """一整套跑得起来的东西:真站点、假模型、真的 agent-server、批注服务夹具。
+    """站点、授权模型、Agent 服务与隔离批注服务。
 
     建站要几十秒,整份文件共用一份。`max_turns` 给 3:一条建议要用掉两轮
     (提建议 → 收到工具结果再作答),留一轮余量。
     """
 
     def __init__(self):
+        self.model = RealModel()
         self.site_dir = build_site(WORK / "site-annotation")
         self.site = StaticSite(self.site_dir)
-        self.model = StubModel()
         self.server = AgentServer(self.site, self.model, max_turns=3)
-        self.api = AnnotationApi()
+        self.api = AnnotationApi(self.site)
         self.pw = sync_playwright().start()
 
     def close(self) -> None:
@@ -120,9 +116,10 @@ class AgentAnnotationCase(unittest.TestCase):
 
         这一下不放进 `add_init_script`:那种脚本**每次导航都会再跑一遍**,于是用例
         里「把登录态摘掉」下一跳就被它盖回来了,未登录那条路根本走不到。"""
+        self.session = self.api.login()
         self.page.evaluate(
             "(raw) => localStorage.setItem('aipm-anno-auth', raw)",
-            _js({"token": ANNO_TOKEN, "user": ANNO_USER, "admin": False}),
+            _js(self.session),
         )
         self.page.reload(wait_until="load")
         self.page.wait_for_function("() => window.__aipmChat && window.__aipmAnno")
@@ -188,7 +185,7 @@ class AgentAnnotationCase(unittest.TestCase):
         return anchor
 
     def propose(self, *, message: str = "把这段讲 RAG 的地方标一下", **proposal) -> dict:
-        """划一段话、把它送进对话,再让假模型在下一轮提一条建议。
+        """划选正文并请求真实模型提出建议。
 
         `proposal` 是模型这一轮给工具的入参;**引文缺省就是刚才划的那一段** ——
         这正是真实用户会走的路(划一段话问助手,助手对这一段提建议)。要试别的引文
@@ -214,7 +211,9 @@ class AgentAnnotationCase(unittest.TestCase):
     def send(self, text: str) -> dict:
         """发一句问话,等这一轮跑完,返回这一轮的请求体。"""
         before = len(self.browser.chat_bodies)
-        self.page.fill(".aipm-chat__input", text)
+        instruction = self.model.instruction
+        self.model.instruction = ""
+        self.page.fill(".aipm-chat__input", text + ("\n" + instruction if instruction else ""))
         self.page.click(".aipm-chat__send")
         self.page.wait_for_function(
             "() => !document.querySelector('.aipm-chat__send').classList.contains('is-stop')"
@@ -357,7 +356,7 @@ class AgentAnnotationCase(unittest.TestCase):
         self.assertEqual(sent["color"], "blue")
         self.assertEqual(sent["style"], "underline")
         self.assertEqual(sent["body"], "这里是 RAG 的定义")
-        self.assertEqual(writes[0]["authorization"], f"Bearer {ANNO_TOKEN}", "写入没有带用户自己的会话")
+        self.assertEqual(writes[0]["authorization"], f"Bearer {self.session['token']}", "写入没有带用户自己的会话")
         selectors = sent["target"]["selectors"]
         self.assertEqual([s["type"] for s in selectors][:1], ["TextQuoteSelector"])
         self.assertEqual(selectors[0]["exact"], anchor["quote"], "发出去的不是页面上那段原文")
@@ -435,7 +434,7 @@ class AgentAnnotationCase(unittest.TestCase):
         self.assertEqual(len(writes), 1)
         self.assertEqual(writes[0]["body"]["target"], {"selectors": [], "scope": "page"})
         self.assertEqual(writes[0]["body"]["body"], "整页讨论")
-        self.assertEqual(writes[0]["authorization"], f"Bearer {ANNO_TOKEN}")
+        self.assertEqual(writes[0]["authorization"], f"Bearer {self.session['token']}")
         assert_no_page_errors(self, self.browser)
 
     def test_lost_response_keeps_original_visibility_after_reload(self):
@@ -508,7 +507,7 @@ class AgentAnnotationCase(unittest.TestCase):
             writes[0]["body"]["target"]["selectors"], "补发出去的那条没有锚点"
         )
         self.assertEqual(
-            writes[0]["authorization"], f"Bearer {ANNO_TOKEN}", "补发没有带上登录后的会话"
+            writes[0]["authorization"], f"Bearer {self.session['token']}", "补发没有带上登录后的会话"
         )
         self.assertEqual(
             [r for r in self.api.requests if r["method"] == "POST" and r["path"] == "/api/annotations"],
@@ -573,12 +572,12 @@ def _js(value) -> str:
 class IndexUnavailableBrowserTest(unittest.TestCase):
     def test_empty_index_reports_retryable_service_error(self):
         tearDownModule()
+        model = RealModel()
         site_dir = build_site(WORK / "site-index-empty")
         site = StaticSite(site_dir)
         site.write("search/index-empty.json", b'{"docs": []}', "application/json")
-        model = StubModel()
         server = None
-        api = AnnotationApi()
+        api = AnnotationApi(site)
         browser = None
         pw = sync_playwright().start()
         try:
@@ -599,7 +598,7 @@ class IndexUnavailableBrowserTest(unittest.TestCase):
             self.assertIn("文章索引暂不可用", bubble.inner_text())
             self.assertEqual(model.messages(), [])
             assert_no_page_errors(
-                self, browser, expected_load_failures=("http://127.0.0.1:8787/api/chat",)
+                self, browser, expected_load_failures=(AGENT_ORIGIN + "/api/chat",)
             )
         finally:
             if browser is not None:

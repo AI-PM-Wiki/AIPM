@@ -661,7 +661,7 @@ class TestAgentWritesAnnotations(unittest.TestCase):
             "def test_a_proposal_for_a_page_the_reader_left_is_refused",
         ):
             self.assertIn(claim, self.browser)
-        self.assertIn('self.assertEqual(writes[0]["authorization"], f"Bearer {ANNO_TOKEN}"', self.browser, "写入要带用户自己的会话")
+        self.assertIn('self.assertEqual(writes[0]["authorization"], f"Bearer {self.session[\'token\']}"', self.browser, "写入要带用户自己的会话")
         self.assertIn('self.assertEqual(self.api.writes(), [], "仅本机那条出了网")', self.browser)
 
 

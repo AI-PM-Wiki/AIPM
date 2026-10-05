@@ -4,9 +4,12 @@ import base64
 import hashlib
 import json
 from pathlib import Path
+from urllib.parse import urlsplit
 
+from bs4 import BeautifulSoup
 from jinja2 import pass_context
 from markupsafe import Markup
+from mkdocs.plugins import event_priority
 from mkdocs.utils import templates
 
 
@@ -66,13 +69,15 @@ def on_env(env, config, **kwargs):
                    if str(entry).split("?", 1)[0] in digests]
         modules = [{"url": url, "integrity": integrity}
                    for url, integrity in module_integrity.items()]
-        plan = json.dumps({"scripts": scripts, "modules": modules}, separators=(",", ":"))
+        plan = json.dumps({"scripts": scripts, "modules": modules,
+                           "version": (extra.get("chat_agent") or {}).get("version", 1)}, separators=(",", ":"))
         importmap = Markup('<script type="importmap">') + Markup(metadata) + Markup('</script>')
+        plan_tag = Markup('<script type="application/json" data-aipm-integrity-plan>') + Markup(plan) + Markup('</script>')
         loader = Markup('''<script>
 (function () {
   'use strict';
   window.__aipmIntegrityReady = false;
-  const plan = ''') + Markup(plan) + Markup(''';
+  const plan = JSON.parse(document.querySelector('script[data-aipm-integrity-plan]').textContent);
   function failure() {
     if (window.__aipmIntegrityFailed) return;
     window.__aipmIntegrityFailed = true;
@@ -129,7 +134,37 @@ def on_env(env, config, **kwargs):
   }).catch(failure);
 })();
 </script>''')
-        return importmap + loader
+        return importmap + plan_tag + loader
 
     env.filters["script_tag"] = protected_script
     return env
+
+
+@event_priority(-100)
+def on_post_build(config, **kwargs):
+    site = Path(config["site_dir"])
+    version = (config["extra"].get("annotation") or {}).get("version", 1)
+    assets = {*CLASSIC, *(f"_static/js/{name}" for name in MODULES)}
+    digests = {
+        Path(path).name: "sha256-" + base64.b64encode(
+            hashlib.sha256((site / path).read_bytes()).digest()).decode("ascii")
+        for path in assets
+    }
+    for page in site.rglob("*.html"):
+        document = BeautifulSoup(page.read_text(encoding="utf-8"), "html.parser")
+        plan_tag = document.select_one("script[data-aipm-integrity-plan]")
+        if plan_tag is None:
+            continue
+        plan = json.loads(plan_tag.string)
+        for resource in [*plan["scripts"], *plan["modules"]]:
+            resource["integrity"] = digests[Path(urlsplit(resource["url"]).path).name]
+        plan_tag.string = json.dumps(plan, separators=(",", ":"))
+        imports = {}
+        integrity = {}
+        for resource in plan["modules"]:
+            filename = Path(urlsplit(resource["url"]).path).name
+            imports[f"/_static/js/{filename}?v={version}"] = resource["url"]
+            integrity[resource["url"]] = resource["integrity"]
+        importmap = document.select_one('script[type="importmap"]')
+        importmap.string = json.dumps({"imports": imports, "integrity": integrity}, separators=(",", ":"))
+        page.write_text(str(document), encoding="utf-8")

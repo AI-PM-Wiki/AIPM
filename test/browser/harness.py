@@ -11,10 +11,8 @@
   同一条构建路径)。要比对旧版本时,用 `git archive` 取那个提交的源码树另建一份。
 - **服务**:一个静态文件服务,根目录可以中途换掉 —— **换根不换端口**,浏览器那边
   始终是同一个 origin。缓存升级那条用例靠的就是这一点。
-- **链路**:一个假模型 API(把收到的请求体抄下来)加一个真的 agent-server
-  (`SEARCH_INDEX_URL` 指向本地站点自己的索引,`ANTHROPIC_BASE_URL` 指向假 API)。
-  于是「在界面上点一下」到「模型收到什么」是同一次运行里的一条完整通路,不需要
-  联网,也不需要真的 ANTHROPIC_API_KEY。
+- **链路**:记录代理将请求发送给明确授权的真实模型端点，响应原样转发。
+  Agent 使用站点构建生成的索引，批注服务使用独立目录。
 """
 from __future__ import annotations
 
@@ -33,12 +31,28 @@ from http import HTTPStatus
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from model_provider import RealModel
+from annotation_service import RealAnnotationApi
+
 ROOT = Path(__file__).resolve().parents[2]
 WORK = ROOT / "meta" / "browser"
 AGENT_SERVER = ROOT / "agent-server"
 
-#: 聊天 widget 在 localhost 上写死的后端地址(见 docs/_static/js/chat-widget.js)
-AGENT_PORT = 8787
+def configured_port(name: str) -> int:
+    value = os.environ.get(name)
+    if value is not None:
+        port = int(value)
+        if not 1 <= port <= 65535:
+            raise ValueError(f"invalid loopback port: {name}")
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", port))
+            return listener.getsockname()[1]
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        return listener.getsockname()[1]
+
+
+AGENT_PORT = configured_port("AIPM_TEST_AGENT_PORT")
 AGENT_ORIGIN = f"http://127.0.0.1:{AGENT_PORT}"
 
 
@@ -406,502 +420,19 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
-#: 假模型 API 用来结束一轮的 SSE 脚本:一句话就收,agent 不必再要下一轮。
-def _sse_text(text: str) -> str:
-    return "\n".join(
-        [
-            "event: message_start",
-            'data: {"type":"message_start","message":{"id":"msg_stub","type":"message",'
-            '"role":"assistant","model":"stub","content":[],"stop_reason":null,'
-            '"stop_sequence":null,"usage":{"input_tokens":1,"output_tokens":0}}}',
-            "",
-            "event: content_block_start",
-            'data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}',
-            "",
-            "event: content_block_delta",
-            'data: {"type":"content_block_delta","index":0,'
-            f'"delta":{{"type":"text_delta","text":{json.dumps(text, ensure_ascii=False)}}}}}',
-            "",
-            "event: content_block_stop",
-            'data: {"type":"content_block_stop","index":0}',
-            "",
-            "event: message_delta",
-            'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},'
-            '"usage":{"output_tokens":2}}',
-            "",
-            "event: message_stop",
-            'data: {"type":"message_stop"}',
-            "",
-            "",
-        ]
-    )
-
-
-def _sse_tools(calls: list[dict]) -> str:
-    """一轮「模型要调工具」的 SSE:每个调用一块 tool_use,结束时 stop_reason 给
-    tool_use —— agent-server 那边会真的执行工具,再拿着结果问下一轮。"""
-    lines = [
-        "event: message_start",
-        'data: {"type":"message_start","message":{"id":"msg_stub","type":"message",'
-        '"role":"assistant","model":"stub","content":[],"stop_reason":null,'
-        '"stop_sequence":null,"usage":{"input_tokens":1,"output_tokens":0}}}',
-        "",
-    ]
-    for index, call in enumerate(calls):
-        block = {
-            "type": "tool_use",
-            "id": f"toolu_{index + 1}",
-            "name": call["name"],
-            "input": {},
-        }
-        lines += [
-            "event: content_block_start",
-            f'data: {json.dumps({"type": "content_block_start", "index": index, "content_block": block}, ensure_ascii=False)}',
-            "",
-            "event: content_block_delta",
-            f'data: {json.dumps({"type": "content_block_delta", "index": index, "delta": {"type": "input_json_delta", "partial_json": json.dumps(call.get("input", {}), ensure_ascii=False)}}, ensure_ascii=False)}',
-            "",
-            "event: content_block_stop",
-            f'data: {json.dumps({"type": "content_block_stop", "index": index})}',
-            "",
-        ]
-    lines += [
-        "event: message_delta",
-        'data: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null},'
-        '"usage":{"output_tokens":2}}',
-        "",
-        "event: message_stop",
-        'data: {"type":"message_stop"}',
-        "",
-        "",
-    ]
-    return "\n".join(lines)
-
-
-_SSE_REPLY = _sse_text("收到。")
-
-
-#: 上游拒绝图像输入时的那句话。文案照 Anthropic 的真实措辞写(400 + invalid_request_error),
-#: 用例要验的是「这句话没有原样走到用户眼前」,所以它必须是一句认得出来的、带上游细节的话。
-IMAGE_REJECTION_BODY = json.dumps(
-    {
-        "type": "error",
-        "error": {
-            "type": "invalid_request_error",
-            "message": (
-                "messages.0.content.1.image.source.base64: This model does not support "
-                "image inputs. Request id req_01STUBIMAGE"
-            ),
-        },
-    }
-).encode("utf-8")
-
-
-class StubModel:
-    """假的模型 API。把收到的每个请求体抄进 `requests`,用它自己那段 SSE 结束这一轮。
-
-    agent-server 那边只要把 ANTHROPIC_BASE_URL 指过来,这一轮就打不到真的那一侧,
-    而「模型收到了什么」是这里抄下来的原件。
-
-    `reject_images` 打开时,带图像块的请求一律收到 400(见 IMAGE_REJECTION_BODY)——
-    「模型不收图」这条路径要能被执行到,才谈得上验证界面给出的反馈。
-
-    `script` 是逐轮的脚本(见 `_sse_tools`):第 n 次到 `/v1/messages` 的请求拿第 n 条。
-    一条 `{"tools": [{"name": …, "input": …}]}` 让这一轮去调工具,一条 `{"text": …}`
-    直接收尾;脚本用完之后一律回那句「收到。」。工具调用因此能在真 SDK、真工具、
-    真 HTTP 上跑一遍 —— 断言的对象是「工具真收到了什么参数、真回了什么结果」。"""
-
-    def __init__(self, reject_images: bool = False, script: list[dict] | None = None):
-        self.requests: list[dict] = []
-        self.reject_images = reject_images
-        self.script = list(script or [])
-        self.turns = 0
-        self._httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _StubHandler)
-        self._httpd.owner = self
-        self.port = self._httpd.server_address[1]
-        threading.Thread(target=self._httpd.serve_forever, daemon=True).start()
-
-    @property
-    def base(self) -> str:
-        return f"http://127.0.0.1:{self.port}"
-
-    def messages(self) -> list[dict]:
-        """真正发到模型那一侧(/v1/messages)的请求体,按先后。"""
-        return [r for r in self.requests if r["path"].endswith("/messages")]
-
-    def set_script(self, script: list[dict]) -> None:
-        """换一份脚本并把轮次归零 —— 用例可以在页面读完之后再定引文。"""
-        self.script = list(script)
-        self.turns = 0
-
-    def next_reply(self) -> str:
-        """这一轮回给模型侧的 SSE。"""
-        turn = self.script[self.turns] if self.turns < len(self.script) else {}
-        self.turns += 1
-        if turn.get("tools"):
-            return _sse_tools(turn["tools"])
-        return _sse_text(turn.get("text", "收到。"))
-
-    def close(self) -> None:
-        self._httpd.shutdown()
-        self._httpd.server_close()
-
-
-class _StubHandler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
-
-    @staticmethod
-    def _carries_an_image(body: dict) -> bool:
-        for message in body.get("messages", []):
-            content = message.get("content")
-            if isinstance(content, list) and any(b.get("type") == "image" for b in content):
-                return True
-        return False
-
-    def do_POST(self):
-        length = int(self.headers.get("content-length") or 0)
-        raw = self.rfile.read(length).decode("utf-8", "replace")
-        path = self.path.split("?", 1)[0]
-        try:
-            body = json.loads(raw)
-        except ValueError:
-            body = {"_unparsed": raw[:200]}
-        self.server.owner.requests.append({"path": path, "body": body})
-        if path.endswith("/count_tokens"):
-            self._json({"input_tokens": 1})
-            return
-        if self.server.owner.reject_images and self._carries_an_image(body):
-            self._json_raw(IMAGE_REJECTION_BODY, HTTPStatus.BAD_REQUEST)
-            return
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        payload = (
-            self.server.owner.next_reply()
-            if path.endswith("/messages")
-            else _SSE_REPLY
-        ).encode("utf-8")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
-    def do_GET(self):
-        self._json({})
-
-    def _json(self, obj):
-        self._json_raw(json.dumps(obj).encode("utf-8"), HTTPStatus.OK)
-
-    def _json_raw(self, payload: bytes, status: HTTPStatus):
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
-
-#: 批注服务在本地开发下的地址:前端 annotation-store.js 写死的那个。
-ANNO_PORT = 8788
+#: 当前验收进程使用的独立批注端点。
+ANNO_PORT = configured_port("AIPM_TEST_ANNOTATION_PORT")
 ANNO_ORIGIN = f"http://127.0.0.1:{ANNO_PORT}"
 
-#: 夹具签发的那个令牌(前端把它存进 localStorage 的 aipm-anno-auth)。
-ANNO_TOKEN = "tok-browser-check"
-ANNO_USER = {"githubId": 4242, "login": "browser-check"}
-
-#: 线上服务拒收「仅本机」时给的那个码与那句话(见 annotation-server 的
-#: normalizeVisibility)。夹具照抄,连同状态码 —— 前端按它决定说什么。
-INVALID_VISIBILITY_CODE = "invalid_visibility"
-INVALID_VISIBILITY_MESSAGE = "visibility 只能是 public 或 private"
-
-
-class AnnotationApi:
-    """批注 API 的回环协议夹具，记录跨源 HTTP 请求及一次性许可。"""
-
-    def __init__(self):
-        self.drop_next_write_response = False
-        self.stored: list[dict] = []
-        self.requests: list[dict] = []
-        self.permits: dict[str, dict] = {}
-        self.operations: dict[str, dict] = {}
-        self.next_permit_id = 1
-        self._httpd = http.server.ThreadingHTTPServer(("127.0.0.1", ANNO_PORT), _AnnoHandler)
-        self._httpd.owner = self
-        self.port = self._httpd.server_address[1]
-        threading.Thread(target=self._httpd.serve_forever, daemon=True).start()
-
-    @property
-    def base(self) -> str:
-        return ANNO_ORIGIN
-
-    def reset(self) -> None:
-        """每个用例开头清空:记录是整类共用的,不清会串到后一条用例上。"""
-        self.drop_next_write_response = False
-        self.stored.clear()
-        self.requests.clear()
-        self.permits.clear()
-        self.operations.clear()
-        self.next_permit_id = 1
-
-    def writes(self) -> list[dict]:
-        """服务端收到的写入请求(POST /api/annotations),按先后。"""
-        return [r for r in self.requests if r["method"] == "POST" and r["path"] == "/api/annotations"]
-
-    def logins(self) -> list[dict]:
-        """服务端收到的登录跳转(OAuth 起点)。"""
-        return [r for r in self.requests if r["path"] == "/api/auth/github/start"]
-
-    def close(self) -> None:
-        self._httpd.shutdown()
-        self._httpd.server_close()
-
-
-class _AnnoHandler(http.server.BaseHTTPRequestHandler):
-    protocol_version = "HTTP/1.1"
-
-    def log_message(self, *args):
-        pass
-
-    # ---- 底座 ----
-
-    def _read_body(self) -> dict:
-        length = int(self.headers.get("content-length") or 0)
-        raw = self.rfile.read(length).decode("utf-8", "replace") if length else ""
-        try:
-            parsed = json.loads(raw)
-        except ValueError:
-            parsed = None
-        return parsed if isinstance(parsed, dict) else {}
-
-    def _cors(self) -> None:
-        """按请求的 Origin 反射 —— 与线上 ALLOWED_ORIGINS 那一套同形。"""
-        self.send_header("Access-Control-Allow-Origin", self.headers.get("origin") or "*")
-        self.send_header("Vary", "Origin")
-
-    def _json(self, status: int, obj) -> None:
-        payload = json.dumps(obj, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(payload)))
-        self._cors()
-        self.end_headers()
-        self.wfile.write(payload)
-
-    def _error(self, status: int, code: str, message: str) -> None:
-        self._json(status, {"error": code, "message": message})
-
-    def _record(self, body: dict, query: str) -> None:
-        self.server.owner.requests.append(
-            {
-                "method": self.command,
-                "path": self.path.split("?", 1)[0],
-                "params": {k: v[0] for k, v in parse_qs(query, keep_blank_values=True).items()},
-                "body": body,
-                "authorization": self.headers.get("authorization") or "",
-                "permit": self.headers.get("x-annotation-permit") or "",
-            }
-        )
-
-    def _mine(self) -> bool:
-        return (self.headers.get("authorization") or "") == f"Bearer {ANNO_TOKEN}"
-
-    # ---- 方法 ----
-
-    def do_OPTIONS(self):
-        self._record({}, "")
-        self.send_response(HTTPStatus.NO_CONTENT)
-        self.send_header("Content-Length", "0")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Annotation-Permit")
-        self.send_header("Access-Control-Max-Age", "86400")
-        self._cors()
-        self.end_headers()
-
-    def do_GET(self):
-        path, _, query = self.path.partition("?")
-        # 查询参数要**解码**:page=%2Fai%2Frag%2F 与 /ai/rag/ 是同一页,
-        # 不解码的话夹具会按「这一页没有批注」回话。
-        params = {k: v[0] for k, v in parse_qs(query, keep_blank_values=True).items()}
-        self._record({}, query)
-
-        if path == "/healthz":
-            self._json(HTTPStatus.OK, {"ok": True, "annotations": len(self.server.owner.stored)})
-        elif path == "/api/annotations":
-            self._list(params)
-        elif path == "/api/auth/me":
-            self._me()
-        elif path.startswith("/api/annotation-requests/"):
-            self._operation(path.rsplit("/", 1)[-1])
-        elif path == "/api/auth/github/start":
-            # 登录起点。真实那一条是 302 去 GitHub 授权页,用户点完再回到本服务的
-            # 回调,回调换完会话把用户送回站点并在 URL 上带一个一次性的
-            # `aipm_auth_code`(前端 annotation-auth.js 拿它换 bearer token)。
-            # **GitHub 那一跳不在这个夹具里**(它要人点、要真账号):这里直接把
-            # 回跳那半段照真实形状走完 —— 带着 code 回到 `return` 那一页。
-            # 于是「未登录点采纳 → 存草稿 → 登录 → 回跳 → 草稿自动补发」是一条
-            # 可以在浏览器里跑完的路,而不是停在跳转那一步。
-            target = params.get("return", "")
-            if not target:
-                self._error(HTTPStatus.BAD_REQUEST, "bad_request", "缺少 return")
-                return
-            joiner = "&" if "?" in target else "?"
-            self.send_response(HTTPStatus.FOUND)
-            self.send_header("Location", f"{target}{joiner}aipm_auth_code=dev-code")
-            self.send_header("Content-Length", "0")
-            self.end_headers()
-        else:
-            self._error(HTTPStatus.NOT_FOUND, "not_found", "Not Found")
-
-    def do_POST(self):
-        path, _, query = self.path.partition("?")
-        body = self._read_body()
-        self._record(body, query)
-
-        if path == "/api/annotation-permits":
-            self._issue_permit(body)
-        elif path == "/api/annotations":
-            self._create(body)
-        elif path == "/api/highlight/suggest":
-            # 智能高亮的判分夹具没有(也不需要)判分密钥:这一页给一份空结果 ——
-            # 规则跑过了,没有哪一段值得高亮。回 200 而不是线上那种 503,是因为
-            # 「没配密钥」的 503 会在浏览器里留下一条资源加载失败的记录,而那与被测的
-            # 这条通路无关。批注主功能本来就不依赖它。
-            self._json(
-                HTTPStatus.OK,
-                {"judge": "none", "suggestions": [], "degraded": [], "blocks": [], "cached": False},
-            )
-        elif path == "/api/auth/session":
-            self._json(HTTPStatus.OK, {"token": ANNO_TOKEN, "user": ANNO_USER, "admin": False})
-        elif path == "/api/auth/logout":
-            self._json(HTTPStatus.OK, {"ok": True})
-        else:
-            self._error(HTTPStatus.NOT_FOUND, "not_found", "Not Found")
-
-    # ---- 端点 ----
-
-    def _list(self, params: dict) -> None:
-        page = params.get("page", "")
-        scope = params.get("scope", "public")
-        owner = self.server.owner
-        on_page = [a for a in owner.stored if a["page"] == page]
-        if scope == "public":
-            self._json(
-                HTTPStatus.OK,
-                {"annotations": [a for a in on_page if a["visibility"] == "public"]},
-            )
-            return
-        if scope == "mine":
-            if not self._mine():
-                self._error(HTTPStatus.UNAUTHORIZED, "unauthorized", "未登录")
-                return
-            # 与线上一致:scope=mine 回本人全部(公开 + 私有)
-            self._json(
-                HTTPStatus.OK,
-                {"annotations": [a for a in on_page if a["author"]["githubId"] == ANNO_USER["githubId"]]},
-            )
-            return
-        self._error(HTTPStatus.BAD_REQUEST, "invalid_scope", "scope 只能是 public 或 mine")
-
-    def _me(self) -> None:
-        if not self._mine():
-            self._error(HTTPStatus.UNAUTHORIZED, "unauthorized", "未登录")
-            return
-        self._json(HTTPStatus.OK, {"user": ANNO_USER, "admin": False})
-
-    def _issue_permit(self, body: dict) -> None:
-        if not self._mine():
-            self._error(HTTPStatus.UNAUTHORIZED, "unauthorized", "需要登录")
-            return
-        if body.get("visibility") not in ("public", "private"):
-            self._error(HTTPStatus.BAD_REQUEST, "invalid_visibility", INVALID_VISIBILITY_MESSAGE)
-            return
-        owner = self.server.owner
-        permit = f"fixture-permit-{owner.next_permit_id}"
-        owner.next_permit_id += 1
-        owner.permits[permit] = {
-            "authorization": self.headers.get("authorization") or "",
-            "payload": json.dumps(body, sort_keys=True, separators=(",", ":")),
-            "used": False,
-        }
-        self._json(HTTPStatus.CREATED, {"permit": permit})
-
-    def _operation(self, request_id: str) -> None:
-        if not self._mine():
-            self._error(HTTPStatus.UNAUTHORIZED, "unauthorized", "需要登录")
-            return
-        operation = self.server.owner.operations.get(request_id)
-        if operation is None:
-            self._error(HTTPStatus.NOT_FOUND, "not_found", "操作记录不存在")
-            return
-        annotation = operation["annotation"]
-        self._json(HTTPStatus.OK, {"operation": {
-            "status": "succeeded",
-            "annotationId": annotation["id"],
-            "page": annotation["page"],
-            "visibility": annotation["visibility"],
-            "createdAt": "2026-09-25T00:00:00.000Z",
-            "deleted": False,
-        }})
-
-    def _create(self, body: dict) -> None:
-        if not self._mine():
-            self._error(HTTPStatus.UNAUTHORIZED, "unauthorized", "需要登录")
-            return
-        visibility = body.get("visibility")
-        if visibility not in ("public", "private"):
-            self._error(HTTPStatus.BAD_REQUEST, INVALID_VISIBILITY_CODE, INVALID_VISIBILITY_MESSAGE)
-            return
-        owner = self.server.owner
-        permit_id = self.headers.get("x-annotation-permit") or ""
-        permit = owner.permits.get(permit_id)
-        payload = json.dumps(body, sort_keys=True, separators=(",", ":"))
-        if (permit is None or permit["used"] or
-                permit["authorization"] != (self.headers.get("authorization") or "") or
-                permit["payload"] != payload):
-            self._error(HTTPStatus.FORBIDDEN, "permit_required", "需要匹配的确认许可")
-            return
-        permit["used"] = True
-        request_id = body.get("requestId")
-        existing = owner.operations.get(request_id)
-        if existing is not None:
-            if existing["payload"] != payload:
-                self._error(HTTPStatus.CONFLICT, "request_conflict", "原请求已有结果")
-                return
-            self._json(HTTPStatus.OK, {"annotation": existing["annotation"]})
-            return
-        annotation = {
-            "id": f"a{len(owner.stored) + 1}",
-            "page": body.get("page", ""),
-            "body": body.get("body", ""),
-            "color": body.get("color", ""),
-            "style": body.get("style", ""),
-            "visibility": visibility,
-            "author": ANNO_USER,
-            "target": body.get("target", {}),
-        }
-        owner.stored.append(annotation)
-        owner.operations[request_id] = {"payload": payload, "annotation": annotation}
-        if owner.drop_next_write_response:
-            owner.drop_next_write_response = False
-            self.send_response(HTTPStatus.CREATED)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", "1024")
-            self._cors()
-            self.end_headers()
-            self.wfile.flush()
-            self.close_connection = True
-            self.connection.shutdown(socket.SHUT_RDWR)
-            self.connection.close()
-            return
-        self._json(HTTPStatus.CREATED, {"annotation": annotation})
+class AnnotationApi(RealAnnotationApi):
+    def __init__(self, site: StaticSite):
+        super().__init__(ROOT, WORK, site, ANNO_PORT)
 
 
 class AgentServer:
-    """真的 agent-server,进程内跑在聊天 widget 写死的那个端口上。
+    """Run the actual Agent service with its local index and authorized provider."""
 
-    索引用**本地站点自己那份**(mkdocs 建出来的 search/search_index.json),
-    模型地址指向假 API —— 整条链路因此不联网。"""
-
-    def __init__(self, site: StaticSite, model: StubModel, max_turns: int = 2,
+    def __init__(self, site: StaticSite, model: RealModel, max_turns: int = 2,
                  search_index_url: str | None = None):
         self.proc = subprocess.Popen(
             ["npx", "tsx", "src/server.ts"],
@@ -911,17 +442,18 @@ class AgentServer:
                 "HOME": str(Path.home()),
                 "PORT": str(AGENT_PORT),
                 "HOST": "127.0.0.1",
-                "ANTHROPIC_API_KEY": "browser-check",
+                "ANTHROPIC_API_KEY": model.api_key,
                 "ANTHROPIC_BASE_URL": model.base,
                 "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
                 "SEARCH_INDEX_URL": search_index_url or f"{site.base}/search/search_index.json",
                 "ALLOWED_ORIGINS": f"{site.base},http://localhost:{site.port}",
                 "SITE_BASE": site.base,
-                "MODEL": "claude-opus-5",
+                "MODEL": model.name,
                 "MAX_TURNS": str(max_turns),
                 "MAX_BUDGET_USD": "0.1",
                 "DAILY_BUDGET_USD": "0",
                 "SCRATCH_DIR": str(WORK / "scratch"),
+                "TMPDIR": str(WORK),
                 "INDEX_REFRESH_MS": "1800000",
             },
             stdout=subprocess.PIPE,
@@ -1014,7 +546,7 @@ def origin_of(url: str | None) -> tuple[str, str, int] | None:
 AMBIENT_ORIGINS = tuple(
     origin
     for origin in (
-        origin_of("http://127.0.0.1:8788"),
+        origin_of(ANNO_ORIGIN),
         origin_of("https://api.github.com"),
         origin_of("https://giscus.app"),
     )
@@ -1108,6 +640,9 @@ class Browser:
     def __init__(self, playwright, base: str, service_workers: str = "allow", also_ours=()):
         self.browser = playwright.chromium.launch()
         self.context = self.browser.new_context(service_workers=service_workers)
+        self.context.add_init_script(
+            "window.__aipmLocalApi = " + json.dumps({"agent": AGENT_ORIGIN, "annotation": ANNO_ORIGIN})
+        )
         self.page = self.context.new_page()
         self.base = base
         self.ours = {

@@ -24,7 +24,8 @@ from harness import ROOT, WORK, build_site
 
 OLD_REF = "b53084cdb700f513a4767065251036254f370105"
 BASE_REF = "2e44ae006abf906fa455bd94ddfbd5f99dcfe0d8"
-SERVICE_REF = "fd3bc1fc94995c5eed06fec5ffc68b8dacb47c46"
+SERVICE_REF = subprocess.check_output(["git", "rev-parse", "HEAD:annotation-server"], cwd=ROOT, text=True).strip()
+LEGACY_ANNO_ORIGIN = "http://127.0.0.1:" + os.environ.get("AIPM_TEST_LEGACY_ANNOTATION_PORT", "8788")
 PAGE = "/ai/rag/"
 
 
@@ -60,41 +61,14 @@ class SiteHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-class OAuthHandler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
-
-    def do_GET(self):
-        path = urlsplit(self.path)
-        if path.path == "/login/oauth/authorize":
-            params = parse_qs(path.query)
-            assert params["client_id"] == ["loopback-client"]
-            assert params["redirect_uri"] == [self.server.callback]
-            callback = params["redirect_uri"][0] + "?code=loopback-code&state=" + params["state"][0]
-            self.send_response(302)
-            self.send_header("Location", callback)
-            self.end_headers()
-            return
-        assert path.path == "/user" and self.headers["Authorization"] == "Bearer loopback-token"
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(b'{"id":912345,"login":"loopback-reviewer"}')
-
-    def do_POST(self):
-        assert self.path == "/login/oauth/access_token"
-        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        assert body["code"] == "loopback-code"
-        assert body["client_secret"] == "loopback-secret"
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(b'{"access_token":"loopback-token"}')
-
-
 class AnnotationCacheConsent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        required = ("AIPM_REAL_GITHUB_CLIENT_ID", "AIPM_REAL_GITHUB_CLIENT_SECRET", "AIPM_REAL_GITHUB_ID")
+        missing = [name for name in required if not os.environ.get(name)]
+        if missing:
+            raise RuntimeError("authorized GitHub OAuth configuration missing: " + ", ".join(missing))
+        cls.github_id = os.environ["AIPM_REAL_GITHUB_ID"]
         service_ref = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT / "annotation-server", text=True).strip()
         assert service_ref == SERVICE_REF, f"annotation service revision: {service_ref}"
@@ -113,25 +87,22 @@ class AnnotationCacheConsent(unittest.TestCase):
         cls.site.requests = []
         cls.site_thread = threading.Thread(target=cls.site.serve_forever)
         cls.site_thread.start()
-        cls.oauth = http.server.ThreadingHTTPServer(("127.0.0.1", 0), OAuthHandler)
-        cls.oauth_thread = threading.Thread(target=cls.oauth.serve_forever)
-        cls.oauth_thread.start()
         cls.base = f"http://127.0.0.1:{cls.site.server_port}"
         with socket.socket() as backend_socket:
             backend_socket.bind(("127.0.0.1", 0))
             cls.backend_port = backend_socket.getsockname()[1]
         cls.backend = f"http://127.0.0.1:{cls.backend_port}"
-        cls.oauth.callback = cls.backend + "/api/auth/github/callback"
-        upstream = f"http://127.0.0.1:{cls.oauth.server_port}"
+        callback = cls.backend + "/api/auth/github/callback"
         cls.data = cls.work / "data"
         cls.data.mkdir(exist_ok=True)
         env = dict(os.environ, HOST="127.0.0.1", PORT=str(cls.backend_port), DATA_DIR=str(cls.data),
                    SITE_BASE=cls.base, ALLOWED_ORIGINS=cls.base, RETURN_ORIGINS=cls.base,
-                   GITHUB_CLIENT_ID="loopback-client", GITHUB_CLIENT_SECRET="loopback-secret",
-                   OAUTH_CALLBACK_URL=cls.oauth.callback,
-                   GITHUB_AUTHORIZE_URL=upstream + "/login/oauth/authorize",
-                   GITHUB_TOKEN_URL=upstream + "/login/oauth/access_token",
-                   GITHUB_API_BASE=upstream,
+                   GITHUB_CLIENT_ID=os.environ["AIPM_REAL_GITHUB_CLIENT_ID"],
+                   GITHUB_CLIENT_SECRET=os.environ["AIPM_REAL_GITHUB_CLIENT_SECRET"],
+                   OAUTH_CALLBACK_URL=callback,
+                   GITHUB_AUTHORIZE_URL="https://github.com/login/oauth/authorize",
+                   GITHUB_TOKEN_URL="https://github.com/login/oauth/access_token",
+                   GITHUB_API_BASE="https://api.github.com",
                    SEARCH_INDEX_URL=cls.base + "/search/search_index.json", TMPDIR=str(cls.work))
         cls.service_log = (cls.work / "service.log").open("w")
         cls.service = subprocess.Popen(["node", "dist/server.js"], cwd=ROOT / "annotation-server",
@@ -154,9 +125,6 @@ class AnnotationCacheConsent(unittest.TestCase):
         cls.service.terminate()
         cls.service.wait(timeout=15)
         cls.service_log.close()
-        cls.oauth.shutdown()
-        cls.oauth.server_close()
-        cls.oauth_thread.join()
         cls.site.shutdown()
         cls.site.server_close()
         cls.site_thread.join()
@@ -213,8 +181,8 @@ class AnnotationCacheConsent(unittest.TestCase):
                                              ("candidate", self.candidate, False)):
                 context = browser.new_context()
                 context.route("**/*", lambda route: route.continue_() if
-                              urlsplit(route.request.url).hostname == "127.0.0.1" else route.abort())
-                context.route("http://127.0.0.1:8788/**", lambda route:
+                              urlsplit(route.request.url).hostname in {"127.0.0.1", "github.com", "api.github.com"} else route.abort())
+                context.route(LEGACY_ANNO_ORIGIN + "/**", lambda route:
                               route.continue_(url=self.backend + urlsplit(route.request.url).path +
                                               ("?" + urlsplit(route.request.url).query
                                                if urlsplit(route.request.url).query else "")))
@@ -320,8 +288,8 @@ class AnnotationCacheConsent(unittest.TestCase):
             for label, target in (("frozen", self.frozen), ("protected", self.candidate)):
                 context = browser.new_context()
                 context.route("**/*", lambda route: route.continue_() if
-                              urlsplit(route.request.url).hostname == "127.0.0.1" else route.abort())
-                context.route("http://127.0.0.1:8788/**", lambda route:
+                              urlsplit(route.request.url).hostname in {"127.0.0.1", "github.com", "api.github.com"} else route.abort())
+                context.route(LEGACY_ANNO_ORIGIN + "/**", lambda route:
                               route.continue_(url=self.backend + urlsplit(route.request.url).path +
                                               ("?" + urlsplit(route.request.url).query
                                                if urlsplit(route.request.url).query else "")))
@@ -337,7 +305,7 @@ class AnnotationCacheConsent(unittest.TestCase):
                     const keys = await (await caches.open('aipm-static-v2')).keys();
                     return keys.some(key => key.url.includes('annotation.js?v=37'));
                 }""")
-                context.route("http://127.0.0.1:8788/api/annotations",
+                context.route(LEGACY_ANNO_ORIGIN + "/api/annotations",
                               lambda route: route.abort() if route.request.method == "POST"
                               else route.continue_(url=self.backend + "/api/annotations"))
                 page.get_by_role("button", name="打开批注面板").click()
@@ -350,9 +318,9 @@ class AnnotationCacheConsent(unittest.TestCase):
                 page.wait_for_function("() => !!window.__aipmAnnoAuth?.user()")
                 page.wait_for_function("() => !!window.__aipmAnnoStore?.peekDraft()?.identity")
                 draft = page.evaluate("window.__aipmAnnoStore.peekDraft()")
-                self.assertEqual(draft["identity"], "912345")
+                self.assertEqual(draft["identity"], self.github_id)
                 page.wait_for_timeout(500)
-                context.unroute("http://127.0.0.1:8788/api/annotations")
+                context.unroute(LEGACY_ANNO_ORIGIN + "/api/annotations")
                 store_path = self.data / "store.json"
                 before = json.loads(store_path.read_text()) if store_path.exists() else {"annotations": [], "operations": []}
                 self.site.root = target
@@ -413,7 +381,7 @@ class AnnotationCacheConsent(unittest.TestCase):
             for name in modules:
                 context = browser.new_context()
                 context.route("**/*", lambda route: route.continue_() if
-                              urlsplit(route.request.url).hostname == "127.0.0.1" else route.abort())
+                              urlsplit(route.request.url).hostname in {"127.0.0.1", "github.com", "api.github.com"} else route.abort())
                 path = "/_static/js/" + name
                 self.site.root = self.candidate
                 self.site.stage = name
@@ -468,7 +436,7 @@ class AnnotationCacheConsent(unittest.TestCase):
             self.site.faults = {}
             context = browser.new_context()
             context.route("**/*", lambda route: route.continue_() if
-                          urlsplit(route.request.url).hostname == "127.0.0.1" else route.abort())
+                          urlsplit(route.request.url).hostname in {"127.0.0.1", "github.com", "api.github.com"} else route.abort())
             page = context.new_page()
             page.goto(self.base + PAGE, wait_until="load")
             page.wait_for_function("() => window.__aipmIntegrityReady === true")
@@ -494,8 +462,8 @@ class AnnotationCacheConsent(unittest.TestCase):
                                        ("mixed", (self.old / "_static/js" / name).read_bytes())):
                     context = browser.new_context()
                     context.route("**/*", lambda route: route.continue_() if
-                                  urlsplit(route.request.url).hostname == "127.0.0.1" else route.abort())
-                    context.route("http://127.0.0.1:8788/**", lambda route:
+                                  urlsplit(route.request.url).hostname in {"127.0.0.1", "github.com", "api.github.com"} else route.abort())
+                    context.route(LEGACY_ANNO_ORIGIN + "/**", lambda route:
                                   route.continue_(url=self.backend + urlsplit(route.request.url).path +
                                                   ("?" + urlsplit(route.request.url).query
                                                    if urlsplit(route.request.url).query else "")))
@@ -549,7 +517,7 @@ class AnnotationCacheConsent(unittest.TestCase):
             for name in modules:
                 context = browser.new_context()
                 context.route("**/*", lambda route: route.continue_() if
-                              urlsplit(route.request.url).hostname == "127.0.0.1" else route.abort())
+                              urlsplit(route.request.url).hostname in {"127.0.0.1", "github.com", "api.github.com"} else route.abort())
                 path = "/_static/js/" + name
                 self.site.root = self.candidate
                 self.site.stage = name

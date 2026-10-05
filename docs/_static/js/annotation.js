@@ -3870,6 +3870,7 @@
       draft.resultUnknown = false;
       store.saveDraft(draft);
       render();
+      setHint("保存失败，请检查后重试。");
     });
   }
 

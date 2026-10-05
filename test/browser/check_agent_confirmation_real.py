@@ -28,87 +28,18 @@ from harness import (
     AgentServer,
     Browser,
     StaticSite,
-    StubModel,
+    RealModel,
+    configured_port,
     assert_no_page_errors,
     build_site,
 )
 
 
-SERVICE_PORT = 18788
+SERVICE_PORT = configured_port("AIPM_TEST_CONFIRMATION_SERVICE_PORT")
 SERVICE_ORIGIN = f"http://127.0.0.1:{SERVICE_PORT}"
-PINNED_SERVICE_COMMIT = "fd3bc1fc94995c5eed06fec5ffc68b8dacb47c46"
-
-
-class AnthropicVendorBoundary(http.server.BaseHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
-
-    def do_POST(self):
-        if self.path != "/v1/messages":
-            self.send_error(404)
-            return
-        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
-        prompt = body["messages"][0]["content"]
-        block_ids = re.findall(r"^\[([A-Za-z0-9_-]+)\]$", prompt, re.MULTILINE)
-        palette_ids = re.findall(r"^- ([A-Za-z0-9_-]+):", prompt, re.MULTILINE)
-        if not block_ids or not palette_ids:
-            raise AssertionError(f"highlight judge request did not contain blocks and palette: {body}")
-        self.server.owner.record(
-            {
-                "path": self.path,
-                "model": body["model"],
-                "blockIds": block_ids,
-                "paletteIds": palette_ids,
-            }
-        )
-        result = {
-            "results": [
-                {"id": block_id, "worth": 0.0, "color": palette_ids[0], "importance": 0}
-                for block_id in block_ids
-            ]
-        }
-        response = {
-            "id": "msg_browser_vendor_boundary",
-            "type": "message",
-            "role": "assistant",
-            "model": "browser-vendor-boundary",
-            "content": [{"type": "text", "text": json.dumps(result)}],
-            "stop_reason": "end_turn",
-            "stop_sequence": None,
-            "usage": {"input_tokens": 1, "output_tokens": 1},
-        }
-        payload = json.dumps(response).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
-
-class AnthropicVendorStub:
-    """Anthropic HTTP wire stub for the real service's SDK client."""
-
-    def __init__(self):
-        self.requests: list[dict] = []
-        self._lock = threading.Lock()
-        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), AnthropicVendorBoundary)
-        self.httpd.owner = self
-        self.origin = f"http://127.0.0.1:{self.httpd.server_port}"
-        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
-        self.thread.start()
-
-    def record(self, request: dict):
-        with self._lock:
-            self.requests.append(request)
-
-    def snapshot(self) -> list[dict]:
-        with self._lock:
-            return list(self.requests)
-
-    def close(self):
-        self.httpd.shutdown()
-        self.httpd.server_close()
-        self.thread.join()
+PINNED_SERVICE_COMMIT = subprocess.check_output(
+    ["git", "rev-parse", "HEAD:annotation-server"], cwd=ROOT, text=True,
+).strip()
 
 
 class ForwardingAnnotationApi(http.server.BaseHTTPRequestHandler):
@@ -231,6 +162,8 @@ class RecordedRealAnnotationApi:
 
 class RealAnnotationStack:
     def __init__(self):
+        self.model = RealModel()
+        self.vendor = RealModel()
         self.runtime = WORK / "real-agent-protocol"
         self.runtime.mkdir(parents=True, exist_ok=True)
         evidence_env = os.environ.get("AIPM_PROTOCOL_EVIDENCE")
@@ -239,8 +172,6 @@ class RealAnnotationStack:
         self.data = Path(tempfile.mkdtemp(dir=self.runtime))
         self.site = StaticSite(build_site(self.runtime / "site"))
         self.api = RecordedRealAnnotationApi()
-        self.model = StubModel()
-        self.vendor = AnthropicVendorStub()
         self.persisted_snapshots: list[dict] = []
         self.service_log_path = self.evidence / "real-annotation-service.log"
         self.service = None
@@ -265,8 +196,9 @@ class RealAnnotationStack:
             TMPDIR=str(self.runtime),
             HIGHLIGHT_JUDGE_PRIMARY="llm",
             HIGHLIGHT_JUDGE_FALLBACK="none",
-            ANTHROPIC_API_KEY="browser-vendor-boundary",
-            ANTHROPIC_BASE_URL=self.vendor.origin,
+            ANTHROPIC_API_KEY=self.vendor.api_key,
+            ANTHROPIC_BASE_URL=self.vendor.base,
+            HIGHLIGHT_MODEL=self.vendor.name,
             HIGHLIGHT_LLM_MODE="json",
         )
         self.service = subprocess.Popen(
@@ -377,8 +309,8 @@ class RealAnnotationStack:
                 capture_output=True, text=True,
             ).stdout.strip(),
             "modelBoundary": {
-                "agent": "StubModel at AgentServer ANTHROPIC_BASE_URL",
-                "annotationJudge": "AnthropicVendorStub at annotation-service ANTHROPIC_BASE_URL",
+                "agent": self.model.name,
+                "annotationJudge": self.vendor.name,
                 "realComponents": ["AgentServer", "Anthropic SDK", "annotation service", "annotation tools"],
             },
             "annotationJudgeVendorRequests": self.vendor.snapshot(),

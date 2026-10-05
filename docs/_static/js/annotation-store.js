@@ -28,10 +28,16 @@
   "use strict";
   if (window.__aipmIntegrityFailed) throw new Error("annotation asset integrity failure");
 
-  var ANNO_API_BASE =
-    location.hostname === "localhost" || location.hostname === "127.0.0.1"
-      ? "http://127.0.0.1:8788"
-      : "https://anno-api.nvc.ac";
+  var localHost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  var ANNO_API_BASE = localHost && window.__aipmLocalApi?.annotation
+    ? window.__aipmLocalApi.annotation
+    : localHost ? "http://127.0.0.1:8788" : "https://anno-api.nvc.ac";
+  if (localHost && window.__aipmLocalApi?.annotation) {
+    var endpoint = new URL(ANNO_API_BASE);
+    if (endpoint.protocol !== "http:" || endpoint.hostname !== "127.0.0.1" ||
+        endpoint.pathname !== "/" || endpoint.search || endpoint.hash ||
+        endpoint.username || endpoint.password) throw new Error("invalid local annotation endpoint");
+  }
 
   /* 色板:≥5 色,每色有亮/暗两套值(定义在 annotation.css 的 --aipm-anno-* 变量上)。
      label 是短标签(面板图例与建议条展示),when 是该颜色的使用语义 ——
