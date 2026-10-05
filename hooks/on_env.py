@@ -6,6 +6,8 @@ import re
 import shutil
 import subprocess
 import gzip
+import hashlib
+import importlib
 from datetime import datetime
 
 def _nav_math():
@@ -538,6 +540,228 @@ def _inject_jsonld(config):
             f.write(content)
 
 
+# ============================================================================
+# 站点性能:静态资源压缩 + 内容哈希长效缓存 + Webfont 非阻塞(2026-09-22,issue #91)
+# ----------------------------------------------------------------------------
+# 三步都在构建产物上就地生效,源码保持可读:
+#   1. _minify_static_assets —— site/_static/{css,js} 就地压缩(rcssmin/rjsmin,
+#      纯去注释与空白,不做标识符改名)。压缩器缺依赖/自检不过时保留原文件并告警,
+#      任何情况下都不会把「压坏了」的资源发上线。
+#   2. _optimize_pages —— 一次遍历每页 HTML,做两件事:
+#      a) 把 _static 引用的 ?v= 换成产物内容哈希。原方案靠人工 bump 版本号,
+#         漏 bump 就会让用户吃满一年的旧资源;内容哈希让击穿自动且必然。
+#      b) 把 Google Fonts 样式表改成非阻塞加载(media=print + onload 切回 all,
+#         附 <noscript> 兜底)。这条跨境请求在弱网/受限网络下曾长时间阻塞首屏,
+#         改后 webfont 照常生效,只是不再堵渲染。
+# 顺序:必须先压缩再算哈希,否则哈希对不上文件的最终字节。
+# ============================================================================
+
+# 参与压缩与内容哈希的静态资源扩展名(site/_static 下只有这两类)
+STATIC_ASSET_EXTS = (".css", ".js")
+
+# Google Fonts 样式表(主题 base.html 的 fonts 区块产出)
+# 负向后顾排除 <noscript> 兜底里那一份,保证本函数幂等(重跑不会套娃)
+_WEBFONT_LINK_RE = re.compile(
+    r'(?<!<noscript>)<link rel="stylesheet" '
+    r'href="(https://fonts\.googleapis\.com/[^"]+)">'
+)
+
+# _static 下的 CSS/JS 引用(可选已带 ?v=)。
+# 用引号后瞻锚定「属性值开头」:页面正文里恰好写到 _static/ 路径的文字不该被改写。
+# 前缀随页面而变:普通页是相对路径(../..),静态模板 404.html 是绝对路径(/),
+# 两者都要覆盖,捕获后原样保留。
+_STATIC_REF_RE = re.compile(
+    r'(?<=["\'])((?:(?:\.{1,2})?/)*_static/(?:css|js)/[A-Za-z0-9._-]+)'
+    r'(\?v=[^"\'&\s>]*)?'
+)
+
+
+# 压缩器句柄缓存:构建内只 import/告警一次
+_MINIFIERS = {}
+
+
+def _load_minifier(module_name, func_name):
+    """惰性加载压缩器;缺依赖返回 None 且只告警一次(与 jieba 同款降级策略)。"""
+    if module_name in _MINIFIERS:
+        return _MINIFIERS[module_name]
+    try:
+        minifier = getattr(importlib.import_module(module_name), func_name)
+    except (ImportError, AttributeError):
+        logging.getLogger("mkdocs").warning(
+            f"perf-minify: 未安装 {module_name},跳过对应资源压缩(uv sync 后即可生效)"
+        )
+        minifier = None
+    _MINIFIERS[module_name] = minifier
+    return minifier
+
+
+def _macro_counts(css):
+    """CSS 结构不变量:花括号与 at-rule 关键字计数。压缩只该动空白与注释。"""
+    return (
+        css.count("{"),
+        css.count("}"),
+        len(re.findall(r"@(?:media|keyframes|supports|font-face|import)\b", css)),
+        css.count("url("),
+    )
+
+
+def _js_syntax_ok(code):
+    """用 node --check 校验语法;node 不可用时返回 None(表示无法判定)。
+
+    只做语法校验:压缩器是「去注释与空白」而非改名,语义等价的破坏基本都会
+    先表现为语法错误(如模板串换引号后跨行未闭合)。
+    """
+    node = shutil.which("node")
+    if not node:
+        return None
+    try:
+        proc = subprocess.run(
+            [node, "--check", "-"],
+            input=code.encode("utf-8"),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return proc.returncode == 0
+    except OSError:
+        return None
+
+
+def _minify_static_assets(config):
+    """就地压缩 site/_static 下的 CSS/JS,失败则保留原文件。"""
+    static_dir = os.path.join(config["site_dir"], "_static")
+    if not os.path.isdir(static_dir):
+        return
+    minifiers = {
+        ".css": _load_minifier("rcssmin", "cssmin"),
+        ".js": _load_minifier("rjsmin", "jsmin"),
+    }
+    log = logging.getLogger("mkdocs")
+    saved = 0
+    for dirpath, _dirnames, filenames in os.walk(static_dir):
+        for name in filenames:
+            ext = os.path.splitext(name)[1].lower()
+            if ext not in STATIC_ASSET_EXTS:
+                continue
+            minify = minifiers.get(ext)
+            if minify is None:
+                continue
+            path = os.path.join(dirpath, name)
+            with open(path, encoding="utf-8") as f:
+                source = f.read()
+            try:
+                minified = minify(source)
+            except Exception as exc:  # 压缩器抛错不该炸整个构建
+                log.warning(f"perf-minify: {name} 压缩失败,保留原文件:{exc}")
+                continue
+            # 自检:压空、压得过狠一律视为可疑,保留原文件
+            if not minified.strip() or len(minified) > len(source):
+                log.warning(f"perf-minify: {name} 压缩结果异常,保留原文件")
+                continue
+            if ext == ".css":
+                if _macro_counts(source) != _macro_counts(minified):
+                    log.warning(f"perf-minify: {name} CSS 结构自检不通过,保留原文件")
+                    continue
+            else:
+                if _js_syntax_ok(source) and _js_syntax_ok(minified) is False:
+                    log.warning(f"perf-minify: {name} 压缩后 node --check 失败,保留原文件")
+                    continue
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(minified)
+            saved += len(source) - len(minified)
+    if saved:
+        log.info(f"perf-minify: _static 压缩后共减少 {saved} 字节")
+
+
+def _static_version_map(config):
+    """{_static 相对路径: 内容哈希前 8 位},取自压缩后的最终产物字节。"""
+    static_dir = os.path.join(config["site_dir"], "_static")
+    versions = {}
+    for dirpath, _dirnames, filenames in os.walk(static_dir):
+        for name in filenames:
+            if os.path.splitext(name)[1].lower() not in STATIC_ASSET_EXTS:
+                continue
+            path = os.path.join(dirpath, name)
+            with open(path, "rb") as f:
+                digest = hashlib.sha256(f.read()).hexdigest()[:8]
+            rel = os.path.relpath(path, config["site_dir"]).replace(os.sep, "/")
+            versions[rel] = digest
+    return versions
+
+
+def rewrite_static_versions(document, versions):
+    """把 HTML 里 _static 引用的 ?v= 换成内容哈希;返回 (新 HTML, 改写次数)。
+
+    未带 ?v= 的引用也补上:netlify.toml 对 /_static/css/*、/_static/js/* 给了
+    一年缓存,少了版本参数就会被钉住一年。哈希表里没有的文件不动。
+    """
+    changed = 0
+
+    def replace(match):
+        nonlocal changed
+        ref = match.group(1)
+        # 版本表按站点根相对路径建键,这里剥掉相对前缀再查
+        digest = versions.get(ref[ref.index("_static/") :])
+        if digest is None:
+            return match.group(0)
+        changed += 1
+        return f"{ref}?v={digest}"
+
+    return _STATIC_REF_RE.sub(replace, document), changed
+
+
+def defer_webfont_link(document):
+    """把 Google Fonts 样式表改成非阻塞加载;返回 (新 HTML, 改写次数)。
+
+    保留 preconnect,webfont 仍会加载并生效,只是不再挡住首屏渲染。
+    """
+    changed = 0
+
+    def replace(match):
+        nonlocal changed
+        url = match.group(1)
+        changed += 1
+        return (
+            f'<link rel="preload" as="style" href="{url}">'
+            f'<link rel="stylesheet" href="{url}" media="print" '
+            f"onload=\"this.media='all'\">"
+            f'<noscript><link rel="stylesheet" href="{url}"></noscript>'
+        )
+
+    return _WEBFONT_LINK_RE.sub(replace, document), changed
+
+
+def _iter_built_html(config):
+    """遍历 site/ 下全部 HTML。
+
+    不走 _iter_built_pages:那个列表由 on_page_context 逐页收集,静态模板
+    (404.html)不在其中 —— 漏掉它,那页的 ?v= 就永远停在人工写的旧版本号上。
+    """
+    for dirpath, _dirnames, filenames in os.walk(config["site_dir"]):
+        for name in filenames:
+            if name.endswith(".html"):
+                yield os.path.join(dirpath, name)
+
+
+def _optimize_pages(config):
+    """遍历每页 HTML:内容哈希版本号 + Webfont 非阻塞。"""
+    versions = _static_version_map(config)
+    rewritten = deferred = 0
+    for html_path in _iter_built_html(config):
+        with open(html_path, encoding="utf-8") as f:
+            document = f.read()
+        document, n_ver = rewrite_static_versions(document, versions)
+        document, n_font = defer_webfont_link(document)
+        if not (n_ver or n_font):
+            continue
+        rewritten += n_ver
+        deferred += n_font
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(document)
+    if rewritten or deferred:
+        logging.getLogger("mkdocs").info(
+            f"perf-pages: 改写 {rewritten} 处资源版本号、{deferred} 处 webfont 链接"
+        )
+
 def on_post_build(config, **kwargs):
     # 内置 search 插件把整页文本抹成一行(无 HTML 标签),Material 搜索 worker
     # 的摘要机制按块级标签切块,于是整页=一块,命中词所在"块"=全文。
@@ -579,3 +803,7 @@ def on_post_build(config, **kwargs):
     _generate_llms_txt(config)
     _mirror_markdown(config)
     _inject_jsonld(config)
+
+    # 3) 站点性能:压缩 _static、再按最终字节算内容哈希、改写页面引用
+    _minify_static_assets(config)
+    _optimize_pages(config)

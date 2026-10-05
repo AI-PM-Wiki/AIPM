@@ -13,6 +13,13 @@
     - `commits-info` 根据 Git 历史与 GitHub API 渲染页面的更新日期与贡献者列表（需 `GITHUB_TOKEN`，
       并依赖 `authors-cache` 分支的 `authors.json`；当前构建未启用）
     - `minify-html` 压缩构建产物中的 HTML
+- `hooks/on_env.py` 的 `on_post_build` 另做三件构建后优化(2026-09-22,issue #91):
+  - 压缩 `site/_static/{css,js}` 的 CSS/JS(`_minify_static_assets`,依赖 `rcssmin`/`rjsmin`;
+    压缩器缺失或自检不通过时保留原文件并告警,不会把可疑产物发上线)
+  - 把页面里 `_static` 引用的 `?v=` 换成产物内容哈希(`_optimize_pages`),
+    `mkdocs.yml` 里的版本号因此不再是缓存击穿的必要条件
+  - 把 Google Fonts 样式表改成非阻塞加载(`media=print` + `onload` 切换,附 `<noscript>` 兜底)
+  顺序固定:先压缩再算哈希,哈希必须对应文件最终字节
 -   `post-deploy` 部署后的辅助脚本
     - `convert-sitemap.py` 将 XML sitemap 转换为百度收录推送所需的 TXT 格式（推送脚本已移除，当前未接入构建流程）
 -   `netlify` 用于 Netlify 上的预览构建（参见 `/netlify.toml`）
