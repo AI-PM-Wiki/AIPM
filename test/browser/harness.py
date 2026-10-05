@@ -25,6 +25,7 @@ import shutil
 import socket
 import subprocess
 import threading
+import time
 import unittest
 import urllib.request
 from http import HTTPStatus
@@ -37,6 +38,14 @@ from annotation_service import RealAnnotationApi
 ROOT = Path(__file__).resolve().parents[2]
 WORK = ROOT / "meta" / "browser"
 AGENT_SERVER = ROOT / "agent-server"
+
+
+def trace_http(event: str, **fields) -> None:
+    destination = os.environ.get("AIPM_TEST_HTTP_TRACE")
+    if destination:
+        with Path(destination).open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps({"event": event, "time": time.time(),
+                                     "pid": os.getpid(), **fields}) + "\n")
 
 def configured_port(name: str) -> int:
     value = os.environ.get(name)
@@ -209,6 +218,8 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
                 "source_fetch": self.headers.get(SOURCE_FETCH_HEADER),
             }
         )
+        trace_http("response", port=self.server.server_address[1],
+                   client=self.client_address, path=self.path, status=str(code))
 
     def do_GET(self):
         path = self.path.split("?", 1)[0]
@@ -293,6 +304,24 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
+class _StaticServer(http.server.ThreadingHTTPServer):
+    request_queue_size = 128
+
+    def get_request(self):
+        request, address = super().get_request()
+        trace_http("accept", port=self.server_address[1], client=address)
+        return request, address
+
+    def shutdown_request(self, request):
+        trace_http("connection_close", port=self.server_address[1],
+                   client=request.getpeername())
+        super().shutdown_request(request)
+
+    def handle_error(self, request, client_address):
+        trace_http("handler_error", port=self.server_address[1], client=client_address)
+        super().handle_error(request, client_address)
+
+
 class StaticSite:
     """一个静态文件服务。
 
@@ -322,7 +351,7 @@ class StaticSite:
         self.stream_written: dict[str, int] = {}
         self.stream_aborted: dict[str, bool] = {}
         self.requests: list[dict] = []
-        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+        self.httpd = _StaticServer(("127.0.0.1", 0), _Handler)
         self.httpd.root = self.root
         self.httpd.content_types = self.content_types
         self.httpd.cors = self.cors
@@ -337,6 +366,8 @@ class StaticSite:
         self.port = self.httpd.server_address[1]
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self.thread.start()
+        trace_http("listen", port=self.port, root=str(self.root),
+                   backlog=self.httpd.request_queue_size, thread=self.thread.ident)
 
     @property
     def base(self) -> str:
@@ -410,8 +441,11 @@ class StaticSite:
         return self.stream_aborted.get(path, False)
 
     def close(self) -> None:
+        trace_http("shutdown_begin", port=self.port)
         self.httpd.shutdown()
         self.httpd.server_close()
+        self.thread.join()
+        trace_http("shutdown_end", port=self.port, thread_alive=self.thread.is_alive())
 
 
 def free_port() -> int:
@@ -721,6 +755,8 @@ class Browser:
 
     def _on_requestfailed(self, request):
         self.failed_requests[request.url] = str(request.failure or "")
+        trace_http("browser_request_failed", url=request.url,
+                   failure=request.failure, timing=request.timing)
 
     def _on_console(self, msg):
         if msg.type != "error":

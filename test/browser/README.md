@@ -46,6 +46,21 @@ TMPDIR=meta/r uv run python3 test/browser/run.py --group oauth --report meta/bro
 
 ## 结果范围
 
+完整异常过滤组使用 `uv run python3 test/browser/run.py error`。并发传输检查使用
+`uv run python3 test/browser/run.py static_transport`，同时发送 32 条真实 HTTP 请求，
+逐条验证状态与资源字节。测试静态服务的监听队列容量为 128。
+
+设置 `AIPM_TEST_HTTP_TRACE` 为忽略目录中的文件路径，可以记录监听端口、PID、
+请求接收、响应、连接关闭、handler 异常、浏览器请求失败及服务关闭时序。例如：
+
+```bash
+mkdir -p meta/r
+TMPDIR="$PWD/meta/r" AIPM_TEST_HTTP_TRACE="$PWD/meta/browser/http.jsonl" uv run python3 test/browser/run.py error
+```
+
+批注服务的逐项覆盖映射见 `annotation-server/test/coverage-109.json`，说明与核验命令见
+`annotation-server/test/coverage-109.md`。映射分别登记已覆盖、缺配置与缺失检查。
+
 `run.py` 显式发现 `check_*.py`；默认 Python 单测发现 `test_*.py`。完整报告分别记录单测、构建、许可／持久化、模型、OAuth、缓存升级和浏览器结果。失败及缺配置均不能计为通过。
 
 批注服务的 `npm run unit-check` 覆盖纯函数、真实索引及本地 HTTP 许可检查。`npm run durability-check` 覆盖持久化、并发与请求记录。两组使用服务自身的会话签发功能进行权限检查。
