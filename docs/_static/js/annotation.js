@@ -42,6 +42,7 @@
     与 aria-label 上 —— 那是图标唯一的可读副本。删除另加一道「再点一次」的确认:
     图标按钮比文字链好点错,而删掉的东西回不来。样式见 .aipm-anno__ibtn。
   - 未登录能做的:读公开批注、写「仅本机」批注、用智能高亮。
+  - 助手的建议经独立确认控制器处理,本文件只处理批注面板手写操作。
 */
 (function () {
   "use strict";
@@ -49,6 +50,9 @@
   var store = window.__aipmAnnoStore;
   var auth = window.__aipmAnnoAuth;
   var panels = window.__aipmPanels;
+  if (store?.assetVersion !== 46 || auth?.assetVersion !== 46) {
+    throw new Error('annotation asset version mismatch');
+  }
 
   /* 预览站(Netlify)不挂载:后端在线上,预览站打过去会 403 且没有意义 */
   if (/\.netlify\.app$/i.test(location.hostname)) return;
@@ -123,6 +127,11 @@
     close:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,6.4L17.6,5L12,10.6L6.4,5L5,6.4L10.6,12L5,17.6L6.4,19L12,13.4L17.6,19L19,17.6L13.4,12L19,6.4z"/></svg>',
     spark:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,9l1.25,-2.75L23,5l-2.75,-1.25L19,1l-1.25,2.75L15,5l2.75,1.25L19,9z M11.5,9.5L9,4L6.5,9.5L1,12l5.5,2.5L9,20l2.5,-5.5L17,12L11.5,9.5z M19,15l-1.25,2.75L15,19l2.75,1.25L19,23l1.25,-2.75L23,19l-2.75,-1.25L19,15z"/></svg>',
+    /* 送进对话用的是助手那颗四角星(与 chat-widget 的 FAB 同一张脸):点它不会
+       落下任何批注,只是把这段文字摆到对话框上方 —— 用「发送」的图形会让人以为
+       点完就发出去了。 */
+    ask:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,9l1.25,-2.75L23,5l-2.75,-1.25L19,1l-1.25,2.75L15,5l2.75,1.25L19,9z M11.5,9.5L9,4L6.5,9.5L1,12l5.5,2.5L9,20l2.5,-5.5L17,12L11.5,9.5z M19,15l-1.25,2.75L15,19l2.75,1.25L19,23l1.25,-2.75L23,19l-2.75,-1.25L19,15z"/></svg>',
     check:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9,16.2L4.8,12l-1.4,1.4L9,19L21,7l-1.4,-1.4L9,16.2z"/></svg>',
@@ -535,9 +544,11 @@
   var toolbar = document.createElement("div");
   toolbar.className = "aipm-anno__toolbar";
   toolbar.hidden = true;
-  /* 一行:挑画法、挑颜色,然后笔 = 写批注、叉 = 收起。可见范围不在这一行 ——
-     划词挑个颜色就是「把这段划出来」,犯不着每次先答一遍给谁看;真要选范围的人
-     走笔那条路,编辑卡里还留着那个菜单(见 buildVisPicker)。 */
+  /* 一行:挑画法、挑颜色,然后笔 = 写批注、星 = 送进对话、叉 = 收起。可见范围不在
+     这一行 —— 划词挑个颜色就是「把这段划出来」,犯不着每次先答一遍给谁看;真要选
+     范围的人走笔那条路,编辑卡里还留着那个菜单(见 buildVisPicker)。
+     「送进对话」贴着笔放:两者都是「对着刚划的这段做点什么」,一个落在页面上,
+     一个落进对话框。 */
   toolbar.innerHTML =
     '<div class="aipm-anno__tb-group" role="radiogroup" aria-label="批注画法">' +
     styleHtml() +
@@ -548,6 +559,9 @@
     "</div>" +
     '<button type="button" class="aipm-anno__tb-annotate" title="写批注" aria-label="写批注">' +
     ICON.pen +
+    "</button>" +
+    '<button type="button" class="aipm-anno__tb-ask" title="问助手" aria-label="问助手">' +
+    ICON.ask +
     "</button>" +
     '<button type="button" class="aipm-anno__tb-cancel" title="取消" aria-label="取消">' +
     ICON.close +
@@ -980,10 +994,60 @@
   /* 未登录一律只能落本机(服务端那两条路都要 token);登录后按用户在悬浮窗里选的那个
      走,「仅本机」仍然可选 —— 登录了也想把某些东西留在自己机器上是合理诉求。 */
   function defaultVisibility() {
+    var pending = uncertainDraft();
+    if (pending) return pending.visibility;
     if (!auth || !auth.isLoggedIn()) return "local";
     if (activeVis === "private") return "private";
     if (activeVis === "local") return "local";
     return "public";
+  }
+
+  function resumableManualDraft(draft) {
+    if (!draft || draft.source !== "manual-v1" || draft.site !== location.origin ||
+        !Number.isSafeInteger(Date.parse(draft.createdAt)) ||
+        Date.now() - Date.parse(draft.createdAt) >= 30 * 86400000 ||
+        Date.now() < Date.parse(draft.createdAt)) return false;
+    if (draft.identity === null) {
+      return draft.loginStarted === true && draft.sendState === "unsent" &&
+        draft.resultUnknown === false && typeof draft.requestId === "string" &&
+        draft.requestId.length > 0;
+    }
+    var user = auth && auth.user();
+    return !!user && Number.isSafeInteger(user.githubId) &&
+      draft.identity === String(user.githubId);
+  }
+
+  function prunePendingContent(draft, legacy) {
+    if (!draft) return;
+    var originalTime = draft.retentionSavedAt || draft.createdAt || draft.savedAt;
+    var savedTime = Date.parse(originalTime);
+    if (Number.isSafeInteger(savedTime) && Date.now() >= savedTime &&
+        Date.now() - savedTime < 30 * 86400000) return;
+    if (!draft.body && !draft.quote && !draft.selectors) return;
+    (legacy ? store.saveLegacyDraft : store.saveDraft)(Object.assign({}, draft, {
+      retentionSavedAt: originalTime || null,
+      body: "", quote: "", selectors: null
+    }));
+    var saved = legacy ? store.peekLegacyDraft() : store.peekDraft();
+    if (!saved || saved.requestId !== draft.requestId || saved.body ||
+        saved.quote || saved.selectors) throw new Error("draft retention failed");
+  }
+
+
+  function uncertainDraft() {
+    var draft = store.peekDraft();
+    if (!resumableManualDraft(draft)) return null;
+    return draft && draft.resultUnknown && draft.page === pagePath() &&
+      editorDraft && editorDraft.kind === "create" &&
+      editorDraft.requestId === draft.requestId ? draft : null;
+  }
+
+  function clearMatchingDraft(draft) {
+    var current = store.peekDraft();
+    if (resumableManualDraft(current) && current.page === draft.page &&
+        current.requestId === draft.requestId) {
+      store.clearDraft();
+    }
   }
 
   /** 画法归一:不认识的 id 一律按高亮(与 store 的默认一致)。 */
@@ -2205,6 +2269,26 @@
   }
 
   /**
+   * 「问助手」:把这条批注送进对话。
+   *
+   * 仅本机的批注上这颗按钮**按不动**,悬停里说明理由 —— 它的承诺是「只在那台
+   * 设备上」,而语境会随提问发到问答后端、再进入模型上下文。按钮留着比整颗消失
+   * 更容易理解:旁边那两颗「上传为公开 / 上传为私有」正好是「想让它出去」的那条路,
+   * 走完那条路,这颗星就亮起来了。
+   */
+  function askButton(anno) {
+    if (!isLocal(anno)) {
+      return iconButton(ICON.ask, "问助手", "ask", function () {
+        askAssistant(annotationContext(anno));
+      });
+    }
+    var b = ibtn(ICON.ask, "问助手", "ask-local");
+    b.disabled = true;
+    b.title = "仅本机的批注不会离开这台设备;想跟助手讨论它,先上传为公开或私有。";
+    return b;
+  }
+
+  /**
    * 卡片右上角的「回复」:一支回勾箭头。与每条回复右端那颗同一张脸、同一个位置
    * 逻辑 —— 谁的回话按钮就贴在谁那一行的右端,回复贴在每条回复的头上,卡片贴在
    * 卡片自己头上。它原先单独落在底部那条操作链里(整张卡的左下角):离它要回的
@@ -2288,6 +2372,7 @@
       up.textContent = "已上传";
       head.appendChild(up);
     }
+    head.appendChild(askButton(anno));
     head.appendChild(cardReplyButton(anno));
     head.appendChild(cardTools(anno));
     wrap.appendChild(head);
@@ -2385,6 +2470,7 @@
       up.textContent = "已上传";
       top.appendChild(up);
     }
+    top.appendChild(askButton(anno));
     top.appendChild(cardReplyButton(anno));
     top.appendChild(cardTools(anno));
     wrap.appendChild(top);
@@ -2757,6 +2843,10 @@
     }
     if (e.target.closest(".aipm-anno__tb-annotate")) {
       startCreate();
+      return;
+    }
+    if (e.target.closest(".aipm-anno__tb-ask")) {
+      askAboutSelection();
     }
   });
 
@@ -3231,12 +3321,14 @@
     }
     if (nodes.visbtn) {
       nodes.visbtn.addEventListener("click", function () {
+        if (uncertainDraft()) return;
         if (nodes.vislist.hidden) openVisMenu(nodes);
         else closeVisMenu(nodes);
       });
     }
     if (!els.vislist) return;
     els.vislist.addEventListener("click", function (e) {
+      if (uncertainDraft()) return;
       var b = e.target.closest("button[data-vis]");
       if (!b) return;
       var vis = b.getAttribute("data-vis");
@@ -3309,9 +3401,94 @@
     submitAnnotation(selectors, "", visibility, false);
   }
 
+  /* ================================================================
+     送进对话(与 AI 助手面板互通)
+     ----------------------------------------------------------------
+     两条入口:划选后悬浮窗上的星、批注卡上的「问助手」。两条路都只做一件事 ——
+     把「正在读的东西」交给助手面板,由它摆进语境条,用户随后在对话框里提问。
+     面板自己不构造语境的形状:那件事在 context-item.js,连同去重与「仅本机不出
+     本机」那道边界。这里是唯一的调用点,也就没有第二条能绕开边界的路。
+     ================================================================ */
+
+  /** 语境条目模块(与助手面板共用;缺失时这条路整条不可用,不做降级)。 */
+  var ctxItem = window.__aipmContext || null;
+
+  /**
+   * 把一条语境交给助手面板。
+   *
+   * 开面板是 attachContext 自己做的(内部走共享注册表的 claim,与点 FAB 同一条
+   * 路),这里不再开第二次 —— window.__aipmChat 上也只有 attachContext 与 isOpen。
+   *
+   * 失败要说出来:语境条满了(最多 CONTEXT_MAX_ITEMS 条)、条目过不了那道边界,
+   * 或助手面板没加载时,按钮点下去什么都不发生,用户只会以为坏了。
+   */
+  function askAssistant(item) {
+    if (item === null) return;
+    var chat = window.__aipmChat;
+    if (ctxItem === null || !chat || typeof chat.attachContext !== "function") {
+      flash("问答助手未加载,这段内容送不进对话。", "warn");
+      return;
+    }
+    var res = chat.attachContext(item);
+    if (res && res.ok) return;
+    flash(
+      res && res.code === "context_full"
+        ? "对话里最多放 " + ctxItem.MAX_ITEMS + " 条语境,先去对话框上方去掉一条。"
+        : "这段内容送不进对话。",
+      "warn"
+    );
+  }
+
+  /** 悬浮窗那条路:刚划的这段原文。 */
+  function askAboutSelection() {
+    if (!pendingSelection) return;
+    var item =
+      ctxItem === null
+        ? null
+        : ctxItem.forSelection({
+            page: pagePath(),
+            title: pageTitle(),
+            quote: pendingSelection.range.toString(),
+            selectors: pendingSelection.selectors
+          });
+    hideToolbar();
+    /* 这里与「写批注」一样是**已经落地**的动作(视线要转到对话框去),
+       选区留着只会把悬浮窗再招回来(见 clearSelection)。 */
+    clearSelection();
+    askAssistant(item);
+  }
+
+  /**
+   * 这条批注划的是哪段话。优先取正文里已经锚好的那一段 —— quoteOf 在没有
+   * TextQuoteSelector 时会回落成「字符 12–40」这种位置描述,那是给卡片看的标签,
+   * 不是原文;把它当引文送进对话,模型会把它当成一句真说过的话去理解。
+   */
+  function annotatedText(anno) {
+    var range = resolved[anno.id];
+    if (range) {
+      var text = range.toString().trim();
+      if (text) return text;
+    }
+    var fallback = quoteOf(anno);
+    return /^字符 \d+–\d+$/.test(fallback) ? "" : fallback;
+  }
+
+  /** 卡片那条路:这一条批注的引文与正文。仅本机的批注在这里拿不到语境(见 forAnnotation)。 */
+  function annotationContext(anno) {
+    if (ctxItem === null) return null;
+    return ctxItem.forAnnotation({
+      page: anno.page || pagePath(),
+      title: pageTitle(),
+      id: anno.id,
+      quote: annotatedText(anno),
+      body: anno.body || "",
+      color: anno.color,
+      visibility: anno.visibility
+    });
+  }
+
   /** 全页评论:不需要选区,整条针对这一页。 */
-  function startPageComment() {
-    composerSelection = null;
+  function startPageComment() {    composerSelection = null;
     beginEditor({ kind: "create", page: true });
   }
 
@@ -3339,6 +3516,17 @@
   }
 
   function beginEditor(opts) {
+    var stored = store.peekDraft();
+    if (stored && !resumableManualDraft(stored)) {
+      maybeRestoreDraft();
+      setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      return;
+    }
+    if (store.peekDraft() && store.peekDraft().resultUnknown &&
+        store.peekDraft().page === pagePath()) {
+      maybeRestoreDraft();
+      return;
+    }
     var kind = opts.kind;
     var annoId = opts.annoId || null;
     var body = opts.body || "";
@@ -3374,6 +3562,10 @@
   var editorDraft = null;
 
   function closeEditor() {
+    if (uncertainDraft()) {
+      setHint("写入结果未知,请保持原内容及可见范围重试。");
+      return;
+    }
     editorDraft = null;
     composerSelection = null;
     unmountEditor();
@@ -3416,7 +3608,16 @@
     }
     els.draftMeta.setAttribute("data-vis", label.cls);
     var opts = els.vislist.querySelectorAll("button[data-vis]");
+    var pending = uncertainDraft();
+    if (els.visbtn) els.visbtn.disabled = !!pending;
+    if (els.input) els.input.readOnly = !!pending;
+    if (els.cancel) els.cancel.disabled = !!pending;
+    if (els.swatches) {
+      var colors = els.swatches.querySelectorAll("button");
+      for (var k = 0; k < colors.length; k++) colors[k].disabled = !!pending;
+    }
     for (var j = 0; j < opts.length; j++) {
+      opts[j].disabled = !!pending;
       opts[j].classList.toggle("is-active", opts[j].getAttribute("data-vis") === vis);
     }
   }
@@ -3504,7 +3705,35 @@
    * 新建(含全页评论)/ 编辑 / 回复,各自只碰自己该碰的东西。
    */
   function submitEditor() {
-    if (editorDraft === null) return;
+    if (editorDraft === null || busy || restoringDraft) return;
+    var storedDraft = store.peekDraft();
+    if (storedDraft && storedDraft.identity === null &&
+        editorDraft.requestId === storedDraft.requestId) {
+      setHint("请在登录返回后的确认界面查看账号和请求，再决定是否提交。");
+      return;
+    }
+    if (storedDraft && editorDraft && storedDraft.requestId === editorDraft.requestId &&
+        !resumableManualDraft(storedDraft)) {
+      setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      return;
+    }
+    var pending = uncertainDraft();
+    if (pending) {
+      setBusy(true);
+      store.request("/api/annotation-requests/" + encodeURIComponent(pending.requestId), {
+        token: auth.token()
+      }).then(function (result) {
+        setBusy(false);
+        if (!result.ok || !result.body || !result.body.operation ||
+            result.body.operation.status !== "succeeded") {
+          setHint("原请求结果尚未确认，请保留草稿与请求标识。");
+          return;
+        }
+        clearMatchingDraft(pending);
+        if (editorDraft && editorDraft.requestId === pending.requestId) closeEditor();
+      });
+      return;
+    }
     var kind = editorDraft.kind;
     var body = els.input ? els.input.value.trim() : "";
 
@@ -3571,10 +3800,77 @@
       setHint("评论不能是空的。");
       return;
     }
+    if (visibility === "local") {
+      setBusy(true);
+      submitAnnotation(selectors, body, visibility, isPage, undefined, undefined, undefined, true)
+        .then(function (result) {
+          setBusy(false);
+          if (result.ok) {
+            var savedDraft = store.peekDraft();
+            if (savedDraft && editorDraft && savedDraft.page === pagePath() &&
+                savedDraft.requestId === editorDraft.requestId) clearMatchingDraft(savedDraft);
+            closeEditor();
+          }
+        });
+      return;
+    }
+    var previous = store.peekDraft();
+    if (previous && !resumableManualDraft(previous)) {
+      setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      return;
+    }
+    editorDraft.body = body;
+    editorDraft.requestId = editorDraft.requestId || store.uid();
+    var draft = {
+      requestId: editorDraft.requestId,
+      page: pagePath(),
+      color: activeColor,
+      style: activeStyle,
+      body: body,
+      visibility: visibility,
+      resumeKind: "create",
+      resumeId: null,
+      scope: isPage ? "page" : null,
+      selectors: isPage ? null : selectors,
+      quote: composerSelection ? composerSelection.quote || "" : "",
+      source: "manual-v1",
+      site: location.origin,
+      identity: auth && auth.user() ? String(auth.user().githubId) : null,
+      loginStarted: false,
+      createdAt: new Date().toISOString(),
+      resultUnknown: true
+    };
+    store.saveDraft(draft);
+    var saved = store.peekDraft();
+    if (!saved || saved.requestId !== draft.requestId ||
+        saved.identity !== draft.identity || saved.source !== "manual-v1" ||
+        !saved.resultUnknown) {
+      setHint("草稿未能保存,请检查浏览器存储后重试。");
+      return;
+    }
+    render();
     setBusy(true);
-    submitAnnotation(selectors, body, visibility, isPage).then(function (ok) {
+    submitAnnotation(
+      selectors, body, visibility, isPage, draft.color, draft.style, draft.requestId, true
+    ).then(function (result) {
       setBusy(false);
-      if (ok) closeEditor();
+      if (result.ok) {
+        clearMatchingDraft(draft);
+        if (editorDraft && editorDraft.requestId === draft.requestId) closeEditor();
+        return;
+      }
+      var current = store.peekDraft();
+      if (!current || current.page !== draft.page || current.requestId !== draft.requestId) return;
+      if (result.code === "unknown" || (previous && previous.page === draft.page &&
+          previous.requestId === draft.requestId && previous.resultUnknown)) {
+        render();
+        setHint("写入结果未知,请保持原内容及可见范围重试。");
+        return;
+      }
+      draft.resultUnknown = false;
+      store.saveDraft(draft);
+      render();
+      setHint("保存失败，请检查后重试。");
     });
   }
 
@@ -3608,12 +3904,18 @@
       setHint("登录后才能回复别人的批注。");
       return Promise.resolve(false);
     }
-    return store
-      .request("/api/annotations/" + encodeURIComponent(anno.id) + "/replies", {
-        method: "POST",
-        token: auth.token(),
-        body: { body: body, parentId: parentId || undefined }
-      })
+    var token = auth.token();
+    var payload = { body: body, parentId: parentId || undefined };
+    return store.request("/api/reply-permits", {
+      method: "POST", token: token, body: { annotationId: anno.id, body: body,
+        parentId: parentId || undefined }
+    }).then(function (issued) {
+      if (issued.status !== 201 || !issued.body || !issued.body.permit || auth.token() !== token)
+        return { ok: false, status: issued.status, body: issued.body };
+      return store.request("/api/annotations/" + encodeURIComponent(anno.id) + "/replies", {
+        method: "POST", token: token, permit: issued.body.permit, body: payload
+      });
+    })
       .then(function (res) {
         if (res.status === 401) {
           auth.forget();
@@ -3631,13 +3933,31 @@
       });
   }
 
+  /** 色板 id 归一:认不出的(或没给的)按当前选中的颜色走。 */
+  function colorOf(id) {
+    for (var i = 0; i < store.PALETTE.length; i++) {
+      if (store.PALETTE[i].id === id) return id;
+    }
+    return activeColor;
+  }
+
+  /** 画法 id 归一:认不出的(或没给的)按当前选中的画法走。 */
+  function styleIdOf(id) {
+    return store.ANNO_STYLES.indexOf(id) >= 0 ? id : activeStyle;
+  }
+
   /**
    * 新建一条(本机或服务端)。pageScope 为真 = 全页评论,此时 selectors 为空数组,
    * target 上带 scope:'page' 供服务端辨认。
+   *
+   * color / style 不给时用面板当前选中的那一对(手写批注走的就是这条路);
+   * Agent 建议那条路把它们显式带进来 —— 颜色是那条建议的一部分。
    */
-  function submitAnnotation(selectors, body, visibility, pageScope) {
+  function submitAnnotation(selectors, body, visibility, pageScope, color, style, requestId, detailed) {
     var page = pagePath();
     var now = new Date().toISOString();
+    var annoColor = colorOf(color);
+    var annoStyle = styleIdOf(style);
     var target = pageScope
       ? { selectors: selectors, scope: "page" }
       : { selectors: selectors };
@@ -3647,8 +3967,8 @@
         id: store.uid(),
         page: page,
         visibility: "local",
-        color: activeColor,
-        style: activeStyle,
+        color: annoColor,
+        style: annoStyle,
         body: body,
         author: { githubId: 0, login: auth && auth.user() ? auth.user().login : "本机" },
         target: target,
@@ -3660,42 +3980,52 @@
         store.localAdd(anno);
       } catch (err) {
         setHint(err.message);
-        return Promise.resolve(false);
+        return Promise.resolve(detailed ? { ok: false, code: "write_failed" } : false);
       }
       refreshLocal();
-      return Promise.resolve(true);
+      return Promise.resolve(detailed ? { ok: true } : true);
     }
 
     if (!auth || !auth.token()) {
       setHint("登录已过期,请重新登录。");
-      return Promise.resolve(false);
+      return Promise.resolve(detailed ? { ok: false, code: "write_failed" } : false);
     }
-    return store
-      .request("/api/annotations", {
-        method: "POST",
-        token: auth.token(),
-        body: {
+    var token = auth.token();
+    var payload = {
+          requestId: requestId || store.uid(),
           page: page,
           body: body,
-          color: activeColor,
-          style: activeStyle,
+          color: annoColor,
+          style: annoStyle,
           visibility: visibility,
           target: target
-        }
-      })
+        };
+    return store.request("/api/annotation-permits", {
+      method: "POST", token: token, body: payload
+    }).then(function (issued) {
+      if (issued.status !== 201 || !issued.body || !issued.body.permit || auth.token() !== token)
+        return { ok: false, status: issued.status, body: issued.body };
+      return store.request("/api/annotations", {
+        method: "POST", token: token, permit: issued.body.permit, body: payload
+      });
+    })
       .then(function (res) {
         if (res.status === 401) {
           if (auth) auth.forget();
           setHint("登录已过期,请重新登录。");
-          return false;
+          return detailed ? { ok: false, code: "write_failed" } : false;
         }
         if (!res.ok) {
           setHint(serverFailText("保存失败", res));
+          if (detailed && res.status === 409 && res.body && res.body.error === "request_conflict") {
+            return { ok: false, code: "unknown" };
+          }
+          if (detailed) return { ok: false, code: res.status === 0 || (res.status >= 500 && (!res.body || res.body.error !== "storage_failed")) ? "unknown" : "write_failed" };
           return false;
         }
         invalidate();
         return ensureAnnotationsLoaded().then(function () {
-          return true;
+          return detailed ? { ok: true } : true;
         });
       });
   }
@@ -3795,17 +4125,25 @@
     var token = auth ? auth.token() : null;
     if (!token) return;
     setBusy(true);
-    store
-      .request("/api/annotations", {
-        method: "POST",
-        token: token,
-        body: {
+    var payload = {
+          requestId: store.uid(),
           page: anno.page,
           body: anno.body,
           color: anno.color,
+          style: anno.style,
           visibility: visibility,
           target: anno.target
-        }
+        };
+    store.request("/api/annotation-permits", { method: "POST", token: token, body: payload })
+      .then(function (issued) {
+        if (issued.status !== 201 || !issued.body || !issued.body.permit || auth.token() !== token)
+          return { ok: false, status: issued.status, body: issued.body };
+        return store.request("/api/annotations", {
+        method: "POST",
+        token: token,
+        permit: issued.body.permit,
+        body: payload
+        });
       })
       .then(function (res) {
         setBusy(false);
@@ -4516,6 +4854,11 @@
    * 手上这份草稿必须存进 localStorage 才能扛过 OAuth 整轮往返。
    */
   function draftForLogin() {
+    var current = store.peekDraft();
+    if (current && !resumableManualDraft(current)) return null;
+    if (current && current.page === pagePath() && current.sendState === "unsent") {
+      return current;
+    }
     if (editorDraft === null && composerSelection === null && pendingSelection === null) {
       return null;
     }
@@ -4526,6 +4869,14 @@
           ? { selectors: pendingSelection.selectors, quote: pendingSelection.range.toString() }
           : null;
     return {
+      source: "manual-v1",
+      site: location.origin,
+      identity: auth && auth.user() ? String(auth.user().githubId) : null,
+      loginStarted: true,
+      sendState: "unsent",
+      resultUnknown: false,
+      createdAt: new Date().toISOString(),
+      requestId: editorDraft && editorDraft.requestId || store.uid(),
       page: pagePath(),
       color: activeColor,
       style: activeStyle,
@@ -4543,10 +4894,137 @@
     };
   }
 
-  /** OAuth 往返回来:草稿还在就恢复,并把待发布的那条补发出去。 */
+  var restoringDraft = false;
+  var pendingLoginConsent = null;
+  var loginConsentDialog = null;
+
+  function closeLoginConsent() {
+    pendingLoginConsent = null;
+    if (loginConsentDialog) loginConsentDialog.remove();
+    loginConsentDialog = null;
+  }
+
+  function showLoginConsent(draft, ticket) {
+    if (loginConsentDialog) return;
+    var user = auth.user();
+    var request = {
+      requestId: draft.requestId, page: draft.page, body: draft.body,
+      color: colorOf(draft.color), style: styleIdOf(draft.style),
+      visibility: draft.visibility,
+      target: { selectors: draft.selectors || [],
+        scope: draft.scope === "page" ? "page" : undefined }
+    };
+    pendingLoginConsent = { ticket: ticket, request: JSON.stringify(request) };
+    var dialog = document.createElement("section");
+    dialog.className = "aipm-anno__login-consent";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-label", "确认批注提交");
+    var heading = document.createElement("h2");
+    heading.textContent = "确认提交账号与请求";
+    dialog.appendChild(heading);
+    var account = document.createElement("p");
+    account.textContent = "当前账号：" + user.login + "（GitHub ID " + user.githubId + "）";
+    dialog.appendChild(account);
+    var payload = document.createElement("pre");
+    payload.textContent = pendingLoginConsent.request;
+    dialog.appendChild(payload);
+    var confirm = document.createElement("button");
+    confirm.type = "button";
+    confirm.textContent = "确认以此账号提交";
+    dialog.appendChild(confirm);
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "取消提交";
+    dialog.appendChild(cancel);
+    cancel.addEventListener("click", function (event) {
+      if (!event.isTrusted) return;
+      closeLoginConsent();
+      setHint("已取消提交，草稿保留。");
+    });
+    confirm.addEventListener("click", function (event) {
+      if (!event.isTrusted || !pendingLoginConsent || busy || restoringDraft) return;
+      var current = store.peekDraft();
+      var proof = pendingLoginConsent;
+      if (!current || !resumableManualDraft(current) ||
+          current.identity !== null || current.sendState !== "unsent" ||
+          current.resultUnknown !== false || current.page !== pagePath() ||
+          auth.draftSnapshot(current) !== proof.ticket.snapshot ||
+          Date.now() >= proof.ticket.expiresAt ||
+          !auth.sameStoredSession(proof.ticket.token, proof.ticket.githubId)) {
+        closeLoginConsent();
+        setHint("登录账号、会话或草稿已变化，请保留草稿重新登录。");
+        return;
+      }
+      current.identity = String(proof.ticket.githubId);
+      current.sendState = "attempted";
+      current.resultUnknown = true;
+      store.saveDraft(current);
+      var saved = store.peekDraft();
+      if (!saved || saved.requestId !== current.requestId ||
+          saved.identity !== current.identity || saved.sendState !== "attempted" ||
+          !saved.resultUnknown) throw new Error("draft submission persistence failed");
+      closeLoginConsent();
+      restoringDraft = true;
+      setBusy(true);
+      submitAnnotation(
+        current.selectors || [], current.body, current.visibility,
+        current.scope === "page", current.color, current.style,
+        current.requestId, true
+      ).then(function (result) {
+        restoringDraft = false;
+        setBusy(false);
+        if (result.ok) {
+          clearMatchingDraft(current);
+          if (editorDraft && editorDraft.requestId === current.requestId) closeEditor();
+          flash("已写入：" + groupTitle(current.visibility), "success");
+          return;
+        }
+        var latest = store.peekDraft();
+        if (!latest || latest.requestId !== current.requestId) return;
+        if (result.code === "unknown") {
+          render();
+          setHint("写入结果未知，请保持原内容及可见范围重试。");
+          return;
+        }
+        latest.resultUnknown = false;
+        store.saveDraft(latest);
+        render();
+        setHint("保存失败，请检查后重试。");
+      });
+    });
+    document.body.appendChild(dialog);
+    loginConsentDialog = dialog;
+    confirm.focus();
+  }
+
+  /** OAuth 往返回来恢复草稿；首次身份绑定需要独立确认。 */
   function maybeRestoreDraft() {
     var draft = store.peekDraft();
-    if (!draft || draft.page !== pagePath()) return;
+    var legacy = store.peekLegacyDraft();
+    prunePendingContent(legacy, true);
+    prunePendingContent(draft, false);
+    draft = store.peekDraft();
+    if (!draft) {
+      if (legacy && legacy.page === pagePath()) {
+        if (!open && panels) panels.claim("annotation");
+        else if (!open) openPanel();
+        setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      }
+      return;
+    }
+    if (draft.page !== pagePath()) return;
+    if (!resumableManualDraft(draft)) {
+      if (!open && panels) panels.claim("annotation");
+      else if (!open) openPanel();
+      setHint("旧草稿的来源或原身份无法确认，请保留记录等待处理。");
+      return;
+    }
+    if (restoringDraft || busy) return;
+    if (draft.scope === "page" && panelMode !== "comments") {
+      panelMode = "comments";
+      syncMode();
+    }
     if (!open && panels) panels.claim("annotation");
     else if (!open) openPanel();
     if (mode === "sheet") setSnap("expanded", false);
@@ -4555,7 +5033,7 @@
       resume = annoById(draft.resumeId);
       if (resume === null) {
         // 那一条已经不在列表里了(换页 / 被删),草稿无从接续
-        store.clearDraft();
+        clearMatchingDraft(draft);
         return;
       }
     }
@@ -4566,6 +5044,7 @@
       placeholder: "",
       quote: draft.quote || "",
       body: draft.body || "",
+      requestId: draft.requestId,
       page: draft.scope === "page",
       draftId: DRAFT_ID
     };
@@ -4577,14 +5056,18 @@
     activeVis = draft.visibility || null;
     render();
     if (els.input) els.input.focus();
-    if (auth && auth.isLoggedIn() && draft.selectors && editorDraft.kind === "create") {
-      // 登录回来了:按草稿把那条批注补发出去
-      submitAnnotation(draft.selectors, draft.body, draft.visibility, false).then(function (ok) {
-        if (!ok) return;
-        store.clearDraft();
-        closeEditor();
-        setSmartbar("已按登录前的草稿保存:" + (draft.visibility === "private" ? "私有" : "公开"), "info");
-      });
+    if (draft.identity === null) {
+      var ticket = auth && auth.takeDraftLogin(draft);
+      if (ticket && auth.isLoggedIn() &&
+          (draft.selectors || draft.scope === "page") && editorDraft.kind === "create") {
+        showLoginConsent(draft, ticket);
+      } else {
+        setHint("草稿尚未提交，请重新登录并确认账号和请求。");
+      }
+      return;
+    }
+    if (draft.resultUnknown) {
+      setHint("写入结果未知，请保持原内容及可见范围重试。");
     }
   }
 
@@ -4852,9 +5335,12 @@
       syncComposer();
       syncHeadIcon();
       if (auth.isLoggedIn()) invalidate();
-      if (open) ensureAnnotationsLoaded();
+      if (open || store.peekDraft() || store.peekLegacyDraft()) ensureAnnotationsLoaded();
     });
     auth.onChange(function () {
+      if (pendingLoginConsent && !auth.sameStoredSession(
+        pendingLoginConsent.ticket.token, pendingLoginConsent.ticket.githubId
+      )) closeLoginConsent();
       syncComposer();
       syncHeadIcon();
     });
@@ -4864,4 +5350,5 @@
   syncMode();
   syncComposer();
   applyMode();
+
 })();

@@ -1,0 +1,113 @@
+/*
+  图表语境的「问助手」入口样式(chart-context.css)
+
+  按钮贴在这张图的左下角,与 mermaid-zoom 的放大按钮(右下角)分开两个角:
+  两个都只在这张图上悬停时出现,挤在一起会互相盖住。
+
+  与 mermaid-zoom.css 同一套取值(--pm-line 那组主题变量、同一档圆角与悬停色),
+  两处角标看起来才像同一套东西。
+*/
+
+.aipm-chart {
+  position: relative;
+}
+
+.aipm-chart__ask {
+  position: absolute;
+  left: .4rem;
+  bottom: .4rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  min-height: 0;
+  margin: 0;
+  padding: .42rem;
+  border: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
+  border-radius: .45rem;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-default-bg-color);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease,
+              opacity .15s ease;
+}
+
+.aipm-chart:hover > .aipm-chart__ask,
+.aipm-chart__ask:focus-visible {
+  opacity: .94;
+  pointer-events: auto;
+}
+
+.aipm-chart__ask svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.aipm-chart__ask:hover,
+.aipm-chart__ask:focus-visible {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.aipm-chart__ask:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+/* 取源要发一次请求(SVG 那一支),这期间按钮按不动。给一个看得见的状态:按钮
+   停在半透明可见的位置,光标换成等待 —— 否则用户看到的是「点了没反应」。 */
+.aipm-chart__ask.is-busy {
+  opacity: .94;
+  pointer-events: auto;
+  cursor: progress;
+}
+
+@media (hover: none) {
+  .aipm-chart > .aipm-chart__ask {
+    opacity: .94;
+    pointer-events: auto;
+  }
+}
+
+/* 回执(语境条满了、助手面板没挂上)。与批注面板那条同形同位置,只是它挂在
+   body 顶层、不依赖任何一个面板的样式表。 */
+.aipm-chart__toast {
+  position: fixed;
+  z-index: 90;
+  left: 50%;
+  bottom: 1.2rem;
+  transform: translateX(-50%);
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: .35rem .7rem;
+  border: 1px solid var(--pm-line, var(--md-default-fg-color--lightest));
+  border-radius: .4rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .22);
+  font-size: .6875rem;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.aipm-chart__toast[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aipm-chart__ask {
+    transition: none;
+  }
+}
+
+@media print {
+  .aipm-chart__ask,
+  .aipm-chart__toast {
+    display: none !important;
+  }
+}

@@ -586,9 +586,10 @@ class TestThreeVisibilities(unittest.TestCase):
             self.assertIn("return", segment, "「仅本机」分支必须直接返回")
         # 请求体里的 visibility 用的是参数,不是字面量 —— 配合上面的提前返回,
         # 到得了 POST 的只可能是 public / private
-        request_part = block[server_call:]
-        self.assertIn("visibility: visibility", request_part)
-        self.assertNotIn('visibility: "local"', request_part)
+        payload = block[block.index("var payload = {"):server_call]
+        self.assertIn("visibility: visibility", payload)
+        self.assertNotIn('visibility: "local"', payload)
+        self.assertLess(payload.index('"/api/annotation-permits"'), len(payload))
 
     def test_local_store_never_talks_to_the_network(self):
         for fn in ("localAdd", "localUpdate", "localRemove", "localList"):
@@ -1591,9 +1592,13 @@ class TestUiRoundFour(unittest.TestCase):
 
     # ---- 发出去的形状 ----
 
-    def test_style_is_sent_on_create(self):
+    def test_style_and_colour_are_sent_on_create(self):
         fn = _block(self.js, "function submitAnnotation(")
-        self.assertIn("style: activeStyle", fn)
+        self.assertIn("style: annoStyle", fn)
+        self.assertIn("color: annoColor", fn)
+        # 不给就按当前选中的那一对归一(见 colorOf / styleIdOf),给了就用给的
+        self.assertIn("return activeColor;", _block(self.js, "function colorOf(id)"))
+        self.assertIn(": activeStyle;", _block(self.js, "function styleIdOf(id)"))
 
     def test_style_and_colour_are_patched_together(self):
         fn = _block(self.js, "function submitEditor()")

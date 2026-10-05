@@ -62,6 +62,23 @@
   导致 clone/CI/submodule update 失败。
 - 产品设计哲学：「Agent 原生」（将 Agent 作为用户群体之一，后端各种 API 在设计的时候应考虑到 Agent 的使用）
 
+## Agent 原生设计约定
+
+设计后端能力时，应考虑 Agent 用户的调用方式。以下约定适用于 AIPM#107 中
+有页面语境的批注建议与用户采纳通路：
+
+- **身份与执行**。Agent 服务提供批注建议，不持有用户的批注凭据。用户确认采纳后，
+  页面使用当前用户的会话执行写入。私有批注的读取同样使用用户的会话。
+- **提议与授权**。`propose_annotation` 返回待确认建议，并明确告知模型尚未写入。
+  当前通路由用户在建议卡片上确认采纳；其他 Agent 操作应分别设计授权流程。
+- **参数归属**。目标页面由请求语境确定，作者由批注服务根据用户会话确定。
+  模型可以建议 `visibility`；最终可见范围由用户在卡片上选择并确认。
+- **可见范围缺省值**。建议缺省使用仅本机，公开及私有写入需要用户确认。
+  仅本机记录保存在浏览器中。
+- **分层校验**。Agent 服务校验工具参数的取值、数量与长度；建议卡片校验数据形状；
+  `acceptProposal` 校验当前页面、可见范围、引文定位及整页评论正文；
+  批注服务校验创建请求的内容、用户身份与记录归属。各层按照自身职责执行校验。
+
 ## 文档结构
 
 `docs/` 按主题划分，以仓库最新状态为准。
@@ -106,6 +123,10 @@ uv run mkdocs serve -v
 
 # 构建静态站点(产物在 site/)
 uv run mkdocs build -v
+
+# 浏览器用例(真实 Chromium + 真实构建产物;不在默认门禁里,见 test/browser/README.md)
+uv sync --group browser && uv run playwright install chromium   # 首次
+uv run python3 test/browser/run.py
 ```
 
 > 门禁刻意只选零 Node 依赖的命令(见下)。
@@ -120,6 +141,11 @@ uv run mkdocs build -q                 # 站点能构建(-q 只留告警)
 python3 scripts/check-characters.py    # 无问题字符
 bash scripts/check-upstream-remnants.sh  # 无上游 fork 残留(2026-08 新增,防 oi-wiki 残留回流)
 ```
+
+改动前端脚本(`docs/_static/js/`、`docs/_static/css/`)与注入钩子时,另跑浏览器用例
+组:`uv run python3 test/browser/run.py`。它要真 Chromium,所以不进上面这份零依赖
+门禁,但**改了资源就必须跑** —— 那里锁的是「页面上实际执行了哪份脚本、实际发出了
+什么请求」,静态断言看不出来。
 
 ## 开发工作流
 

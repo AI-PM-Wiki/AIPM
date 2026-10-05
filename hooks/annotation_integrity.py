@@ -1,0 +1,170 @@
+"""Verify annotation assets before initialization and bind executed bytes to SRI."""
+
+import base64
+import hashlib
+import json
+from pathlib import Path
+from urllib.parse import urlsplit
+
+from bs4 import BeautifulSoup
+from jinja2 import pass_context
+from markupsafe import Markup
+from mkdocs.plugins import event_priority
+from mkdocs.utils import templates
+
+
+CLASSIC = {
+    "_static/js/annotation-store.js": "annotation",
+    "_static/js/annotation-auth.js": "annotation",
+    "_static/js/annotation.js": "annotation",
+    "_static/js/chat-widget.js": "chat_agent",
+}
+MODULES = (
+    "annotation-agent-entry.js",
+    "annotation-consent-core.js",
+    "annotation-proposal-confirm.js",
+    "annotation-request-status.js",
+    "annotation-confirm-view.js",
+)
+
+
+def on_env(env, config, **kwargs):
+    extra = config["extra"]
+    enabled = {key for key in ("annotation", "chat_agent")
+               if (extra.get(key) or {}).get("enabled")}
+    if not enabled:
+        return env
+
+    docs = Path(config["docs_dir"])
+    digests = {}
+    for path, owner in CLASSIC.items():
+        if owner in enabled:
+            digest = hashlib.sha256((docs / path).read_bytes()).digest()
+            digests[path] = "sha256-" + base64.b64encode(digest).decode("ascii")
+
+    module_integrity = {}
+    if "chat_agent" in enabled:
+        version = extra["annotation"]["version"]
+        for filename in MODULES:
+            path = f"_static/js/{filename}"
+            digest = hashlib.sha256((docs / path).read_bytes()).digest()
+            module_integrity[f"/{path}?v={version}"] = (
+                "sha256-" + base64.b64encode(digest).decode("ascii"))
+
+    metadata = json.dumps({"integrity": module_integrity}, separators=(",", ":"))
+    seen_pages = set()
+
+    @pass_context
+    def protected_script(context, script):
+        path = str(script).split("?", 1)[0]
+        if path not in digests:
+            return templates.script_tag_filter(context, script)
+        page_key = id(context.get("page"))
+        if page_key in seen_pages:
+            return Markup("")
+        seen_pages.add(page_key)
+        scripts = [{"url": templates.url_filter(context, str(entry)),
+                    "integrity": digests[str(entry).split("?", 1)[0]]}
+                   for entry in config["extra_javascript"]
+                   if str(entry).split("?", 1)[0] in digests]
+        modules = [{"url": url, "integrity": integrity}
+                   for url, integrity in module_integrity.items()]
+        plan = json.dumps({"scripts": scripts, "modules": modules,
+                           "version": (extra.get("chat_agent") or {}).get("version", 1)}, separators=(",", ":"))
+        importmap = Markup('<script type="importmap">') + Markup(metadata) + Markup('</script>')
+        plan_tag = Markup('<script type="application/json" data-aipm-integrity-plan>') + Markup(plan) + Markup('</script>')
+        loader = Markup('''<script>
+(function () {
+  'use strict';
+  window.__aipmIntegrityReady = false;
+  const plan = JSON.parse(document.querySelector('script[data-aipm-integrity-plan]').textContent);
+  function failure() {
+    if (window.__aipmIntegrityFailed) return;
+    window.__aipmIntegrityFailed = true;
+    window.__aipmIntegrityReady = false;
+    window.dispatchEvent(new Event('aipm-integrity-change'));
+    const banner = document.createElement('div');
+    banner.setAttribute('role', 'alert');
+    banner.textContent = '批注资源未通过完整性校验，请刷新页面重试。';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.textContent = '刷新页面';
+    retry.addEventListener('click', () => location.reload());
+    banner.append(retry);
+    document.body.append(banner);
+  }
+  window.addEventListener('error', event => {
+    if (event.target instanceof HTMLScriptElement && event.target.integrity) failure();
+  }, true);
+  async function verify(resource) {
+    const response = await fetch(resource.url, { cache: 'no-store' });
+    if (!response.ok) throw new Error('annotation asset unavailable: ' + resource.url);
+    const digest = await crypto.subtle.digest('SHA-256', await response.arrayBuffer());
+    const hash = btoa(String.fromCharCode(...new Uint8Array(digest)));
+    if ('sha256-' + hash !== resource.integrity) {
+      throw new Error('annotation asset integrity mismatch: ' + resource.url);
+    }
+  }
+  async function load() {
+    await Promise.all([...plan.scripts, ...plan.modules].map(verify));
+    await Promise.all(plan.modules.map(resource => new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'modulepreload';
+      link.href = resource.url;
+      link.integrity = resource.integrity;
+      link.onload = resolve;
+      link.onerror = () => reject(new Error('annotation module integrity failure'));
+      document.head.append(link);
+    })));
+    for (const resource of plan.scripts) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = resource.url;
+        script.integrity = resource.integrity;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('annotation script integrity failure'));
+        document.body.append(script);
+      });
+    }
+  }
+  load().then(() => {
+    if (window.__aipmIntegrityFailed) return;
+    window.__aipmIntegrityReady = true;
+    window.dispatchEvent(new Event('aipm-integrity-change'));
+  }).catch(failure);
+})();
+</script>''')
+        return importmap + plan_tag + loader
+
+    env.filters["script_tag"] = protected_script
+    return env
+
+
+@event_priority(-100)
+def on_post_build(config, **kwargs):
+    site = Path(config["site_dir"])
+    version = (config["extra"].get("annotation") or {}).get("version", 1)
+    assets = {*CLASSIC, *(f"_static/js/{name}" for name in MODULES)}
+    digests = {
+        Path(path).name: "sha256-" + base64.b64encode(
+            hashlib.sha256((site / path).read_bytes()).digest()).decode("ascii")
+        for path in assets
+    }
+    for page in site.rglob("*.html"):
+        document = BeautifulSoup(page.read_text(encoding="utf-8"), "html.parser")
+        plan_tag = document.select_one("script[data-aipm-integrity-plan]")
+        if plan_tag is None:
+            continue
+        plan = json.loads(plan_tag.string)
+        for resource in [*plan["scripts"], *plan["modules"]]:
+            resource["integrity"] = digests[Path(urlsplit(resource["url"]).path).name]
+        plan_tag.string = json.dumps(plan, separators=(",", ":"))
+        imports = {}
+        integrity = {}
+        for resource in plan["modules"]:
+            filename = Path(urlsplit(resource["url"]).path).name
+            imports[f"/_static/js/{filename}?v={version}"] = resource["url"]
+            integrity[resource["url"]] = resource["integrity"]
+        importmap = document.select_one('script[type="importmap"]')
+        importmap.string = json.dumps({"imports": imports, "integrity": integrity}, separators=(",", ":"))
+        page.write_text(str(document), encoding="utf-8")

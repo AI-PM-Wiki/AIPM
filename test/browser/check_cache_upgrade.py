@@ -1,0 +1,248 @@
+"""缓存升级:老用户浏览器里那份旧脚本,发布之后必须换得掉。
+
+    uv run python3 test/browser/run.py cache
+
+一条脚本改了却没 +1 版本号,新构建的页面请求的还是同一个 `?v=`,而 Service
+Worker 对带版本参数的静态资源是 **cache-first** —— 老用户会一直跑着旧脚本,新
+功能在他那里等于没发布。新开一个端口看不到这个问题:那是一个全新的 origin、
+一个空的缓存空间。
+
+所以这条用例老老实实照老用户的处境来:
+
+1. 建一份**旧构建**(改动之前那个提交的源码树),用**同一个端口**serve;
+2. 一个浏览器打开它,让 Service Worker 接管,确认旧脚本**已经进了缓存**;
+3. 把同一个端口的根换成**当前构建**(等于发布),在**同一个浏览器**里重新加载
+   —— 服务端这时候按线上那份约定给缓存头(`harness.CACHE_CONTROL`,GitHub Pages
+   钉的那个 `max-age=600`),没有哪一处把 HTTP 缓存统一关掉;
+4. 断言页面这次真正执行的是新脚本的字节,而旧的那份缓存**还留在那里**
+   —— 升级靠的是换 URL,不是靠清缓存;顺带断言这一下刷新**同时**把新的
+   `service-worker.js` 取了回来(那一份由浏览器自己的更新通道走,不受 HTTP 缓存
+   摆布,但要不要去问、什么时候问,是页面自己的事)。
+
+同一个通道失败的那一下也要说话(`ServiceWorkerUpdateFailureTest`):脚本取不回来时
+这一次发布换不上来,而界面上看不出任何区别 —— 那一处必须留下能照着查的记录。
+"""
+from __future__ import annotations
+
+import re
+import json
+import os
+import shutil
+import unittest
+from urllib.parse import urlsplit, parse_qs, urljoin
+
+from bs4 import BeautifulSoup
+
+from playwright.sync_api import sync_playwright
+
+from harness import WORK, ANNO_ORIGIN, AnnotationApi, Browser, StaticSite, REASON_FOREIGN_RESOURCE, assert_no_page_errors, build_site
+
+#: 「旧」取的是把 chat-widget.js 改掉却没 +1 版本号的那个提交 —— 也就是原审查
+#: 意见里复现出来的那个状态(`chat-widget.js?v=31` 一直命中旧缓存)。
+OLD_REF = "e3beab55"
+
+PAGE = "/ai/rag/"
+LEGACY_ANNO_ORIGIN = "http://127.0.0.1:" + os.environ.get("AIPM_TEST_LEGACY_ANNOTATION_PORT", "8788")
+
+#: 更新失败那条记录的开头。主题的注册脚本自己写下来的(见 mkdocs-material 的
+#: base.html):哪个 scope、什么原因,都在这句话后面。
+UPDATE_FAILED = "PWA update failed for scope "
+
+
+def widget_version(site_dir) -> str:
+    """这份构建的页面请求的是哪个版本号。"""
+    html = (site_dir / "ai" / "rag" / "index.html").read_text(encoding="utf-8")
+    document = BeautifulSoup(html, "html.parser")
+    plan = document.select_one("script[data-aipm-integrity-plan]")
+    if plan is not None:
+        return str(json.loads(plan.string)["version"])
+    found = re.search(r"chat-widget\.js\?v=(\d+)", html)
+    if found is None:
+        raise AssertionError(f"页面里没有 chat-widget.js 的版本参数:{site_dir}")
+    return found.group(1)
+
+
+def widget_url(site_dir) -> str:
+    html = (site_dir / "ai" / "rag" / "index.html").read_text(encoding="utf-8")
+    document = BeautifulSoup(html, "html.parser")
+    plan = document.select_one("script[data-aipm-integrity-plan]")
+    if plan is not None:
+        return next(resource["url"] for resource in json.loads(plan.string)["scripts"]
+                    if urlsplit(resource["url"]).path.endswith("/chat-widget.js"))
+    return document.select_one('script[src*="chat-widget.js"]')["src"]
+
+
+class CacheUpgradeTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.old_dir = build_site(WORK / "site-cache-old", ref=OLD_REF)
+        cls.new_dir = build_site(WORK / "site-cache-new")
+        cls.site = StaticSite(cls.old_dir)
+        cls.api = AnnotationApi(cls.site)
+        cls.pw = sync_playwright().start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.api.close()
+        cls.site.close()
+        cls.pw.stop()
+
+    @staticmethod
+    def cached(page, needle: str):
+        """缓存里命中这个片段的条目(没有则 None)。"""
+        return page.evaluate(
+            """async (needle) => {
+                for (const name of await caches.keys()) {
+                    const cache = await caches.open(name);
+                    for (const req of await cache.keys()) {
+                        if (req.url.includes(needle)) return req.url;
+                    }
+                }
+                return null;
+            }""",
+            needle,
+        )
+
+    def test_the_widget_users_already_cached_is_replaced(self):
+        old_version = widget_version(self.old_dir)
+        new_version = widget_version(self.new_dir)
+        old_asset = widget_url(self.old_dir)
+        new_asset = widget_url(self.new_dir)
+        self.assertGreater(
+            int(new_version),
+            int(old_version),
+            f"chat-widget.js 改了但版本号还是 {new_version}:老用户的缓存会一直命中旧脚本",
+        )
+        self.assertNotEqual(old_asset, new_asset)
+        self.assertTrue(parse_qs(urlsplit(new_asset).query).get("v"))
+
+        browser = Browser(self.pw, self.site.base)
+        try:
+            browser.context.route(LEGACY_ANNO_ORIGIN + "/**", lambda route:
+                                  route.continue_(url=ANNO_ORIGIN + urlsplit(route.request.url).path +
+                                                  ("?" + urlsplit(route.request.url).query if urlsplit(route.request.url).query else "")))
+            page = browser.goto(PAGE)
+            page.wait_for_function("() => navigator.serviceWorker.controller !== null")
+            # 首次加载时页面还没被 SW 接管,它请求的那些资源不过 SW;再加载一次,
+            # 这一遍才走 SW 的 cache-first,旧脚本这才真正进了缓存。
+            # 这几处 reload 等的是文档与页面自己的入口,不等 `load`:主题的 MathJax
+            # 由 jsdelivr 提供,`load` 事件因此挂在一条与本案无关的外部请求上。
+            page.reload(wait_until="domcontentloaded")
+            stale = self.cached(page, f"chat-widget.js?v={old_version}")
+            self.assertIsNotNone(stale, "旧脚本没有进缓存 —— 这条用例的前提不成立")
+
+            # 同一个端口、同一个浏览器:把根换成新构建(等于发布),照常刷新
+            self.site.serve(self.new_dir)
+            asked = len(self.site.requests_for("/service-worker.js"))
+            page.reload(wait_until="domcontentloaded")
+            page.wait_for_function("() => window.__aipmChat !== undefined")
+
+            # 这一下刷新把新脚本取了回来 —— SW 脚本走浏览器自己的更新通道,
+            # 要不要去问是页面自己的事(主题的 registration 加载完会 update 一次)
+            fetched = self.site.requests_for("/service-worker.js")[asked:]
+            self.assertTrue(fetched, "刷新没有去取 service-worker.js")
+            self.assertEqual(
+                fetched[-1]["status"], 200, f"新脚本没取到:{fetched}"
+            )
+
+            src = page.evaluate("() => document.querySelector('script[src*=\"chat-widget.js\"]').src")
+            self.assertEqual(urljoin(self.site.base + PAGE, new_asset), src, "页面请求的还是旧 URL")
+
+            loaded = page.evaluate(
+                """async () => {
+                    const s = document.querySelector('script[src*="chat-widget.js"]');
+                    return await (await fetch(s.src)).text();
+                }"""
+            )
+            self.assertEqual(
+                loaded,
+                (self.new_dir / "_static" / "js" / "chat-widget.js").read_text(encoding="utf-8"),
+                "页面拿到的还是缓存里那份旧脚本",
+            )
+
+            # 换 URL 就够了,不必动缓存:旧条目原样留着。
+            self.assertIsNotNone(
+                self.cached(page, f"chat-widget.js?v={old_version}"),
+                "旧缓存被清掉了 —— 升级不该依赖清缓存",
+            )
+            assert_no_page_errors(self, browser, expected_ignored=(
+                (LEGACY_ANNO_ORIGIN + "/api/highlight/suggest", REASON_FOREIGN_RESOURCE),
+                (LEGACY_ANNO_ORIGIN + "/api/highlight/suggest", REASON_FOREIGN_RESOURCE),
+            ))
+        finally:
+            browser.close()
+
+
+class ServiceWorkerUpdateFailureTest(unittest.TestCase):
+    """发布之后脚本取不回来:这一次换不上,得有能照着查的记录。
+
+    页面加载时那次 `update()` 失败不影响界面 —— 旧脚本还在岗,页面照常。所以它必须
+    **自己说话**:哪个 scope、什么原因。这条用例把同一个端口的根换成一份取不到
+    `/service-worker.js` 的站点(发布时把脚本弄丢就是这种样子),照常刷新,然后看
+    这条记录在不在、够不够照着查。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.site_dir = build_site(WORK / "site-sw-update")
+        #: 除那个脚本之外全是软链:页面照常打得开,唯独更新通道取不到东西。
+        cls.nosw_dir = WORK / "site-sw-update-nosw"
+        shutil.rmtree(cls.nosw_dir, ignore_errors=True)
+        cls.nosw_dir.mkdir(parents=True)
+        for entry in sorted(cls.site_dir.iterdir()):
+            if entry.name == "service-worker.js":
+                continue
+            (cls.nosw_dir / entry.name).symlink_to(entry)
+        cls.site = StaticSite(cls.site_dir)
+        cls.pw = sync_playwright().start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.site.close()
+        cls.pw.stop()
+
+    def test_a_failed_update_leaves_a_record_that_says_what_failed(self):
+        browser = Browser(self.pw, self.site.base)
+        try:
+            # 本用例只验证站点的更新通道；隔离统计脚本及 recorder 的外部连接。
+            browser.context.route("https://umami.nvc.ac/**", lambda route: route.abort())
+            page = browser.goto(PAGE)
+            page.wait_for_function("() => navigator.serviceWorker.controller !== null")
+            self.assertEqual(browser.page_errors, [], "前提不成立:第一次加载就有异常")
+
+            self.addCleanup(self.site.serve, self.site_dir)
+            self.site.serve(self.nosw_dir)
+            page.reload(wait_until="domcontentloaded")
+            for _ in range(50):
+                if any(UPDATE_FAILED in entry["text"] for entry in browser.console_errors):
+                    break
+                page.wait_for_timeout(100)
+
+            records = [
+                entry
+                for entry in browser.console_errors
+                if entry["text"].startswith(UPDATE_FAILED)
+            ]
+            self.assertEqual(
+                len(records), 1, f"更新失败留下的记录不是一条:{browser.console_errors}"
+            )
+            record = records[0]["text"]
+            self.assertIn(self.site.base + "/", record, f"记录里没有失败的那个 scope:{record}")
+            self.assertIn("/service-worker.js", record, f"记录里没说取的是哪个脚本:{record}")
+            self.assertIn("404", record, f"记录里没有失败的原因:{record}")
+
+            # 记录要留在这一侧的失败里,而不是被当成外面的事故挡下去。
+            errors, _, _ = browser.classify()
+            self.assertEqual(
+                [line for line in errors if UPDATE_FAILED in line],
+                [records[0]["line"]],
+                f"这条记录没有计入失败:{errors}",
+            )
+            self.assertEqual(
+                browser.page_errors, [], f"更新失败漏成了未处理的异常:{browser.page_errors}"
+            )
+        finally:
+            browser.close()
+
+
+if __name__ == "__main__":
+    unittest.main()
