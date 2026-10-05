@@ -58,20 +58,35 @@ test('expiry and revocation stop claims; in-flight revocation retains uncertaint
   await assert.rejects(core.claim({ ...context, grantId: second }));
 });
 
-test('unknown remains frozen until new explicit confirmation for the same request', async () => {
-  const core = create();
+test('unknown remains read-only across confirmation attempts and reload', async () => {
+  const restore = () => createConsentCore({ storage, clock: Date.now,
+    site: 'https://aipm.ac', newId: () => crypto.randomUUID() });
+  const core = restore();
   const first = await core.confirm(context);
   await core.claim({ ...context, grantId: first });
   core.settle({ identity: context.identity, session: context.session, requestId: request.requestId, status: 'unknown' });
+  const retained = restore().inspect({ ...context, requestId: request.requestId });
+  const persisted = storage.getItem('aipm-anno-consent-v1');
   await assert.rejects(core.claim({ ...context, grantId: first }));
   await assert.rejects(core.confirm({ ...context, unknown: true, request: { ...request, quote: '其他引文' } }));
   await assert.rejects(core.confirm({ ...context, unknown: true, identity: 'github-2' }));
-  const second = await core.confirm({ ...context, unknown: true });
-  assert.equal(create().inspect({ ...context, requestId: request.requestId }).status, 'unknown');
-  assert.equal(create().inspect({ ...context, requestId: request.requestId }).permits.length, 2);
   await assert.rejects(core.confirm({ ...context, unknown: true }));
-  assert.deepEqual(await core.claim({ ...context, grantId: second }), request);
+  await assert.rejects(core.confirm(context));
+  const restored = restore();
+  assert.equal(restored.inspect({ ...context, requestId: request.requestId }).status, 'unknown');
+  assert.equal(restored.inspect({ ...context, requestId: request.requestId }).permits.length, 1);
+  await assert.rejects(core.confirm({ ...context, unknown: true }));
+  await assert.rejects(restored.confirm({ ...context, unknown: true }));
+  await assert.rejects(restored.confirm(context));
+  await assert.rejects(restored.claim({ ...context, grantId: first }));
+  await assert.rejects(restored.claim({ ...context, grantId: crypto.randomUUID() }));
+  assert.deepEqual(restored.inspect({ ...context, requestId: request.requestId }), retained);
+  assert.deepEqual(retained.request, request);
   assert.equal(core.inspect({ ...context, requestId: request.requestId }).unknownRetained, true);
+  assert.equal(storage.getItem('aipm-anno-consent-v1'), persisted);
+  assert.throws(() => restored.settle({ identity: context.identity, session: context.session,
+    requestId: request.requestId, status: 'succeeded', annotationId: 'anno-1' }), /success evidence mismatch/);
+  assert.equal(storage.getItem('aipm-anno-consent-v1'), persisted);
 });
 
 test('thirty-day recovery cleanup retains identity-scoped idempotency evidence', async () => {
