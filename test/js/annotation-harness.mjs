@@ -67,6 +67,8 @@ export function boot({ session, respond, instant = false, storage = null } = {})
     pretendToBeVisual: true
   });
   const w = dom.window;
+  /* 测试加载的是已核验的四份站点脚本，允许真实 localStorage 写入路径运行。 */
+  w.__aipmIntegrityReady = true;
 
   /* jsdom 不做布局,这两个是它没有而页面代码初始化时会碰的浏览器接口。 */
   w.matchMedia = () => ({
