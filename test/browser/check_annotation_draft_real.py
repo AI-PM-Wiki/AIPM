@@ -25,6 +25,7 @@ SERVICE_ORIGIN = f"http://127.0.0.1:{SERVICE_PORT}"
 class ResponseDropProxy(http.server.BaseHTTPRequestHandler):
     drop_next = True
     writes = []
+    lookups = []
 
     def log_message(self, *args):
         pass
@@ -37,6 +38,8 @@ class ResponseDropProxy(http.server.BaseHTTPRequestHandler):
         upstream.request(self.command, self.path, body=payload, headers=headers)
         response = upstream.getresponse()
         body = response.read()
+        if self.command == "GET" and self.path.startswith("/api/annotation-requests/"):
+            self.lookups.append({"path": self.path, "status": response.status, "body": json.loads(body)})
         drop = self.command == "POST" and self.path == "/api/annotations" and self.drop_next
         if self.command == "POST" and self.path == "/api/annotations":
             self.writes.append({"request": json.loads(payload), "status": response.status})
@@ -116,6 +119,7 @@ class RealDraftCase(unittest.TestCase):
         return context
 
     def setUp(self):
+        ResponseDropProxy.lookups.clear()
         self.stop_service()
         self.__class__.data = tempfile.mkdtemp(dir=self.runtime)
         self.env["DATA_DIR"] = self.data
@@ -165,24 +169,24 @@ class RealDraftCase(unittest.TestCase):
             self.open_editor(page, session, draft["body"])
             with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
                 page.locator(".aipm-anno__save").click()
-            page.wait_for_function("() => JSON.parse(localStorage.getItem('aipm-anno-draft') || '{}').resultUnknown === true")
+            page.wait_for_function("() => JSON.parse(localStorage.getItem('aipm-anno-manual-draft-v1') || '{}').resultUnknown === true")
             self.assertEqual(len(ResponseDropProxy.writes), 1)
             self.assertEqual(ResponseDropProxy.writes[0]["status"], 201)
             self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
             self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
             page.evaluate("() => document.querySelector('.aipm-anno__visbtn').click()")
-            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft')).visibility"), "public")
+            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-manual-draft-v1')).visibility"), "public")
             self.assertIsNone(page.evaluate("() => localStorage.getItem('aipm-anno-local')"))
-            ResponseDropProxy.drop_next = True
-            with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
-                page.reload(wait_until="load")
-            page.wait_for_function("() => JSON.parse(localStorage.getItem('aipm-anno-draft') || '{}').resultUnknown === true")
+            original = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-manual-draft-v1'))")
+            page.reload(wait_until="networkidle")
+            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-manual-draft-v1'))"), original)
+            self.assertEqual(len(ResponseDropProxy.writes), 1)
             self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
             page.locator(".aipm-anno__save").click()
-            page.wait_for_function("() => !localStorage.getItem('aipm-anno-draft')")
-            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201, 200, 200])
-            self.assertEqual([write["request"] for write in ResponseDropProxy.writes],
-                             [ResponseDropProxy.writes[0]["request"]] * 3)
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-manual-draft-v1')")
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201])
+            self.assertEqual(ResponseDropProxy.lookups[-1]["path"], "/api/annotation-requests/" + original["requestId"])
+            self.assertEqual(ResponseDropProxy.lookups[-1]["body"]["operation"]["status"], "succeeded")
             state = json.loads((Path(self.data) / "store.json").read_text())
             self.assertEqual(len(state["annotations"]), before_count + 1)
             self.assertEqual(sum(a["body"] == draft["body"] for a in state["annotations"]), 1)
@@ -227,14 +231,14 @@ class RealDraftCase(unittest.TestCase):
             page.wait_for_function("() => !document.querySelector(\".aipm-anno__save\").disabled")
             self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
             self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
-            self.assertTrue(page.evaluate("() => JSON.parse(localStorage.getItem(\"aipm-anno-draft\")).resultUnknown"))
+            self.assertTrue(page.evaluate("() => JSON.parse(localStorage.getItem(\"aipm-anno-manual-draft-v1\")).resultUnknown"))
             self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [503, 201])
             self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
             self.assertIsNone(page.evaluate("() => localStorage.getItem(\"aipm-anno-local\")"))
             page.locator(".aipm-anno__save").click()
-            page.wait_for_function("() => !localStorage.getItem(\"aipm-anno-draft\")")
-            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [503, 201, 200])
-            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[2]["request"])
+            page.wait_for_function("() => !localStorage.getItem(\"aipm-anno-manual-draft-v1\")")
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [503, 201])
+            self.assertEqual(ResponseDropProxy.lookups[-1]["body"]["operation"]["status"], "succeeded")
             self.assertEqual(len(json.loads((Path(self.data) / "store.json").read_text())["annotations"]), 1)
             self.stop_service()
             self.start_service()
@@ -270,16 +274,20 @@ class RealDraftCase(unittest.TestCase):
             with page.expect_event("requestfailed", predicate=lambda req: req.url.endswith("/api/annotations") and req.method == "POST"):
                 page.locator(".aipm-anno__save").click()
             page.wait_for_function("() => !document.querySelector(\".aipm-anno__save\").disabled")
-            draft = page.evaluate("() => JSON.parse(localStorage.getItem(\"aipm-anno-draft\"))")
+            draft = page.evaluate("() => JSON.parse(localStorage.getItem(\"aipm-anno-manual-draft-v1\"))")
             self.assertTrue(draft["resultUnknown"])
             self.assertEqual(draft["visibility"], "public")
             self.assertEqual(page.locator(".aipm-anno__input--comment").input_value(), draft["body"])
             self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
             self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
-            page.reload(wait_until="load")
-            page.wait_for_function("() => !localStorage.getItem(\"aipm-anno-draft\")")
-            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201, 200])
-            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            page.reload(wait_until="networkidle")
+            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-manual-draft-v1'))"), draft)
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201])
+            page.locator(".aipm-anno__save").click()
+            page.wait_for_function("() => !localStorage.getItem(\"aipm-anno-manual-draft-v1\")")
+            self.assertEqual(ResponseDropProxy.lookups[-1]["path"], "/api/annotation-requests/" + draft["requestId"])
+            self.assertEqual(ResponseDropProxy.lookups[-1]["status"], 200)
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201])
             state = json.loads((Path(self.data) / "store.json").read_text())["annotations"]
             self.assertEqual(sum(a["body"] == "New editor interrupted response" for a in state), 1)
             self.stop_service()
@@ -314,7 +322,7 @@ class RealDraftCase(unittest.TestCase):
             with page.expect_event("requestfailed", predicate=lambda r: r.method == "POST" and r.url.endswith("/api/annotations")):
                 page.locator(".aipm-anno__save").click()
             page.wait_for_function("() => !document.querySelector('.aipm-anno__save').disabled")
-            before = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft'))")
+            before = page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-manual-draft-v1'))")
             self.assertTrue(before["resultUnknown"])
             page.locator(".aipm-anno__account").click()
             page.locator(".aipm-anno__logout").click()
@@ -322,23 +330,26 @@ class RealDraftCase(unittest.TestCase):
             with page.expect_response(lambda r: "/api/auth/github/start" in r.url) as login:
                 page.locator(".aipm-anno__account").click()
             self.assertEqual(login.value.status, 503)
-            page.goto(self.site.base + "/ai/rag/", wait_until="load")
-            page.wait_for_selector(".aipm-anno__save")
-            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-draft')).requestId"), before["requestId"])
-            self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
-            self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
-            self.assertEqual(page.locator(".aipm-anno__input--comment").input_value(), body)
+            page.goto(self.site.base + "/ai/rag/", wait_until="commit")
+            page.locator(".aipm-anno__toast").filter(has_text="原身份无法确认").wait_for(state="visible")
+            self.assertTrue(page.locator(".aipm-anno__toast").is_visible())
+            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-manual-draft-v1'))"), before)
+            self.assertEqual(page.locator(".aipm-anno__input--comment").count(), 0)
             self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201])
             with urllib.request.urlopen(request) as response:
                 renewed = json.load(response)
             page.evaluate("auth => localStorage.setItem('aipm-anno-auth', JSON.stringify(auth))", renewed)
-            with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/annotations")) as retry:
-                page.reload(wait_until="load")
-            self.assertEqual(retry.value.status, 200)
-            page.wait_for_function("() => !localStorage.getItem('aipm-anno-draft')")
             page.reload(wait_until="networkidle")
-            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201, 200])
-            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            self.assertEqual(page.evaluate("() => JSON.parse(localStorage.getItem('aipm-anno-manual-draft-v1'))"), before)
+            self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
+            self.assertFalse(page.locator(".aipm-anno__input--comment").is_editable())
+            with page.expect_response(lambda r: r.request.method == "GET" and "/api/annotation-requests/" in r.url) as retry:
+                page.locator(".aipm-anno__save").click()
+            self.assertEqual(retry.value.status, 200)
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-manual-draft-v1')")
+            page.reload(wait_until="networkidle")
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201])
+            self.assertEqual(ResponseDropProxy.lookups[-1]["path"], "/api/annotation-requests/" + before["requestId"])
             self.stop_service()
             self.start_service()
             with urllib.request.urlopen(SERVICE_ORIGIN + "/api/annotations?page=/ai/rag/&scope=public") as response:
@@ -377,7 +388,7 @@ class RealDraftCase(unittest.TestCase):
             page.locator("button[data-vis=local]").click()
             page.locator(".aipm-anno__save").click()
             page.wait_for_function("() => !!localStorage.getItem('aipm-anno-local')")
-            self.assertIsNone(page.evaluate("() => localStorage.getItem('aipm-anno-draft')"))
+            self.assertIsNone(page.evaluate("() => localStorage.getItem('aipm-anno-manual-draft-v1')"))
             page.reload(wait_until="networkidle")
             self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [503])
             self.stop_service()
@@ -415,13 +426,13 @@ class RealDraftCase(unittest.TestCase):
                 page.locator(".aipm-anno__save").click()
             page.wait_for_function("() => !document.querySelector('.aipm-anno__save').disabled")
             self.assertTrue(page.locator(".aipm-anno__visbtn").is_disabled())
-            with page.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/api/annotations")) as retry:
+            with page.expect_response(lambda r: r.request.method == "GET" and "/api/annotation-requests/" in r.url) as retry:
                 page.locator(".aipm-anno__save").click()
             self.assertEqual(retry.value.status, 200)
-            page.wait_for_function("() => !localStorage.getItem('aipm-anno-draft')")
+            page.wait_for_function("() => !localStorage.getItem('aipm-anno-manual-draft-v1')")
             page.reload(wait_until="networkidle")
-            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201, 200])
-            self.assertEqual(ResponseDropProxy.writes[0]["request"], ResponseDropProxy.writes[1]["request"])
+            self.assertEqual([write["status"] for write in ResponseDropProxy.writes], [201])
+            self.assertEqual(ResponseDropProxy.lookups[-1]["status"], 200)
             self.stop_service()
             self.start_service()
             with urllib.request.urlopen(SERVICE_ORIGIN + "/api/annotations?page=/ai/rag/&scope=public") as response:

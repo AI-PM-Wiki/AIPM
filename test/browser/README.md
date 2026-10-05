@@ -8,11 +8,14 @@ uv run playwright install chromium
 mkdir -p meta/r
 TMPDIR=meta/r uv run python3 test/browser/run.py
 TMPDIR=meta/r uv run python3 test/browser/run.py draft_real
+TMPDIR=meta/r uv run python3 test/browser/run.py --group independent --report meta/browser/independent.json
+TMPDIR=meta/r uv run python3 test/browser/run.py --group model --report meta/browser/model.json
+TMPDIR=meta/r uv run python3 test/browser/run.py --group oauth --report meta/browser/oauth.json
 ```
 
 ## 模型配置
 
-运行模型相关用例需要显式提供以下环境变量。配置缺少时快速失败，记录为未运行。
+运行模型相关用例需要显式提供以下环境变量。运行器按照用例所需配置检查完整清单，缺少配置的用例逐项记录为 `not_run`，对应组返回非零退出码。独立检查组覆盖草稿、缓存升级与异常过滤。
 
 | 环境变量 | 用途 |
 | --- | --- |
@@ -44,3 +47,7 @@ TMPDIR=meta/r uv run python3 test/browser/run.py draft_real
 ## 结果范围
 
 `run.py` 显式发现 `check_*.py`；默认 Python 单测发现 `test_*.py`。完整报告分别记录单测、构建、许可／持久化、模型、OAuth、缓存升级和浏览器结果。失败及缺配置均不能计为通过。
+
+批注服务的 `npm run unit-check` 覆盖纯函数、真实索引及本地 HTTP 许可检查。`npm run durability-check` 覆盖持久化、并发与请求记录。两组使用服务自身的会话签发功能进行权限检查。
+
+`npm run model-check -- llm` 使用上述模型配置检查真实响应、token 计费、部分页面缓存覆盖、重复请求、重启加载及重新生成。`npm run model-check -- jev` 需要独立授权的 `AIPM_REAL_JEV_API_KEY`、`AIPM_REAL_JEV_BASE_URL`、`AIPM_REAL_JEV_MODEL`。缺少配置时输出待验收项目，返回非零退出码。模型限流、输出形状失败、低置信度、provider 切换以及真实 GitHub OAuth 的验收结果需单独提供实际请求证据。
