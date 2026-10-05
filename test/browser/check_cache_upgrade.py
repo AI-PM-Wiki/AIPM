@@ -28,7 +28,7 @@ import re
 import json
 import shutil
 import unittest
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit, parse_qs, urljoin
 
 from bs4 import BeautifulSoup
 
@@ -139,7 +139,7 @@ class CacheUpgradeTest(unittest.TestCase):
             )
 
             src = page.evaluate("() => document.querySelector('script[src*=\"chat-widget.js\"]').src")
-            self.assertIn(new_asset, src, "页面请求的还是旧 URL")
+            self.assertEqual(urljoin(self.site.base + PAGE, new_asset), src, "页面请求的还是旧 URL")
 
             loaded = page.evaluate(
                 """async () => {
