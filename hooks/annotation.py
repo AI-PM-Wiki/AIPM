@@ -1,13 +1,14 @@
 """AI-PM 批注系统前端注入(构建期本地插件)。
 
-从 mkdocs.yml 的 extra.annotation 读取开关与缓存击穿版本号,把批注面板的
-CSS/JS 追加进 extra_css / extra_javascript(带 ?v= 版本号),随 MkDocs 构建/
-serve 注入每页。
+从 mkdocs.yml 的 extra.annotation 读取开关与版本号占位,把批注面板的
+CSS/JS 追加进 extra_css / extra_javascript(带 ?v= 占位版本号),
+随 MkDocs 构建/serve 注入每页。
 
 为什么走 hook 而不是直接写在 mkdocs.yml 的清单里:与 hooks/chat_agent.py 同款,
 好处是「一处开关 + 一处版本号」——关掉 extra.annotation.enabled 就整组资源都不
-注入,改资源只改 version,不必在 YAML 里逐条改 ?v=。两个面板的注入方式也因此
-一致,日后加第三个面板不用重新决定风格。
+注入。注意 ?v= 只是构建期占位:mkdocs 构建完成后,hooks/on_env.py 会把页面里所有
+_static 引用的 ?v= 统一换成产物内容哈希(2026-09-22,issue #91),所以改资源不需要
+再手动 bump version。两个面板的注入方式也因此一致,日后加第三个面板不用重新决定风格。
 
 依赖顺序:三个 JS 必须按 store → auth → panel 的顺序执行(后一个在 IIFE 里直接
 读前一个挂在 window 上的命名空间)。共享件 panel-shared.js 不在这里注入 ——
