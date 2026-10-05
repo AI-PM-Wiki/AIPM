@@ -83,12 +83,11 @@
     dialog.className = "mermaid-zoom__dialog";
     dialog.setAttribute("aria-modal", "true");
     dialog.setAttribute("aria-labelledby", "aipm-mermaid-dialog-title");
-    dialog.setAttribute("aria-describedby", "aipm-mermaid-dialog-hint");
     dialog.innerHTML =
       '<div class="mermaid-zoom__shell">' +
         '<header class="mermaid-zoom__header">' +
           '<h2 class="mermaid-zoom__title" id="aipm-mermaid-dialog-title">' +
-            "Mermaid 图放大视图" +
+            "Mermaid 放大视图" +
           "</h2>" +
           '<div class="mermaid-zoom__actions">' +
             '<button type="button" class="mermaid-zoom__button" data-mermaid-action="fit">' +
@@ -97,14 +96,13 @@
             '<button type="button" class="mermaid-zoom__button" data-mermaid-action="zoom-out" aria-label="缩小">−</button>' +
             '<output class="mermaid-zoom__scale" aria-live="polite">100%</output>' +
             '<button type="button" class="mermaid-zoom__button" data-mermaid-action="zoom-in" aria-label="放大">＋</button>' +
-            '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--close" data-mermaid-action="close">' +
-              "关闭" +
-            "</button>" +
           "</div>" +
+          '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--close" data-mermaid-action="close" aria-label="关闭" title="关闭">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+              '<path d="M5 5l14 14M19 5 5 19"></path>' +
+            "</svg>" +
+          "</button>" +
         "</header>" +
-        '<p class="mermaid-zoom__hint" id="aipm-mermaid-dialog-hint">' +
-          "可拖动图表查看不同区域，使用滚轮或双指缩放。" +
-        "</p>" +
         '<div class="mermaid-zoom__viewport" tabindex="0">' +
           '<div class="mermaid-zoom__canvas"></div>' +
         "</div>" +

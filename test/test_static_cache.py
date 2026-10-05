@@ -35,13 +35,11 @@ class TestNetlifyCacheHeaders(unittest.TestCase):
         self.assertEqual(self.headers["/*"], f"public, {REVALIDATE}")
 
     def test_hashed_theme_assets_are_immutable(self):
+        # 只列文件名真的带内容哈希的路径:immutable 的语义是「内容变了文件名也变」。
         for path in (
-            "/assets/stylesheets/*",
-            "/assets/javascripts/*",
-            "/assets/javascripts/workers/*",
-            "/assets/javascripts/lunr/*",
-            "/assets/javascripts/lunr/min/*",
-            "/assets/images/*",
+            "/assets/stylesheets/*",          # main.<hash>.min.css
+            "/assets/javascripts/*",          # bundle.<hash>.min.js
+            "/assets/javascripts/workers/*",  # search.<hash>.min.js
         ):
             with self.subTest(path=path):
                 self.assertEqual(
@@ -49,10 +47,22 @@ class TestNetlifyCacheHeaders(unittest.TestCase):
                     f"public, {YEAR}, immutable",
                 )
 
-    def test_unhashed_plugin_script_is_not_immutable(self):
-        cc = self.headers["/assets/javascripts/toggle-sidebar.js"]
-        self.assertIn("max-age=86400", cc)
-        self.assertNotIn("immutable", cc)
+    def test_unhashed_assets_are_not_immutable(self):
+        """文件名不含哈希的路径标 immutable,会把主题升级后的旧文件钉在用户侧一年。
+
+        lunr 语言包尤其危险:worker(search.<hash>.min.js)有哈希会更新,
+        它动态 import 的语言包没有,版本一错配搜索就直接失效。
+        """
+        for path in (
+            "/assets/javascripts/toggle-sidebar.js",
+            "/assets/javascripts/lunr/*",
+            "/assets/javascripts/lunr/min/*",
+            "/assets/images/*",
+        ):
+            with self.subTest(path=path):
+                cc = self.headers[path]
+                self.assertNotIn("immutable", cc)
+                self.assertIn("max-age=86400", cc)
 
     def test_versioned_static_is_long_cached(self):
         for path in ("/_static/css/*", "/_static/js/*"):

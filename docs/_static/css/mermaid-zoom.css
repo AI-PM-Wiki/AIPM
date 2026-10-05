@@ -143,9 +143,23 @@
 }
 
 .mermaid-zoom__button--close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
   margin-left: .2rem;
+  padding: .35rem;
   border-color: var(--md-accent-fg-color);
   color: var(--md-accent-fg-color);
+}
+
+.mermaid-zoom__button--close svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
 .mermaid-zoom__scale {
@@ -153,15 +167,6 @@
   color: var(--md-default-fg-color--light);
   font-size: .75rem;
   text-align: center;
-}
-
-.mermaid-zoom__hint {
-  flex: none;
-  margin: 0;
-  padding: .5rem 1rem;
-  color: var(--md-default-fg-color--light);
-  font-size: .75rem;
-  line-height: 1.5;
 }
 
 .mermaid-zoom__viewport {
@@ -203,22 +208,41 @@
   }
 
   .mermaid-zoom__header {
-    align-items: flex-start;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     gap: .5rem;
   }
 
   .mermaid-zoom__title {
-    flex-basis: 100%;
+    grid-column: 1;
   }
 
   .mermaid-zoom__actions {
+    grid-column: 1 / -1;
+    grid-row: 2;
     width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
     justify-content: flex-start;
+    gap: clamp(.2rem, 1vw, .35rem);
+  }
+
+  .mermaid-zoom__actions .mermaid-zoom__button {
+    min-width: clamp(2rem, 10vw, 2.25rem);
+    padding-inline: .25rem;
+    font-size: clamp(.65rem, 2.5vw, .75rem);
+  }
+
+  .mermaid-zoom__scale {
+    flex: 1;
+    min-width: 2.5rem;
   }
 
   .mermaid-zoom__button--close {
-    margin-left: auto;
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: 0;
   }
 }
 

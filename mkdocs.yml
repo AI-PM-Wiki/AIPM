@@ -761,6 +761,14 @@ theme:
     - navigation.tabs
     - navigation.instant
     - navigation.instant.progress
+    # navigation.prune:抽屉导航只渲染「当前栏目」的完整子树,其余栏目各留一个入口
+    # (顶部 tabs 仍在,跨栏目切换不受影响)。全站导航树有 800+ 条,原样渲染进每页
+    # 约 295KB HTML —— 占首页 HTML 的 94%、典型内容页的 65%。开启后实测:
+    # 首页 307KB→42KB(32.4KB→12.5KB gzip),内容页 316KB→50KB(34.2KB→14.3KB),
+    # 全站 600 页 HTML 合计 201MB→39MB。代价是抽屉里不再列出其他栏目的子页面。
+    # 上游文档标注 prune 与 navigation.tabs 不同用(两者叠加时不做支持承诺),
+    # 此处是有意取用,若需恢复原导航形态删掉本行即可。
+    - navigation.prune
     - content.code.copy
   font:
     text: 'Noto Sans'
@@ -787,12 +795,15 @@ extra:
   copyright: '<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">CC BY-SA 4.0</a> 和 <a href="https://github.com/zTrix/sata-license">SATA</a>'
   manifest: 'manifest.webmanifest'
   # 文档问答 Agent 前端 widget(注入由 hooks/chat_agent.py 完成):
-  # enabled 关闭后不再注入;version 缓存击穿号,改了资源后 +1 即可
+  # enabled 关闭后不再注入。version 只作为构建期占位 —— 最终写进页面的 ?v= 由
+  # hooks/on_env.py 在构建后统一替换为产物内容哈希(2026-09-22,issue #91),
+  # 改了资源不必再手动 +1。
   chat_agent:
     enabled: true
     version: 30
   # 自建批注系统前端(注入由 hooks/annotation.py 完成):
-  # 取代原先嵌入的 hypothes.is 客户端;enabled 关闭后不再注入
+  # 取代原先嵌入的 hypothes.is 客户端;enabled 关闭后不再注入。
+  # version 同 chat_agent:最终 ?v= 由构建后内容哈希决定,不必手动 bump。
   annotation:
     enabled: true
     version: 34
@@ -814,13 +825,13 @@ extra_javascript:
   - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
   - '_static/js/header-line.js?v=1'
   - '_static/js/umami.js?v=1'
-  - '_static/js/mermaid-zoom.js?v=4'
+  - '_static/js/mermaid-zoom.js?v=6'
   # 面板共享件（互斥注册表 + 三段抽屉的拖拽吸附）：
   # AI 助手面板与批注面板都用它，且必须排在 hooks 追加的两个面板脚本之前
   - '_static/js/panel-shared.js?v=1'
 extra_css:
   - '_static/css/extra.css?v=43'
-  - '_static/css/mermaid-zoom.css?v=4'
+  - '_static/css/mermaid-zoom.css?v=8'
 
 # Extensions
 markdown_extensions:
