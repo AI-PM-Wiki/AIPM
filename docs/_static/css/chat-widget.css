@@ -960,6 +960,9 @@ html.aipm-chat-mode--sheet .aipm-chat__composer {
   max-height: 6rem;
   overflow-y: auto;
 }
+.aipm-chat__ctx-view .aipm-chat__ctx-text[hidden] {
+  display: none;
+}
 .aipm-chat__ctx-view:focus-visible,
 .aipm-chat__ctx-x:focus-visible {
   outline: 2px solid var(--md-accent-fg-color);

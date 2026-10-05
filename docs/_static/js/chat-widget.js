@@ -966,7 +966,7 @@
       const chosenProposal = { ...proposal, visibility: submittedVisibility };
       let entry;
       try {
-        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=45').catch((error) => {
+        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=46').catch((error) => {
           window.__aipmIntegrityFailed = true;
           window.__aipmIntegrityReady = false;
           window.dispatchEvent(new Event('aipm-integrity-change'));
@@ -1276,31 +1276,44 @@
      东西**,不是一次性的动作 —— 它在语境条上一直可见,发出去的与看到的是同一份。
      ================================================================ */
   let pendingCtx = [];
+  const expandedCtx = new Set();
 
   const renderCtx = () => {
+    for (const id of expandedCtx) {
+      if (!pendingCtx.some((item) => item.id === id)) expandedCtx.delete(id);
+    }
     els.ctxbar.textContent = "";
     for (const item of pendingCtx) {
+      const expanded = expandedCtx.has(item.id);
+      const category = item.kind === "annotation" ? "批注"
+        : item.kind === "selection" ? "选中文字"
+        : { mermaid: "Mermaid 图", svg: "SVG 图", image: "图片" }[item.chart];
       const chip = document.createElement("span");
       chip.className = "aipm-chat__ctx-chip";
+      chip.classList.toggle("is-expanded", expanded);
       chip.setAttribute("data-kind", item.kind);
       const label = document.createElement("span");
       label.className = "aipm-chat__ctx-kind";
-      label.textContent = CTX ? CTX.labelOf(item) : "";
+      label.textContent = expanded ? CTX.labelOf(item) : category;
       const text = document.createElement("span");
       text.className = "aipm-chat__ctx-text";
-      text.textContent = CTX ? CTX.excerptOf(item) : "";
-      const fullText = item.quote || item.body || item.source || "";
+      const fullText = [item.quote, item.body, item.source].filter(Boolean).join("\n\n");
+      text.textContent = fullText;
+      text.hidden = !expanded;
       const view = document.createElement("button");
       view.type = "button";
       view.className = "aipm-chat__ctx-view";
-      view.title = label.textContent + ":" + fullText;
-      view.setAttribute("aria-label", "查看语境：" + label.textContent);
-      view.setAttribute("aria-expanded", "false");
+      view.title = "展开／收起语境：" + category;
+      view.setAttribute("aria-label", view.title);
+      view.setAttribute("aria-expanded", String(expanded));
       view.append(label, text);
       view.addEventListener("click", () => {
         const expanded = chip.classList.toggle("is-expanded");
+        if (expanded) expandedCtx.add(item.id);
+        else expandedCtx.delete(item.id);
         view.setAttribute("aria-expanded", String(expanded));
-        text.textContent = expanded ? fullText : CTX.excerptOf(item);
+        label.textContent = expanded ? CTX.labelOf(item) : category;
+        text.hidden = !expanded;
         if (expanded && mode === "sheet") setSnap("expanded");
         applyMetrics();
       });
@@ -1308,15 +1321,19 @@
       rm.type = "button";
       rm.className = "aipm-chat__ctx-x";
       rm.title = "移除这条语境";
-      rm.setAttribute("aria-label", "移除语境:" + text.textContent);
+      rm.setAttribute("aria-label", "移除语境：" + category);
       rm.textContent = "×";
       rm.addEventListener("click", () => {
+        const index = pendingCtx.findIndex((entry) => entry.id === item.id);
         pendingCtx = CTX.remove(pendingCtx, item.id);
         renderCtx();
+        const next = els.ctxbar.children[Math.min(index, pendingCtx.length - 1)];
+        if (next) next.querySelector(".aipm-chat__ctx-x").focus();
+        else els.input.focus();
         updateSendState();
+        applyMetrics();
       });
       chip.append(view, rm);
-      chip.title = label.textContent + ":" + text.textContent;
       els.ctxbar.appendChild(chip);
     }
     els.ctxbar.hidden = pendingCtx.length === 0;

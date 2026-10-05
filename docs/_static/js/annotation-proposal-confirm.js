@@ -1,6 +1,6 @@
 // An isolated confirmation entry. The production Agent bootstrap remains disabled.
-import { createAnnotationRequestStatus } from './annotation-request-status.js?v=45';
-import { createConfirmationView } from './annotation-confirm-view.js?v=45';
+import { createAnnotationRequestStatus } from './annotation-request-status.js?v=46';
+import { createConfirmationView } from './annotation-confirm-view.js?v=46';
 
 const LABELS = { local: '仅本机', private: '仅自己可见', public: '公开' };
 

@@ -18,7 +18,7 @@
   "use strict";
 
   var store = window.__aipmAnnoStore;
-  if (store?.assetVersion !== 45) throw new Error('annotation store version mismatch');
+  if (store?.assetVersion !== 46) throw new Error('annotation store version mismatch');
   var K_AUTH = "aipm-anno-auth";
   var K_DRAFT_LOGIN = "aipm-anno-draft-login-v1";
   var CODE_PARAM = "aipm_auth_code";
@@ -255,7 +255,7 @@
   }
 
   window.__aipmAnnoAuth = {
-    assetVersion: 45,
+    assetVersion: 46,
     ready: ready,
     takeDraftLogin: function (draft) {
       var completed = completedDraftLogin;

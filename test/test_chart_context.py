@@ -323,7 +323,8 @@ class TestUntrustedSvgIsNeverExecuted(unittest.TestCase):
         chat = _strip_comments(CHAT_JS.read_text(encoding="utf-8"))
         fn = chat[chat.index("const renderCtx = ()") :]
         fn = fn[: fn.index("\n  };") + 5]
-        self.assertIn("text.textContent = CTX ? CTX.excerptOf(item) : \"\"", fn)
+        self.assertIn("text.textContent = fullText", fn)
+        self.assertNotIn("innerHTML", fn)
 
 
 class TestChartHandsOffThroughTheSharedContract(unittest.TestCase):

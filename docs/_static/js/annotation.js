@@ -50,7 +50,7 @@
   var store = window.__aipmAnnoStore;
   var auth = window.__aipmAnnoAuth;
   var panels = window.__aipmPanels;
-  if (store?.assetVersion !== 45 || auth?.assetVersion !== 45) {
+  if (store?.assetVersion !== 46 || auth?.assetVersion !== 46) {
     throw new Error('annotation asset version mismatch');
   }
 
