@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import re
 import json
+import os
 import shutil
 import unittest
 from urllib.parse import urlsplit, parse_qs, urljoin
@@ -34,13 +35,14 @@ from bs4 import BeautifulSoup
 
 from playwright.sync_api import sync_playwright
 
-from harness import WORK, Browser, StaticSite, assert_no_page_errors, build_site
+from harness import WORK, ANNO_ORIGIN, AnnotationApi, Browser, StaticSite, REASON_FOREIGN_RESOURCE, assert_no_page_errors, build_site
 
 #: 「旧」取的是把 chat-widget.js 改掉却没 +1 版本号的那个提交 —— 也就是原审查
 #: 意见里复现出来的那个状态(`chat-widget.js?v=31` 一直命中旧缓存)。
 OLD_REF = "e3beab55"
 
 PAGE = "/ai/rag/"
+LEGACY_ANNO_ORIGIN = "http://127.0.0.1:" + os.environ.get("AIPM_TEST_LEGACY_ANNOTATION_PORT", "8788")
 
 #: 更新失败那条记录的开头。主题的注册脚本自己写下来的(见 mkdocs-material 的
 #: base.html):哪个 scope、什么原因,都在这句话后面。
@@ -76,10 +78,12 @@ class CacheUpgradeTest(unittest.TestCase):
         cls.old_dir = build_site(WORK / "site-cache-old", ref=OLD_REF)
         cls.new_dir = build_site(WORK / "site-cache-new")
         cls.site = StaticSite(cls.old_dir)
+        cls.api = AnnotationApi(cls.site)
         cls.pw = sync_playwright().start()
 
     @classmethod
     def tearDownClass(cls):
+        cls.api.close()
         cls.site.close()
         cls.pw.stop()
 
@@ -114,6 +118,9 @@ class CacheUpgradeTest(unittest.TestCase):
 
         browser = Browser(self.pw, self.site.base)
         try:
+            browser.context.route(LEGACY_ANNO_ORIGIN + "/**", lambda route:
+                                  route.continue_(url=ANNO_ORIGIN + urlsplit(route.request.url).path +
+                                                  ("?" + urlsplit(route.request.url).query if urlsplit(route.request.url).query else "")))
             page = browser.goto(PAGE)
             page.wait_for_function("() => navigator.serviceWorker.controller !== null")
             # 首次加载时页面还没被 SW 接管,它请求的那些资源不过 SW;再加载一次,
@@ -158,7 +165,10 @@ class CacheUpgradeTest(unittest.TestCase):
                 self.cached(page, f"chat-widget.js?v={old_version}"),
                 "旧缓存被清掉了 —— 升级不该依赖清缓存",
             )
-            assert_no_page_errors(self, browser)
+            assert_no_page_errors(self, browser, expected_ignored=(
+                (LEGACY_ANNO_ORIGIN + "/api/highlight/suggest", REASON_FOREIGN_RESOURCE),
+                (LEGACY_ANNO_ORIGIN + "/api/highlight/suggest", REASON_FOREIGN_RESOURCE),
+            ))
         finally:
             browser.close()
 

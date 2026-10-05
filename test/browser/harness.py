@@ -535,14 +535,8 @@ def origin_of(url: str | None) -> tuple[str, str, int] | None:
     return (parts.scheme.lower(), parts.hostname.lower(), port)
 
 
-#: 这条通路之外、页面还会碰到的几处服务,不是被测的东西:
-#:   - 批注后端(127.0.0.1:8788):这个底座里没有起它,页面一加载就去取批注,
-#:     拿到的是连接被拒(见 docs/_static/js/annotation-store.js 的地址);
-#:   - GitHub 的版本接口:主题的 bundle 自己会去问最新发布,匿名请求会回 403;
-#:   - giscus:评论区,这个仓库没有配 discussion,回 404。
-#: 它们的失败记录每次运行都在,条数还随页面加载次数变,用例没法逐条声明。这张单子
-#: 把它们点出来 —— 不是默默放过去:断言里照样逐条核对理由与出处,出处不在这张单子
-#: 上的记录必须由用例自己声明。
+#: Ancillary endpoint failures remain classified by their exact origin.
+#: Each ignored record still verifies its reason and source in assert_no_page_errors.
 AMBIENT_ORIGINS = tuple(
     origin
     for origin in (
