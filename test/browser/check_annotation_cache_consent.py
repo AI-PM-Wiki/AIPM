@@ -173,6 +173,32 @@ class AnnotationCacheConsent(unittest.TestCase):
         (self.work / f"{stage}.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))
         return result
 
+    def assert_oauth_identity(self, page, responses, stage):
+        exchanges = [response for response in responses
+                     if response.request.method == "POST" and
+                     urlsplit(response.url).path == "/api/auth/session" and response.status == 200]
+        self.assertTrue(exchanges, "actual OAuth session exchange must complete")
+        session = exchanges[-1].json()
+        self.assertIsInstance(session["token"], str)
+        self.assertTrue(session["token"])
+        self.assertEqual(session["user"]["githubId"], int(self.github_id))
+        self.assertIsInstance(session["user"]["login"], str)
+        self.assertTrue(session["user"]["login"])
+        me = page.request.get(self.backend + "/api/auth/me", headers={
+            "Authorization": "Bearer " + session["token"]})
+        self.assertEqual(me.status, 200)
+        identity = me.json()
+        self.assertEqual(identity["user"]["githubId"], session["user"]["githubId"])
+        self.assertEqual(identity["user"]["login"], session["user"]["login"])
+        browser_user = page.evaluate("window.__aipmAnnoAuth.user()")
+        self.assertEqual(browser_user["githubId"], identity["user"]["githubId"])
+        self.assertEqual(browser_user["login"], identity["user"]["login"])
+        (self.work / f"{stage}-oauth-identity.json").write_text(json.dumps({
+            "exchangeStatus": exchanges[-1].status, "meStatus": me.status,
+            "sessionUser": {name: session["user"][name] for name in ("githubId", "login")},
+            "meUser": {name: identity["user"][name] for name in ("githubId", "login")},
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+
     def test_old_sw_and_cached_scripts_require_fresh_confirmation(self):
         browser = self.pw.chromium.launch()
         try:
@@ -238,6 +264,7 @@ class AnnotationCacheConsent(unittest.TestCase):
                 page.locator(".aipm-anno__visbtn").click()
                 page.locator('.aipm-anno__vislist [data-vis="public"]').click()
                 page.wait_for_function("() => !!window.__aipmAnnoAuth?.user()")
+                self.assert_oauth_identity(page, entries["responses"], label)
                 if label == "candidate":
                     page.wait_for_selector(".aipm-anno__login-consent")
                 current = self.snapshot(page, entries, label + "-unconfirmed")
@@ -298,6 +325,8 @@ class AnnotationCacheConsent(unittest.TestCase):
                 self.site.faults = {}
                 self.site.fail_auth = False
                 page = context.new_page()
+                oauth_responses = []
+                page.on("response", lambda response: oauth_responses.append(response))
                 page.goto(self.base + PAGE, wait_until="load")
                 page.wait_for_function("() => !!navigator.serviceWorker.controller")
                 page.reload(wait_until="load")
@@ -316,6 +345,7 @@ class AnnotationCacheConsent(unittest.TestCase):
                 page.locator(".aipm-anno__visbtn").click()
                 page.locator('.aipm-anno__vislist [data-vis="public"]').click()
                 page.wait_for_function("() => !!window.__aipmAnnoAuth?.user()")
+                self.assert_oauth_identity(page, oauth_responses, "mixed-" + label)
                 page.wait_for_function("() => !!window.__aipmAnnoStore?.peekDraft()?.identity")
                 draft = page.evaluate("window.__aipmAnnoStore.peekDraft()")
                 self.assertEqual(draft["identity"], self.github_id)
