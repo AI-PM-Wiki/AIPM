@@ -910,9 +910,9 @@ html.aipm-chat-mode--sheet .aipm-chat__composer {
    左边那格写清来源(选中文字 / 批注 · 公开),右边那格是被引的原文。 */
 .aipm-chat__ctxbar {
   display: flex;
-  flex-direction: column;
-  gap: .3rem;
-  padding: .55rem .7rem 0;
+  flex-wrap: wrap;
+  gap: .25rem;
+  padding: .4rem .7rem 0;
 }
 .aipm-chat__ctxbar[hidden] {
   display: none;
@@ -927,12 +927,43 @@ html.aipm-chat-mode--sheet .aipm-chat__composer {
   line-height: 1.45;
 }
 .aipm-chat__ctx-chip {
-  padding: .25rem .3rem .25rem .45rem;
-  border-radius: .4rem;
-  /* 左侧一道主色竖条:语境与右端可移除的附件不是一回事,它说的是「我在读什么」 */
+  min-width: 0;
+  max-width: min(100%, 7.75rem);
+  gap: .15rem;
+  padding: .1rem .15rem .1rem .35rem;
+  border-radius: .6rem;
+  font-size: .64rem;
   border: 1px solid var(--md-accent-fg-color--transparent);
-  border-left: 2px solid var(--md-accent-fg-color);
   background: var(--md-accent-fg-color--transparent);
+}
+.aipm-chat__ctx-view {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.aipm-chat__ctx-chip.is-expanded {
+  max-width: 100%;
+}
+.aipm-chat__ctx-chip.is-expanded .aipm-chat__ctx-view {
+  align-items: flex-start;
+}
+.aipm-chat__ctx-chip.is-expanded .aipm-chat__ctx-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 6rem;
+  overflow-y: auto;
+}
+.aipm-chat__ctx-view:focus-visible,
+.aipm-chat__ctx-x:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
 }
 .aipm-chat__ctx-kind {
   flex: none;

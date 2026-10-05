@@ -50,7 +50,7 @@
   var store = window.__aipmAnnoStore;
   var auth = window.__aipmAnnoAuth;
   var panels = window.__aipmPanels;
-  if (store?.assetVersion !== 42 || auth?.assetVersion !== 42) {
+  if (store?.assetVersion !== 45 || auth?.assetVersion !== 45) {
     throw new Error('annotation asset version mismatch');
   }
 
@@ -2246,7 +2246,6 @@
     acts.className = "aipm-anno__item-actions";
     /* 点赞:本机批注没有服务端可言,不显示。 */
     if (!isLocal(anno)) acts.appendChild(likeButton(anno));
-    acts.appendChild(askButton(anno));
     if (isLocal(anno) && !store.serverIdOf(anno.id) && auth && auth.isLoggedIn()) {
       acts.appendChild(
         actionButton("上传为公开", "upload-public", function () {
@@ -2279,11 +2278,11 @@
    */
   function askButton(anno) {
     if (!isLocal(anno)) {
-      return actionButton("问助手", "ask", function () {
+      return iconButton(ICON.ask, "问助手", "ask", function () {
         askAssistant(annotationContext(anno));
       });
     }
-    var b = actionButton("问助手", "ask-local", function () {});
+    var b = ibtn(ICON.ask, "问助手", "ask-local");
     b.disabled = true;
     b.title = "仅本机的批注不会离开这台设备;想跟助手讨论它,先上传为公开或私有。";
     return b;
@@ -2373,6 +2372,7 @@
       up.textContent = "已上传";
       head.appendChild(up);
     }
+    head.appendChild(askButton(anno));
     head.appendChild(cardReplyButton(anno));
     head.appendChild(cardTools(anno));
     wrap.appendChild(head);
@@ -2470,6 +2470,7 @@
       up.textContent = "已上传";
       top.appendChild(up);
     }
+    top.appendChild(askButton(anno));
     top.appendChild(cardReplyButton(anno));
     top.appendChild(cardTools(anno));
     wrap.appendChild(top);

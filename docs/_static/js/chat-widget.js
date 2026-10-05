@@ -966,7 +966,7 @@
       const chosenProposal = { ...proposal, visibility: submittedVisibility };
       let entry;
       try {
-        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=42').catch((error) => {
+        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=45').catch((error) => {
           window.__aipmIntegrityFailed = true;
           window.__aipmIntegrityReady = false;
           window.dispatchEvent(new Event('aipm-integrity-change'));
@@ -1289,6 +1289,21 @@
       const text = document.createElement("span");
       text.className = "aipm-chat__ctx-text";
       text.textContent = CTX ? CTX.excerptOf(item) : "";
+      const fullText = item.quote || item.body || item.source || "";
+      const view = document.createElement("button");
+      view.type = "button";
+      view.className = "aipm-chat__ctx-view";
+      view.title = label.textContent + ":" + fullText;
+      view.setAttribute("aria-label", "查看语境：" + label.textContent);
+      view.setAttribute("aria-expanded", "false");
+      view.append(label, text);
+      view.addEventListener("click", () => {
+        const expanded = chip.classList.toggle("is-expanded");
+        view.setAttribute("aria-expanded", String(expanded));
+        text.textContent = expanded ? fullText : CTX.excerptOf(item);
+        if (expanded && mode === "sheet") setSnap("expanded");
+        applyMetrics();
+      });
       const rm = document.createElement("button");
       rm.type = "button";
       rm.className = "aipm-chat__ctx-x";
@@ -1300,7 +1315,7 @@
         renderCtx();
         updateSendState();
       });
-      chip.append(label, text, rm);
+      chip.append(view, rm);
       chip.title = label.textContent + ":" + text.textContent;
       els.ctxbar.appendChild(chip);
     }

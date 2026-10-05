@@ -760,6 +760,10 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   outline: 2px solid var(--md-accent-fg-color);
   outline-offset: 1px;
 }
+.aipm-anno__ibtn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
 .aipm-anno__ibtn svg {
   width: .85rem;
   height: .85rem;
