@@ -10,7 +10,8 @@
   "scripts": {
     "scripts:format": "prettier --write \"scripts/**/*.ts\"",
     "scripts:format:check": "prettier --check \"scripts/**/*.ts\"",
-    "docs:format:remark": "remark docs/ -o"
+    "docs:format:remark": "remark docs/ -o",
+    "test:js": "node --test test/js/*.test.mjs"
   },
   "repository": {
     "type": "git",

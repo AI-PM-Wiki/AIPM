@@ -13,6 +13,10 @@ dependencies = [
     "python-markdown-document-offsets-injection-extension==0.5.16",
     "mkdocs-toggle-sidebar-plugin==0.0.8",
     "jieba==0.42.1",
+    # 构建后压缩 _static 的 CSS/JS(见 hooks/on_env.py::_minify_static_assets)。
+    # 纯 Python、无 C 扩展安装步骤;压缩器缺失时该步自动跳过并告警,不影响构建。
+    "rcssmin==1.2.2",
+    "rjsmin==1.2.5",
 ]
 
 [dependency-groups]

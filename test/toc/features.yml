@@ -1,0 +1,17 @@
+INHERIT: ../../mkdocs.yml
+docs_dir: ../../docs
+site_dir: ../../meta/toc-regression/site-features
+hooks:
+  - ../../hooks/on_env.py
+  - ../../hooks/chat_agent.py
+  - ../../hooks/annotation.py
+theme:
+  custom_dir: ../../mkdocs-material/material/templates
+  features:
+    - content.action.edit
+    - navigation.tabs
+    - navigation.instant
+    - navigation.instant.progress
+    - content.code.copy
+    - toc.follow
+    - navigation.tracking
