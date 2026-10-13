@@ -421,7 +421,7 @@
       var tail = original.splitText(t.end);
       var mid = original.splitText(t.start);
       var mark = document.createElement("mark");
-      mark.className = "aipm-anno-mark";
+      mark.className = "aipm-anno-mark" + (isLocal(anno) ? " rr-block" : "");
       mark.setAttribute("data-anno-id", anno.id);
       mark.setAttribute("data-color", anno.color || store.DEFAULT_COLOR);
       mark.setAttribute("data-style", styleOf(anno));
@@ -2358,7 +2358,7 @@
     }
 
     var wrap = document.createElement("article");
-    wrap.className = "aipm-anno__comment";
+    wrap.className = "aipm-anno__comment" + (isLocal(anno) ? " rr-block" : "");
     wrap.setAttribute("data-anno-id", anno.id);
     /* 不留 data-vis:这一条在哪个分栏里,分栏标题已经写着 —— 卡片上再标一遍是
        同一句话说两次。自己发的留一条左边线,那才是卡片自己要说的。 */
@@ -2402,7 +2402,7 @@
 
     var color = anno.color || store.DEFAULT_COLOR;
     var wrap = document.createElement("article");
-    wrap.className = "aipm-anno__item";
+    wrap.className = "aipm-anno__item" + (isLocal(anno) ? " rr-block" : "");
     wrap.setAttribute("data-anno-id", anno.id);
     wrap.setAttribute("data-color", color);
     wrap.setAttribute("data-style", styleOf(anno));
@@ -2901,6 +2901,8 @@
     if (editorDraft.kind === "reply") nodes = buildReplyEditor(editorDraft);
     else if (isCommentDraft()) nodes = buildCommentEditor(editorDraft);
     else nodes = buildEditor(editorDraft);
+    var on = annoById(editorDraft.annoId);
+    if (defaultVisibility() === "local" || (on && isLocal(on))) nodes.form.classList.add("rr-block");
     mountEditor(nodes);
     wireEditor(nodes);
     return nodes.form;
@@ -3596,6 +3598,7 @@
     }
     var vis = defaultVisibility();
     var label = visLabel({ visibility: vis });
+    if (vis === "local") els.composer.classList.add("rr-block");
     var loggedIn = auth ? auth.isLoggedIn() : false;
     var me = loggedIn && auth.user() ? auth.user().login : "";
     /* 可见范围落在哪儿:批注草稿卡并进名字那一行(「名字 · 公开」),评论编辑卡

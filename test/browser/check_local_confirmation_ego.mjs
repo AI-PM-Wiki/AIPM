@@ -36,6 +36,9 @@ export async function checkLocalConfirmation({ directory, taskSpace }) {
   const task = await taskSpace(id);
   const page = task.page('p1');
   await page.cdp('Network.enable', {});
+  await page.cdp('Page.addScriptToEvaluateOnNewDocument', {
+    source: await readFile(new URL('./block_external_uploads.js', import.meta.url), 'utf8'),
+  });
   await page.cdp('Network.setBlockedURLs', { urls: [
     'http://127.0.0.1:8788/*', 'http://127.0.0.1:8787/*',
     'https://annotations.aipm.ac/*', 'https://agent.aipm.ac/*',

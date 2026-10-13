@@ -67,6 +67,23 @@ await checkLocalConfirmation({ directory: '/absolute/repo/meta/local-confirmatio
 
 上传结果分别登记：批注业务请求与已观察 fetch 的明文正文检查；外部 recorder 的 sendBeacon、XHR、编码载荷仍为 `not_run`。本脚本结果不覆盖完整录制上传链路。真实模型工具建议的端到端证据需要单独记录候选提交和请求用量。
 
+## 本机内容的录制保护
+
+`check_recorder_privacy_ego.mjs` 使用真实部署 recorder 检查首次插入、批注／评论创建与编辑、重绘、导航和恢复。`recorder-privacy.json` 保存审查过的脚本摘要、观察点及断言映射。脚本字节发生变化时检查终止，需要重新审查来源及观察点。
+
+沿用上面的隔离服务启动命令，并为本组提供新的输出目录与站点 origin，确保本机存储没有已有记录。模型配置不需要注入。使用以下入口：
+
+```javascript
+const { checkRecorderPrivacy } = await import('/absolute/repo/test/browser/check_recorder_privacy_ego.mjs');
+await checkRecorderPrivacy({ directory: '/absolute/repo/meta/recorder-privacy', taskSpace });
+```
+
+同一浏览器任务继续多个检查时，传入已保存的 `spaceId`。结果为 `recorder-results.json` 与只含非敏感测试内容的 `synthetic-recorder-traces.json`。按照该输出目录的 `browser-space.json` 和 `runtime-config.json` 完成浏览器及服务清理。
+
+所有浏览器夹具在加载前安装 `block_external_uploads.js`，阻断外部 fetch、sendBeacon、XHR 写入。测试通过 Debugger 直接启动未修改的 recorder，并复制实际完整快照和增量事件；在原始发送函数入口，以其原始序列化函数检查真实参数。统计会话和抽样启动门禁、原生发送、sendBeacon／XHR 录制调用及 gzip／Base64 传输载荷分别标为未运行。
+
+断言要求本机节点首次插入前已有 `rr-block`，页面正文及无障碍标签保持可读；完整快照产生无子节点、无敏感属性的尺寸占位；增量事件和完整 JSON 分片重组均排除本机标识。公开非敏感对照必须在完整快照、增量事件和序列化数据中继续出现。保护修复的发布验收需完成独立复核。
+
 完整异常过滤组使用 `uv run python3 test/browser/run.py error`。并发传输检查使用
 `uv run python3 test/browser/run.py static_transport`，同时发送 32 条真实 HTTP 请求，
 逐条验证状态与资源字节。测试静态服务的监听队列容量为 128。

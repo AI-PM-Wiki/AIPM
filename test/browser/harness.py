@@ -708,6 +708,7 @@ class Browser:
     def __init__(self, playwright, base: str, service_workers: str = "allow", also_ours=()):
         self.browser = playwright.chromium.launch()
         self.context = self.browser.new_context(service_workers=service_workers)
+        self.context.add_init_script(path=str(ROOT / "test/browser/block_external_uploads.js"))
         self.context.add_init_script(
             "window.__aipmLocalApi = " + json.dumps({"agent": AGENT_ORIGIN, "annotation": ANNO_ORIGIN})
         )
