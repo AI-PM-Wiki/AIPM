@@ -69,7 +69,7 @@ await checkLocalConfirmation({ directory: '/absolute/repo/meta/local-confirmatio
 
 ## 本机内容的录制保护
 
-`check_recorder_privacy_ego.mjs` 使用真实部署 recorder 检查首次插入、批注／评论创建与编辑、重绘、导航和恢复。`recorder-privacy.json` 保存审查过的脚本摘要、观察点及断言映射。脚本字节发生变化时检查终止，需要重新审查来源及观察点。
+`check_recorder_privacy_ego.mjs` 使用真实部署 recorder 检查首次插入、批注／评论创建与编辑、回复编辑／保存／刷新恢复、已有本机评论的 private／local／public／local 可见性切换、新建公开评论草稿转本机、重绘、导航和恢复。可见性检查使用隔离后端的真实开发登录，GitHub OAuth 单列未运行。`recorder-privacy.json` 保存审查过的脚本摘要、观察点及断言映射。脚本字节发生变化时检查终止，需要重新审查来源及观察点。
 
 沿用上面的隔离服务启动命令，并为本组提供新的输出目录与站点 origin，确保本机存储没有已有记录。模型配置不需要注入。使用以下入口：
 
@@ -83,6 +83,10 @@ await checkRecorderPrivacy({ directory: '/absolute/repo/meta/recorder-privacy', 
 所有浏览器夹具在加载前安装 `block_external_uploads.js`，阻断外部 fetch、sendBeacon、XHR 写入。测试通过 Debugger 直接启动未修改的 recorder，并复制实际完整快照和增量事件；在原始发送函数入口，以其原始序列化函数检查真实参数。统计会话和抽样启动门禁、原生发送、sendBeacon／XHR 录制调用及 gzip／Base64 传输载荷分别标为未运行。
 
 断言要求本机节点首次插入前已有 `rr-block`，页面正文及无障碍标签保持可读；完整快照产生无子节点、无敏感属性的尺寸占位；增量事件和完整 JSON 分片重组均排除本机标识。公开非敏感对照必须在完整快照、增量事件和序列化数据中继续出现。保护修复的发布验收需完成独立复核。
+
+映射中的 `requiredInsertionScenes` 要求每个创建、编辑及恢复观察区间的本机节点插入增量大于零；`requiredEditorInsertionScenes` 额外要求实际编辑器插入。观察点覆盖原生 `Node.appendChild`、`Node.insertBefore` 和 `Node.replaceChild`，结果逐项保存累计计数及区间增量。原地修改场景核对阻断、内容和存储状态，单列于 `in_place_scenes`。公开草稿在转本机之前保持公开编辑器状态，切换后核对阻断再输入本机测试内容，保存之前存储保持不变，保存后检查本机记录和 DOM。
+
+分片重组在写入编号映射之前拒绝重复编号，并要求编号连续、分片完整及总数一致。异常检查从真实 recorder 产生的完整分片组构造重复编号、缺片及总数不一致的输入，逐项断言重组终止；这些校验输入单列为解析器异常检查。实际采集、序列化和未运行的原生发送结果继续分别登记。
 
 完整异常过滤组使用 `uv run python3 test/browser/run.py error`。并发传输检查使用
 `uv run python3 test/browser/run.py static_transport`，同时发送 32 条真实 HTTP 请求，

@@ -37,20 +37,45 @@ function reconstruct(rows) {
     for (const event of packet.payload.events) {
       if (event.type !== 'umami:rrweb-event-fragment') events.push(event);
       else {
+        assert.ok(Number.isInteger(event.data.index) && event.data.index >= 0, 'invalid fragment index');
+        assert.ok(Number.isInteger(event.data.total) && event.data.total > 0, 'invalid fragment total');
         if (!groups.has(event.data.id)) groups.set(event.data.id, new Map());
-        groups.get(event.data.id).set(event.data.index, event.data);
+        const pieces = groups.get(event.data.id);
+        assert.ok(!pieces.has(event.data.index), 'duplicate fragment index');
+        pieces.set(event.data.index, event.data);
       }
     }
   }
   const fragments = [];
   for (const [id, pieces] of groups) {
     const ordered = [...pieces.values()].sort((a, b) => a.index - b.index);
-    assert.equal(ordered.length, ordered[0].total);
-    assert.ok(ordered.every((piece, index) => piece.index === index && piece.total === ordered.length));
+    assert.ok(ordered.every(piece => piece.total === ordered[0].total), 'inconsistent fragment totals');
+    assert.equal(ordered.length, ordered[0].total, 'missing fragments');
+    assert.ok(ordered.every((piece, index) => piece.index === index), 'non-contiguous fragment indices');
     events.push(JSON.parse(ordered.map(piece => piece.value).join('')));
     fragments.push({ id, count: ordered.length });
   }
   return { events, fragments };
+}
+
+function checkFragmentRejections(rows) {
+  const packets = rows.map(row => ({ ...row, payload: JSON.parse(row.payload) }));
+  const packet = packets.find(row => row.payload.payload.events.some(event => event.type === 'umami:rrweb-event-fragment' && event.data.total > 1));
+  if (!packet) return [];
+  const fragment = packet.payload.payload.events.find(event => event.type === 'umami:rrweb-event-fragment' && event.data.total > 1);
+  const encode = records => records.map(row => ({ ...row, payload: JSON.stringify(row.payload) }));
+  const duplicate = structuredClone(packets);
+  duplicate[packets.indexOf(packet)].payload.payload.events.push(structuredClone(fragment));
+  assert.throws(() => reconstruct(encode(duplicate)), /duplicate fragment index/);
+  const missing = structuredClone(packets);
+  for (const row of missing) row.payload.payload.events = row.payload.payload.events.filter(event =>
+    event.type !== 'umami:rrweb-event-fragment' || event.data.id !== fragment.data.id || event.data.index !== fragment.data.index);
+  assert.throws(() => reconstruct(encode(missing)), /missing fragments/);
+  const inconsistent = structuredClone(packets);
+  inconsistent[packets.indexOf(packet)].payload.payload.events.find(event =>
+    event.type === 'umami:rrweb-event-fragment' && event.data.id === fragment.data.id && event.data.index === fragment.data.index).data.total++;
+  assert.throws(() => reconstruct(encode(inconsistent)), /inconsistent fragment totals/);
+  return ['duplicate_index_rejected', 'missing_piece_rejected', 'inconsistent_total_rejected'];
 }
 
 export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
@@ -71,7 +96,7 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
   });
   await page.cdp('Page.addScriptToEvaluateOnNewDocument', { source: `
     if (window === top) {
-      window.__recorder = { events: [], preSend: [], ready: false, violations: [], insertions: 0, localWrites: 0 };
+      window.__recorder = { events: [], preSend: [], ready: false, violations: [], insertions: 0, editorInsertions: 0, localWrites: 0 };
       function localIds() {
         return new Set(Object.values(JSON.parse(localStorage.getItem('aipm-anno-local') || '{"pages":{}}').pages || {}).flat().map(item => item.id));
       }
@@ -85,6 +110,7 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
         if (!parent.isConnected || node.nodeType !== Node.ELEMENT_NODE) return;
         const ids = localIds();
         for (const element of [node, ...node.querySelectorAll('mark, article, form')]) {
+          if (element.matches('form[data-editor]')) window.__recorder.editorInsertions++;
           const sensitive = element.matches('mark[data-group="local"]') ||
             (element.matches('article[data-anno-id]') && ids.has(element.getAttribute('data-anno-id'))) ||
             (element.matches('form[data-editor]') && element.querySelector('textarea')?.value.includes(${JSON.stringify(PRIVATE)}));
@@ -110,6 +136,9 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
   }
   const cases = [];
   const traces = [];
+  let insertionBaseline = 0;
+  let editorBaseline = 0;
+  let fragmentRejections = [];
   async function start(path, reload = false) {
     if (reload) await page.reload();
     else await page.goto(`${config.site}${path}`);
@@ -126,6 +155,8 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
       document.querySelector('.md-content__inner').append(control);
       window.__recorder.start();
     }, PUBLIC);
+    insertionBaseline = 0;
+    editorBaseline = 0;
   }
   async function capture(name, expectedPrivateRoots) {
     await page.evaluate(({ text, name }) => { document.querySelector('#recorder-public-control').textContent = `${text} ${name}`; }, { text: PUBLIC, name });
@@ -137,13 +168,21 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
         (element.matches('mark') || ids.has(element.getAttribute('data-anno-id')) || element.querySelector('textarea')?.value.includes('AIPM_LOCAL_RECORDER_')) && !element.parentElement.closest('.rr-block'));
       const result = { events: window.__recorder.events, preSend: window.__recorder.preSend, options: window.__recorder.options,
         roots: roots.map(element => ({ id: window.__recorder.mirror.getId(element), blocked: element.classList.contains('rr-block'), tag: element.tagName })),
-        violations: window.__recorder.violations, insertions: window.__recorder.insertions, localWrites: window.__recorder.localWrites,
+        violations: window.__recorder.violations, insertions: window.__recorder.insertions,
+        editorInsertions: window.__recorder.editorInsertions, localWrites: window.__recorder.localWrites,
+        editorVisibility: document.querySelector('form[data-editor] button[data-vis].is-active')?.getAttribute('data-vis') || null,
         attempts: window.__aipmBlockedUploads, recordCount: Object.values(JSON.parse(localStorage.getItem('aipm-anno-local') || '{"pages":{}}').pages || {}).flat().length };
       window.__recorder.events = []; window.__recorder.preSend = [];
       return result;
     });
     assert.deepEqual(trace.options, { maskLevel: 'moderate', blockSelector: '' });
     assert.equal(trace.violations.length, 0, 'local content inserted before blocking');
+    const insertionDelta = trace.insertions - insertionBaseline;
+    const editorInsertionDelta = trace.editorInsertions - editorBaseline;
+    if (pin.requiredInsertionScenes.includes(name)) assert.ok(insertionDelta > 0, `${name}: no actual local insertion observed`);
+    if (pin.requiredEditorInsertionScenes.includes(name)) assert.ok(editorInsertionDelta > 0, `${name}: no actual editor insertion observed`);
+    insertionBaseline = trace.insertions;
+    editorBaseline = trace.editorInsertions;
     assert.ok(trace.roots.length >= expectedPrivateRoots);
     assert.ok(trace.roots.every(root => root.blocked && root.id > 0));
     assert.equal(values(trace.events).some(value => value.includes(PRIVATE)), false, 'private content in recording event');
@@ -162,13 +201,15 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
       return { id: node.id, tag: node.tagName, attributes: node.attributes, childCount: 0 };
     });
     const decoded = reconstruct(trace.preSend);
+    if (!fragmentRejections.length) fragmentRejections = checkFragmentRejections(trace.preSend);
     assert.ok(decoded.events.length);
     assert.equal(values(decoded.events).some(value => value.includes(PRIVATE)), false, 'private content in decoded payload');
     assert.ok(values(decoded.events).some(value => value.includes(PUBLIC)), 'public serialized control missing');
     traces.push({ name, events: trace.events, preSend: trace.preSend });
     cases.push({ name, status: 'pass', placeholders, incrementalCount: incremental.length, fullCount: full.length,
       packetCount: trace.preSend.length, fragments: decoded.fragments, localWrites: trace.localWrites,
-      recordCount: trace.recordCount, insertions: trace.insertions, violations: trace.violations.length });
+      recordCount: trace.recordCount, editorVisibility: trace.editorVisibility, insertions: trace.insertions, insertionDelta, editorInsertionDelta,
+      violations: trace.violations.length });
   }
   async function confirm(scope, body, count) {
     await page.evaluate(async ({ scope, body }) => {
@@ -218,6 +259,15 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
   await page.waitForFunction(body => document.querySelector('.aipm-anno__comment')?.textContent.includes(body), `${PRIVATE}COMMENT`, { timeout: 5000 });
   await capture('comment_created', 2);
   await edit('comment', `${PRIVATE}COMMENT_EDITED`);
+  await page.click('.aipm-anno__comment button[data-action="reply"]');
+  await page.waitForSelector('form[data-editor="reply"] textarea', { state: 'visible' });
+  await page.fill('form[data-editor="reply"] textarea', `${PRIVATE}REPLY`);
+  await capture('reply_editor', 2);
+  await page.click('form[data-editor="reply"] button[type="submit"]');
+  await page.waitForFunction(body => window.__aipmAnnoStore.localList(location.pathname).some(item =>
+    item.replies?.some(reply => reply.body === body)), `${PRIVATE}REPLY`, { timeout: 5000 });
+  await page.waitForFunction(body => document.querySelector('.aipm-anno__comment')?.textContent.includes(body), `${PRIVATE}REPLY`, { timeout: 5000 });
+  await capture('reply_saved', 2);
   const stored = await page.evaluate(() => localStorage.getItem('aipm-anno-local'));
   await page.evaluate(() => { for (let index = 0; index < 10; index++) window.dispatchEvent(new CustomEvent('aipm-annotation-local-change', { detail: { page: location.pathname } })); });
   assert.equal(await page.evaluate(() => localStorage.getItem('aipm-anno-local')), stored);
@@ -236,9 +286,69 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
   await page.waitForFunction(body => document.querySelector('.aipm-anno__comment')?.textContent.includes(body), `${PRIVATE}COMMENT_EDITED`, { timeout: 5000 });
   await capture('refresh_comment_restore', 2);
   assert.equal(await page.evaluate(() => localStorage.getItem('aipm-anno-local')), stored);
+  await start('/ai/rag/', true);
+  await page.click('mark.aipm-anno-mark');
+  await page.click('.aipm-anno__title');
+  await page.waitForFunction(body => document.querySelector('.aipm-anno__comment')?.textContent.includes(body), `${PRIVATE}REPLY`, { timeout: 5000 });
+  await capture('reply_restored', 2);
+  assert.equal(await page.evaluate(() => localStorage.getItem('aipm-anno-local')), stored);
+  await page.evaluate(async annotation => {
+    const response = await fetch(`${annotation}/api/auth/dev`, { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: '{}' });
+    if (!response.ok) throw new Error('isolated development login failed');
+    const session = await response.json();
+    localStorage.setItem('aipm-anno-auth', JSON.stringify({ token: session.token, user: session.user }));
+  }, config.annotation);
+  await start('/ai/rag/', true);
+  assert.equal(await page.evaluate(() => window.__aipmAnnoAuth.isLoggedIn()), true);
+  await page.click('mark.aipm-anno-mark');
+  await page.click('.aipm-anno__title');
+  await page.waitForSelector('.aipm-anno__comment button[data-action="edit"]', { state: 'visible' });
+  await capture('authenticated_restore', 2);
+  await page.click('.aipm-anno__comment button[data-action="edit"]');
+  await page.waitForSelector('form[data-editor="comment"] textarea', { state: 'visible' });
+  await capture('existing_local_editor', 2);
+  for (const [index, visibility] of ['private', 'local', 'public', 'local'].entries()) {
+    await page.click('form[data-editor] .aipm-anno__visbtn');
+    await page.click(`form[data-editor] button[data-vis="${visibility}"]`);
+    assert.equal(await page.evaluate(() => document.querySelector('form[data-editor] button[data-vis].is-active')?.getAttribute('data-vis')), visibility);
+    assert.equal(await page.evaluate(() => document.querySelector('form[data-editor] textarea').value), `${PRIVATE}COMMENT_EDITED`);
+    await capture(`existing_local_visibility_${index}_${visibility}`, 2);
+    assert.equal(await page.evaluate(() => localStorage.getItem('aipm-anno-local')), stored);
+  }
+  await page.click('form[data-editor] button.aipm-anno__cancel');
+  await start('/ai/rag/', true);
+  await page.click('mark.aipm-anno-mark');
+  await page.click('.aipm-anno__title');
+  await page.waitForSelector('.aipm-anno__newbtn', { state: 'visible' });
+  await capture('new_draft_restore', 2);
+  await page.click('.aipm-anno__newbtn');
+  await page.waitForSelector('form[data-editor="comment"] textarea', { state: 'visible' });
+  await page.click('form[data-editor] .aipm-anno__visbtn');
+  await page.click('form[data-editor] button[data-vis="public"]');
+  assert.equal(await page.evaluate(() => document.querySelector('form[data-editor] button[data-vis].is-active')?.getAttribute('data-vis')), 'public');
+  assert.equal(await page.evaluate(() => document.querySelector('form[data-editor]').classList.contains('rr-block')), false);
+  await page.fill('form[data-editor] textarea', `${PUBLIC} DRAFT`);
+  await capture('new_public_draft', 2);
+  await page.click('form[data-editor] .aipm-anno__visbtn');
+  await page.click('form[data-editor] button[data-vis="local"]');
+  assert.equal(await page.evaluate(() => document.querySelector('form[data-editor] button[data-vis].is-active')?.getAttribute('data-vis')), 'local');
+  assert.equal(await page.evaluate(() => document.querySelector('form[data-editor]').classList.contains('rr-block')), true);
+  await page.fill('form[data-editor] textarea', `${PRIVATE}PUBLIC_DRAFT_TO_LOCAL`);
+  await capture('new_public_draft_to_local', 3);
+  assert.equal(await page.evaluate(() => localStorage.getItem('aipm-anno-local')), stored);
+  await page.click('form[data-editor] button[type="submit"]');
+  await page.waitForFunction(body => window.__aipmAnnoStore.localList(location.pathname).some(item => item.body === body), `${PRIVATE}PUBLIC_DRAFT_TO_LOCAL`, { timeout: 5000 });
+  await page.waitForFunction(body => [...document.querySelectorAll('.aipm-anno__comment')].some(element => element.textContent.includes(body)), `${PRIVATE}PUBLIC_DRAFT_TO_LOCAL`, { timeout: 5000 });
+  await capture('new_local_draft_saved', 3);
+  assert.equal(await page.evaluate(() => window.__aipmAnnoStore.localList(location.pathname).length), 3);
+  assert.equal(cases.at(-1).localWrites, 1, 'new local draft must write once');
   assert.ok(cases.flatMap(item => item.fragments).length);
   assert.ok(cases.every(item => item.violations === 0));
-  assert.ok(cases.filter(item => ['navigation', 'restore', 'refresh_comment_restore'].includes(item.name)).every(item => item.localWrites === 0));
+  assert.equal(fragmentRejections.length, 3);
+  assert.ok(cases.filter(item => ['navigation', 'restore', 'refresh_comment_restore', 'reply_restored',
+    'authenticated_restore', 'existing_local_editor', 'new_draft_restore', 'new_public_draft', 'new_public_draft_to_local'].includes(item.name) ||
+    item.name.startsWith('existing_local_visibility_')).every(item => item.localWrites === 0));
   const service = await (await fetch(config.control)).json();
   assert.equal(service.writes, 0); assert.equal(service.permitRequests, 0); assert.equal(service.annotationMutations, 0);
   const result = { status: 'pass', spaceId: id, recorderSha256: pin.sha256, cases,
@@ -246,7 +356,9 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
     serialization: 'actual transport arguments inspected with original F serializer at W entry',
     nativeSend: 'not_run_session_gate', sendBeacon: 'not_run_no_recorder_call', XHR: 'not_run_no_recorder_call', gzipBase64: 'not_run_no_transport_observed',
     publicControl: 'recorded in full, incremental and decoded JSON payloads', externalWritesForwarded: 0,
-    modelRequests: 0, jevRequests: 0, independentReview: 'pending_release_blocked', service };
+    modelRequests: 0, jevRequests: 0, realDevelopmentLogin: true, oauth: 'not_run',
+    fragmentRejections, insertionCoverage: 'per-scene deltas for observed native Node insertion methods',
+    independentReview: 'pending_release_blocked', service };
   await writeFile(`${directory}/recorder-results.json`, JSON.stringify(result, null, 2));
   await writeFile(`${directory}/synthetic-recorder-traces.json`, JSON.stringify(traces));
   console.log({ status: result.status, spaceId: id, cases: cases.map(item => ({ name: item.name, status: item.status, insertions: item.insertions })), nativeSend: result.nativeSend });
