@@ -179,6 +179,9 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
         if (!saved) throw new Error('local write missing');
         core.settle({ identity, session, requestId: claimedRequest.requestId,
           status: 'succeeded', annotationId: saved.id });
+        window.dispatchEvent(new CustomEvent('aipm-annotation-local-change', {
+          detail: { page: claimedRequest.page }
+        }));
         state.textContent = '已写入：仅本机';
         cancel.disabled = true;
         return;

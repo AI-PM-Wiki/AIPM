@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import http.server
+import io
 import json
 import os
 import re
@@ -31,6 +32,8 @@ import urllib.request
 from http import HTTPStatus
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
+
+from bs4 import BeautifulSoup
 
 from model_provider import RealModel
 from annotation_service import RealAnnotationApi
@@ -178,6 +181,27 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             return override[bare]
         return super().guess_type(path)
 
+    def send_head(self):
+        target = Path(self.translate_path(self.path))
+        if target.is_dir():
+            target = target / "index.html"
+        if self.server.local_api is None or target.suffix != ".html" or not target.is_file():
+            return super().send_head()
+        document = BeautifulSoup(target.read_text(encoding="utf-8"), "html.parser")
+        if document.head is None:
+            raise ValueError("test document has no head")
+        bootstrap = document.new_tag("script", attrs={"data-aipm-test-api": ""})
+        bootstrap.string = "window.__aipmLocalApi=" + json.dumps(self.server.local_api) + ";"
+        if self.server.enable_agent_confirmation:
+            bootstrap.string += "window.__aipmAnnoAgentEnabled=true;"
+        document.head.insert(0, bootstrap)
+        self.local_document_bytes = str(document).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(self.local_document_bytes)))
+        self.end_headers()
+        return io.BytesIO(self.local_document_bytes)
+
     def send_header(self, keyword, value):
         """`Last-Modified` 不发:它是文件 mtime,而两份构建的 mtime 先后由建站顺序
         决定,与谁新谁旧无关 —— 换根之后新一版的文件完全可能更旧,浏览器按它回来
@@ -190,7 +214,7 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         if getattr(self.server, "cors", False):
             self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Cache-Control", CACHE_CONTROL)
+        self.send_header("Cache-Control", "no-store" if hasattr(self, "local_document_bytes") else CACHE_CONTROL)
         etag = self._etag()
         if etag is not None:
             self.send_header("ETag", etag)
@@ -198,6 +222,8 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
 
     def _etag(self) -> str | None:
         """这个地址此刻那一份字节的校验符(路径上没有文件就不发)。"""
+        if hasattr(self, "local_document_bytes"):
+            return '"' + hashlib.sha1(self.local_document_bytes).hexdigest() + '"'
         target = Path(self.translate_path(self.path))
         if target.is_dir():
             target = target / "index.html"
@@ -363,6 +389,8 @@ class StaticSite:
         self.httpd.stream_written = self.stream_written
         self.httpd.stream_aborted = self.stream_aborted
         self.httpd.requests = self.requests
+        self.httpd.local_api = None
+        self.httpd.enable_agent_confirmation = False
         self.port = self.httpd.server_address[1]
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self.thread.start()
@@ -377,6 +405,18 @@ class StaticSite:
         """换根。同一个监听套接字,同一个端口。"""
         self.root = Path(root)
         self.httpd.root = self.root
+
+    def set_local_api(self, endpoints: dict[str, str], *, enable_agent_confirmation: bool = False) -> None:
+        if set(endpoints) != {"agent", "annotation"}:
+            raise ValueError("test endpoints require agent and annotation")
+        for endpoint in endpoints.values():
+            parsed = urlsplit(endpoint)
+            if (parsed.scheme != "http" or parsed.hostname != "127.0.0.1" or not parsed.port or
+                    parsed.username or parsed.password or parsed.path not in {"", "/"} or
+                    parsed.query or parsed.fragment):
+                raise ValueError("test endpoint must be a loopback origin")
+        self.httpd.local_api = dict(endpoints)
+        self.httpd.enable_agent_confirmation = enable_agent_confirmation
 
     def write(self, relpath: str, data: bytes, content_type: str | None = None) -> str:
         """往当前根目录里放一份用例素材,返回它的站内路径。"""

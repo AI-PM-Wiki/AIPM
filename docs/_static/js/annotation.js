@@ -4071,6 +4071,10 @@
     render();
   }
 
+  window.addEventListener("aipm-annotation-local-change", function (event) {
+    if (event.detail && event.detail.page === pagePath()) refreshLocal();
+  });
+
   function removeAnnotation(anno) {
     if (isLocal(anno)) {
       store.localRemove(anno.page, anno.id);

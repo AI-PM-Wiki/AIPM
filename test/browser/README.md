@@ -46,6 +46,27 @@ TMPDIR=meta/r uv run python3 test/browser/run.py --group oauth --report meta/bro
 
 ## 结果范围
 
+本地确认回归通过生产 `createAgentEntry` 入口、受保护确认界面、真实批注服务和本机存储运行，不需要模型凭据。持续断言核对一次写入、通知／标记／确认时序、零许可请求、各 origin 的批注业务请求、已观察 fetch 的明文本机正文，以及十次重复通知后的存储、标记和请求数量。
+
+每次完整运行使用新的隔离输出目录。运行中的继续操作使用该目录保存的浏览器空间 ID。在两个终端运行，下面的绝对路径使用当前候选副本的位置：
+
+```bash
+mkdir -p meta/local-confirmation/local-tmp
+TMPDIR="$PWD/meta/local-confirmation/local-tmp" uv run mkdocs build -q -d meta/local-confirmation/site
+TMPDIR="$PWD/meta/local-confirmation/local-tmp" uv run python3 test/browser/local_confirmation_stack.py --site meta/local-confirmation/site --output-dir meta/local-confirmation
+```
+
+```javascript
+const { checkLocalConfirmation } = await import('/absolute/repo/test/browser/check_local_confirmation_ego.mjs');
+await checkLocalConfirmation({ directory: '/absolute/repo/meta/local-confirmation', taskSpace });
+```
+
+将上述 JavaScript 保存为忽略目录中的脚本，使用 `ego-browser nodejs < 脚本路径` 执行。结果保存在 `after-timing.json`，断言映射见 `local-confirmation-assertions.json`。完成后使用 `browser-space.json` 的 ID 关闭浏览器空间，向 `runtime-config.json` 的 `control` 地址发送 POST 关闭服务。Multica 环境可通过 `--protected-pid` 提供 daemon PID，关闭前校验子进程身份。
+
+`StaticSite.set_local_api()` 在每份测试 HTML 的 head 中提供专用回环端点，覆盖首次加载、导航和刷新。`enable_agent_confirmation=True` 用于该隔离回归。构建产物和生产默认端点保持正常配置。
+
+上传结果分别登记：批注业务请求与已观察 fetch 的明文正文检查；外部 recorder 的 sendBeacon、XHR、编码载荷仍为 `not_run`。本脚本结果不覆盖完整录制上传链路。真实模型工具建议的端到端证据需要单独记录候选提交和请求用量。
+
 完整异常过滤组使用 `uv run python3 test/browser/run.py error`。并发传输检查使用
 `uv run python3 test/browser/run.py static_transport`，同时发送 32 条真实 HTTP 请求，
 逐条验证状态与资源字节。测试静态服务的监听队列容量为 128。
