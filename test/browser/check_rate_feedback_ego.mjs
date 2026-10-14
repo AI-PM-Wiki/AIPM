@@ -48,12 +48,14 @@ export async function checkRateFeedback({directory,taskSpace,spaceId}) {
   const geometry=[];
   for(const width of [1280,390,320]) {
     await page.cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
+    const errorsBefore=await page.evaluate(()=>document.querySelectorAll('.aipm-chat__bubble.is-error').length);
     await page.fill('.aipm-chat__input','Explain retrieval briefly.');
     await page.focus('.aipm-chat__send');
     assert.equal(await page.evaluate(()=>document.activeElement===document.querySelector('.aipm-chat__send')),true);
     await page.keyboard.press('Enter');
-    await page.waitForFunction(()=>document.querySelector('.aipm-chat__input').value===''&&
-      [...document.querySelectorAll('.aipm-chat__bubble.is-error')].at(-1)?.textContent.includes('累计额度已用完'),undefined,{timeout:10000});
+    await page.waitForFunction(count=>document.querySelector('.aipm-chat__input').value===''&&
+      document.querySelector('.aipm-chat__send').disabled&&document.querySelectorAll('.aipm-chat__bubble.is-error').length===count+1&&
+      [...document.querySelectorAll('.aipm-chat__bubble.is-error')].at(-1)?.textContent.includes('累计额度已用完'),errorsBefore,{timeout:10000});
     await page.waitForFunction(()=>{
       const rect=document.querySelector('.aipm-chat__local-status').getBoundingClientRect();
       return rect.left>=0&&rect.right<=innerWidth+1;
