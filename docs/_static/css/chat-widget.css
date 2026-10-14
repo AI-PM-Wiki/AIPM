@@ -481,6 +481,21 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
 /* ----------------------------------------------------------------------------
    7. 消息区(常驻免责条 / 空态 / 气泡 / 操作行)
    ---------------------------------------------------------------------------- */
+.aipm-chat__local-status {
+  flex: none;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: .4rem .75rem;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-default-fg-color--lightest);
+  font-size: .6875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.aipm-chat__local-status[hidden] { display: none; }
+html.aipm-chat-mode--sheet .aipm-chat__local-status { flex: 0 0 100%; }
 .aipm-chat__msgs {
   flex: 1;
   display: flex;

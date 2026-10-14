@@ -523,7 +523,8 @@
      (可能含请求编号、上游措辞),不该出现在用户眼前。图片与模型对不上是唯一
      一条能说清下一步的,因此单开一档。 */
   const ERROR_TEXT = {
-    rate_limited: "请求过于频繁,请稍后再试",
+    rate_limited: "问答服务的请求窗口已达上限，请等待窗口恢复",
+    acceptance_limit: "本机验收累计额度已用完，请联系环境维护者调整额度",
     budget_exceeded: "服务预算已用尽,请明天再试",
     budget_exhausted: "服务预算已用尽,请明天再试",
     max_turns: "本轮对话已到达轮次上限,请清空对话后重试",
@@ -534,7 +535,7 @@
     http_400: "请求格式有误,请重试",
     http_403: "无权访问问答服务",
     http_413: "问题内容过长,请精简后重试",
-    http_429: "请求过于频繁,请稍后再试",
+    http_429: "请求受到限制，请根据服务提示稍后重试",
     http_503: "问答服务暂不可用,请稍后重试",
     network: "无法连接问答服务,请检查网络后重试",
   };
@@ -543,6 +544,41 @@
     if (status === 429 && retry) t += `(${retry} 秒后可重试)`;
     return t;
   };
+
+  function hasLocalAcceptanceStatus() {
+    if (!['127.0.0.1', 'localhost'].includes(location.hostname) || !window.__aipmLocalAcceptanceStatus) return false;
+    const url = new URL(window.__aipmLocalAcceptanceStatus, location.href);
+    if (url.origin !== location.origin) throw new Error('acceptance status must use the page origin');
+    return true;
+  }
+  async function localAcceptanceStatus(signal) {
+    if (!hasLocalAcceptanceStatus()) return null;
+    const response = await fetch(window.__aipmLocalAcceptanceStatus, { cache: 'no-store', signal });
+    if (!response.ok) throw new Error('acceptance status unavailable');
+    const status = await response.json();
+    if (!Number.isSafeInteger(status.limit) || !Number.isSafeInteger(status.sent) ||
+        status.limit < 1 || status.sent < 0 || status.sent > status.limit || typeof status.halted !== 'boolean') {
+      throw new Error('acceptance status invalid');
+    }
+    return status;
+  }
+  const localStatus = document.createElement('p');
+  localStatus.className = 'aipm-chat__local-status';
+  localStatus.setAttribute('role', 'status');
+  localStatus.hidden = true;
+  els.composer.prepend(localStatus);
+  function showLocalAcceptance(status) {
+    if (!status) return;
+    localStatus.hidden = false;
+    localStatus.textContent = status.halted ? '本机验收模型连接已停止，请联系环境维护者检查。' :
+      `本机验收额度：累计剩余 ${status.limit - status.sent} 次模型请求；一次对话可能使用多次请求。`;
+    applyMetrics();
+  }
+  async function refreshLocalAcceptance(signal) {
+    const status = await localAcceptanceStatus(signal);
+    showLocalAcceptance(status);
+    return status;
+  }
 
   els.grip = panel.querySelector(".aipm-chat__grip");
   /* ================================================================
@@ -1048,6 +1084,7 @@
     let finished = false;                 // 收尾只执行一次(done/error/流自然结束)
     setThinking(t.md);
     setStreamingUI(true);
+    const requestSignal = streaming.ac.signal;
     clearEmpty();
     track("assistant_message_send", env());
     stickBottom = true;
@@ -1094,11 +1131,18 @@
     };
 
     try {
+      const acceptance = await refreshLocalAcceptance(requestSignal);
+      if (acceptance && (acceptance.halted || acceptance.sent >= acceptance.limit)) {
+        t.bubble.classList.add('is-error');
+        t.md.textContent = acceptance.halted ? '本机验收模型连接已停止，请联系环境维护者检查。' : ERROR_TEXT.acceptance_limit;
+        finish(null);
+        return;
+      }
       const res = await fetch(API_BASE + "/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-        signal: streaming.ac.signal,
+        signal: requestSignal,
       });
       const ctype = res.headers.get("content-type") || "";
       if (!res.ok || ctype.indexOf("text/event-stream") === -1) {
@@ -1161,6 +1205,9 @@
               (ctx.acc ? mdLite(ctx.acc) : "") +
               (ERROR_TEXT[data.code] ? `<p>${escapeHtml(ERROR_TEXT[data.code])}</p>` : "");
             finish(null);
+            if (hasLocalAcceptanceStatus()) void refreshLocalAcceptance().then((status) => {
+              if (status && status.sent >= status.limit && t.wrap.isConnected) t.md.textContent = ERROR_TEXT.acceptance_limit;
+            });
             break;
         }
       });
@@ -1705,6 +1752,7 @@
   }
   updateSendState();
   applyMode();
+  if (hasLocalAcceptanceStatus()) void refreshLocalAcceptance();
 
   /* 登记到互斥注册表:批注面板打开时会调用 claim("annotation"),
      由注册表先 close("chat") 再开自己 —— 两个方向共用同一个动作。 */

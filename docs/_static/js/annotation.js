@@ -5141,7 +5141,7 @@
    * 上,跳过去仍然是对的,只是那一笔不在它名下。两样都没有才是真没定位到。
    */
   function passageAnchor(anno) {
-    var mark = document.querySelector('mark.aipm-anno-mark[data-anno-id="' + anno.id + '"]');
+    var mark = document.querySelector('mark.aipm-anno-mark[data-anno-id="' + CSS.escape(anno.id) + '"]');
     if (mark) return mark;
     var range = resolved[anno.id];
     if (!range) return null;
@@ -5157,6 +5157,7 @@
    * 等于没跳」。所以先把抽屉收回头一档(peek),落点才在面板外面。桌面停靠是
    * 并排的(页面让开一条,见 CSS 的 3.1),不必动。
    */
+  var passageFlashTimers = new WeakMap();
   function jumpToPassage(anno) {
     var target = passageAnchor(anno);
     if (!target) {
@@ -5165,10 +5166,16 @@
     }
     if (mode === "sheet" && snap !== "peek") setSnap("peek");
     target.scrollIntoView({ block: "center", behavior: "smooth" });
-    target.classList.add("aipm-anno-flash");
-    setTimeout(function () {
-      target.classList.remove("aipm-anno-flash");
-    }, 900);
+    var fragments = Array.from(document.querySelectorAll('mark.aipm-anno-mark[data-anno-id="' + CSS.escape(anno.id) + '"]'));
+    if (!fragments.length) fragments = [target];
+    fragments.forEach(function (fragment) {
+      clearTimeout(passageFlashTimers.get(fragment));
+      fragment.classList.add("aipm-anno-flash");
+      passageFlashTimers.set(fragment, setTimeout(function () {
+        fragment.classList.remove("aipm-anno-flash");
+        passageFlashTimers.delete(fragment);
+      }, 900));
+    });
   }
 
   /** 从引文元素找回它那条批注,再跳。 */

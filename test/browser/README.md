@@ -84,6 +84,23 @@ await checkEditorUi({ directory: '/absolute/repo/meta/ui-after', taskSpace, spac
 
 界面检查阻断模型端点和外部录制上传，模型生成、Jev、GitHub OAuth、图像拒收及原生 recorder 发送继续分别登记。截图、`ui-results.json` 和 `editor-results.json` 保存在各组输出目录。受影响回归继续运行本机确认时序和真实 recorder 检查。
 
+## 定位与限流反馈检查
+
+`check_passage_feedback_ego.mjs` 使用同一条本机批注跨越两个正文段落和行内元素，要求产生多个真实 mark。鼠标点击及原生 Enter 在 1280、390、320 宽度下必须同时提示全部片段，保留一条本机记录和录制阻断标记，重复定位后的计时器正常结束。沿用独立 `local_confirmation_stack.py`，传入同一个 `spaceId`。
+
+`rate_feedback_stack.py` 使用真实 Agent `createApp` 和索引，模型进程地址固定为不可连接的回环端口，自动重试为零。私有环境文件由 Node 在进程内读取，日志只记录方法、路径、状态。浏览器提交之前立即发送两条无效请求填满真实窗口，断言原生提交返回 429 并显示服务窗口提示。累计额度检查读取现有回环网关的实际计数，在独立站点设置更严格的本地上限，要求额度耗尽提示出现且没有新增 Agent POST；原网关额度与计数保持不变。该组没有上游成功响应，不能计为模型连通验收。
+
+```bash
+TMPDIR="$PWD/meta/r" uv run python3 test/browser/rate_feedback_stack.py --site site --output-dir meta/rate-feedback --env-file ~/.config/ai-pm-wiki/test.env --gateway http://127.0.0.1:8786
+```
+
+输出目录必须全新。保存以下调用到忽略目录中的脚本，通过 `ego-browser nodejs < 脚本路径` 执行；复用当前任务的 `spaceId`。完成后向 `runtime-config.json` 的 `control` 地址发送 POST 关闭本组服务。结果和映射为 `rate-results.json`、`passage-results.json`、`feedback-assertions.json`。服务限流、累计额度、上游错误分别记录。
+
+```javascript
+const { checkRateFeedback } = await import('/absolute/repo/test/browser/check_rate_feedback_ego.mjs');
+await checkRateFeedback({ directory: '/absolute/repo/meta/rate-feedback', taskSpace, spaceId });
+```
+
 ## 本机内容的录制保护
 
 `check_recorder_privacy_ego.mjs` 使用真实部署 recorder 检查首次插入、批注／评论创建与编辑、回复编辑／保存／刷新恢复、已有本机评论的 private／local／public／local 可见性切换、新建公开评论草稿转本机、重绘、导航和恢复。可见性检查使用隔离后端的真实开发登录，GitHub OAuth 单列未运行。`recorder-privacy.json` 保存审查过的脚本摘要、观察点及断言映射。脚本字节发生变化时检查终止，需要重新审查来源及观察点。
