@@ -79,6 +79,17 @@ await checkLocalConfirmation({ directory: '/absolute/repo/meta/local-confirmatio
 
 本机写入观测器在每份文档中幂等安装，调用原生 Storage 方法并计数，不替换其行为。`pageLabel` 可指定同一任务空间中的验收页面，默认值为 `p1`。
 
+编辑菜单输入之前，夹具在三秒上限内等待面板动画结束，并要求按钮在连续三个渲染采样中保持相同几何数据。该等待只读取浏览器状态。`*-editor-layout.json` 保存逐帧数据；`*-input-trace.json` 保存实际 pointerdown／pointerup／click 目标及路径、当时的按钮矩形、焦点转移、编辑器节点身份、菜单 hidden／aria-expanded 变化和面板动画。断言要求恰好一次可信按钮输入，pointerdown 与 pointerup 均命中同一节点及其当时的矩形，选中的 local 选项收到焦点。原有方向键、Escape、确认和写入断言保持完整。
+
+`check_editor_menu_ego.mjs` 提供 390 暗色菜单的独立探针。在全新的隔离 origin 中，通过原有本机存储创建非敏感长正文批注，执行标记、编辑及菜单的原生输入。默认在布局稳定后采样按钮中心并点击；`sampledPointer: false` 使用语义选择器。`synchronize: false` 用于记录动画期间采样坐标与输入发生时矩形的差异，结果继续使用相同失败断言。该探针检查菜单输入，确认及单次写入由完整矩阵覆盖。历史失败缺少输入时序时，应保留其根因限制。
+
+```javascript
+const { checkEditorMenu } = await import('/absolute/repo/test/browser/check_editor_menu_ego.mjs');
+await checkEditorMenu({ directory: '/absolute/repo/meta/menu', taskSpace, spaceId });
+```
+
+每次探针使用新的隔离服务与 origin，输出菜单截图、`menu-input-trace.json`、`editor-layout.json`、`pointer-sample.json` 和成功时的 `menu-result.json`。`assertEditorMenuInput` 可直接核验保留的原始事件；失败事件与通过事件分别保存。
+
 建议卡使用非敏感组件输入，通过条件 Debugger 观察点调用原有生产渲染函数。提供的 `sourceDirectory` 指向对应构建目录，脚本会比对实际服务资源字节。确认、存储和编辑检查使用生产入口、原生 localStorage 及独立批注服务。展示状态检查向生产 `createConfirmationView` 提交明确的组件状态输入，单独核对加载、警告、错误、取消、禁用和最大长度布局；该组不代表对应后端状态已经发生。断言映射见 `confirmation-ui-assertions.json`。
 
 为修改前、修改后构建分别启动 `local_confirmation_stack.py`，每组使用新的隔离站点 origin，在同一个浏览器任务空间中顺序运行。脚本保留非敏感本机内容检查并只清理当前隔离 origin 中匹配的测试记录，遇到其他内容立即终止。首次创建任务空间后，后续检查必须提供同一个 `spaceId`。

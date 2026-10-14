@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
+import { assertEditorMenuInput, startEditorInputTrace, waitForEditorLayout } from './editor_input_trace.mjs';
 
 const BODY = '检索增强生成（RAG）将检索结果作为生成时的参考资料。批注可以记录资料来源、适用条件以及需要人工核对的事实。\n\n这段非敏感测试内容用于检查长正文的排版、可见范围以及受保护确认区。确认之前不写入批注；确认之后仅保存到当前设备。';
 const LONG_BODY = `${BODY}\n${'甲\n'.repeat(1200)}正文末行`;
@@ -299,12 +300,19 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
         await writeFile(`${directory}/${name}-confirmation-result.json`,JSON.stringify({beforeAgree,confirmation},null,2));
         await paintFrame();
         await screenshot(`${name}-keyboard-confirmed`);
+        await startEditorInputTrace(page);
         await page.click('.aipm-chat__close');
         await page.click('loc=css:mark.aipm-anno-mark');
         await page.click('.aipm-anno__item button[data-action="edit"]');
         await page.waitForSelector('form[data-editor="edit"] textarea', { state: 'visible' });
+        const layout = await waitForEditorLayout(page);
+        await writeFile(`${directory}/${name}-editor-layout.json`,JSON.stringify(layout,null,2));
+        assert.equal(layout.ready,true,'editor did not reach stable rendered geometry');
         await page.click('form[data-editor="edit"] .aipm-anno__visbtn');
         const selected = await page.evaluate(() => document.activeElement?.getAttribute('data-vis'));
+        const inputTrace = await page.evaluate(() => window.__uiEditorTrace.stop());
+        await writeFile(`${directory}/${name}-input-trace.json`,JSON.stringify(inputTrace,null,2));
+        await screenshot(`${name}-menu-click`);
         await writeFile(`${directory}/${name}-menu-focus.json`,JSON.stringify(await page.evaluate(()=>{
           const button=document.querySelector('form[data-editor="edit"] .aipm-anno__visbtn');
           const list=document.querySelector('form[data-editor="edit"] .aipm-anno__vislist');
@@ -315,6 +323,7 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
             selectedOptions:[...list.querySelectorAll('[aria-selected="true"]')].map(element=>element.getAttribute('data-vis'))};
         }),null,2));
         assert.equal(selected, 'local');
+        assertEditorMenuInput(inputTrace);
         const menu = await page.evaluate(() => {
           const rect=document.querySelector('form[data-editor="edit"] .aipm-anno__vislist').getBoundingClientRect();
           const panel=document.querySelector('.aipm-anno').getBoundingClientRect();
