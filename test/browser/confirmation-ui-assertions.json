@@ -6,6 +6,8 @@
   "assertions": [
     {"id": "opaque_confirmation", "condition": "sandbox remains allow-scripts; frame inspection uses a separately attached CDP target"},
     {"id": "theme_and_resize", "condition": "frame scheme follows Material; frame height equals section height; no horizontal overflow or inner vertical scroll"},
+    {"id": "dense_body_reading", "condition": "Default matrix uses 1200 newlines within 4000 characters. Native End reaches the bounded region tail with the final body line actually visible; Tab visits agree and cancel. All six viewport/theme combinations retain trusted single write and refresh invariants."},
+    {"id": "keyboard_cancel", "condition": "Native Enter on cancel reaches the original production presentation action callback with trusted=true in all six viewport/theme combinations; isolated service writes remain zero."},
     {"id": "visibility_and_touch", "condition": "exactly one choice selected, all choices locked after opening, action targets at least 44 CSS pixels"},
     {"id": "enabled_confirmation_contrast", "condition": "native computed foreground and background are parsed through Canvas; relative luminance contrast is at least 4.5"},
     {"id": "trusted_confirmation", "condition": "observed untrusted child click leaves zero local records; native click or keyboard Enter produces one record and matching mark"},

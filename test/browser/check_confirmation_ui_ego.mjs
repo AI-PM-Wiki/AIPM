@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const BODY = '检索增强生成（RAG）将检索结果作为生成时的参考资料。批注可以记录资料来源、适用条件以及需要人工核对的事实。\n\n这段非敏感测试内容用于检查长正文的排版、可见范围以及受保护确认区。确认之前不写入批注；确认之后仅保存到当前设备。';
+const LONG_BODY = `${BODY}\n${'甲\n'.repeat(1200)}正文末行`;
+assert.ok(LONG_BODY.length <= 4000);
 
-export async function checkConfirmationUi({ directory, sourceDirectory, taskSpace, spaceId, phase = 'after' }) {
+export async function checkConfirmationUi({ directory, sourceDirectory, taskSpace, spaceId, phase = 'after', denseBody = true, presentationOnly = false }) {
   assert.ok(['before', 'after'].includes(phase));
   const config = JSON.parse(await readFile(`${directory}/runtime-config.json`, 'utf8'));
   const task = spaceId === undefined ? await taskSpace('AI-PM confirmation UI verification') : await taskSpace(spaceId);
@@ -49,7 +51,7 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
     const shot = await page.cdp('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
     await writeFile(`${directory}/${name}.png`, Buffer.from(shot.data, 'base64'));
   }
-  for (const width of [1280, 390, 320]) {
+  for (const width of presentationOnly ? [] : [1280, 390, 320]) {
     for (const scheme of ['slate', 'default']) {
       const name = `${phase}-${width}-${scheme}`;
       await page.cdp('Debugger.disable', {});
@@ -84,7 +86,7 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
         window.addEventListener('message', event => {
           if(event.data?.type === 'confirmation-action' && event.data.trusted === false) window.__uiUntrustedSeen = true;
         });
-      }, { scheme, body: BODY });
+      }, { scheme, body: denseBody ? LONG_BODY : BODY });
       if (width < 768) await page.click('.aipm-chat__ctx-view');
       await page.click('loc=css:.aipm-chat__proposal button:text-is("查看批注建议")');
       await page.waitForSelector('loc=css:#state:text-is("等待同意")', { state: 'visible', timeout: 10000 });
@@ -122,7 +124,7 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
       assert.equal(outer.choices.filter(button => button.pressed === 'true').length, 1);
       assert.ok(outer.choices.every(button => button.disabled), 'visibility choices were not locked');
       if (phase === 'after') {
-        assert.equal(inner.body, '正文：' + BODY);
+        assert.equal(inner.body, '正文：' + (denseBody ? LONG_BODY : BODY));
         assert.equal(inner.scheme, scheme === 'slate' ? 'dark' : 'light');
         assert.ok(inner.buttonHeight >= 44);
         assert.ok(inner.buttonContrast >= 4.5);
@@ -131,6 +133,28 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
         assert.ok(inner.scrollWidth <= inner.width + 1, 'frame has horizontal clipping');
         assert.ok(inner.scrollHeight <= inner.height + 1, 'frame requires nested vertical scrolling');
         assert.equal(outer.frameHeight, inner.sectionHeight);
+        if (denseBody) {
+          const reading = await frameState(`(()=>{const details=document.querySelector('#details');return {height:details.clientHeight,scrollHeight:details.scrollHeight};})()`);
+          assert.ok(reading.scrollHeight > reading.height, 'dense body must use a bounded reading region');
+          await page.focus('loc=css:#details');
+          await page.keyboard.press('End');
+          let tail;
+          const deadline = Date.now() + 3000;
+          do {
+            tail = await frameState(`(()=>{const details=document.querySelector('#details');const body=document.querySelector('#body').getBoundingClientRect();const box=details.getBoundingClientRect();return {scrollTop:details.scrollTop,maxScroll:details.scrollHeight-details.clientHeight,bodyBottom:body.bottom,detailsTop:box.top,detailsBottom:box.bottom,focus:document.activeElement.id};})()`);
+          } while (tail.scrollTop < tail.maxScroll - 1 && Date.now() < deadline);
+          assert.equal(tail.focus, 'details');
+          assert.ok(tail.scrollTop >= tail.maxScroll - 1, 'End must reach the reading region tail');
+          assert.ok(tail.bodyBottom <= tail.detailsBottom + 1 && tail.bodyBottom >= tail.detailsTop, 'last body line must be visible');
+          await screenshot(`${name}-long-body-tail`);
+          await page.keyboard.press('Tab');
+          assert.equal(await frameState('document.activeElement.id'), 'agree');
+          await page.keyboard.press('Tab');
+          assert.equal(await frameState('document.activeElement.id'), 'cancel');
+          await page.focus('loc=css:#agree');
+          inner.reading = reading;
+          inner.tail = tail;
+        }
         await frameState("document.querySelector('#agree').click();true");
         await page.waitForFunction(() => window.__uiUntrustedSeen === true, undefined, { timeout: 2000 });
         assert.equal(await page.evaluate(() => window.__aipmAnnoStore.localList(location.pathname).length), 0, 'untrusted click wrote annotation');
@@ -186,6 +210,7 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
     }
   }
   const presentation = [];
+  const presentationLayout = [];
   if (phase === 'after') {
     await page.goto(`${config.site}/ai/rag/`);
     await page.waitForFunction(() => window.__aipmIntegrityReady === true, undefined, { timeout: 20000 });
@@ -200,38 +225,56 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
         body:'非敏感正文'.repeat(800).slice(0,4000),visibility:'仅本机'});
     });
     await page.waitForSelector('loc=css:#title:text-is("界面状态检查")',{state:'visible'});
-    await page.waitForFunction(()=>document.querySelector('.aipm-confirmation-frame').clientHeight>10000,undefined,{timeout:5000});
-    for(const scheme of ['slate','default']) {
+    await page.waitForFunction(()=>document.querySelector('.aipm-confirmation-frame').clientHeight>260,undefined,{timeout:5000});
+    for(const width of [1280,390,320]) for(const scheme of ['slate','default']) {
+      await page.cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
       for(const status of ['pending','loading','warning','error','cancelled']) {
         await page.evaluate(({scheme,status})=>{
           document.body.setAttribute('data-md-color-scheme',scheme);
           window.__uiPresentation.update({status,state:`组件状态检查：${status}`,agreeDisabled:status!=='pending',cancelDisabled:status==='cancelled'});
         },{scheme,status});
-        const state=await frameState(`(()=>{const section=document.querySelector('section');const state=document.querySelector('#state');
+        let state;
+        const deadline = Date.now() + 3000;
+        do {
+          state=await frameState(`(()=>{const section=document.querySelector('section');const state=document.querySelector('#state');
           return {status:section.dataset.status,busy:section.getAttribute('aria-busy'),role:state.getAttribute('role'),
             color:getComputedStyle(state).color,scheme:getComputedStyle(document.documentElement).colorScheme,
             disabled:document.querySelector('#agree').disabled,height:document.documentElement.clientHeight,
             scrollHeight:document.documentElement.scrollHeight,sectionHeight:Math.ceil(section.getBoundingClientRect().height),
             scrollWidth:document.documentElement.scrollWidth,width:document.documentElement.clientWidth};})()`);
+          presentationLayout.push({width,scheme,status,at:Date.now(),state});
+          if (state.status !== status || state.scheme !== (scheme === 'slate' ? 'dark' : 'light') || state.sectionHeight !== state.height) {
+            await new Promise(resolve => setTimeout(resolve,20));
+          }
+        } while ((state.status !== status || state.scheme !== (scheme === 'slate' ? 'dark' : 'light') ||
+          state.sectionHeight !== state.height) && Date.now() < deadline);
+        await writeFile(`${directory}/presentation-layout.json`,JSON.stringify(presentationLayout,null,2));
         assert.equal(state.status,status);
         assert.equal(state.busy,String(status==='loading'));
         assert.equal(state.role,status==='error'?'alert':'status');
         assert.equal(state.disabled,status!=='pending');
         assert.equal(state.scheme,scheme==='slate'?'dark':'light');
-        assert.ok(state.scrollHeight<=state.height+1);
+        assert.equal(state.height,state.sectionHeight);
+        assert.ok(state.scrollHeight<=state.height+1,JSON.stringify({width,scheme,status,state}));
         assert.ok(state.scrollWidth<=state.width+1);
-        presentation.push({scheme,status,source:'production presentation API with explicit component state input',state});
+        presentation.push({width,scheme,status,source:'production presentation API with explicit component state input',state});
       }
+      await page.evaluate(()=>window.__uiPresentation.update({status:'pending',state:'等待同意',cancelDisabled:false}));
+      await page.focus('loc=css:#cancel');
+      assert.equal(await frameState('document.activeElement.id'),'cancel');
+      await page.keyboard.press('Enter');
+      assert.deepEqual(await page.evaluate(()=>window.__uiPresentationActions.at(-1)),{action:'cancel',trusted:true});
+      presentation.push({width,scheme,keyboardCancel:true,trusted:true});
     }
     assert.equal(await page.evaluate(()=>window.__aipmAnnoStore.localList(location.pathname).length),0);
     await page.evaluate(()=>window.__uiPresentation.dispose());
   }
-  await page.cdp('Debugger.removeBreakpoint', { breakpointId: breakpoint.breakpointId });
+  if (breakpoint) await page.cdp('Debugger.removeBreakpoint', { breakpointId: breakpoint.breakpointId });
   const service = await (await fetch(config.control)).json();
   assert.equal(service.writes, 0);
   assert.equal(service.annotationMutations, 0);
   assert.equal(service.permitRequests, 0);
-  const result = { phase, spaceId: task.spaceId, cases, presentation, service, externalModelRequests: 0, externalJevRequests: 0,
+  const result = { phase, spaceId: task.spaceId, denseBody, bodyLength: (denseBody ? LONG_BODY : BODY).length, cases, presentation, service, externalModelRequests: 0, externalJevRequests: 0,
     input: 'non-sensitive UI component fixture; original production renderer exposed by conditional Debugger breakpoint',
     modelGeneration: 'not_run', oauth: 'not_run' };
   await writeFile(`${directory}/ui-results.json`, JSON.stringify(result, null, 2));

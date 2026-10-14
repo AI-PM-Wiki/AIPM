@@ -8,7 +8,7 @@ const DOCUMENT = `<!doctype html><html lang="zh-CN"><head>
 :root[data-theme="dark"]{color-scheme:dark;--success:#a5d6a7;--warning:#ffe082;--error:#ffb4ab}
 *{box-sizing:border-box}body{margin:0;color:var(--text);background:var(--surface);font:16px/1.6 system-ui,sans-serif}
 section{padding:16px;display:grid;gap:14px;min-width:0}h2{font-size:1em;line-height:1.4;margin:0;font-weight:650}
-.details{display:grid;gap:12px}.field{min-width:0}.label{display:block;font-size:.75em;color:var(--muted);margin-bottom:4px}
+.details{display:grid;align-content:start;gap:12px;min-height:0;max-height:320px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.details:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}.field{min-width:0}.label{display:block;font-size:.75em;color:var(--muted);margin-bottom:4px}
 p{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}.body{padding:12px;border:1px solid var(--line);border-radius:8px}
 .visibility{font-weight:600}.notice{font-size:.8em;color:var(--muted)}
 .state{font-size:.875em;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--text) 4%,var(--surface))}
@@ -24,7 +24,7 @@ button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}button[hi
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head><body><section role="region" aria-label="受保护内容">
-<h2 id="title"></h2><div class="details"><div class="field"><span class="label">文章与引文</span><p id="target"></p></div>
+<h2 id="title"></h2><div id="details" class="details" tabindex="0" role="region" aria-label="批注建议正文，可使用方向键浏览"><div class="field"><span class="label">文章与引文</span><p id="target"></p></div>
 <div class="field body"><span class="label">批注正文</span><p id="body"></p></div>
 <div class="field visibility"><span class="label">可见范围已锁定</span><p id="visibility"></p></div></div><p id="notice" class="notice"></p>
 <p id="state" class="state" role="status" aria-live="polite" aria-atomic="true"></p><div class="actions">
