@@ -1021,24 +1021,26 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__replybox-actions {
   display: flex;
   justify-content: flex-end;
-  gap: .3rem;
-  margin-top: .25rem;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .4rem;
 }
 .aipm-anno__replybox-actions .aipm-anno__cancel,
 .aipm-anno__replybox-actions .aipm-anno__save {
-  padding: .2rem .55rem;
+  min-height: 2.2rem;
+  padding: .4rem .6rem;
   border: 1px solid var(--aipm-anno-line);
-  border-radius: .3rem;
+  border-radius: .4rem;
   color: var(--md-default-fg-color);
   background: transparent;
   font-family: inherit;
-  font-size: .6875rem;
+  font-size: .75rem;
   cursor: pointer;
 }
 .aipm-anno__replybox-actions .aipm-anno__save {
-  border-color: var(--md-accent-fg-color);
-  color: var(--md-accent-bg-color);
-  background: var(--md-accent-fg-color);
+  border-color: var(--md-primary-fg-color--dark);
+  color: #fff;
+  background: var(--md-primary-fg-color--dark);
 }
 .aipm-anno__replybox-actions .aipm-anno__save:disabled {
   opacity: .6;
@@ -1241,8 +1243,9 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__draft {
   display: flex;
   flex-direction: column;
-  gap: .4rem;
-  padding: .55rem .6rem;
+  gap: .65rem;
+  min-width: 0;
+  padding: .7rem;
   border: 1px solid var(--aipm-anno-line);
   border-left: 3px solid var(--md-default-fg-color--lightest);
   border-radius: .3rem;
@@ -1297,8 +1300,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__swatch-dot[data-color="pink"]   { background: var(--aipm-anno-pink); }
 .aipm-anno__swatch-dot[data-color="purple"] { background: var(--aipm-anno-purple); }
 
-/* 可见范围是「保存」的右半颗,不是一颗独立按钮:底色、字色与左半颗同一套,
-   左侧圆角削平好跟左半颗拼成一颗(几何关系见 7 段末尾的分体按钮说明)。 */
+/* 当前可见范围和保存操作分别提供明确的标签。 */
 .aipm-anno__vismenu {
   position: relative;
   flex: none;
@@ -1306,20 +1308,20 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__visbtn {
   display: inline-flex;
   align-items: center;
-  gap: .1rem;
-  padding: .3rem .4rem;
-  border: 0;
-  border-radius: 0 .3rem .3rem 0;
-  color: var(--md-accent-bg-color);
-  background: var(--md-accent-fg-color);
+  gap: .3rem;
+  min-height: 2.2rem;
+  padding: .4rem .5rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .4rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
   font-family: inherit;
   font-size: .75rem;
   cursor: pointer;
 }
-/* 开合与悬停都只压暗这一半的底色,不换边框 —— 换边框会让两半重新变成两颗按钮 */
 .aipm-anno__visbtn:hover,
 .aipm-anno__visbtn[aria-expanded="true"] {
-  background-image: linear-gradient(rgba(0, 0, 0, .14), rgba(0, 0, 0, .14));
+  border-color: var(--md-accent-fg-color);
 }
 .aipm-anno__visbtn svg {
   width: .9rem;
@@ -1328,12 +1330,12 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__vislist {
   position: absolute;
-  right: 0;
+  left: 0;
   bottom: calc(100% + .3rem);
   z-index: 5;
   display: flex;
   flex-direction: column;
-  min-width: 11rem;
+  width: min(13rem, calc(100vw - 2rem));
   padding: .25rem;
   border: 1px solid var(--aipm-anno-line);
   border-radius: .35rem;
@@ -1362,6 +1364,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__vislist button.is-active {
   color: var(--md-accent-fg-color);
+  background: var(--md-default-fg-color--lightest);
   font-weight: 600;
 }
 .aipm-anno__vislist button span {
@@ -1371,8 +1374,10 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__input {
   width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
   min-height: 2.6rem;
-  max-height: 8rem;
+  max-height: 14rem;
   padding: .45rem .5rem;
   border: 1px solid var(--aipm-anno-line);
   border-radius: .3rem;
@@ -1389,41 +1394,40 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__hint {
   color: var(--md-default-fg-color--light);
-  font-size: .6875rem;
+  padding: .45rem .55rem;
+  border-left: 3px solid var(--md-accent-fg-color);
+  border-radius: .25rem;
+  background: var(--md-default-fg-color--lightest);
+  font-size: .75rem;
   line-height: 1.5;
 }
 .aipm-anno__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: .4rem;
 }
-/* 色板靠左,取消/保存/可见范围靠右。列表项里的同名 spacer 不需要撑开,
-   所以只在这个按键行里给它 flex。 */
 .aipm-anno__actions .aipm-anno__spacer {
-  flex: 1 1 auto;
+  display: none;
 }
-/* 400px 宽的面板里五个色块 + 三个控件排一行已经很挤;不锁住的话弹性收缩会把
-   「取消」「保存」压成竖排两行。色板与控件都不参与收缩,由 spacer 吸收余量。 */
 .aipm-anno__actions .aipm-anno__swatches,
 .aipm-anno__actions button {
   flex: none;
   white-space: nowrap;
 }
-/* 341px 的可用宽度里塞五个色块 + 取消/保存/可见范围会溢出 57px(实测),
-   所以色块在按键行里缩一号、行间距也收一档。工具条上的色块不受影响。 */
-.aipm-anno__actions {
-  gap: .3rem;
+.aipm-anno__actions .aipm-anno__swatches {
+  flex: 1 0 100%;
+  gap: .35rem;
+  margin-bottom: .25rem;
 }
 .aipm-anno__actions .aipm-anno__swatch {
-  width: 1rem;
-  height: 1rem;
+  width: 1.7rem;
+  height: 1.7rem;
 }
 .aipm-anno__actions .aipm-anno__swatch-dot {
   width: .6rem;
   height: .6rem;
 }
-/* 取消/保存也收一档内边距:主题把根字号放大到 20px,rem 换算比直觉大一档,
-   按键行(341px)要同时塞下五个色块 + 两个按钮 + 分体按钮,只能逐项瘦身。 */
 .aipm-anno__account.is-logged-in {
   color: var(--md-accent-fg-color);
 }
@@ -1480,9 +1484,10 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__actions .aipm-anno__cancel,
 .aipm-anno__actions .aipm-anno__save {
-  padding: .3rem .7rem;
+  min-height: 2.2rem;
+  padding: .4rem .6rem;
   border: 1px solid var(--aipm-anno-line);
-  border-radius: .3rem;
+  border-radius: .4rem;
   color: var(--md-default-fg-color);
   background: transparent;
   font-family: inherit;
@@ -1490,41 +1495,33 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   cursor: pointer;
 }
 .aipm-anno__actions .aipm-anno__save {
-  border-color: var(--md-accent-fg-color);
-  color: var(--md-accent-bg-color);
-  background: var(--md-accent-fg-color);
+  border-color: var(--md-primary-fg-color--dark);
+  color: #fff;
+  background: var(--md-primary-fg-color--dark);
 }
 .aipm-anno__actions .aipm-anno__save:disabled {
   opacity: .6;
   cursor: progress;
 }
 
-/* 保存 + 可见范围是一颗分体按钮:左半写「保存」,右半只有那颗箭头(当前范围由
-   草稿卡的 meta 行说明,不占按钮上的字)。要读成一颗,三件事缺一不可 ——
-   同一层底色、同一道外轮廓、同一条水平线:
-     - 底色:右半用与左半相同的填充色,不再自己描一圈线(描边会把一颗切成两颗);
-     - 缝:左半去掉右边框、右半整颗不描边,两个盒子的边正好相接,缝里不叠出两层
-       边框;那条发丝线由右半自己的 inset 阴影画在填充色上;
-     - 高度:右半 align-self: stretch 跟着行高走(行高由取消/保存这类文字按钮
-       定),不再自己算一套内边距 —— 差几个像素就够看出是两颗。
-   -0.3rem 恰好是上面那条 gap 的值,两半严丝合缝;rem 随根字号缩放,两者同步。 */
 .aipm-anno__actions .aipm-anno__vismenu {
   display: flex;
-  align-self: stretch;
-  margin-left: -.3rem;
+  margin-right: auto;
 }
-.aipm-anno__actions .aipm-anno__visbtn {
-  padding: .3rem .3rem;
-  box-shadow: inset 1px 0 0 rgba(0, 0, 0, .22);
-}
-.aipm-anno__actions .aipm-anno__save {
-  border-right: 0;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-/* 两半要一起响应 hover:同一颗按钮上左半不动、右半变暗,比都不动更割裂。 */
 .aipm-anno__actions .aipm-anno__save:hover:not(:disabled) {
   background-image: linear-gradient(rgba(0, 0, 0, .14), rgba(0, 0, 0, .14));
+}
+.aipm-anno__composer button:focus-visible,
+.aipm-anno__input:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 3px;
+}
+.aipm-anno__composer[aria-busy="true"] .aipm-anno__input { opacity: .7; }
+@media (max-width: 24rem) {
+  .aipm-anno__actions { gap: .3rem; }
+  .aipm-anno__actions .aipm-anno__vismenu { flex: 1 0 100%; }
+  .aipm-anno__actions .aipm-anno__visbtn { width: 100%; justify-content: space-between; }
+  .aipm-anno__actions .aipm-anno__cancel { margin-left: auto; }
 }
 
 /* ----------------------------------------------------------------------------

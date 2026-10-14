@@ -913,6 +913,10 @@
     }
     const protectedCard = document.createElement('div');
     protectedCard.className = 'aipm-chat__proposal';
+    const heading = document.createElement('strong');
+    heading.className = 'aipm-chat__proposal-head';
+    heading.textContent = '批注建议';
+    protectedCard.appendChild(heading);
     const choiceKey = `aipm-agent-visibility:${proposal.requestId}`;
     const savedChoice = localStorage.getItem(choiceKey);
     let selectedVisibility = proposal.visibility;
@@ -927,6 +931,7 @@
       choiceLocked = choice.locked === true;
     }
     const choices = document.createElement('div');
+    choices.className = 'aipm-chat__proposal-vis';
     choices.setAttribute('role', 'group');
     choices.setAttribute('aria-label', '批注可见范围');
     const visButtons = [
@@ -935,6 +940,7 @@
       { visibility: 'public', label: '公开' }
     ].map(({ visibility, label }) => {
       const button = document.createElement('button');
+      button.className = 'aipm-chat__proposal-visbtn';
       button.type = 'button';
       button.textContent = label;
       button.disabled = choiceLocked || window.__aipmAnnoAgentEnabled !== true;
@@ -953,9 +959,13 @@
     });
     choices.append(...visButtons);
     const open = document.createElement('button');
+    open.className = 'aipm-chat__proposal-accept';
     open.type = 'button';
     open.textContent = '查看批注建议';
     const notice = document.createElement('span');
+    notice.className = 'aipm-chat__proposal-state';
+    notice.setAttribute('role', 'status');
+    notice.setAttribute('aria-live', 'polite');
     notice.textContent = window.__aipmAnnoAgentEnabled === true ? '' : '建议写入未启用';
     open.disabled = window.__aipmAnnoAgentEnabled !== true;
     protectedCard.append(choices, open, notice);
@@ -967,6 +977,8 @@
         visibility: selectedVisibility, locked: true
       }));
       choiceLocked = true;
+      protectedCard.dataset.state = 'loading';
+      notice.textContent = '正在打开确认界面…';
       open.disabled = true;
       for (const button of visButtons) button.disabled = true;
       const submittedVisibility = selectedVisibility;
@@ -978,14 +990,17 @@
           window.__aipmIntegrityReady = false;
           window.dispatchEvent(new Event('aipm-integrity-change'));
           notice.textContent = '批注资源未通过完整性校验，请刷新页面重试。';
+          protectedCard.dataset.state = 'error';
           throw error;
         });
         entry = createAgentEntry();
-        entry.mount({ proposal: chosenProposal, historical, host: protectedCard });
+        const frame = entry.mount({ proposal: chosenProposal, historical, host: protectedCard });
+        frame.addEventListener('load', () => frame.focus(), { once: true });
         notice.textContent = '';
       } catch (error) {
         if (!historical && ['authentication required', 'original identity unavailable'].includes(error.message)) {
           const login = document.createElement('button');
+          login.className = 'aipm-chat__proposal-accept';
           login.type = 'button';
           login.textContent = '登录后手动恢复';
           login.addEventListener('click', (action) => {
@@ -993,12 +1008,14 @@
           });
           protectedCard.append(login);
           notice.textContent = '登录回跳后，请在历史建议卡中手动确认。';
+          protectedCard.dataset.state = 'warning';
           return;
         }
         if (!['original proposal evidence unavailable', 'unknown request evidence unavailable',
           'original identity unavailable', 'recovery evidence unavailable', 'authentication required',
           'request already recorded'].includes(error.message)) throw error;
         notice.textContent = '原请求依据不足或身份已变化；未提交。';
+        protectedCard.dataset.state = 'error';
       }
     });
     scrollBottom(false);

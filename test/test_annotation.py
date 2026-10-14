@@ -1216,35 +1216,6 @@ class TestUiRoundThree(unittest.TestCase):
     def test_card_is_a_positioning_context(self):
         self.assertIn("position: relative;", _block(self.css, ".aipm-anno__item {"))
 
-    def test_split_button_squares_the_touching_corners(self):
-        """分体按钮的圆角必须写在 border-radius 简写之后,否则会被一并重置。"""
-        save = self.css.index(".aipm-anno__actions .aipm-anno__save {")
-        plain = self.css.index("border-radius: .3rem;", save)
-        squared = self.css.index("border-top-right-radius: 0;", save)
-        self.assertLess(plain, squared)
-
-    def test_split_button_reads_as_one_control(self):
-        """保存 + 可见范围是一颗分体按钮,不是两颗挨着的按钮。三条各自都能把它拆成
-        两颗,所以逐条钉住:底色与字色右半跟左半同一套(右半自己描一圈线就成了一颗
-        独立的描边按钮,跟实心的左半拼在一起最割裂);左半去掉右边框、右半整颗不描边,
-        两个盒子正好相接,缝里叠不出两层边框(那条发丝线交给右半用 inset 阴影画在
-        填充色上);右半 align-self: stretch 跟着行高走,行高由「取消」「保存」这类
-        文字按钮定 —— 自己算一套内边距就差出几个像素,一眼看出是两颗。
-        """
-        # 基础规则在文件里排在 .aipm-anno__actions 那条之前,index 取到的就是它
-        base_vis = _block(self.css, ".aipm-anno__visbtn {")
-        row = _block(self.css, ".aipm-anno__actions .aipm-anno__vismenu {")
-        # 从 visbtn 之后切,避开头一条 .aipm-anno__save 是与 cancel 合写的那条
-        after_vis = self.css[self.css.index(".aipm-anno__actions .aipm-anno__visbtn {"):]
-        save = _block(after_vis, ".aipm-anno__actions .aipm-anno__save {")
-        self.assertEqual(_decl(base_vis, "background"), "var(--md-accent-fg-color)")
-        self.assertEqual(_decl(base_vis, "color"), "var(--md-accent-bg-color)")
-        self.assertEqual(_decl(base_vis, "border"), "0")
-        self.assertEqual(_decl(save, "border-right"), "0")
-        self.assertEqual(_decl(row, "align-self"), "stretch")
-        self.assertIn("box-shadow", _block(self.css, ".aipm-anno__actions .aipm-anno__visbtn {"))
-
-
 class TestUiRoundFour(unittest.TestCase):
     """第四轮验收:任意显隐 / 三类画法 / 悬浮窗完整选择 / 评论排序 /
     回复的回复与权限 / 点赞。"""

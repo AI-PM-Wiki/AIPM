@@ -47,7 +47,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     body: `正文：${request.body}`,
     visibility: `最终可见范围：${LABELS[request.visibility]}`
   });
-  const state = { set textContent(value) { view.update({ state: value }); } };
+  function setState(state, status = 'pending') { view.update({ state, status }); }
   const agree = { set disabled(value) { view.update({ agreeDisabled: value }); },
     addEventListener(type, handler) { actions.agree = handler; } };
   const retry = { set disabled(value) { view.update({ retryDisabled: value }); },
@@ -71,24 +71,25 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     agree.disabled = !ready || started || cancelled || Boolean(record && record.status !== 'awaiting_confirmation');
     retry.disabled = true;
     if (!started && !cancelled && (!record || record.status === 'awaiting_confirmation')) {
-      state.textContent = ready ? '等待同意' :
-        (window.__aipmIntegrityFailed ? '资源校验失败，未提交。' : '资源校验中，未提交。');
+      setState(ready ? '等待同意' :
+        (window.__aipmIntegrityFailed ? '资源校验失败，未提交。' : '资源校验中，未提交。'),
+        ready ? 'pending' : (window.__aipmIntegrityFailed ? 'error' : 'loading'));
     }
   }
   window.addEventListener('aipm-integrity-change', refreshIntegrity);
   if (existing) {
     agree.disabled = true;
     if (existing.status === 'unknown' || existing.status === 'executing') {
-      state.textContent = '结果未知；只能查询原请求，不能再次提交。';
+      setState('结果未知；只能查询原请求，不能再次提交。', 'warning');
       check.hidden = false;
     } else if (existing.status === 'succeeded') {
-      state.textContent = `已写入：${LABELS[request.visibility]}`;
+      setState(`已写入：${LABELS[request.visibility]}`, 'success');
       cancel.disabled = true;
     } else if (existing.status === 'awaiting_confirmation') {
       agree.disabled = false;
-      state.textContent = '等待再次同意原请求。';
+      setState('等待再次同意原请求。');
     } else {
-      state.textContent = '原请求已有记录；只能查询原请求。';
+      setState('原请求已有记录；只能查询原请求。', 'warning');
       check.hidden = false;
     }
   }
@@ -107,7 +108,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
         if (error.name !== 'QuotaExceededError') throw error;
       }
     }
-    state.textContent = '结果未知；只能查询原请求，不能再次提交。';
+    setState('结果未知；只能查询原请求，不能再次提交。', 'warning');
     check.hidden = false;
     started = false;
   }
@@ -132,7 +133,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     }
 
     if (claimed && sent) unknown();
-    else state.textContent = '已取消，未写入。';
+    else setState('已取消，未写入。', 'cancelled');
   });
   async function submit(event, retryUnknown) {
     if (!event.isTrusted) return;
@@ -145,7 +146,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     agree.disabled = true;
     retry.disabled = true;
     if (!sameContext()) {
-      state.textContent = '页面或身份已变化，未写入。';
+      setState('页面或身份已变化，未写入。', 'error');
       return;
     }
     let grantId;
@@ -164,7 +165,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       const claimedRequest = await core.claim({ identity, session, request, grantId });
       claimed = true;
       if (!sameContext() || cancelled || !integrityReady()) throw new Error('unsent request blocked');
-      state.textContent = '写入中…';
+      setState('写入中…', 'loading');
       const selectors = claimedRequest.scope === 'page' ? [] : [{ type: 'TextQuoteSelector',
         exact: claimedRequest.quote, prefix: claimedRequest.prefix, suffix: claimedRequest.suffix }];
       const target = claimedRequest.scope === 'page' ? { scope: 'page', selectors } : { selectors };
@@ -182,7 +183,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
         window.dispatchEvent(new CustomEvent('aipm-annotation-local-change', {
           detail: { page: claimedRequest.page }
         }));
-        state.textContent = '已写入：仅本机';
+        setState('已写入：仅本机', 'success');
         cancel.disabled = true;
         return;
       }
@@ -216,7 +217,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       }
       core.settle({ identity, session, requestId: claimedRequest.requestId,
         status: 'succeeded', annotationId: annotation.id });
-      state.textContent = `已写入：${LABELS[claimedRequest.visibility]}`;
+      setState(`已写入：${LABELS[claimedRequest.visibility]}`, 'success');
       cancel.disabled = true;
     } catch (error) {
       if (!sent) {
@@ -225,6 +226,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
         started = false;
         claimed = false;
         refreshIntegrity();
+        if (integrityReady()) setState('请求未提交，请检查后再次确认。', 'error');
         return;
       }
       unknown();
@@ -236,10 +238,10 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     try {
       const result = await createAnnotationRequestStatus({ core }).query(request.requestId);
       if (result?.status === 'succeeded') {
-        state.textContent = `已写入：${LABELS[request.visibility]}`;
+        setState(`已写入：${LABELS[request.visibility]}`, 'success');
         check.hidden = true;
         retry.hidden = true;
-      } else state.textContent = '结果仍未知；请稍后查询。';
+      } else setState('结果仍未知；请稍后查询。', 'warning');
     } catch (error) {
       if (error.name !== 'QuotaExceededError') throw error;
       unknown();

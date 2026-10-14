@@ -765,9 +765,10 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
 .aipm-chat__proposal {
   display: flex;
   flex-direction: column;
-  gap: .4rem;
-  margin-top: .4rem;
-  padding: .6rem .7rem;
+  gap: .65rem;
+  min-width: 0;
+  margin-top: .65rem;
+  padding: .7rem;
   border: 1px solid var(--md-default-fg-color--lightest);
   border-left: 3px solid var(--md-accent-fg-color);
   border-radius: .5rem;
@@ -776,6 +777,13 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
 /* 有结果之后收掉强调色:已写入 / 已丢弃的卡不该继续抢视线 */
 .aipm-chat__proposal[data-state="accepted"] {
   border-left-color: var(--md-default-fg-color--lighter);
+}
+.aipm-chat__proposal[data-state="success"] {
+  border-left-color: #4caf50;
+}
+.aipm-chat__proposal[data-state="error"],
+.aipm-chat__proposal[data-state="warning"] {
+  border-left-color: var(--md-admonition-fg-color, #ff9100);
 }
 .aipm-chat__proposal[data-state="dismissed"] {
   border-left-color: var(--md-default-fg-color--lightest);
@@ -788,9 +796,10 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
   display: flex;
   align-items: center;
   gap: .4rem;
-  font-size: .6875rem;
+  font-size: .8rem;
+  font-weight: 650;
   letter-spacing: .02em;
-  color: var(--md-default-fg-color--light);
+  color: var(--md-default-fg-color);
 }
 .aipm-chat__proposal-quote {
   margin: 0;
@@ -819,23 +828,35 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
   color: var(--md-default-fg-color--light);
 }
 .aipm-chat__proposal-vis {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .25rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .4rem;
 }
 .aipm-chat__proposal-visbtn {
-  padding: .15rem .5rem;
-  font-size: .6875rem;
-  border-radius: 999px;
+  min-width: 0;
+  min-height: 2.2rem;
+  padding: .4rem .3rem;
+  font: inherit;
+  font-size: .7rem;
+  line-height: 1.4;
+  border-radius: .4rem;
   cursor: pointer;
-  color: var(--md-default-fg-color--light);
+  color: var(--md-default-fg-color);
   background: transparent;
   border: 1px solid var(--md-default-fg-color--lightest);
 }
 .aipm-chat__proposal-visbtn[aria-pressed="true"] {
-  color: var(--md-primary-bg-color);
-  background: var(--md-accent-fg-color);
-  border-color: var(--md-accent-fg-color);
+  color: #fff;
+  background: var(--md-primary-fg-color--dark);
+  border-color: var(--md-primary-fg-color--dark);
+  font-weight: 650;
+}
+.aipm-chat__proposal-visbtn:disabled {
+  cursor: default;
+  opacity: .6;
+}
+.aipm-chat__proposal-visbtn[aria-pressed="true"]:disabled {
+  opacity: .85;
 }
 .aipm-chat__proposal-foot {
   display: flex;
@@ -844,7 +865,10 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
 }
 .aipm-chat__proposal-accept,
 .aipm-chat__proposal-dismiss {
-  padding: .18rem .6rem;
+  min-height: 2.2rem;
+  padding: .45rem .7rem;
+  font-family: inherit;
+  font-weight: 600;
   font-size: .75rem;
   border-radius: .35rem;
   cursor: pointer;
@@ -853,9 +877,9 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
   color: var(--md-default-fg-color);
 }
 .aipm-chat__proposal-accept {
-  color: var(--md-primary-bg-color);
-  background: var(--md-accent-fg-color);
-  border-color: var(--md-accent-fg-color);
+  color: #fff;
+  background: var(--md-primary-fg-color--dark);
+  border-color: var(--md-primary-fg-color--dark);
 }
 .aipm-chat__proposal-accept:disabled,
 .aipm-chat__proposal-dismiss:disabled {
@@ -863,8 +887,18 @@ html.aipm-chat-mode--sheet .aipm-chat.is-peek-measure .aipm-chat__ctxbar {
   cursor: default;
 }
 .aipm-chat__proposal-state {
-  font-size: .6875rem;
+  font-size: .75rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
   color: var(--md-default-fg-color--light);
+}
+.aipm-chat__proposal-state:empty { display: none; }
+.aipm-chat__proposal button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 3px;
+}
+@media (max-width: 24rem) {
+  .aipm-chat__proposal-vis { grid-template-columns: 1fr; }
 }
 
 /* ----------------------------------------------------------------------------

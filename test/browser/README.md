@@ -67,6 +67,23 @@ await checkLocalConfirmation({ directory: '/absolute/repo/meta/local-confirmatio
 
 上传结果分别登记：批注业务请求与已观察 fetch 的明文正文检查；外部 recorder 的 sendBeacon、XHR、编码载荷仍为 `not_run`。本脚本结果不覆盖完整录制上传链路。真实模型工具建议的端到端证据需要单独记录候选提交和请求用量。
 
+## 交互界面检查
+
+`check_confirmation_ui_ego.mjs` 与 `check_editor_ui_ego.mjs` 在 1280、390、320 CSS 像素宽度下操作明暗主题。检查覆盖受保护确认区、范围选中与锁定、原生鼠标／键盘确认、本机批注编辑、评论错误提示、评论及回复保存／刷新，以及菜单的方向键、Escape 和焦点返回。可见范围与保存按钮的布局由浏览器核对实际几何尺寸、触控尺寸和菜单边界。
+
+建议卡使用非敏感组件输入，通过条件 Debugger 观察点调用原有生产渲染函数。提供的 `sourceDirectory` 指向对应构建目录，脚本会比对实际服务资源字节。确认、存储和编辑检查使用生产入口、原生 localStorage 及独立批注服务。展示状态检查向生产 `createConfirmationView` 提交明确的组件状态输入，单独核对加载、警告、错误、取消、禁用和最大长度布局；该组不代表对应后端状态已经发生。断言映射见 `confirmation-ui-assertions.json`。
+
+为修改前、修改后构建分别启动 `local_confirmation_stack.py`，每组使用新的隔离站点 origin，在同一个浏览器任务空间中顺序运行。脚本保留非敏感本机内容检查并只清理当前隔离 origin 中匹配的测试记录，遇到其他内容立即终止。首次创建任务空间后，后续检查必须提供同一个 `spaceId`。
+
+```javascript
+const { checkConfirmationUi } = await import('/absolute/repo/test/browser/check_confirmation_ui_ego.mjs');
+const result = await checkConfirmationUi({ directory: '/absolute/repo/meta/ui-after', sourceDirectory: '/absolute/repo/meta/ui/site', taskSpace, spaceId });
+const { checkEditorUi } = await import('/absolute/repo/test/browser/check_editor_ui_ego.mjs');
+await checkEditorUi({ directory: '/absolute/repo/meta/ui-after', taskSpace, spaceId: result.spaceId });
+```
+
+界面检查阻断模型端点和外部录制上传，模型生成、Jev、GitHub OAuth、图像拒收及原生 recorder 发送继续分别登记。截图、`ui-results.json` 和 `editor-results.json` 保存在各组输出目录。受影响回归继续运行本机确认时序和真实 recorder 检查。
+
 ## 本机内容的录制保护
 
 `check_recorder_privacy_ego.mjs` 使用真实部署 recorder 检查首次插入、批注／评论创建与编辑、回复编辑／保存／刷新恢复、已有本机评论的 private／local／public／local 可见性切换、新建公开评论草稿转本机、重绘、导航和恢复。可见性检查使用隔离后端的真实开发登录，GitHub OAuth 单列未运行。`recorder-privacy.json` 保存审查过的脚本摘要、观察点及断言映射。脚本字节发生变化时检查终止，需要重新审查来源及观察点。

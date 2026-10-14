@@ -2928,6 +2928,8 @@
 
     var hint = document.createElement("div");
     hint.className = "aipm-anno__hint";
+    hint.setAttribute("role", "status");
+    hint.setAttribute("aria-live", "polite");
     hint.hidden = true;
     form.appendChild(hint);
 
@@ -3126,6 +3128,8 @@
 
     var hint = document.createElement("div");
     hint.className = "aipm-anno__hint";
+    hint.setAttribute("role", "status");
+    hint.setAttribute("aria-live", "polite");
     hint.hidden = true;
     card.appendChild(hint);
 
@@ -3146,7 +3150,7 @@
     actions.appendChild(save);
 
     var vis = buildVisPicker();
-    actions.appendChild(vis.root);
+    actions.insertBefore(vis.root, cancel);
     card.appendChild(actions);
 
     return {
@@ -3157,7 +3161,7 @@
     };
   }
 
-  /** 可见范围选择器:右半颗分体按钮的菜单。 */
+  /** 可见范围选择器。 */
   function buildVisPicker() {
     var root = document.createElement("div");
     root.className = "aipm-anno__vismenu";
@@ -3168,7 +3172,7 @@
     btn.setAttribute("aria-expanded", "false");
     btn.setAttribute("aria-label", "可见范围");
     btn.title = "可见范围";
-    btn.innerHTML = ICON.caret;
+    btn.innerHTML = '<span class="aipm-anno__vislabel"></span>' + ICON.caret;
     root.appendChild(btn);
     var list = document.createElement("div");
     list.className = "aipm-anno__vislist";
@@ -3260,6 +3264,8 @@
 
     var hint = document.createElement("div");
     hint.className = "aipm-anno__hint";
+    hint.setAttribute("role", "status");
+    hint.setAttribute("aria-live", "polite");
     hint.hidden = true;
     card.appendChild(hint);
 
@@ -3290,7 +3296,7 @@
     actions.appendChild(save);
 
     var vis = buildVisPicker();
-    actions.appendChild(vis.root);
+    actions.insertBefore(vis.root, cancel);
     card.appendChild(actions);
 
     return {
@@ -3342,6 +3348,24 @@
       activeVis = vis;
       closeVisMenu(nodes);
       syncComposer();
+      nodes.visbtn.focus();
+    });
+    nodes.vislist.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeVisMenu(nodes);
+        nodes.visbtn.focus();
+        return;
+      }
+      var options = Array.from(nodes.vislist.querySelectorAll("button:not(:disabled)"));
+      if (!options.length || !["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
+      e.preventDefault();
+      var index = options.indexOf(document.activeElement);
+      if (e.key === "Home") index = 0;
+      else if (e.key === "End") index = options.length - 1;
+      else index = (index + (e.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+      options[index].focus();
     });
   }
 
@@ -3351,6 +3375,8 @@
     if (!list || !btn) return;
     list.hidden = false;
     btn.setAttribute("aria-expanded", "true");
+    var selected = list.querySelector('button[aria-selected="true"]');
+    if (selected) selected.focus();
   }
   function closeVisMenu(nodes) {
     var list = nodes ? nodes.vislist : els.vislist;
@@ -3598,6 +3624,10 @@
     }
     var vis = defaultVisibility();
     var label = visLabel({ visibility: vis });
+    if (els.visbtn) {
+      els.visbtn.querySelector(".aipm-anno__vislabel").textContent = label.text;
+      els.visbtn.setAttribute("aria-label", "可见范围：" + label.text);
+    }
     if (vis === "local") els.composer.classList.add("rr-block");
     var loggedIn = auth ? auth.isLoggedIn() : false;
     var me = loggedIn && auth.user() ? auth.user().login : "";
@@ -3622,6 +3652,7 @@
     for (var j = 0; j < opts.length; j++) {
       opts[j].disabled = !!pending;
       opts[j].classList.toggle("is-active", opts[j].getAttribute("data-vis") === vis);
+      opts[j].setAttribute("aria-selected", String(opts[j].getAttribute("data-vis") === vis));
     }
   }
 
@@ -3686,6 +3717,7 @@
   /* 按钮上的字随编辑器而不同:新批注卡是「保存」,回复框是「回复」—— 忙碌时统一
      换成「处理中…」,回落后恢复它自己那个词,别把回复框写成「保存」。 */
   function setBusy(v) {
+    if (els.composer) els.composer.setAttribute("aria-busy", String(v));
     busy = v;
     if (!els.save) return;
     els.save.disabled = v;

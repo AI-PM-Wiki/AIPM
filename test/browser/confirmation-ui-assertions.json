@@ -1,0 +1,20 @@
+{
+  "entries": ["check_confirmation_ui_ego.mjs:checkConfirmationUi", "check_editor_ui_ego.mjs:checkEditorUi"],
+  "viewports": [1280, 390, 320],
+  "schemes": ["slate", "default"],
+  "input": "Non-sensitive component proposal input reaches the original production card renderer through a conditional Debugger breakpoint. No provider response is replaced.",
+  "assertions": [
+    {"id": "opaque_confirmation", "condition": "sandbox remains allow-scripts; frame inspection uses a separately attached CDP target"},
+    {"id": "theme_and_resize", "condition": "frame scheme follows Material; frame height equals section height; no horizontal overflow or inner vertical scroll"},
+    {"id": "visibility_and_touch", "condition": "exactly one choice selected, all choices locked after opening, action targets at least 44 CSS pixels"},
+    {"id": "enabled_confirmation_contrast", "condition": "native computed foreground and background are parsed through Canvas; relative luminance contrast is at least 4.5"},
+    {"id": "trusted_confirmation", "condition": "observed untrusted child click leaves zero local records; native click or keyboard Enter produces one record and matching mark"},
+    {"id": "editor_focus", "condition": "menu opens on selected option, ArrowUp moves focus, Escape closes menu and returns focus without closing panel; menu stays inside panel bounds"},
+    {"id": "annotation_edit", "condition": "protected local editor retains scope, saves changed body and restores one record and mark after refresh"},
+    {"id": "comment_and_reply", "condition": "empty comment rejected before write; keyboard save, comment edit, reply save and browser refresh retain one comment and reply"},
+    {"id": "presentation_states", "condition": "production view receives explicit component inputs for pending/loading/warning/error/cancelled; busy, alert/status roles, disabled states, theme and maximum-length layout agree"},
+    {"id": "service_boundary", "condition": "isolated annotation service observes zero business mutations and permit requests"},
+    {"id": "recorder_boundary", "entry": "check_recorder_privacy_ego.mjs", "condition": "actual recorder collection and original JSON serialization preserve local blocking and public control"}
+  ],
+  "not_run": ["new model generation", "Jev", "GitHub OAuth", "image rejection", "native recorder send", "recorder sendBeacon/XHR", "gzip/Base64 transport payloads", "independent UI review"]
+}
