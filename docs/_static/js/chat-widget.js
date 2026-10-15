@@ -1138,9 +1138,15 @@
         finish(null);
         return;
       }
+      const headers = { "Content-Type": "application/json" };
+      const annotationAuth = window.__aipmAnnoAuth;
+      const annotationToken = annotationAuth && typeof annotationAuth.token === "function"
+        ? annotationAuth.token() : null;
+      if (typeof annotationToken === "string" && annotationToken.length > 0)
+        headers["X-AIPM-Annotation-Token"] = annotationToken;
       const res = await fetch(API_BASE + "/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(body),
         signal: requestSignal,
       });
