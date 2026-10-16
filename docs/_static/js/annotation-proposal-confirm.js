@@ -15,7 +15,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       typeof proposal.requestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(proposal.requestId) ||
       typeof proposal.proposalId !== 'string' || !proposal.proposalId ||
       typeof proposal.page !== 'string' || proposal.page !== location.pathname ||
-      typeof proposal.body !== 'string' || !proposal.body.trim() ||
+      typeof proposal.body !== 'string' || (proposal.scope === 'page' && !proposal.body.trim()) ||
       (proposal.scope === 'text' && (typeof proposal.quote !== 'string' || !proposal.quote.trim())) ||
       (proposal.scope === 'page' && proposal.quote)) throw new TypeError('proposal');
 
@@ -217,6 +217,9 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       }
       core.settle({ identity, session, requestId: claimedRequest.requestId,
         status: 'succeeded', annotationId: annotation.id });
+      window.dispatchEvent(new CustomEvent('aipm-annotation-remote-change', {
+        detail: { page: claimedRequest.page }
+      }));
       setState(`已写入：${LABELS[claimedRequest.visibility]}`, 'success');
       cancel.disabled = true;
     } catch (error) {

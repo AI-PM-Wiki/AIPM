@@ -348,6 +348,8 @@
           else if (Array.isArray(m.proposals)) {
             const kept = m.proposals.filter(isProposalShaped);
             if (kept.length) rec.proposals = kept;
+            if (['pending', 'done', 'error'].includes(m.terminal)) rec.terminal = m.terminal;
+            if (typeof m.errorCode === 'string') rec.errorCode = m.errorCode.slice(0, 64);
           }
           history.push(rec);
         }
@@ -1034,7 +1036,9 @@
         frame.addEventListener('load', () => frame.focus(), { once: true });
         notice.textContent = '';
       } catch (error) {
-        if (!historical && ['authentication required', 'original identity unavailable'].includes(error.message)) {
+        if (['authentication required', 'original identity unavailable'].includes(error.message) &&
+            !window.__aipmAnnoAuth.user() &&
+            (!historical || entry?.hasPendingProposal(chosenProposal) || entry?.hasLoginDraft(chosenProposal))) {
           const login = document.createElement('button');
           login.className = 'aipm-chat__proposal-accept';
           login.type = 'button';
@@ -1094,6 +1098,7 @@
       message,
       // 最近的轮次(不含本条);语境不进 history —— 它是随行的,不是对话内容
       history: history.slice(0, -1).slice(-HISTORY_SEND)
+        .filter(m => m.role !== 'assistant' || !m.terminal || m.terminal === 'done')
         .map((m) => ({ role: m.role, content: m.content })),
     };
     if (typeof page === "string") body.page = page;
@@ -1104,20 +1109,25 @@
     /* 收尾统一出口:失效 turn(清空/新 turn 后)不再写 history/DOM,
        避免"只有回答、没有对应问题"的孤儿历史;但流式状态必须复位,
        否则清空后发送按钮仍卡在"停止生成" */
-    const finish = (assistantText) => {
+    let retained = null;
+    const retainProposalTurn = (content, terminal, errorCode) => {
+      if (myTurn !== turnSeq) return;
+      if (!retained) {
+        retained = { role: 'assistant' };
+        history.push(retained);
+        t.wrap.setAttribute('data-hidx', history.length - 1);
+      }
+      Object.assign(retained, { content, terminal, errorCode,
+        proposals: ctx.proposals.length ? ctx.proposals : undefined });
+      persist();
+    };
+    const finish = (assistantText, errorCode = 'network') => {
       if (finished) return;
       finished = true;
       const stale = myTurn !== turnSeq;
-      if (!stale && assistantText) {
-        /* 这一轮提的批注建议跟着回答一起记进会话:换页、刷新之后卡片还在,
-           不必让用户回头再问一遍。写入与否是卡片自己的状态,没采纳的仍是建议。 */
-        history.push({
-          role: "assistant",
-          content: assistantText,
-          proposals: ctx.proposals.length ? ctx.proposals : undefined
-        });
-        t.wrap.setAttribute("data-hidx", history.length - 1);
-        persist();
+      if (!stale && (assistantText || ctx.proposals.length)) {
+        retainProposalTurn(assistantText ?? ctx.acc, assistantText === null ? 'error' : 'done',
+          assistantText === null ? errorCode : undefined);
       }
       setStreamingUI(false);
       updateSendState();
@@ -1131,11 +1141,13 @@
     };
 
     try {
+      const { createAgentEntry } = await import('./annotation-agent-entry.js?v=46');
+      const proposalEntry = createAgentEntry();
       const acceptance = await refreshLocalAcceptance(requestSignal);
       if (acceptance && (acceptance.halted || acceptance.sent >= acceptance.limit)) {
         t.bubble.classList.add('is-error');
         t.md.textContent = acceptance.halted ? '本机验收模型连接已停止，请联系环境维护者检查。' : ERROR_TEXT.acceptance_limit;
-        finish(null);
+        finish(null, 'acceptance_limit');
         return;
       }
       const headers = { "Content-Type": "application/json" };
@@ -1163,7 +1175,7 @@
         t.bubble.classList.add("is-error");
         t.md.innerHTML = escapeHtml(msg);
         track("assistant_panel_error", Object.assign(env(), { status: res.status, code: code || undefined }));
-        finish(null);
+        finish(null, code);
         return;
       }
       const reader = res.body.getReader();
@@ -1187,7 +1199,9 @@
                面板里还会再校验一遍,两边各自成立。 */
             if (isProposalShaped(data) && !ctx.proposals.some((p) => p.id === data.id)) {
               data.requestId = crypto.randomUUID();
+              proposalEntry.rememberProposal(data);
               ctx.proposals.push(data);
+              retainProposalTurn(ctx.acc, 'pending');
               addProposalCard(t.wrap, data);
             }
             break;
@@ -1210,7 +1224,7 @@
             t.md.innerHTML =
               (ctx.acc ? mdLite(ctx.acc) : "") +
               (ERROR_TEXT[data.code] ? `<p>${escapeHtml(ERROR_TEXT[data.code])}</p>` : "");
-            finish(null);
+            finish(null, data.code);
             if (hasLocalAcceptanceStatus()) void refreshLocalAcceptance().then((status) => {
               if (status && status.sent >= status.limit && t.wrap.isConnected) t.md.textContent = ERROR_TEXT.acceptance_limit;
             });
@@ -1747,6 +1761,11 @@
       } else {
         const t = addAiBubble();
         t.md.innerHTML = mdLite(m.content);
+        if (m.terminal === 'error' || m.terminal === 'pending') {
+          t.bubble.classList.add('is-error');
+          const message = ERROR_TEXT[m.errorCode] || '回答未完成，批注建议仍需手动确认。';
+          t.md.innerHTML += `<p>${escapeHtml(message)}</p>`;
+        }
         t.wrap.setAttribute("data-hidx", i);
         /* 建议卡在回答下面,与它刚才那一轮里的位置一致 */
         for (const p of (m.proposals || [])) addProposalCard(t.wrap, p, true);

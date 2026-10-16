@@ -11,12 +11,15 @@ function requireText(value, name) {
 function canonical(request) {
   if (!request || typeof request !== 'object') throw new TypeError('request');
   const { requestId, proposalId, page, scope, visibility, body } = request;
-  for (const [name, value] of Object.entries({ requestId, proposalId, page, scope, visibility, body })) {
+  for (const [name, value] of Object.entries({ requestId, proposalId, page, scope, visibility })) {
     requireText(value, name);
   }
   if (!['page', 'text'].includes(scope) || !['local', 'public', 'private'].includes(visibility)) {
     throw new TypeError('scope or visibility');
   }
+  if (typeof body !== 'string' || (scope === 'page' && !body.trim())) throw new TypeError('body');
+  if (scope === 'text') requireText(request.quote, 'quote');
+  if (scope === 'page' && request.quote) throw new TypeError('quote');
   const allowed = ['requestId', 'proposalId', 'page', 'scope', 'visibility', 'body', 'quote', 'prefix', 'suffix', 'color', 'style'];
   if (Object.keys(request).some((key) => !allowed.includes(key))) throw new TypeError('unexpected request field');
   const result = { requestId, proposalId, page, scope, visibility, body };

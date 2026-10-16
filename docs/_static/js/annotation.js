@@ -4110,6 +4110,12 @@
     if (event.detail && event.detail.page === pagePath()) refreshLocal();
   });
 
+  window.addEventListener("aipm-annotation-remote-change", function (event) {
+    if (!event.detail || event.detail.page !== pagePath()) return;
+    delete cache[event.detail.page];
+    ensureAnnotationsLoaded();
+  });
+
   function removeAnnotation(anno) {
     if (isLocal(anno)) {
       store.localRemove(anno.page, anno.id);
