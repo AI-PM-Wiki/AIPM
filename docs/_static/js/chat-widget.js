@@ -1154,6 +1154,7 @@
       const annotationAuth = window.__aipmAnnoAuth;
       const annotationToken = annotationAuth && typeof annotationAuth.token === "function"
         ? annotationAuth.token() : null;
+      const annotationIdentity = annotationAuth?.user?.()?.githubId ?? null;
       if (typeof annotationToken === "string" && annotationToken.length > 0)
         headers["X-AIPM-Annotation-Token"] = annotationToken;
       const res = await fetch(API_BASE + "/api/chat", {
@@ -1198,6 +1199,10 @@
             /* 一条待确认的批注建议。形状过不了的直接不渲染 —— 采纳那一步在批注
                面板里还会再校验一遍,两边各自成立。 */
             if (isProposalShaped(data) && !ctx.proposals.some((p) => p.id === data.id)) {
+              if ((annotationAuth?.user?.()?.githubId ?? null) !== annotationIdentity ||
+                  (annotationAuth?.token?.() ?? null) !== annotationToken) {
+                throw new Error('proposal identity changed');
+              }
               data.requestId = crypto.randomUUID();
               proposalEntry.rememberProposal(data);
               ctx.proposals.push(data);
