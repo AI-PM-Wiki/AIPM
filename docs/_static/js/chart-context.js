@@ -275,8 +275,8 @@
     return step();
   }
 
-  function sameOriginSvgUrl(img) {
-    var url = sameOriginUrl(img.src);
+  function sameOriginSvgUrl(src) {
+    var url = sameOriginUrl(src);
     return url !== null && url.pathname.toLowerCase().endsWith(".svg") ? url : null;
   }
 
@@ -349,6 +349,18 @@
     return parts.join(" / ");
   }
 
+  var imageKeys = new WeakMap();
+  var nextImageKey = 0;
+
+  function imageKey(img) {
+    var key = imageKeys.get(img);
+    if (key === undefined) {
+      key = "image:" + ++nextImageKey;
+      imageKeys.set(img, key);
+    }
+    return key;
+  }
+
   /**
    * 读一张位图:把**图像本身**取回来(base64),作者写的替代文本一并留着。
    *
@@ -358,13 +370,14 @@
    *   - **类型**:content-type 先挡一道,字节开头再认一道;
    *   - **体积**:读的过程中就不超过 CTX.IMAGE_MAX_BYTES(见 readCapped)。
    *
-   * key 用图片地址:同一张图送两次只有一条语境,页面上两张不同的图各是一条。
+   * key 按图片元素分配:同一元素更新原条目,不同元素分别保存。
    */
-  function readRaster(img) {
+  function readRaster(img, src) {
     var ordinal = ordinalOf(img);
     var text = altTextOf(img) || missingText("image", ordinal, "作者没有写替代文本");
-    var url = sameOriginUrl(img.src);
-    if (url === null) return Promise.resolve({ chart: "image", source: text, key: img.src });
+    var key = imageKey(img);
+    var url = sameOriginUrl(src);
+    if (url === null) return Promise.resolve({ chart: "image", source: text, key: key });
     /* 取的是同一张已经显示在页面上的图的地址,同源。失败不是异常,是这条路本来
        就有的一种结果(图换了地方、服务器不给这个类型、字节认不出来、超过上限),
        退回替代文本即可 —— fetch 的第二个回调接住它,不额外包一层。 */
@@ -384,23 +397,31 @@
         return {
           chart: "image",
           source: text,
-          key: img.src,
+          key: key,
           mediaType: mediaType,
           imageData: base64Of(bytes)
         };
       })
       .then(function (got) {
-        return got === null ? { chart: "image", source: text, key: img.src } : got;
+        return got === null ? { chart: "image", source: text, key: key } : got;
       });
   }
 
   /**
-   * 读一张图,返回 {chart, source, key},位图另带 mediaType 与 imageData。
-   * source 一定非空 —— 取不到写说明。
+   * 读取当前选中的图像资源,位图另带 mediaType 与 imageData。
+   * 读取期间选源变化时返回 null,由入口提示重新选择。
    */
   function readImage(img) {
-    var svg = sameOriginSvgUrl(img);
-    if (svg === null) return readRaster(img);
+    var src = img.currentSrc || img.src;
+    return readImageSource(img, src).then(function (found) {
+      return (img.currentSrc || img.src) === src ? found : null;
+    });
+  }
+
+  function readImageSource(img, src) {
+    var svg = sameOriginSvgUrl(src);
+    if (svg === null) return readRaster(img, src);
+    var key = imageKey(img);
     /* 取的是同一张已经显示在页面上的图的地址,同源。失败不是异常,是这条路本来
        就有的一种结果(图换了地方、服务器不给这个类型),退回替代文本即可 ——
        fetch 的第二个回调接住它,不额外包一层。读取与位图同一个上限:一份 SVG
@@ -419,7 +440,7 @@
         return {
           chart: "svg",
           source: labels || altTextOf(img) || missingText("svg", ordinalOf(img), "图里的文字没有取到"),
-          key: img.src
+          key: key
         };
       });
   }
@@ -526,6 +547,10 @@
     readChart(el).then(function (found) {
       btn.disabled = false;
       btn.classList.remove("is-busy");
+      if (found === null) {
+        flash("图片已切换，请重新点击“问助手”。");
+        return;
+      }
       handOff(found);
     });
   }
@@ -541,12 +566,14 @@
    */
   function enhance(el) {
     if (el.hasAttribute(READY_ATTR)) return;
-    var parent = el.parentNode;
+    var target = el.tagName === "IMG" && el.parentElement && el.parentElement.tagName === "PICTURE"
+      ? el.parentElement : el;
+    var parent = target.parentNode;
     if (!parent) return;
     var box = document.createElement("div");
     box.className = "aipm-chart";
-    parent.insertBefore(box, el);
-    box.appendChild(el);
+    parent.insertBefore(box, target);
+    box.appendChild(target);
     box.appendChild(askButton(el));
     el.setAttribute(READY_ATTR, "");
   }
