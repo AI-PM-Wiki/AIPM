@@ -558,8 +558,8 @@
     const response = await fetch(window.__aipmLocalAcceptanceStatus, { cache: 'no-store', signal });
     if (!response.ok) throw new Error('acceptance status unavailable');
     const status = await response.json();
-    if (!Number.isSafeInteger(status.limit) || !Number.isSafeInteger(status.sent) ||
-        status.limit < 1 || status.sent < 0 || status.sent > status.limit || typeof status.halted !== 'boolean') {
+    if (!Number.isSafeInteger(status.sent) || status.sent < 0 || typeof status.halted !== 'boolean' ||
+        (status.limit !== null && (!Number.isSafeInteger(status.limit) || status.limit < 1 || status.sent > status.limit))) {
       throw new Error('acceptance status invalid');
     }
     return status;
@@ -572,7 +572,8 @@
   function showLocalAcceptance(status) {
     if (!status) return;
     localStatus.hidden = false;
-    localStatus.textContent = status.halted ? '本机验收模型连接已停止，请联系环境维护者检查。' :
+    localStatus.textContent = status.halted ? '本机验收模型连接已停止，请联系环境维护者检查。' : status.limit === null ?
+      `本机验收：累计记录 ${status.sent} 次模型请求，用量继续记录。` :
       `本机验收额度：累计剩余 ${status.limit - status.sent} 次模型请求；一次对话可能使用多次请求。`;
     applyMetrics();
   }
@@ -1144,7 +1145,7 @@
       const { createAgentEntry } = await import('./annotation-agent-entry.js?v=46');
       const proposalEntry = createAgentEntry();
       const acceptance = await refreshLocalAcceptance(requestSignal);
-      if (acceptance && (acceptance.halted || acceptance.sent >= acceptance.limit)) {
+      if (acceptance && (acceptance.halted || (acceptance.limit !== null && acceptance.sent >= acceptance.limit))) {
         t.bubble.classList.add('is-error');
         t.md.textContent = acceptance.halted ? '本机验收模型连接已停止，请联系环境维护者检查。' : ERROR_TEXT.acceptance_limit;
         finish(null, 'acceptance_limit');
@@ -1222,6 +1223,7 @@
             if (data.usage || data.costUsd != null || data.durationMs != null || data.numTurns != null)
               t.meta.textContent = fmtUsage(data);
             finish(ctx.acc);
+            if (hasLocalAcceptanceStatus()) void refreshLocalAcceptance();
             break;
           case "error":
             track("assistant_panel_error", Object.assign(env(), { code: data.code }));
@@ -1231,7 +1233,7 @@
               (ERROR_TEXT[data.code] ? `<p>${escapeHtml(ERROR_TEXT[data.code])}</p>` : "");
             finish(null, data.code);
             if (hasLocalAcceptanceStatus()) void refreshLocalAcceptance().then((status) => {
-              if (status && status.sent >= status.limit && t.wrap.isConnected) t.md.textContent = ERROR_TEXT.acceptance_limit;
+              if (status && status.limit !== null && status.sent >= status.limit && t.wrap.isConnected) t.md.textContent = ERROR_TEXT.acceptance_limit;
             });
             break;
         }
