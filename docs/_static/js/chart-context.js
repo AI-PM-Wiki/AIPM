@@ -8,11 +8,9 @@
   三件事分成三层,各自的失败方式不同:
 
   1. **取源**(readChart):把这张图里能读的东西读出来。mermaid 读它的源码 ——
-     模型读源码比看一张栅格化后的图有用得多;SVG 读图里写的那些字;位图把**图像
-     本身**取回来(base64),作者写的替代文本一并留着。三条路都可能一无所获,那时
-     写的是一句说明:第几张、什么图、为什么没有内容。**例句本身也是内容**,语境
-     因此仍然立得住 —— 模型知道用户在指哪一张,可以反问;换成「取不到就不造条目」,
-     按钮点下去什么都没发生,而用户并不知道是为什么。
+     模型读源码比看一张栅格化后的图有用得多;SVG 读取受限静态源码;位图把**图像
+     本身**取回来(base64),作者写的替代文本一并留着。SVG 校验失败时显示提示,
+     不添加语境。mermaid 与位图取不到内容时保留来源说明。
   2. **规范化**:交给 context-item.js 的 forChart,由它管形状、去重与「仅本机不出
      本机」那道边界。这个文件不自己拼条目,也就不可能绕开那道边界。
   3. **交接**:交给助手面板的 attachContext。失败(语境条满了、面板没挂上)由
@@ -32,8 +30,8 @@
   ── 不可信的 SVG ──
 
   图是作者写的,和其它正文一样不可信。SVG 的取源走 fetch 拿文本,再交给 DOMParser
-  解析成一份**惰性文档**读字:那份文档没有浏览上下文,里面的 <script> 不执行、
-  事件属性不触发、外链不加载;读出来的字符串也只以文本形式进语境(经 textContent
+  解析成一份**惰性文档**:仅接受限定静态元素与属性,脚本、事件属性及资源引用均拒绝。
+  这份文档没有浏览上下文;源码字符串只以文本形式进语境(经 textContent
   摆上语境条),解析出来的节点从不插入本文档。这个文件里唯一一处 innerHTML 写的
   是自己定义的那颗图标常量,任何来自页面的字符串都不经过它。
 
@@ -324,29 +322,34 @@
     return type === "" || type.indexOf("svg") >= 0;
   }
 
-  /**
-   * SVG 里的字:title / desc / text 三处,按文档顺序去重后连起来。
-   *
-   * DOMParser 给出的是一份**惰性文档** —— 没有浏览上下文,<script> 不执行、事件
-   * 属性不触发、外链不加载。这里只读它写出来的字符串,而字符串只以文本形式进
-   * 语境;解析出来的节点从不插入本文档。读不出东西(不是 SVG、只有图形没有字)
-   * 时返回空串,由调用方回落到替代文本或那句说明。
-   */
-  function svgLabels(markup) {
+  /** 静态 SVG 以完整源码作为文本语境,解析节点保持在惰性文档中。 */
+  function svgSource(markup) {
+    if (!window.__aipmSvgXml || !window.__aipmSvgXml.acceptsUtf8(markup)) return null;
     var doc = new DOMParser().parseFromString(markup, "image/svg+xml");
-    if (!doc || doc.querySelector("parsererror")) return "";
-    var nodes = doc.querySelectorAll("title, desc, text");
-    var parts = [];
-    var total = 0;
+    var namespace = "http://www.w3.org/2000/svg";
+    if (!doc || doc.doctype || doc.querySelector("parsererror") ||
+        doc.documentElement.localName !== "svg" || doc.documentElement.namespaceURI !== namespace) return null;
+    var instructions = doc.createTreeWalker(doc, NodeFilter.SHOW_PROCESSING_INSTRUCTION);
+    if (instructions.nextNode()) return null;
+    var elements = ["svg", "g", "rect", "circle", "ellipse", "line", "polyline", "polygon", "path", "title", "desc", "text", "tspan"];
+    var attributes = ["xmlns", "viewBox", "width", "height", "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry",
+      "d", "points", "transform", "fill", "fill-rule", "fill-opacity", "stroke", "stroke-width", "stroke-opacity",
+      "stroke-linecap", "stroke-linejoin", "stroke-dasharray", "stroke-dashoffset", "opacity", "preserveAspectRatio",
+      "font-size", "font-weight", "text-anchor", "dominant-baseline", "dx", "dy"];
+    var nodes = doc.querySelectorAll("*");
     for (var i = 0; i < nodes.length; i++) {
-      var text = (nodes[i].textContent || "").replace(/\s+/g, " ").trim();
-      if (text === "" || parts.indexOf(text) >= 0) continue;
-      parts.push(text);
-      total += text.length;
-      /* 超长的图不必整个读完:forChart 那一步也会截,这里早点停省下一次拼接。 */
-      if (total >= CTX.LIMITS.source) break;
+      var node = nodes[i];
+      if (node.namespaceURI !== namespace || elements.indexOf(node.localName) < 0) return null;
+      for (var j = 0; j < node.attributes.length; j++) {
+        var attribute = node.attributes[j];
+        if (attributes.indexOf(attribute.name) < 0 ||
+            (attribute.namespaceURI && attribute.name !== "xmlns") ||
+            (attribute.name === "xmlns" && attribute.value !== namespace) ||
+            /url\s*\(|\\/i.test(attribute.value)) return null;
+      }
     }
-    return parts.join(" / ");
+    var source = "静态 SVG 源码（文本语境，未发送位图）：\n" + new XMLSerializer().serializeToString(doc.documentElement);
+    return source.length <= CTX.LIMITS.source ? source : null;
   }
 
   var imageKeys = new WeakMap();
@@ -422,10 +425,7 @@
     var svg = sameOriginSvgUrl(src);
     if (svg === null) return readRaster(img, src);
     var key = imageKey(img);
-    /* 取的是同一张已经显示在页面上的图的地址,同源。失败不是异常,是这条路本来
-       就有的一种结果(图换了地方、服务器不给这个类型),退回替代文本即可 ——
-       fetch 的第二个回调接住它,不额外包一层。读取与位图同一个上限:一份 SVG
-       再大也不该整个落进内存。 */
+    /* 读取同源 SVG,保持响应读取上限。失败时提示用户,不添加语境。 */
     return sourceRequest(svg)
       .then(
         function (res) {
@@ -436,10 +436,20 @@
         }
       )
       .then(function (bytes) {
-        var labels = bytes === null || bytes.length === 0 ? "" : svgLabels(new TextDecoder().decode(bytes));
+        var markup = null;
+        if (bytes !== null && bytes.length > 0) {
+          try {
+            markup = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+          } catch (error) {
+            if (!(error instanceof TypeError)) throw error;
+            return { error: "SVG 未加入对话：文件需要使用有效的 UTF-8 编码。" };
+          }
+        }
+        var source = markup === null ? null : svgSource(markup);
+        if (source === null) return { error: "SVG 未加入对话：读取失败、内容超限，或编码、元素及资源引用不受支持。" };
         return {
           chart: "svg",
-          source: labels || altTextOf(img) || missingText("svg", ordinalOf(img), "图里的文字没有取到"),
+          source: source,
           key: key
         };
       });
@@ -549,6 +559,10 @@
       btn.classList.remove("is-busy");
       if (found === null) {
         flash("图片已切换，请重新点击“问助手”。");
+        return;
+      }
+      if (found.error) {
+        flash(found.error);
         return;
       }
       handOff(found);

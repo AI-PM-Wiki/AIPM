@@ -1,0 +1,14 @@
+{
+  "name": "aipm-svg-parser-build",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild entry.js --bundle --format=iife --global-name=__aipmSvgXml --platform=browser --target=es2020 --supported:template-literal=false --minify --legal-comments=eof --outfile=../../docs/_static/js/vendor/svg-xml.js"
+  },
+  "dependencies": {
+    "saxes": "6.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}
