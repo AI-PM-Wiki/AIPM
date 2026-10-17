@@ -26,11 +26,18 @@
 */
 (function () {
   "use strict";
+  if (window.__aipmIntegrityFailed) throw new Error("annotation asset integrity failure");
 
-  var ANNO_API_BASE =
-    location.hostname === "localhost" || location.hostname === "127.0.0.1"
-      ? "http://127.0.0.1:8788"
-      : "https://anno-api.nvc.ac";
+  var localHost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  var ANNO_API_BASE = localHost && window.__aipmLocalApi?.annotation
+    ? window.__aipmLocalApi.annotation
+    : localHost ? "http://127.0.0.1:8788" : "https://anno-api.nvc.ac";
+  if (localHost && window.__aipmLocalApi?.annotation) {
+    var endpoint = new URL(ANNO_API_BASE);
+    if (endpoint.protocol !== "http:" || endpoint.hostname !== "127.0.0.1" ||
+        endpoint.pathname !== "/" || endpoint.search || endpoint.hash ||
+        endpoint.username || endpoint.password) throw new Error("invalid local annotation endpoint");
+  }
 
   /* 色板:≥5 色,每色有亮/暗两套值(定义在 annotation.css 的 --aipm-anno-* 变量上)。
      label 是短标签(面板图例与建议条展示),when 是该颜色的使用语义 ——
@@ -46,7 +53,8 @@
 
   var K_LOCAL = "aipm-anno-local";
   var K_MAP = "aipm-anno-map";
-  var K_DRAFT = "aipm-anno-draft";
+  var K_DRAFT = "aipm-anno-manual-draft-v1";
+  var K_LEGACY_DRAFT = "aipm-anno-draft";
   var K_LAST_COLOR = "aipm-anno-last-color";
   var K_PREFS = "aipm-anno-prefs";
   var K_SMART = "aipm-anno-smart";
@@ -77,6 +85,7 @@
   }
 
   function writeJson(key, value) {
+    if (window.__aipmIntegrityFailed || window.__aipmIntegrityReady !== true) throw new Error("annotation asset integrity failure");
     var text = JSON.stringify(value);
     try {
       localStorage.setItem(key, text);
@@ -97,9 +106,16 @@
 
   function request(path, opts) {
     opts = opts || {};
+    if ((window.__aipmIntegrityFailed || window.__aipmIntegrityReady !== true) &&
+        (opts.method || "GET") !== "GET" &&
+        (path.startsWith("/api/annotations") || path.startsWith("/api/annotation-requests") ||
+         path === "/api/annotation-permits" || path === "/api/reply-permits")) {
+      throw new Error("annotation asset integrity failure");
+    }
     var headers = { Accept: "application/json" };
     if (opts.body !== undefined) headers["Content-Type"] = "application/json";
     if (opts.token) headers.Authorization = "Bearer " + opts.token;
+    if (opts.permit) headers["X-Annotation-Permit"] = opts.permit;
     return fetch(ANNO_API_BASE + path, {
       method: opts.method || "GET",
       headers: headers,
@@ -209,7 +225,7 @@
   }
 
   /* ---- 草稿:必须扛过 OAuth 整轮往返 ----
-     未登录用户选「公开」→ 引导登录 → 回跳后要把刚才那段话发出去。
+     未登录用户选「公开」→ 引导登录 → 回跳后展示待确认请求。
      草稿存 localStorage(不是内存),因为回跳是一次完整的页面加载。 */
 
   function saveDraft(draft) {
@@ -223,6 +239,17 @@
   function peekDraft() {
     return readJson(K_DRAFT, null);
   }
+
+  function peekLegacyDraft() {
+    return readJson(K_LEGACY_DRAFT, null);
+  }
+
+  function saveLegacyDraft(draft) {
+    writeJson(K_LEGACY_DRAFT, Object.assign({}, draft, {
+      savedAt: new Date().toISOString()
+    }));
+  }
+
 
   function clearDraft() {
     try {
@@ -351,6 +378,7 @@
   }
 
   window.__aipmAnnoStore = {
+    assetVersion: 46,
     ANNO_API_BASE: ANNO_API_BASE,
     PALETTE: PALETTE,
     DEFAULT_COLOR: DEFAULT_COLOR,
@@ -373,6 +401,8 @@
     saveDraft: saveDraft,
     peekDraft: peekDraft,
     clearDraft: clearDraft,
+    peekLegacyDraft: peekLegacyDraft,
+    saveLegacyDraft: saveLegacyDraft,
 
     ANNO_STYLES: ANNO_STYLES,
     DEFAULT_STYLE: DEFAULT_STYLE,

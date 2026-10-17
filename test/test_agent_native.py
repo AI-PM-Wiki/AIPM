@@ -1,0 +1,669 @@
+"""锁住「批注面板 ↔ AI 助手」这条互通路径的约定(AIPM#107 第一步)。
+
+这一步交付的是一条完整的通路:正文里划选一段话(或面板里的一条批注)→ 悬浮窗 /
+卡片上的「问助手」→ 语境条 → 随提问发到问答后端 → 进入模型上下文。
+
+容易在改动中悄悄回退的几条:
+
+- **语境条目的构造只有一处**。形状、去重、「仅本机不出本机」这三件事都在
+  context-item.js;面板与助手两边都只调它,谁都不自己拼一个上下文对象。
+  多一处构造点就多一处能绕开那条边界的路。
+- **「仅本机」不出本机**靠的是同一个判断被每个容器各调一次:构造、进语境条、
+  从 localStorage 恢复、出网。**出网那道是最后一道**,它保证即便别的入口漏了,
+  内容也序列化不进请求体。服务端另有一道独立的闸(visibility 的枚举里没有
+  local,并按 kind 校验必填字段),两边各自成立。
+- **助手面板对批注面板的接口只有它导出的那几个成员**。曾经那里调了一个没导出的
+  `chat.open()`,于是两条「问助手」入口都是语境挂上之后再抛异常 —— 导出的成员与
+  调用方用到的那一组必须对得上。
+- **换页后语境跟着换页**。面板挂在 body 上、instant 导航不换它,不主动收的话,
+  在 A 页送进来的那段话会跟着 B 页的提问发出去。逐条比 page,页内锚点跳转不算
+  换页;历史消息里的语境不动(「重新生成」要按原样重发)。
+- **同一条来源连送两次只有一条语境**。参照 poco-ai/Agentero#614:按 id 追加会
+  让同一条来源排出一串重复条目,而删其中一条又会把同 id 的其余条目一起删掉。
+- **不带 context 的请求行为不变**。老客户端(浏览器缓存里的旧 JS、脚本调用)
+  不带这个字段,拿到的 prompt 与这次改动之前逐字相同。
+- 服务端那侧的取值上限与前端同源:ContextItem 的每个字段长度、条数上限,
+  两边对「多长算超限」必须给出同一个答案。
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import shutil
+import subprocess
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+MKCONFIG = ROOT / "mkdocs.yml"
+ANNO_JS = ROOT / "docs" / "_static" / "js" / "annotation.js"
+ANNO_CSS = ROOT / "docs" / "_static" / "css" / "annotation.css"
+CHAT_JS = ROOT / "docs" / "_static" / "js" / "chat-widget.js"
+AGENT_ENTRY_JS = ROOT / "docs" / "_static" / "js" / "annotation-agent-entry.js"
+CONFIRM_JS = ROOT / "docs" / "_static" / "js" / "annotation-proposal-confirm.js"
+CHAT_CSS = ROOT / "docs" / "_static" / "css" / "chat-widget.css"
+CTX_JS = ROOT / "docs" / "_static" / "js" / "context-item.js"
+CTX_CHECK = ROOT / "test" / "js" / "context-item-check.mjs"
+AGENT_SERVER = ROOT / "agent-server"
+SRV_TS = AGENT_SERVER / "src" / "server.ts"
+AGENT_TS = AGENT_SERVER / "src" / "agent.ts"
+TOOLS_TS = AGENT_SERVER / "src" / "tools.ts"
+PROP_TS = AGENT_SERVER / "src" / "annotation-proposal.ts"
+PROP_CHECK = AGENT_SERVER / "src" / "proposal-check.ts"
+STORE_JS = ROOT / "docs" / "_static" / "js" / "annotation-store.js"
+BROWSER_CASE = ROOT / "test" / "browser" / "check_agent_annotation.py"
+CTX_TS = AGENT_SERVER / "src" / "context.ts"
+UNIT_TS = AGENT_SERVER / "src" / "unit-check.ts"
+
+
+def _strip_comments(src: str) -> str:
+    """去掉 /* ... */ 注释,断言只读代码。"""
+    return re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def _squash(src: str) -> str:
+    """把空白压平,方便跨行匹配。"""
+    return re.sub(r"\s+", " ", src)
+
+
+class TestContextItemModule(unittest.TestCase):
+    """语境条目的构造与去重收在一个文件里。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.src = _strip_comments(_read(CTX_JS))
+        cls.mk = _read(MKCONFIG)
+
+    def test_module_is_injected_before_both_panels(self):
+        block = self.mk.split("extra_javascript:")[1].split("extra_css:")[0]
+        entries = [e.split("?", 1)[0] for e in re.findall(r"-\s*'([^']+)'", block)]
+        self.assertIn("_static/js/context-item.js", entries, "mkdocs.yml 未注入 context-item.js")
+        self.assertIn("_static/js/panel-shared.js", entries)
+        self.assertLess(
+            entries.index("_static/js/context-item.js"),
+            entries.index("_static/js/panel-shared.js"),
+            "context-item.js 必须排在 panel-shared.js 之前:hooks 追加的两个面板脚本都读它",
+        )
+
+    def test_exports_the_shared_entry_points(self):
+        for name in ("forSelection", "forAnnotation", "forChart", "isDeliverable", "sanitize", "upsert", "remove", "toPayload"):
+            self.assertIn(f"{name}: {name}", self.src, f"window.__aipmContext 未导出 {name}")
+
+    def test_limits_match_the_server_side(self):
+        ts = _read(CTX_TS)
+        js_limits = dict(
+            (key, int(value))
+            for key, value in re.findall(r"(\w+): (\d+)", re.search(r"var LIMITS = (\{[^}]*\})", self.src).group(1))
+        )
+        self.assertEqual(len(js_limits), 8, f"前端的 LIMITS 少了解析不出的项:{js_limits}")
+        # 服务端可以写千位分隔(699_052),比对时先去掉
+        ts_digits = ts.replace("_", "")
+        for key, value in js_limits.items():
+            self.assertIn(f"{key}: {value}", ts_digits, f"服务端 CONTEXT_LIMITS.{key} 与前端不一致")
+        js_max = int(re.search(r"var MAX_ITEMS = (\d+)", self.src).group(1))
+        self.assertIn(f"CONTEXT_MAX_ITEMS = {js_max}", ts)
+
+    def test_local_never_becomes_context(self):
+        fn = self.src[self.src.index("function forAnnotation(") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn('visibility !== "public" && visibility !== "private"', fn)
+        self.assertIn("return null", fn)
+
+    def test_every_container_checks_the_same_predicate(self):
+        """条目要经过四个容器:构造、进条、恢复、出网。判断只写一份。"""
+        fn = self.src[self.src.index("function isDeliverable(item)") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn('item.visibility !== "public" && item.visibility !== "private"', fn)
+        self.assertIn("CHART_KINDS.indexOf(item.chart)", fn, "图表的形状规则也收在这一份判断里")
+
+        for head, name in (
+            ("function upsert(list, item)", "upsert"),
+            ("function sanitize(list)", "sanitize"),
+            ("function toPayload(list)", "toPayload"),
+            ("function forChart(", "forChart"),
+        ):
+            body = self.src[self.src.index(head) :]
+            body = body[: body.index("\n  }") + 4]
+            if name == "forChart":
+                self.assertIn("CHART_KINDS.indexOf(chart)", body, "构造那一步也要认种类")
+            else:
+                self.assertIn("isDeliverable", body, f"{name} 没有过 isDeliverable")
+
+    def test_upsert_refreshes_in_place(self):
+        fn = self.src[self.src.index("function upsert(") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("items[i] = item", fn, "同 id 的条目应在原位刷新")
+        self.assertNotIn("push", fn.split("items.length >= MAX_ITEMS")[0], "同 id 时不得追加")
+
+
+class TestAnnotationPanelHandsOffContext(unittest.TestCase):
+    """批注面板只负责挑出「正在读的东西」,不自己拼语境。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = _strip_comments(_read(ANNO_JS))
+        cls.css = _strip_comments(_read(ANNO_CSS))
+
+    def test_toolbar_has_ask_button_right_of_the_pen(self):
+        html = self.js[self.js.index("toolbar.innerHTML") :]
+        html = html[: html.index("document.body.appendChild(toolbar)")]
+        self.assertIn("aipm-anno__tb-ask", html, "悬浮窗缺少「问助手」")
+        self.assertLess(
+            html.index("aipm-anno__tb-annotate"),
+            html.index("aipm-anno__tb-ask"),
+            "「问助手」应在「写批注」右侧",
+        )
+        self.assertLess(html.index("aipm-anno__tb-ask"), html.index("aipm-anno__tb-cancel"))
+        self.assertIn(".aipm-anno__tb-ask", self.css, "缺少这颗按钮的样式")
+
+    def test_toolbar_click_routes_to_the_ask_path(self):
+        self.assertIn('closest(".aipm-anno__tb-ask")', self.js)
+        self.assertIn("askAboutSelection()", self.js)
+
+    def test_selection_ask_locks_the_selection_then_clears_it(self):
+        fn = self.js[self.js.index("function askAboutSelection()") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("ctxItem.forSelection(", fn, "划选那条路必须走共享的构造入口")
+        self.assertIn("hideToolbar()", fn)
+        self.assertIn("clearSelection()", fn, "动作已完成的路径要撤掉选区,否则悬浮窗会被招回来")
+
+    def test_card_button_is_disabled_for_local_only(self):
+        fn = self.js[self.js.index("function askButton(") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("isLocal(anno)", fn)
+        self.assertIn("b.disabled = true", fn, "仅本机那条必须按不动")
+        self.assertIn("askAssistant(annotationContext(anno))", fn)
+
+    def test_ask_assistant_uses_only_exported_members(self):
+        """调用方用到的成员必须在导出里 —— 少一个就是点下去抛异常。"""
+        api = _strip_comments(_read(CHAT_JS))
+        api = api[api.index("window.__aipmChat = {") :]
+        api = api[: api.index("\n  };") + 5]
+        exported = set(re.findall(r"^\s+(\w+):\s", api, flags=re.M))
+        used = set(re.findall(r"\bchat\.(\w+)", self.js))
+        self.assertTrue(exported, "没解析出 window.__aipmChat 导出的成员")
+        self.assertLessEqual(used, exported, f"annotation.js 用了没导出的成员:{sorted(used - exported)}")
+
+    def test_context_is_built_in_exactly_one_place(self):
+        self.assertEqual(
+            self.js.count("ctxItem.forSelection("),
+            1,
+            "划选语境的构造只允许有一处",
+        )
+        self.assertEqual(
+            self.js.count("ctxItem.forAnnotation("),
+            1,
+            "批注语境的构造只允许有一处",
+        )
+        self.assertEqual(
+            self.js.count("attachContext("),
+            1,
+            "只有 askAssistant 能把手里的条目交给助手面板",
+        )
+
+    def test_quote_falls_back_to_the_anchored_text(self):
+        fn = self.js[self.js.index("function annotatedText(") :]
+        fn = fn[: fn.index("\n  }") + 4]
+        self.assertIn("resolved[anno.id]", fn, "应优先取正文里锚好的那一段")
+        self.assertIn("字符", fn, "位置描述那种兜底不该当成原文送出去")
+
+
+class TestChatPanelConsumesContext(unittest.TestCase):
+    """助手面板把语境摆出来、随提问发出去、并跟着会话留下来。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.js = _strip_comments(_read(CHAT_JS))
+        cls.css = _strip_comments(_read(CHAT_CSS))
+
+    def test_context_bar_sits_above_the_input(self):
+        composer = self.js[self.js.index('class="aipm-chat__composer"') :]
+        composer = composer[: composer.index("</form>")]
+        self.assertIn("aipm-chat__ctxbar", composer, "语境条应在输入卡片里")
+        self.assertLess(
+            composer.index("aipm-chat__ctxbar"),
+            composer.index("aipm-chat__input"),
+            "语境条在输入框上方",
+        )
+        self.assertIn(".aipm-chat__ctxbar", self.css)
+        self.assertIn('order: -2', self.css, "窄条形态里语境条要排在附件之上")
+
+    def test_exposes_attach_context_to_the_annotation_panel(self):
+        api = self.js[self.js.index("window.__aipmChat = {") :]
+        self.assertIn("attachContext:", api)
+        self.assertIn("SHARED.claim(\"chat\")", api, "开面板要跟点 FAB 走同一条互斥路")
+        self.assertIn("isOpen:", api)
+
+    def test_history_persistence_sheds_image_payload_before_the_conversation(self):
+        """位图的 base64 有几百 KB,历史写多了会撞上 localStorage 配额。
+
+        撞上时先写第二遍:**只去掉图像内容**。整条会话都不存是最后一种情形,不是
+        第一反应 —— 聊过什么比那一轮的图重要。动态验证在
+        test/browser/check_chart_flow.py 的 test_quota_pressure_keeps_the_conversation。
+        """
+        fn = self.js[self.js.index("const persist = ()") :]
+        fn = fn[: fn.index("\n  };") + 5]
+        self.assertEqual(fn.count("localStorage.setItem"), 2, "要写两遍:原样一遍,去掉图像一遍")
+        self.assertIn("mediaType: \"\", imageData: \"\"", _squash(fn))
+        self.assertIn("HISTORY_MAX", fn, "两遍都只存最近这些条")
+        first = fn[: fn.index("} catch")]
+        self.assertIn("return", first, "第一遍写成就不必走第二遍")
+
+    def test_send_carries_context(self):
+        post = self.js[self.js.index("const postUser = (text, files, context)") :]
+        post = post[: post.index("\n  };") + 5]
+        self.assertIn("history.push({ role: \"user\", content: sent, context: ctxItems, page })", _squash(post))
+        self.assertIn("CTX.normalizePage(location.pathname)", post)
+        self.assertIn("runTurn(sent, ctxItems, page)", post)
+
+        turn = self.js[self.js.index("const runTurn = async (message, context, page)") :]
+        turn = turn[: turn.index("\n  };") + 5]
+        self.assertIn("CTX.toPayload(context)", turn)
+        self.assertIn("if (wire.length) body.context = wire", turn, "没有语境时不带这个字段")
+        self.assertIn("if (typeof page === \"string\") body.page = page", turn)
+
+    def test_history_sent_to_the_server_stays_two_fielded(self):
+        turn = self.js[self.js.index("const runTurn = async (message, context, page)") :]
+        turn = turn[: turn.index("\n  };") + 5]
+        self.assertIn(
+            ".map((m) => ({ role: m.role, content: m.content }))",
+            _squash(turn),
+            "语境随行,不进 history —— 发出去的 history 仍然只有 role 与 content",
+        )
+
+    def test_regenerate_replays_the_same_context(self):
+        fn = self.js[self.js.index("const regenerate = (aiWrap)") :]
+        fn = fn[: fn.index("\n  };") + 5]
+        self.assertIn("runTurn(rec.content, rec.context || [], rec.page)", fn)
+
+    def test_user_bubble_keeps_a_record_of_the_context(self):
+        fn = self.js[self.js.index("const addUserBubble = (text, files, context)") :]
+        fn = fn[: fn.index("\n  };") + 5]
+        self.assertIn("aipm-chat__ctx-inline", fn, "气泡上要留一份,回头翻会话才看得见当时拿哪段话问的")
+        self.assertIn(".aipm-chat__ctx-inline", self.css)
+
+    def test_restored_context_goes_through_the_shared_shape_rule(self):
+        """恢复那条路不另写一份形状判断 —— 与出网、进条共用 context-item.js 的。"""
+        fn = self.js[self.js.index("const sanitizeCtx = (list)") :]
+        fn = fn[: fn.index("\n  };") + 5]
+        self.assertIn("CTX.sanitize(list)", _squash(fn))
+
+    def test_page_change_prunes_the_context_bar(self):
+        """换页后不再发上一页的语境;历史消息里的那些留着。"""
+        self.assertIn("document$.subscribe(pruneCtxForPage)", _squash(self.js))
+        fn = self.js[self.js.index("const pruneCtxForPage = ()") :]
+        fn = fn[: fn.index("\n  };") + 5]
+        self.assertIn("CTX.normalizePage(location.pathname)", _squash(fn), "按当前页逐条比,页内锚点跳转不算换页")
+        self.assertIn("pendingCtx.filter", fn)
+        self.assertNotIn("history", fn, "历史消息里的语境是「当时拿哪段话问的」的记录,重新生成要按原样重发")
+
+
+class TestServerAcceptsContext(unittest.TestCase):
+    """问答后端认识 context,并且自己不接受「仅本机」。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.srv = _read(SRV_TS)
+        cls.agent = _read(AGENT_TS)
+        cls.ctx = _read(CTX_TS)
+
+    def test_schema_takes_context_with_an_empty_default(self):
+        schema = self.srv[self.srv.index("const ChatBodySchema") :]
+        schema = schema[: schema.index("\n});") + 4]
+        self.assertIn("context: z.array(ContextItemSchema).max(CONTEXT_MAX_ITEMS).default([])", _squash(schema))
+
+    def test_visibility_enum_excludes_local(self):
+        item = self.srv[self.srv.index("const ContextItemSchema") :]
+        item = item[: item.index("const ChatBodySchema")]
+        self.assertIn("z.enum(['public', 'private'])", _squash(item))
+        self.assertNotIn("'local'", item, "「仅本机」不该有进服务端的取值")
+
+    def test_chart_kind_is_part_of_the_schema(self):
+        """图表是第三种 kind:字段、枚举与长度都要与前端同源。"""
+        item = self.srv[self.srv.index("const ContextItemSchema") :]
+        item = item[: item.index("const ChatBodySchema")]
+        self.assertIn("z.enum(['selection', 'annotation', 'chart'])", _squash(item))
+        self.assertIn("chart: z.enum(['', ...CHART_KINDS]).default('')", _squash(item))
+        self.assertIn("source: z.string().max(CONTEXT_LIMITS.source).default('')", _squash(item))
+        self.assertIn("source: 4000", self.ctx, "CONTEXT_LIMITS 缺 source")
+
+    def test_kind_rule_is_enforced_by_the_schema(self):
+        """按 kind 的必填字段挂在同一个 schema 上,漏不出 schema 之外。"""
+        schema = self.srv[self.srv.index("const ContextItemSchema") :]
+        schema = schema[: schema.index("const ChatBodySchema")]
+        self.assertIn(".superRefine(", schema)
+        self.assertIn("contextItemProblem(item)", schema)
+        self.assertIn("{ code: 'custom', message: problem }", _squash(schema))
+
+        rule = self.ctx[self.ctx.index("export function contextItemProblem(") :]
+        rule = rule[: rule.index("\n}") + 2]
+        self.assertIn("item.kind === 'chart'", rule)
+        self.assertIn("CHART_KINDS as readonly string[]).includes(item.chart)", _squash(rule))
+        self.assertIn("item.source.trim().length === 0", rule, "图表要有取到的文字")
+        self.assertIn("item.chart !== 'image'", rule, "只有位图能带图像内容")
+        self.assertIn("RASTER_MEDIA_TYPES as readonly string[]).includes(item.mediaType)", _squash(rule))
+        self.assertIn("mediaType 与 imageData 要么都给,要么都不给", rule)
+        self.assertIn("item.kind === 'selection'", rule)
+        self.assertIn("quote.length > 0 || body.length > 0", _squash(rule))
+
+    def test_chart_renderer_says_what_the_model_has(self):
+        """模型看不到图,得知道自己手里是源码、是图里的字、图像本身,还是一句说明。"""
+        labels = self.ctx[self.ctx.index("const CHART_LABEL") :]
+        labels = labels[: labels.index("};") + 2]
+        self.assertIn("源码见下", labels)
+        self.assertIn("图形本身没有送过来", labels)
+        self.assertIn("看不到图像内容", labels)
+
+        # 位图那一行随图像在不在而变:取到了还说「看不到图像内容」会把模型引偏。
+        line = self.ctx[self.ctx.index("function chartTypeLine(") :]
+        line = line[: line.index("\n}") + 2]
+        self.assertIn("item.imageData === ''", line)
+        self.assertIn("CHART_LABEL.image", line)
+        self.assertIn("位图(图像本身随本消息一起送过来)", line)
+
+        fn = self.ctx[self.ctx.index("function renderItem(") :]
+        fn = fn[: fn.index("\n}") + 2]
+        chart_branch = fn[fn.index("if (item.kind === 'chart')") :]
+        chart_branch = chart_branch[: chart_branch.index("return lines.join") + len("return lines.join")]
+        self.assertIn("chartTypeLine(item)", chart_branch)
+        self.assertIn("CHART_TEXT_LABEL[chart]", chart_branch)
+        self.assertIn("本消息附带的第 ${imageIndex} 张图", chart_branch, "几张图时要指明谁是谁")
+        self.assertNotIn("原文:", chart_branch, "图表这一段提前返回,不走引文与批注那两行")
+
+    def test_bitmap_reaches_the_model_as_an_image_block(self):
+        """位图那条通路的后半段:图像要变成模型请求里的一条 image 内容块。
+
+        前端那半段(文件字节 → 语境条目 → 请求体)由浏览器用例证明;这里锁的是
+        服务端这半段的接线 —— 挑出图像、拼成内容块、交给 query(),一样都不能少。
+        """
+        images = self.ctx[self.ctx.index("export function contextImages(") :]
+        images = images[: images.index("\n}") + 2]
+        self.assertIn("item.kind === 'chart' && item.imageData !== ''", images)
+        self.assertIn("{ mediaType: item.mediaType as RasterMediaType, data: item.imageData }", _squash(images))
+
+        prompt = self.agent[self.agent.index("export function buildPromptInput(") :]
+        prompt = prompt[: prompt.index("\n}") + 2]
+        self.assertIn("contextImages(context)", prompt)
+        self.assertIn("if (images.length === 0) return text", _squash(prompt), "没有图像时逐字回到那串文字")
+        self.assertIn("media_type: image.mediaType", prompt)
+        self.assertIn("data: image.data", prompt)
+        self.assertIn("type: 'base64'", prompt)
+        self.assertIn("parent_tool_use_id: null", prompt)
+        self.assertIn("buildPromptInput(", self.agent, "buildAgentOptions 走的是这条拼装")
+
+        # 真跑一轮的断言在 npm run image-check 里 —— 假模型 API + 真 SDK,证明模型
+        # 收到的请求里确实有那条 base64,而不是我们自己的中间变量。
+        script = _read(AGENT_SERVER / "src" / "image-model-check.ts")
+        self.assertIn("ANTHROPIC_BASE_URL", script)
+        self.assertIn("runAgent(", script)
+        self.assertIn("type === 'image'", script)
+        scripts = json.loads(_read(AGENT_SERVER / "package.json"))["scripts"]
+        self.assertIn("image-check", scripts)
+
+    def test_schema_and_http_checks_are_wired(self):
+        """schema 一层的断言在 src/context-http-check.ts,挂成 npm 脚本免得住坏。"""
+        script = _read(AGENT_SERVER / "src" / "context-http-check.ts")
+        self.assertIn("ChatBodySchema.safeParse", script)
+        self.assertIn("createApp", script)
+        self.assertIn("visibility: 'local'", script)
+        self.assertIn("chart: 'mermaid'", script, "图表那几条也要在自检里")
+        self.assertIn("mediaType: 'image/png'", script, "位图那几条也要在自检里")
+        scripts = json.loads(_read(AGENT_SERVER / "package.json"))["scripts"]
+        self.assertIn("context-check", scripts)
+
+    def test_browser_suite_stays_out_of_the_default_gate(self):
+        """浏览器用例要真 Chromium,不能落进 `uv run python3 -m unittest` 的发现范围:
+        默认门禁是零浏览器依赖的。文件名不以 `test_` 开头就进不去 —— 这条锁住它。"""
+        browser_dir = ROOT / "test" / "browser"
+        modules = sorted(p.name for p in browser_dir.glob("*.py"))
+        self.assertIn("harness.py", modules)
+        self.assertIn("run.py", modules)
+        self.assertIn("check_chart_flow.py", modules)
+        self.assertIn("check_cache_upgrade.py", modules)
+        self.assertIn("check_agent_annotation.py", modules)
+        for name in modules:
+            self.assertFalse(
+                name.startswith("test_"),
+                f"{name} 会被默认发现收进去,浏览器依赖就进了零依赖门禁",
+            )
+        self.assertIn("discover", _read(browser_dir / "run.py"))
+
+    def test_context_reaches_the_agent(self):
+        self.assertIn("context: parsed.context", self.srv)
+        self.assertIn("context?: ContextItem[]", self.agent)
+
+    def test_prompt_puts_context_before_the_question(self):
+        fn = self.agent[self.agent.index("function buildPrompt(") :]
+        fn = fn[: fn.index("\n}") + 2]
+        self.assertIn("renderContext(context, siteBase)", fn)
+        self.assertLess(fn.index("renderContext("), fn.index("'用户(最新问题):'"), "语境在问题之前")
+        self.assertIn("if (lines.length === 0) return message", _squash(fn), "三者都空时逐字返回原 message")
+
+    def test_renderer_is_zero_dependency_and_declares_data_not_instructions(self):
+        self.assertNotIn("import", _strip_comments(self.ctx).split("\n\n")[0], "context.ts 要保持零依赖,才能被 unit-check 直接跑")
+        self.assertIn("不是指令", self.ctx)
+        self.assertIn("renderContext", _read(UNIT_TS), "unit-check 要覆盖语境的渲染")
+
+
+class TestContextItemBehaviour(unittest.TestCase):
+    """真正跑一遍 context-item.js —— 上面那些是形状,这里是行为。"""
+
+    @unittest.skipUnless(shutil.which("node"), "需要 node 才能跑浏览器脚本的行为断言")
+    def test_node_check_passes(self):
+        proc = subprocess.run(
+            ["node", str(CTX_CHECK)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("全部通过", proc.stdout)
+        self.assertGreaterEqual(proc.stdout.count("PASS"), 30, proc.stdout)
+
+
+class TestAgentWritesAnnotations(unittest.TestCase):
+    """「Agent 写批注」这条通路(AIPM#107):模型只提建议,写入在用户自己的会话里发生。
+
+    这一步容易在改动中悄悄回退的几条:
+
+    - **工具参数里没有页面**。建议写给哪一页由请求的语境定(proposalPage),模型手里
+      没有这一项 —— 它因此只能对用户此刻在读的这一页提建议,点不了别处。
+    - **缺省可见范围是仅本机**。三态里只有它不出网;要公开或私有,模型得自己写明,
+      而用户在卡上还能改 —— 出不出本机由用户点下去的那一刻定。
+    - **建议经确认后写入**:聊天面板不持有批注凭据。确认界面按最终可见范围
+      保存到本机，或取得服务端许可并以用户会话提交。
+    - **未登录时远端建议不提交**:先保存本机草稿；登录回来仍需用户手动确认。
+    - 上限与取值两端同源(色板 / 画法 / 引文与边缘长度),「多长算超限」两端一个答案。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.prop = _strip_comments(_read(PROP_TS))
+        cls.tools = _strip_comments(_read(TOOLS_TS))
+        cls.agent = _strip_comments(_read(AGENT_TS))
+        cls.srv = _strip_comments(_read(SRV_TS))
+        cls.anno = _strip_comments(_read(ANNO_JS))
+        cls.chat = _strip_comments(_read(CHAT_JS))
+        cls.entry = _strip_comments(_read(AGENT_ENTRY_JS))
+        cls.confirm = _strip_comments(_read(CONFIRM_JS))
+        cls.store = _strip_comments(_read(STORE_JS))
+        cls.check = _read(PROP_CHECK)
+        cls.browser = _read(BROWSER_CASE)
+
+    def test_visibility_remains_stable_while_submitting(self):
+        self.assertIn('const submittedVisibility = selectedVisibility;', self.chat)
+        self.assertIn('visibility: selectedVisibility, locked: true', self.chat)
+        self.assertIn('for (const button of visButtons) button.disabled = true;', self.chat)
+        self.assertIn('const chosenProposal = { ...proposal, visibility: submittedVisibility };', self.chat)
+        self.assertIn('entry.mount({ proposal: chosenProposal, historical, host: protectedCard });', self.chat)
+
+    def test_page_comments_resume_after_login(self):
+        self.assertIn('(draft.selectors || draft.scope === "page")', self.anno)
+        self.assertIn('draft.scope === "page"', self.anno)
+
+    def test_login_draft_keeps_request_identity_on_retry(self):
+        self.assertIn('requestId: editorDraft && editorDraft.requestId || store.uid()', self.anno)
+        self.assertIn('draft.requestId', self.anno)
+        self.assertIn('requestId: requestId', self.anno)
+
+    def body_of(self, src: str, head: str) -> str:
+        """从一个函数头取到它那一层的大括号收尾,断言只读这一段。"""
+        start = src.index(head)
+        return src[start : src.index("\n  }", start) + 4]
+
+    def test_tool_arguments_carry_no_page_or_author(self):
+        """页面与作者都不在模型的参数里:前者由语境定,后者由批注服务按令牌定。"""
+        schema = self.tools[self.tools.index("const ProposalArgsSchema = z.strictObject({") :]
+        schema = schema[: schema.index("\n});")]
+        keys = re.findall(r"^  (\w+):", schema, flags=re.M)
+        self.assertEqual(
+            keys,
+            ["scope", "quote", "prefix", "suffix", "body", "color", "style", "visibility", "note"],
+            f"工具入参的字段变了:{keys}",
+        )
+        for forbidden in ("page", "author", "id", "token"):
+            self.assertNotIn(f"{forbidden}:", schema, f"工具入参里出现了 {forbidden},这一项不该由模型给")
+        self.assertIn("z.strictObject", schema, "多写的键要当场变成错误结果,不能被静默忽略")
+        # 工具说明里也得写着页面不需要模型指定
+        self.assertIn("页面由服务端定", _squash(self.tools))
+
+    def test_defaults_are_the_ones_that_do_not_leave_the_machine(self):
+        schema = self.tools[self.tools.index("const ProposalArgsSchema = z.strictObject({") :]
+        schema = _squash(schema[: schema.index("\n});")])
+        for field, values, default in (
+            ("visibility", "PROPOSAL_VISIBILITIES", "'local'"),
+            ("style", "PROPOSAL_STYLES", "'highlight'"),
+            ("color", "PROPOSAL_COLORS", "'yellow'"),
+            ("scope", "PROPOSAL_SCOPES", "'text'"),
+        ):
+            self.assertIn(
+                f"{field}: z.enum({values}).default({default})",
+                schema,
+                f"{field} 的取值或缺省值变了",
+            )
+        self.assertIn("visibility: z", schema)
+
+    def test_page_is_injected_from_the_validated_request(self):
+        server = _read(ROOT / "agent-server" / "src" / "server.ts")
+        self.assertIn("resolveRequestPage(parsed.page, parsed.context, index, config.siteBase)", _squash(server))
+        self.assertIn("proposalPage: currentPage", _squash(self.agent))
+        self.assertIn("if (proposalPage === null)", self.tools, "缺少页面时不得生成建议")
+        self.assertIn("proposalPage: string | null", _squash(self.tools))
+
+    def test_choices_match_the_panel(self):
+        palette = re.search(r"var PALETTE = \[(.*?)\n  \];", self.store, flags=re.S).group(1)
+        colors = re.findall(r'id: "(\w+)"', palette)
+        styles = re.search(r"var ANNO_STYLES = \[([^\]]*)\]", self.store).group(1)
+        self.assertEqual(
+            colors,
+            re.findall(r"'(\w+)'", re.search(r"PROPOSAL_COLORS = \[([^\]]*)\]", self.prop).group(1)),
+            "色板两端不一致",
+        )
+        self.assertEqual(
+            [s.strip().strip('"') for s in styles.split(",")],
+            re.findall(r"'(\w+)'", re.search(r"PROPOSAL_STYLES = \[([^\]]*)\]", self.prop).group(1)),
+            "画法两端不一致",
+        )
+
+    def test_proposal_limits_share_the_context_limits(self):
+        """同一段原文在两条通路上,「多长算超限」必须是一个答案。"""
+        ctx = _read(CTX_JS)
+        ctx_limits = dict(
+            (key, int(value))
+            for key, value in re.findall(r"(\w+): (\d+)", re.search(r"var LIMITS = (\{[^}]*\})", ctx).group(1))
+        )
+        prop_limits = dict(
+            (key, int(value))
+            for key, value in re.findall(r"(\w+): (\d+)", re.search(r"PROPOSAL_LIMITS = (\{[^}]*\})", self.prop).group(1))
+        )
+        for key in ("quote", "edge", "body"):
+            self.assertIn(key, ctx_limits, f"{key} 在语境那侧没有同名上限,两边的说法就对不上了")
+            self.assertEqual(prop_limits[key], ctx_limits[key], f"{key} 的上限两端不一致")
+        for key in ("quote", "edge", "body", "note"):
+            self.assertIn(f"PROPOSAL_LIMITS.{key}", self.tools, f"上限 {key} 要真的用在 schema 上,不能只声明")
+
+    def test_tool_result_says_it_is_not_written(self):
+        """模型最容易把「工具返回成功」当成「已经写好了」,这段结果就得拦住它。"""
+        self.assertIn("还没有写入", self.prop)
+        self.assertIn("${proposal.page}", self.prop, "结果里要说清这条建议写给哪一页")
+        self.assertIn("不要重复提交同一条建议", self.prop)
+
+    def test_server_streams_the_proposal_frame(self):
+        self.assertIn("safeWrite('proposal', proposal)", self.srv)
+        self.assertIn("proposalsCount++", self.srv)
+        done = self.srv[self.srv.index("event: 'done'") :]
+        self.assertIn("proposalsCount", done[:400], "done 那条记录要带上这一轮提了几条")
+
+    def test_widget_renders_the_card_and_lets_the_user_pick_visibility(self):
+        self.assertIn('case "proposal":', self.chat)
+        self.assertIn("isProposalShaped(data)", self.chat, "形状过不了的帧不渲染成卡")
+        for label in ("仅本机", "仅自己可见", "公开"):
+            self.assertIn(f"label: '{label}'", self.chat, f"卡上少了「{label}」这一档")
+        self.assertIn("entry.loginDraft(chosenProposal)", self.chat)
+        self.assertIn("登录回跳后，请在历史建议卡中手动确认。", self.chat)
+
+    def test_widget_uses_only_the_confirmation_entry(self):
+        self.assertIn("entry.mount({ proposal: chosenProposal", self.chat)
+        self.assertIn("entry.loginDraft(chosenProposal)", self.chat)
+        self.assertNotIn("store.request(", self.chat)
+        self.assertNotIn("/api/annotations", self.chat)
+        self.assertIn("mountProposalConfirmation({ core, proposal:", self.entry)
+
+    def test_accept_writes_only_after_bound_confirmation(self):
+        fn = self.body_of(self.confirm, "async function submit(event, retryUnknown)")
+        self.assertIn("if (!event.isTrusted) return;", fn)
+        self.assertIn("core.confirm({ identity, session, request })", fn)
+        self.assertIn("core.claim({ identity, session, request, grantId })", fn)
+        self.assertIn("store.localAdd(", fn)
+        self.assertLess(fn.index("'/api/annotation-permits'"), fn.index("'/api/annotations'"))
+        self.assertNotIn("fetch(", fn)
+        self.assertIn("if (!sameContext() || cancelled || !integrityReady())", fn)
+
+    def test_local_proposal_never_goes_to_the_server(self):
+        fn = self.body_of(self.confirm, "async function submit(event, retryUnknown)")
+        local = fn.index("if (claimedRequest.visibility === 'local')")
+        permit = fn.index("'/api/annotation-permits'")
+        self.assertLess(local, permit)
+        self.assertIn("store.localAdd(", fn[local:permit])
+        self.assertIn("return;", fn[local:permit])
+        self.assertIn("request.visibility !== 'local'", self.confirm)
+
+    def test_draft_replay_is_single_flight(self):
+        fn = self.body_of(self.anno, "function maybeRestoreDraft()")
+        self.assertIn("if (restoringDraft || busy) return;", fn)
+        consent = self.body_of(self.anno, "function showLoginConsent(draft, ticket)")
+        self.assertIn("busy || restoringDraft", consent)
+        self.assertIn("restoringDraft = true;", consent)
+        self.assertIn("setBusy(true);", consent)
+        self.assertIn("clearMatchingDraft(current);", consent)
+
+    def test_proposal_check_is_wired(self):
+        self.assertIn("Invalid option", self.check, "越权取值那一条要真的被 SDK 的 schema 挡下")
+        self.assertIn("MCP error", self.check, "工具自己拒绝的那几条也要量到")
+        scripts = json.loads(_read(AGENT_SERVER / "package.json"))["scripts"]
+        self.assertIn("proposal-check", scripts)
+
+    def test_browser_case_covers_the_three_claims(self):
+        """真浏览器那组要覆盖:实际写得下去、可见范围由用户挑、越权与越界都拒绝。"""
+        for claim in (
+            "def test_a_proposal_is_written_by_the_users_own_session",
+            "def test_the_visibility_the_user_picks_is_what_gets_written",
+            "def test_a_local_proposal_never_reaches_the_server",
+            "def test_a_public_proposal_without_login_goes_through_the_login_round_trip",
+            "def test_a_quote_that_is_not_on_the_page_is_refused",
+            "def test_a_proposal_for_a_page_the_reader_left_is_refused",
+        ):
+            self.assertIn(claim, self.browser)
+        self.assertIn('self.assertEqual(writes[0]["authorization"], f"Bearer {self.session[\'token\']}"', self.browser, "写入要带用户自己的会话")
+        self.assertIn('self.assertEqual(self.api.writes(), [], "仅本机那条出了网")', self.browser)
+
+
+if __name__ == "__main__":
+    unittest.main()

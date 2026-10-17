@@ -1,0 +1,19 @@
+{
+  "passage": {
+    "entry": "check_passage_feedback_ego.mjs",
+    "actions": ["native local annotation save", "quote click", "native Enter", "repeated location feedback"],
+    "widths": [1280, 390, 320],
+    "assertions": ["multiple actual mark fragments", "every fragment flashes", "unrelated marks unchanged", "one local record", "rr-block retained", "flash timers expire"]
+  },
+  "rate": {
+    "entry": "check_rate_feedback_ego.mjs",
+    "stack": "rate_feedback_stack.py",
+    "server": "real createApp and SlidingWindowLimiter, two invalid HTTP requests followed immediately by native browser submit",
+    "assertions": ["HTTP 400,400,429", "service window message", "separate cumulative quota message", "no Agent POST after local exhaustion", "actual gateway counter unchanged", "status label fits 1280/390/320", "native keyboard submit respects quota", "slate/default screenshots"],
+    "quota_policy": "isolated stricter cap equals actual measured sent count; gateway cap and ledger unchanged",
+    "sdk_endpoint": "http://127.0.0.1:0",
+    "upstream_errors": "not_run; no provider response substituted"
+  },
+  "retained": ["local-confirmation-assertions.json", "recorder-privacy.json", "confirmation-ui-assertions.json"],
+  "not_run": ["Jev", "GitHub OAuth", "private/public cross-account acceptance", "image rejection", "native recorder sending", "recorder sendBeacon/XHR", "gzip/Base64 transport"]
+}
