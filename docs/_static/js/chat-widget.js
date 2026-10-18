@@ -966,7 +966,20 @@
     const previewHost = document.createElement('div');
     previewHost.className = 'aipm-chat__proposal-preview';
     protectedCard.append(previewHost);
-    const preview = createConfirmationView(previewHost, null, { preview: true });
+    const preview = createConfirmationView(previewHost, null, { preview: true,
+      onLocate: () => {
+        notice.textContent = '';
+        if (!window.__aipmAnno.jumpToQuote(proposal)) {
+          notice.textContent = proposal.page !== location.pathname
+            ? '请在草稿所属页面定位原文。' : '未找到对应原文，页面内容可能已更新。';
+          return;
+        }
+        if (mode === 'sheet') {
+          setSnap('peek');
+          els.grip.focus({ preventScroll: true });
+        }
+        else if (mode === 'overlay') closePanel();
+      } });
     preview.update({ title: proposal.scope === 'page' ? '评论草稿' : '批注草稿',
       target: proposal.scope === 'text' ? proposal.quote : '', body: proposal.body,
       color: proposal.color ?? 'yellow', style: proposal.style ?? 'highlight' });

@@ -11,6 +11,7 @@ section{padding:4px;display:grid;gap:12px;min-width:0}h2{font-size:.8em;line-hei
 .details{display:grid;align-content:start;gap:10px;min-height:0;max-height:320px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.details:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}.field{min-width:0}
 p,blockquote{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}blockquote{font-size:.95em;line-height:1.6;color:var(--muted)}
 #target{border-bottom:2px solid transparent;color:var(--text)}
+#target[role="button"]{cursor:pointer}#target[role="button"]:hover{filter:brightness(.85)}#target:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:2px}
 section[data-style="highlight"] #target,section[data-style="both"] #target{background:var(--markWash)}
 section[data-style="underline"] #target,section[data-style="both"] #target{border-bottom-color:var(--markInk)}
 .visibility,.notice{font-size:.8em;color:var(--muted)}
@@ -66,12 +67,36 @@ addEventListener('message', (event) => {
     if (Object.hasOwn(data, key)) document.getElementById(key).textContent = data[key];
   }
   document.querySelector('#quote').hidden=!data.target;
+  const target=document.querySelector('#target');
+  if(data.navigable&&data.target){
+    target.setAttribute('role','button');target.tabIndex=0;
+    target.title='定位原文';target.setAttribute('aria-label','定位原文：'+data.target);
+  }else{
+    for(const name of ['role','tabindex','title','aria-label'])target.removeAttribute(name);
+  }
   document.querySelector('#body').hidden=!data.body;
   requestAnimationFrame(layout);
   for (const key of ['agree', 'retry', 'cancel', 'check']) {
     if (Object.hasOwn(data, key + 'Disabled')) document.getElementById(key).disabled = data[key + 'Disabled'];
     if (Object.hasOwn(data, key + 'Hidden')) document.getElementById(key).hidden = data[key + 'Hidden'];
   }
+});
+const target=document.querySelector('#target');
+let quotePress;
+target.addEventListener('pointerdown',event=>{quotePress={x:event.clientX,y:event.clientY}});
+function locate(event){
+  if(target.getAttribute('role')==='button')parent.postMessage({type:'confirmation-locate',channel,trusted:event.isTrusted},origin);
+}
+target.addEventListener('click',event=>{
+  const dragged=quotePress&&(Math.abs(event.clientX-quotePress.x)>4||Math.abs(event.clientY-quotePress.y)>4);
+  quotePress=null;
+  const selection=getSelection();
+  if(dragged||(selection&&!selection.isCollapsed&&(target.contains(selection.anchorNode)||target.contains(selection.focusNode))))return;
+  locate(event);
+});
+target.addEventListener('keydown',event=>{
+  if(event.key!=='Enter'&&event.key!==' ')return;
+  event.preventDefault();locate(event);
 });
 for (const action of ['agree', 'retry', 'cancel', 'check']) {
   document.getElementById(action).addEventListener('click', (event) => {
@@ -80,7 +105,7 @@ for (const action of ['agree', 'retry', 'cancel', 'check']) {
 }
 </script></body></html>`;
 
-export function createConfirmationView(host, onAction, { preview = false } = {}) {
+export function createConfirmationView(host, onAction, { preview = false, onLocate } = {}) {
   const frame = document.createElement('iframe');
   frame.title = preview ? '批注预览' : '受保护内容';
   frame.setAttribute('sandbox', 'allow-scripts');
@@ -89,7 +114,7 @@ export function createConfirmationView(host, onAction, { preview = false } = {})
   frame.style.cssText = 'display:block;box-sizing:border-box;width:100%;min-width:0;height:260px;border:0;border-radius:8px';
   const channel = crypto.randomUUID();
   const view = { title: '保存批注', target: '', body: '', visibility: '',
-    mode: preview ? 'preview' : 'confirmation', color: 'yellow', style: 'highlight', notice: '',
+    mode: preview ? 'preview' : 'confirmation', navigable: typeof onLocate === 'function', color: 'yellow', style: 'highlight', notice: '',
     state: '等待同意', status: 'pending', agree: '确认保存', retry: '再次同意原请求并写入',
     cancel: '取消', check: '查询写入结果', agreeDisabled: false,
     retryDisabled: false, retryHidden: true, cancelDisabled: false, checkDisabled: false, checkHidden: true };
@@ -118,6 +143,10 @@ export function createConfirmationView(host, onAction, { preview = false } = {})
       if (Number.isSafeInteger(event.data.height) && event.data.height > 0 && event.data.height <= 24000) {
         frame.style.height = event.data.height + 'px';
       }
+      return;
+    }
+    if (event.data.type === 'confirmation-locate') {
+      if (view.navigable && view.target && event.data.trusted === true) onLocate();
       return;
     }
     if (event.data.type !== 'confirmation-action' || preview) return;

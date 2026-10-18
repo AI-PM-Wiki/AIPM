@@ -5164,27 +5164,36 @@
     passageFlash = null;
   }
 
-  function flashPassage(fragments) {
+  function flashPassage(fragments, ranges) {
     stopPassageFlash();
+    var parts = ranges ? ranges.map(function (range) {
+      return { geometry: range, element: range.startContainer.parentElement };
+    }) : fragments.map(function (fragment) { return { geometry: fragment, element: fragment }; });
     var layer = document.createElement("div");
     layer.className = "aipm-anno-flash-layer rr-block";
     layer.setAttribute("aria-hidden", "true");
-    var style = getComputedStyle(fragments[0]);
+    var style = getComputedStyle(parts[0].element);
     layer.style.color = style.getPropertyValue("--aipm-mark-ink").trim() || style.getPropertyValue("--md-accent-fg-color").trim();
     document.body.appendChild(layer);
     fragments.forEach(function (fragment) { fragment.classList.add("aipm-anno-flash"); });
-    var state = { fragments: fragments, layer: layer, frame: 0, until: performance.now() + 900 };
+    var state = { fragments: fragments, layer: layer, frame: 0, until: performance.now() + 900,
+      scrollX: window.scrollX, scrollY: window.scrollY };
     passageFlash = state;
     function paint(now) {
       if (passageFlash !== state) return;
-      if (now >= state.until || fragments.some(function (fragment) { return !fragment.isConnected; })) {
+      if (state.scrollX !== window.scrollX || state.scrollY !== window.scrollY) {
+        state.scrollX = window.scrollX;
+        state.scrollY = window.scrollY;
+        state.until = now + 900;
+      }
+      if (now >= state.until || parts.some(function (part) { return !part.element.isConnected; })) {
         stopPassageFlash();
         return;
       }
       var lines = [];
-      fragments.forEach(function (fragment) {
-        var block = fragment.closest(BLOCK_SELECTOR);
-        Array.from(fragment.getClientRects()).forEach(function (rect) {
+      parts.forEach(function (part) {
+        var block = part.element.closest(BLOCK_SELECTOR);
+        Array.from(part.geometry.getClientRects()).forEach(function (rect) {
           if (!rect.width || !rect.height) return;
           var line = lines.find(function (entry) {
             return entry.block === block && Math.min(entry.bottom, rect.bottom) - Math.max(entry.top, rect.top) >
@@ -5217,6 +5226,35 @@
     }
     paint(performance.now());
   }
+
+  function jumpToQuote(proposal) {
+    if (proposal.page !== pagePath()) return false;
+    if (typeof proposal.quote !== 'string' || !proposal.quote.trim() ||
+        (proposal.prefix !== undefined && typeof proposal.prefix !== 'string') ||
+        (proposal.suffix !== undefined && typeof proposal.suffix !== 'string')) return false;
+    var range = resolveRange([{ type: 'TextQuoteSelector', exact: proposal.quote,
+      prefix: proposal.prefix, suffix: proposal.suffix }]);
+    if (!range) return false;
+    var ranges = [];
+    collectTextNodes(contentRoot()).forEach(function (node) {
+      if (!range.intersectsNode(node)) return;
+      var start = node === range.startContainer ? range.startOffset : 0;
+      var end = node === range.endContainer ? range.endOffset : node.length;
+      if (end <= start || !node.nodeValue.slice(start, end).trim()) return;
+      var fragment = document.createRange();
+      fragment.setStart(node, start);
+      fragment.setEnd(node, end);
+      ranges.push(fragment);
+    });
+    if (!ranges.length) return false;
+    var rect = ranges[0].getBoundingClientRect();
+    window.scrollBy({ top: rect.top + rect.height / 2 - window.innerHeight / 2,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    flashPassage([], ranges);
+    return true;
+  }
+
+  window.__aipmAnno = Object.freeze({ jumpToQuote: jumpToQuote });
 
   function jumpToPassage(anno) {
     var target = passageAnchor(anno);

@@ -208,6 +208,60 @@ class AgentAnnotationCase(unittest.TestCase):
         self.send(message)
         return anchor
 
+    def test_draft_quote_locates_article_without_saving(self):
+        quote = self.page.locator(".md-content__inner > p").nth(1).inner_text()
+        self.propose(quote=quote, prefix="", suffix="", body="检查 RAG 的知识机制与相关资料。",
+                     visibility="local")
+        preview = self.page.frame_locator("iframe.aipm-proposal-preview")
+        target = preview.get_by_role("button", name="定位原文：" + quote, exact=True)
+        target.evaluate("element => element.click()")
+        self.assertEqual(self.page.locator(".aipm-anno-flash-layer").count(), 0)
+        for width, action in ((1280, "click"), (900, "Enter"), (390, " "), (320, "click")):
+            with self.subTest(width=width, action=action):
+                self.page.set_viewport_size({"width": width, "height": 900})
+                self.open_chat()
+                if width < 768:
+                    for _ in range(3):
+                        if self.page.locator("#aipm-chat").get_attribute("data-snap") == "expanded":
+                            break
+                        self.page.locator(".aipm-chat__grip").press("Enter")
+                    self.assertEqual(self.page.locator("#aipm-chat").get_attribute("data-snap"), "expanded")
+                self.page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+                if action == "click":
+                    target.click()
+                else:
+                    target.press(action)
+                self.page.wait_for_selector(".aipm-anno-flash-outline", state="visible")
+                self.page.wait_for_function("""() => {
+                    const rect = document.querySelector('.aipm-anno-flash-outline')?.getBoundingClientRect();
+                    return rect && (Math.abs(rect.top + rect.height / 2 - innerHeight / 2) < 40 ||
+                        (scrollY === 0 && rect.top >= 0 && rect.bottom < innerHeight));
+                }""")
+                state = self.page.evaluate("""() => {
+                    const p = document.querySelectorAll('.md-content__inner > p')[1];
+                    const range = document.createRange();range.selectNodeContents(p);
+                    const lines = [];
+                    for (const rect of range.getClientRects()) {
+                        if (rect.width && rect.height && !lines.some(top => Math.abs(top - rect.top) < 4)) lines.push(rect.top);
+                    }
+                    return {lines: lines.length, outlines: document.querySelectorAll('.aipm-anno-flash-outline').length,
+                        links: p.querySelectorAll('a').length, marks: p.querySelectorAll('mark.aipm-anno-mark').length,
+                        count: window.__aipmAnnoStore.localList(location.pathname).length,
+                        open: window.__aipmChat.isOpen(), snap: document.querySelector('#aipm-chat').dataset.snap};
+                }""")
+                self.assertGreater(state["links"], 0)
+                self.assertEqual(state["outlines"], state["lines"])
+                self.assertEqual(state["marks"], 0)
+                self.assertEqual(state["count"], 0)
+                self.assertEqual(self.api.writes(), [])
+                if width < 768:
+                    self.assertEqual(state["snap"], "peek")
+                elif width < 1200:
+                    self.assertFalse(state["open"])
+                self.page.wait_for_selector(".aipm-anno-flash-layer", state="detached")
+        assert_no_page_errors(self, self.browser,
+                              expected_load_failures=(ANNO_ORIGIN + "/api/highlight/suggest",))
+
     def send(self, text: str) -> dict:
         """发一句问话,等这一轮跑完,返回这一轮的请求体。"""
         before = len(self.browser.chat_bodies)
