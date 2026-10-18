@@ -613,6 +613,7 @@ AMBIENT_ORIGINS = tuple(
         origin_of(ANNO_ORIGIN),
         origin_of("https://api.github.com"),
         origin_of("https://giscus.app"),
+        origin_of("https://umami.nvc.ac"),
     )
     if origin is not None
 )

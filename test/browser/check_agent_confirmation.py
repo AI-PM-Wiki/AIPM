@@ -23,13 +23,16 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.browser = Browser(self.stack.pw, self.stack.site.base, also_ours=(ANNO_ORIGIN,))
         self.addCleanup(self.browser.close)
         self.page = self.browser.page
-        self.page.goto(self.stack.site.base + PAGE, wait_until="load")
+        self.page.goto(self.stack.site.base + PAGE, wait_until="domcontentloaded")
+        self.login()
+
+    def login(self):
         self.session = self.stack.api.login()
         self.page.evaluate(
             "(raw) => localStorage.setItem('aipm-anno-auth', raw)",
             _js(self.session),
         )
-        self.page.reload(wait_until="load")
+        self.page.reload(wait_until="domcontentloaded")
         self.page.wait_for_function(
             "() => window.__aipmIntegrityReady === true || window.__aipmIntegrityFailed === true",
             timeout=10000,
@@ -91,7 +94,10 @@ class AgentConfirmationAcceptance(unittest.TestCase):
 
     def accepted(self, frame, visibility: str) -> None:
         frame.locator("#agree").click()
-        frame.get_by_text(f"已写入：{visibility}").wait_for()
+        frame.locator('section:not([data-status="pending"]):not([data-status="loading"])').wait_for()
+        requests = [{key: event[key] for key in ("method", "path", "status")}
+                    for event in self.stack.api.requests]
+        self.assertEqual(frame.locator("#state").inner_text(), f"已写入：{visibility}", requests)
 
     def permit_posts(self) -> list[dict]:
         return [r for r in self.stack.api.requests
@@ -136,7 +142,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.accepted(frame, "公开")
         self.assertEqual(self.stack.api.writes()[0]["body"]["visibility"], "public")
         self.assertEqual(len(self.permit_posts()), 1)
-        self.page.reload(wait_until="load")
+        self.page.reload(wait_until="domcontentloaded")
         self.page.wait_for_function(
             "() => window.__aipmIntegrityReady === true && window.__aipmChat && window.__aipmAnnoStore"
         )
@@ -158,6 +164,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         ):
             with self.subTest(visibility=visibility):
                 self.stack.api.reset()
+                self.login()
                 self.propose(visibility, f"已确认的{label}建议", paragraph_index)
                 frame = self.open_confirmation()
                 self.assertEqual(label, frame.locator("#visibility").inner_text())
@@ -170,7 +177,8 @@ class AgentConfirmationAcceptance(unittest.TestCase):
                 self.assertEqual(len(permits), 1)
                 self.assertEqual(writes[0]["authorization"], f"Bearer {self.session['token']}")
                 self.assertEqual(permits[0]["authorization"], f"Bearer {self.session['token']}")
-                self.assertIn(writes[0]["permit"], self.stack.api.permits)
+                self.assertTrue(writes[0]["permit"])
+                self.assertEqual(writes[0]["status"], 201)
                 self.assertEqual(writes[0]["body"]["visibility"], visibility)
                 self.assertEqual(permits[0]["body"], writes[0]["body"])
         self.assert_clean_page()
@@ -224,7 +232,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.assertEqual(len(self.stack.api.writes()), 1)
         self.assertEqual(len(self.permit_posts()), 1)
 
-        self.page.reload(wait_until="load")
+        self.page.reload(wait_until="domcontentloaded")
         self.page.wait_for_function(
             "() => window.__aipmIntegrityReady === true && window.__aipmChat && window.__aipmAnnoStore"
         )
@@ -244,7 +252,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
             and event["path"].startswith("/api/annotation-requests/")
         ]
         self.assertEqual(
-            [(event["path"], event["responseStatus"]) for event in queries],
+            [(event["path"], event["status"]) for event in queries],
             [(f"/api/annotation-requests/{request_id}", 200)],
         )
 
