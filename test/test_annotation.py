@@ -24,6 +24,8 @@ MKCONFIG = ROOT / "mkdocs.yml"
 EXTRA_CSS = ROOT / "docs" / "_static" / "css" / "extra.css"
 ANNO_CSS = ROOT / "docs" / "_static" / "css" / "annotation.css"
 ANNO_JS = ROOT / "docs" / "_static" / "js" / "annotation.js"
+SUMMARY_CSS = ROOT / "docs" / "_static" / "css" / "article-summary.css"
+SUMMARY_JS = ROOT / "docs" / "_static" / "js" / "article-summary.js"
 STORE_JS = ROOT / "docs" / "_static" / "js" / "annotation-store.js"
 AUTH_JS = ROOT / "docs" / "_static" / "js" / "annotation-auth.js"
 SHARED_JS = ROOT / "docs" / "_static" / "js" / "panel-shared.js"
@@ -108,8 +110,8 @@ class TestEntryButton(unittest.TestCase):
         cls.js = ANNO_JS.read_text(encoding="utf-8")
 
     def test_entry_button_sits_at_the_header_right_edge(self):
-        """两颗按钮共用一段几何(绝对定位、页头高度内的方命中区),入口自己贴右边缘。"""
-        shared = _block(self.css, ".md-header .md-header__button.aipm-anno-entry,")
+        """批注入口贴右边缘，按钮尺寸与页头高度一致。"""
+        shared = _block(self.css, ".md-header .md-header__button.aipm-anno-entry {")
         self.assertIn("position: absolute", shared)
         self.assertIn("top: 0", shared)
         self.assertIn("width: 2.4rem", shared)
@@ -117,14 +119,15 @@ class TestEntryButton(unittest.TestCase):
             self.css, r"\.md-header \.md-header__button\.aipm-anno-entry \{[^}]*right:\s*0;"
         )
 
-    def test_smart_button_sits_left_of_the_entry(self):
-        """智能高亮在入口左边一站(right: 2.4rem 对上入口的 right: 0),DOM 里也排在
-        入口前 —— 面板关着时它是这一页唯一的智能高亮入口。"""
+    def test_summary_button_sits_left_of_the_entry(self):
+        """AI 总结入口位于批注入口左侧。"""
+        css = SUMMARY_CSS.read_text(encoding="utf-8")
         self.assertRegex(
-            self.css, r"\.md-header \.md-header__button\.aipm-anno-smart \{[^}]*right:\s*2\.4rem;"
+            css, r"\.md-header \.md-header__button\.aipm-summary-entry \{[^}]*right:\s*2\.4rem;"
         )
         mount = _block(self.js, "function mountEntry()")
-        self.assertLess(mount.index("appendChild(smartBtn)"), mount.index("appendChild(entry)"))
+        self.assertIn("appendChild(entry)", mount)
+        self.assertIn("aipm-summary-entry", SUMMARY_JS.read_text(encoding="utf-8"))
 
     def test_header_reserves_room_for_the_button_pair(self):
         self.assertRegex(self.css, r"\.md-header__inner\s*\{[^}]*padding-inline-end:\s*4\.8rem")
@@ -223,8 +226,8 @@ class TestPalette(unittest.TestCase):
             self.assertIn(f'id: "{pid}"', palette)
 
     def test_light_and_dark_values(self):
-        """色值定义在 extra.css 的 5.7 段(与批注入口按钮同处)。"""
-        section = self.extra[self.extra.index("5.7 批注入口") :]
+        """色值定义在 extra.css 的页头入口与色板区域。"""
+        section = self.extra[self.extra.index("5.7 页头入口") :]
         light, _, slate = section.partition('[data-md-color-scheme="slate"]')
         self.assertGreaterEqual(len(re.findall(r"--aipm-anno-[\w-]+: #", light)), 5)
         self.assertGreaterEqual(len(re.findall(r"--aipm-anno-[\w-]+: #", slate)), 5)
@@ -264,10 +267,12 @@ class TestJudgeDegradation(unittest.TestCase):
         self.assertIn("payload.fallbackFrom", self.js)
 
     def test_unavailable_degrades_without_breaking_annotations(self):
-        """503 时只禁用智能高亮按钮,批注主功能不受影响。"""
+        """智能高亮不可用时显示提示，临时故障使用冷却时间。"""
         block = _block(self.js, "function smartHighlight(")
         self.assertIn("res.status === 503", block)
-        self.assertIn("smartBtn.disabled = true", block)
+        self.assertIn('res.body.error === "highlight_not_configured"', block)
+        self.assertIn("批注功能不受影响", block)
+        self.assertIn("cooldownUntil = Date.now()", block)
 
     def test_rate_limit_cooldown(self):
         block = _block(self.js, "function smartHighlight(")
@@ -402,13 +407,10 @@ class TestHeadIconClick(unittest.TestCase):
         # 排的是哪一页就冲哪一页发:等的过程里翻页,那一笔不再替他花出去
         self.assertIn("if (pagePath() !== page) return;", queue)
 
-    def test_the_two_head_icon_entries_do_not_double_spend(self):
-        """一次重新生成就是一轮判分;连点两下不该各走一遍「缓存未命中」。
-        换列表那一半与判分无关,所以它不跟着判分变淡 —— 变淡只发生在智能高亮
-        那颗按钮身上(它带 disabled 可表达);自动判分那条不占它,站长在那几秒里
-        照样点得动页头那颗图标。"""
+    def test_the_head_icon_does_not_double_spend(self):
+        """重新生成通过进行中的请求状态防止重复调用。"""
         block = _block(self.js, "function setSmartBusy(")
-        self.assertIn('smartBtn.disabled = kind !== null && kind !== "auto";', block)
+        self.assertIn("smartInFlight = kind;", block)
         self.assertNotIn("headIcon", block)
         self.assertIn("if (smartInFlight !== null) {", _block(self.js, "function smartHighlight("))
 

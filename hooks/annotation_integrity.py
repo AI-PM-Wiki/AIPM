@@ -18,6 +18,7 @@ CLASSIC = {
     "_static/js/annotation-auth.js": "annotation",
     "_static/js/annotation.js": "annotation",
     "_static/js/chat-widget.js": "chat_agent",
+    "_static/js/article-summary.js": "chat_agent",
 }
 MODULES = (
     "annotation-agent-entry.js",

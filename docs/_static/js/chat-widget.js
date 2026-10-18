@@ -347,6 +347,7 @@
       for (const m of arr.slice(-HISTORY_MAX))
         if (m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string") {
           const rec = { role: m.role, content: m.content };
+          if (m.role === 'assistant' && window.__aipmSummary.isSummary(m.summary)) rec.summary = m.summary;
           /* 语境随用户消息一起恢复:重新生成那一轮时要按原样重发,
              少了它就会答成另一个问题 */
           if (m.role === "user") {
@@ -543,6 +544,7 @@
     model_error: "模型服务暂时不可用,请稍后重试",
     index_unavailable: "文章索引暂不可用,请稍后重试",
     image_unsupported: "当前模型不接受图像输入,去掉对话框上方的图片语境后再问一次",
+    summary_stale: "文章总结已更新，请重新打开 AI 总结后继续讨论。",
     internal: "服务内部错误,请稍后重试",
     http_400: "请求格式有误,请重试",
     http_403: "无权访问问答服务",
@@ -1108,6 +1110,8 @@
         .map((m) => ({ role: m.role, content: m.content })),
     };
     if (typeof page === "string") body.page = page;
+    const summaryTurn = history.findLast(turn => turn.summary?.page === page);
+    if (summaryTurn) body.summaryRevision = summaryTurn.summary.revision;
     /* 显式语境为空时省略 context；本轮页面单独发送。 */
     const wire = CTX && context && context.length ? CTX.toPayload(context) : [];
     if (wire.length) body.context = wire;
@@ -1772,7 +1776,9 @@
         wrap.setAttribute("data-hidx", i);
       } else {
         const t = addAiBubble();
-        t.md.innerHTML = mdLite(m.content);
+        if (m.summary) {
+          window.__aipmSummary.createView({ host: t.md, navigate: navigateSummary }).setData(m.summary);
+        } else t.md.innerHTML = mdLite(m.content);
         if (m.terminal === 'error' || m.terminal === 'pending') {
           t.bubble.classList.add('is-error');
           const message = ERROR_TEXT[m.errorCode] || '回答未完成，批注建议仍需手动确认。';
@@ -1808,7 +1814,46 @@
    * 一条路(先关掉批注面板再开助手,两个面板互斥);注册表不在时退回直接开。
    * 调用方因此不必、也不该再自己开一次面板:它手上只有这里导出的这几个成员。
    */
+  function navigateSummary(page, anchor) {
+    if (page === location.pathname) {
+      const target = anchor ? document.getElementById(anchor) : document.querySelector('.md-content__inner');
+      if (target) {
+        if (!MQ_DOCK.matches) closePanel();
+        target.scrollIntoView({ block: 'start' });
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+        return;
+      }
+    }
+    location.assign(page + (anchor ? '#' + encodeURIComponent(anchor) : ''));
+  }
+
   window.__aipmChat = {
+    openSummary: (summary) => {
+      if (!window.__aipmSummary.isSummary(summary) || summary.page !== location.pathname) {
+        return { ok: false, message: '总结对应的文章已经变化，请重新打开总结。' };
+      }
+      if (streaming) return { ok: false, message: '请等待当前回答结束后继续讨论。' };
+      const content = window.__aipmSummary.contextText(summary);
+      const last = history[history.length - 1];
+      if (last?.summary?.revision !== summary.revision) {
+        clearEmpty();
+        const message = '一起阅读《' + summary.title + '》的 AI 总结。';
+        const user = addUserBubble(message, [], []);
+        user.setAttribute('data-hidx', history.length);
+        history.push({ role: 'user', content: message, page: summary.page });
+        const t = addAiBubble();
+        t.wrap.setAttribute('data-hidx', history.length);
+        window.__aipmSummary.createView({ host: t.md, navigate: navigateSummary }).setData(summary);
+        history.push({ role: 'assistant', content, summary });
+        showActions(t, content);
+        persist();
+      }
+      SHARED.claim('chat');
+      raiseForSend();
+      els.input.focus();
+      return { ok: true };
+    },
     attachContext: (item) => {
       const res = attachContext(item);
       if (!res.ok) return res;
