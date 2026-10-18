@@ -1,0 +1,22 @@
+{
+  "entry": "test/browser/check_local_confirmation_ego.mjs:checkLocalConfirmation",
+  "model": "not_required",
+  "assertions": [
+    { "id": "confirmation_before_write", "scope": "local confirmation", "condition": "before.count === 0 && before.localWrites === 0 && before.trace.length === 0" },
+    { "id": "local_write_exactly_once", "scope": "local confirmation", "condition": "writes.length === 1 && after.localWrites === 1 && after.count === 1" },
+    { "id": "unique_matching_mark", "scope": "article DOM", "condition": "after.marks === 1 && after.quoteMatches === true" },
+    { "id": "notification_order", "scope": "observed timing", "condition": "write.at <= notification.at <= mark.at <= confirmationCompletedObserved.at && notifications.length === 1" },
+    { "id": "zero_business_mutations_and_permits", "scope": "annotation service", "entry": "assertServiceBoundary", "condition": "writes === 0 && permitRequests === 0 && annotationMutations === 0 && localBodyRequests === 0" },
+    { "id": "all_business_origins", "scope": "fetch and resource URLs across all origins", "entry": "assertNetworkBoundary, observeStage", "condition": "business requests exist and every origin equals config.annotation" },
+    { "id": "observed_fetch_literal_body", "scope": "top document fetch", "entry": "assertNetworkBoundary", "condition": "containsLocalBody is false for every observed fetch and business body inspection is supported" },
+    { "id": "navigation_and_refresh", "scope": "first load, navigation, refresh, return", "entry": "observeStage", "condition": "storage is unchanged, count is one, localWrites is zero after navigation, expected mark count matches" },
+    { "id": "repeated_notifications", "scope": "ten local change notifications", "condition": "storage, local write count and observed fetch count are unchanged; one mark remains" }
+  ],
+  "not_covered": [
+    { "id": "recorder_upload", "status": "not_run", "channels": ["sendBeacon", "XHR", "encoded payloads"] },
+    { "id": "real_model_end_to_end", "status": "not_run" },
+    { "id": "jev", "status": "not_run" },
+    { "id": "github_oauth", "status": "not_run" },
+    { "id": "image_rejection", "status": "not_run" }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "entries": ["check_confirmation_ui_ego.mjs:checkConfirmationUi", "check_editor_ui_ego.mjs:checkEditorUi", "check_editor_menu_ego.mjs:checkEditorMenu"],
+  "viewports": [1280, 390, 320],
+  "schemes": ["slate", "default"],
+  "input": "Non-sensitive component proposal input reaches the original production card renderer through a conditional Debugger breakpoint. No provider response is replaced.",
+  "assertions": [
+    {"id": "opaque_confirmation", "condition": "sandbox remains allow-scripts; frame inspection uses a separately attached CDP target"},
+    {"id": "theme_and_resize", "condition": "frame scheme follows Material; frame height equals section height; no horizontal overflow or inner vertical scroll"},
+    {"id": "dense_body_reading", "condition": "Default matrix uses 1200 newlines within 4000 characters. Actual trusted Home, ArrowDown, PageDown and End keydown events and scroll positions are recorded; each scrolling step must move as expected and End must expose the final body line. Tab visits agree and cancel in both complete-entry paths."},
+    {"id": "keyboard_cancel", "condition": "Each complete-entry and presentation scene captures its starting event count, waits for new events, then requires exactly one new trusted cancel. The unchanged snapshot must fail that same assertion. Per-scene annotation localStorage, actual setItem count, marks and backend business writes/permits remain unchanged or zero."},
+    {"id": "keyboard_confirmation_entry", "condition": "All six viewport/theme cases use native Enter on the actual proposal button for cancellation and confirmation, verify the cancelled controller disables actions, and require exactly one local annotation write and one new trusted agree after confirmation. Per-case source events and screenshots are persisted."},
+    {"id": "visibility_and_touch", "condition": "exactly one choice selected, all choices locked after opening, action targets at least 44 CSS pixels"},
+    {"id": "enabled_confirmation_contrast", "condition": "native computed foreground and background are parsed through Canvas; relative luminance contrast is at least 4.5"},
+    {"id": "trusted_confirmation", "condition": "observed untrusted child click leaves zero local records; native click or keyboard Enter produces one record and matching mark"},
+    {"id": "editor_focus", "condition": "menu opens on selected option, ArrowUp moves focus, Escape closes menu and returns focus without closing panel; menu stays inside panel bounds"},
+    {"id": "editor_input_geometry", "condition": "Before the edit-menu pointer action, the actual panel has no running/pending animation and its connected button has identical geometry across three rendered samples, within a 3000ms bound. Exactly one trusted pointerdown, pointerup and click must reach that same control; event-time coordinates lie inside its rectangle and the selected option receives focus. Actual input paths, focus changes, editor replacement and hidden/aria-expanded mutations are persisted."},
+    {"id": "editor_menu_probe", "condition": "The minimal 390/slate probe seeds a non-sensitive annotation through the real local store, then uses native mark/edit/menu input. synchronize:false samples a moving target for diagnosis; the default waits for rendered stability and retains all menu/focus/input assertions. This probe does not cover confirmation or establish the cause of a historical event without its input trace."},
+    {"id": "annotation_edit", "condition": "protected local editor retains scope, saves changed body and restores one record and mark after refresh"},
+    {"id": "comment_and_reply", "condition": "empty comment rejected before write; keyboard save, comment edit, reply save and browser refresh retain one comment and reply"},
+    {"id": "presentation_states", "condition": "production view receives explicit component inputs for pending/loading/warning/error/cancelled; busy, alert/status roles, disabled states, theme and maximum-length layout agree"},
+    {"id": "service_boundary", "condition": "isolated annotation service observes zero business mutations and permit requests"},
+    {"id": "recorder_boundary", "entry": "check_recorder_privacy_ego.mjs", "condition": "actual recorder collection and original JSON serialization preserve local blocking and public control"}
+  ],
+  "not_run": ["new model generation", "Jev", "GitHub OAuth", "image rejection", "native recorder send", "recorder sendBeacon/XHR", "gzip/Base64 transport payloads", "independent UI review"]
+}

@@ -30,9 +30,15 @@
   - 移动/浮层的系统返回:打开时 pushState 一条自家记录,返回键按
     expanded→half→peek→关闭 逐级回退(回退后补回记录,始终保持一条);
     从 UI 关闭时仅在自家记录仍是栈顶时 history.back(),避免连带退掉用户点开的文档页
-  - 与后端契约:POST {message, history} → text/event-stream,帧事件
+  - 与后端请求:POST {message, history, page?, context?} → text/event-stream,帧事件
     ready / sources / delta / done / error;预校验失败返回纯 JSON(400/403/
     413/429/503),映射中文提示(429 附 Retry-After 重试时间)
+  - 语境(与批注面板互通):批注面板点「问助手」调 window.__aipmChat.attachContext(item),
+    条目显示在输入框上方的语境条里,随下一次提问以 body.context 发出。条目的构造与
+    去重在 context-item.js(同一条来源连着送两次只有一条),「仅本机」的批注在那里
+    就不会成为语境。发送后清空输入区语境,已发送消息保留对应语境供查看与重新生成。
+  - 批注建议(反方向:助手 → 批注):SSE 建议只生成不含正文的入口;
+    用户在隔离确认界面同意后由批注会话执行。
   - FAB 可拖拽(issue #72):外观与位置一律照旧,加的只是交互。锚点在 CSS
     (right/bottom),JS 只写 transform,所以「松手回原位」= 清掉 inline transform
     交回 CSS 过渡 —— JS 不需要知道锚点在哪,锚点被别的面板改(批注面板停靠时让位,
@@ -57,19 +63,34 @@
     关闭后回到触发按钮;手柄是可点可拖的 button
   - localStorage 存最近会话(≤20 条)+「清空对话」;服务端无状态
 */
-(() => {
+(async () => {
   "use strict";
 
   /* ================================================================
      常量与配置
      ================================================================ */
-  const API_BASE = location.hostname === "localhost" || location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:8787"
-    : "https://docs-agent.nvc.ac";
+  const localHost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  const API_BASE = localHost && window.__aipmLocalApi?.agent
+    ? window.__aipmLocalApi.agent
+    : localHost ? "http://127.0.0.1:8787" : "https://docs-agent.nvc.ac";
+  if (localHost && window.__aipmLocalApi?.agent) {
+    const endpoint = new URL(API_BASE);
+    if (endpoint.protocol !== "http:" || endpoint.hostname !== "127.0.0.1" ||
+        endpoint.pathname !== "/" || endpoint.search || endpoint.hash ||
+        endpoint.username || endpoint.password) throw new Error("invalid local Agent endpoint");
+  }
   const HISTORY_KEY = "aipm-chat-history";
   const HISTORY_MAX = 20;              // localStorage 条数上限
   const HISTORY_SEND = 8;              // 每次请求携带的最近历史条数
   const ATTACH_MAX = 4;                // 附件个数上限(纯 UI)
+
+  /* 语境条目(批注面板送来):构造、去重与「仅本机不出本机」那道边界都在
+     context-item.js。它必须排在 panel-shared.js 之前(mkdocs.yml extra_javascript),
+     缺了它整条互通路径不可用 —— 与 SHARED 一样按硬失败处理,不做降级。 */
+  const CTX = window.__aipmContext || null;
+  if (CTX === null) {
+    console.error("[aipm-chat] context-item.js 未加载:批注面板送不进语境");
+  }
 
   /* 断点:≥75em(1200px)桌面停靠 / ≥48em 且 <1200px 浮层 / <48em 底部抽屉 */
   const MQ_DOCK = window.matchMedia("(min-width: 75em)");
@@ -94,6 +115,14 @@
     document.body.appendChild(note);
     return;
   }
+
+  const { createAgentEntry } = await import('./annotation-agent-entry.js?v=46').catch((error) => {
+    window.__aipmIntegrityFailed = true;
+    window.__aipmIntegrityReady = false;
+    window.dispatchEvent(new Event('aipm-integrity-change'));
+    throw error;
+  });
+  const proposalEntry = createAgentEntry();
 
   /* ================================================================
      DOM 构造(body 顶层,instant 导航换页存活)
@@ -161,6 +190,7 @@
     "</header>" +
     '<div class="aipm-chat__msgs" role="log" aria-live="polite"></div>' +
     '<form class="aipm-chat__composer">' +
+      '<div class="aipm-chat__ctxbar" hidden></div>' +
       '<div class="aipm-chat__attachbar" hidden></div>' +
       '<textarea class="aipm-chat__input" rows="1" placeholder="提出问题…" aria-label="提问"></textarea>' +
       '<div class="aipm-chat__inputrow">' +
@@ -178,6 +208,7 @@
   els.head = panel.querySelector(".aipm-chat__head");
   els.composer = panel.querySelector(".aipm-chat__composer");
   els.attachbar = panel.querySelector(".aipm-chat__attachbar");
+  els.ctxbar = panel.querySelector(".aipm-chat__ctxbar");
   els.input = panel.querySelector(".aipm-chat__input");
   els.send = panel.querySelector(".aipm-chat__send");
   els.clear = panel.querySelector(".aipm-chat__clear");
@@ -279,10 +310,29 @@
   let turnSeq = 0;          // turn 级令牌:runTurn 捕获自增值;清空/新 turn 使在飞 turn 失效
   let attachments = [];     // [{name, size, type}] 纯 UI 附件
 
+  /* 语境里的位图带着几百 KB 的 base64,历史写多了会撞上 localStorage 的配额
+     (浏览器通常每个 origin 5 MB)。撞上时不该整条会话都不存:先照原样写一遍,
+     写不下就**只去掉图像内容**再写一次 —— 聊过什么留着,那一轮「重新生成」时
+     图重发不了,但这段对话还在。两次都写不下就与加图像之前一样:这一次不存。 */
   const persist = () => {
+    const tail = () => history.slice(-HISTORY_MAX);
     try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-HISTORY_MAX)));
-    } catch (e) { /* 隐私模式等场景静默 */ }
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(tail()));
+      return true;
+    } catch (e) { /* 多半是配额满了,去掉图像再试一次 */ }
+    try {
+      const lean = tail().map((m) =>
+        m.context && m.context.length
+          ? Object.assign({}, m, {
+              context: m.context.map((item) =>
+                Object.assign({}, item, { mediaType: "", imageData: "" })
+              )
+            })
+          : m
+      );
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(lean));
+      return true;
+    } catch (e) { return false; }
   };
 
   const restore = () => {
@@ -292,8 +342,24 @@
       const arr = JSON.parse(raw);
       if (!Array.isArray(arr)) return;
       for (const m of arr.slice(-HISTORY_MAX))
-        if (m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-          history.push({ role: m.role, content: m.content });
+        if (m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string") {
+          const rec = { role: m.role, content: m.content };
+          /* 语境随用户消息一起恢复:重新生成那一轮时要按原样重发,
+             少了它就会答成另一个问题 */
+          if (m.role === "user") {
+            rec.context = sanitizeCtx(m.context);
+            if (typeof m.page === "string") rec.page = m.page;
+          }
+          /* 批注建议随助手那条一起恢复:刷新之后卡片还在,没采纳的还能采纳。
+             形状过不了的丢掉 —— 读的是 localStorage,不是本进程写下的东西。 */
+          else if (Array.isArray(m.proposals)) {
+            const kept = m.proposals.filter(isProposalShaped);
+            if (kept.length) rec.proposals = kept;
+            if (['pending', 'done', 'error'].includes(m.terminal)) rec.terminal = m.terminal;
+            if (typeof m.errorCode === 'string') rec.errorCode = m.errorCode.slice(0, 64);
+          }
+          history.push(rec);
+        }
     } catch (e) { /* 坏数据直接忽略 */ }
   };
 
@@ -345,7 +411,7 @@
     if (d) d.remove();
   };
 
-  const addUserBubble = (text, files) => {
+  const addUserBubble = (text, files, context) => {
     const wrap = document.createElement("div");
     wrap.className = "aipm-chat__msg aipm-chat__msg--user";
     const bubble = document.createElement("div");
@@ -354,6 +420,26 @@
     body.className = "aipm-chat__text";
     body.textContent = text; // 用户输入按纯文本展示(已由 textContent 转义)
     bubble.appendChild(body);
+    /* 随这条提问一起发出去的语境:气泡上原样留一份。这样回头翻会话时看得见
+       「当时是拿哪段话问的」—— 语境在提问之后就离开了输入条,不在这里留痕
+       就只剩回答里的转述可查。 */
+    if (context && context.length) {
+      const box = document.createElement("div");
+      box.className = "aipm-chat__ctx-inline";
+      for (const item of context) {
+        const row = document.createElement("div");
+        row.className = "aipm-chat__ctx-row";
+        const kind = document.createElement("span");
+        kind.className = "aipm-chat__ctx-kind";
+        kind.textContent = CTX ? CTX.labelOf(item) : "";
+        const quote = document.createElement("span");
+        quote.className = "aipm-chat__ctx-text";
+        quote.textContent = CTX ? CTX.excerptOf(item) : "";
+        row.append(kind, quote);
+        box.appendChild(row);
+      }
+      bubble.appendChild(box);
+    }
     if (files && files.length) {
       const chips = document.createElement("div");
       chips.className = "aipm-chat__files";
@@ -441,18 +527,24 @@
     md.innerHTML = '<span class="aipm-chat__thinking">思考中<span class="aipm-chat__dots"></span></span>';
   };
 
-  /* 错误映射:error 帧 code / HTTP 状态 / 网络异常 */
+  /* 错误映射:error 帧 code / HTTP 状态 / 网络异常。
+     model_error 那一档**只给通用提示**:服务端在那个 code 上带的是上游原始报错
+     (可能含请求编号、上游措辞),不该出现在用户眼前。图片与模型对不上是唯一
+     一条能说清下一步的,因此单开一档。 */
   const ERROR_TEXT = {
-    rate_limited: "请求过于频繁,请稍后再试",
+    rate_limited: "问答服务的请求窗口已达上限，请等待窗口恢复",
+    acceptance_limit: "本机验收累计额度已用完，请联系环境维护者调整额度",
     budget_exceeded: "服务预算已用尽,请明天再试",
     budget_exhausted: "服务预算已用尽,请明天再试",
     max_turns: "本轮对话已到达轮次上限,请清空对话后重试",
     model_error: "模型服务暂时不可用,请稍后重试",
+    index_unavailable: "文章索引暂不可用,请稍后重试",
+    image_unsupported: "当前模型不接受图像输入,去掉对话框上方的图片语境后再问一次",
     internal: "服务内部错误,请稍后重试",
     http_400: "请求格式有误,请重试",
     http_403: "无权访问问答服务",
     http_413: "问题内容过长,请精简后重试",
-    http_429: "请求过于频繁,请稍后再试",
+    http_429: "请求受到限制，请根据服务提示稍后重试",
     http_503: "问答服务暂不可用,请稍后重试",
     network: "无法连接问答服务,请检查网络后重试",
   };
@@ -461,6 +553,42 @@
     if (status === 429 && retry) t += `(${retry} 秒后可重试)`;
     return t;
   };
+
+  function hasLocalAcceptanceStatus() {
+    if (!['127.0.0.1', 'localhost'].includes(location.hostname) || !window.__aipmLocalAcceptanceStatus) return false;
+    const url = new URL(window.__aipmLocalAcceptanceStatus, location.href);
+    if (url.origin !== location.origin) throw new Error('acceptance status must use the page origin');
+    return true;
+  }
+  async function localAcceptanceStatus(signal) {
+    if (!hasLocalAcceptanceStatus()) return null;
+    const response = await fetch(window.__aipmLocalAcceptanceStatus, { cache: 'no-store', signal });
+    if (!response.ok) throw new Error('acceptance status unavailable');
+    const status = await response.json();
+    if (!Number.isSafeInteger(status.sent) || status.sent < 0 || typeof status.halted !== 'boolean' ||
+        (status.limit !== null && (!Number.isSafeInteger(status.limit) || status.limit < 1 || status.sent > status.limit))) {
+      throw new Error('acceptance status invalid');
+    }
+    return status;
+  }
+  const localStatus = document.createElement('p');
+  localStatus.className = 'aipm-chat__local-status';
+  localStatus.setAttribute('role', 'status');
+  localStatus.hidden = true;
+  els.composer.prepend(localStatus);
+  function showLocalAcceptance(status) {
+    if (!status) return;
+    localStatus.hidden = false;
+    localStatus.textContent = status.halted ? '本机验收模型连接已停止，请联系环境维护者检查。' : status.limit === null ?
+      `本机验收：累计记录 ${status.sent} 次模型请求，用量继续记录。` :
+      `本机验收额度：累计剩余 ${status.limit - status.sent} 次模型请求；一次对话可能使用多次请求。`;
+    applyMetrics();
+  }
+  async function refreshLocalAcceptance(signal) {
+    const status = await localAcceptanceStatus(signal);
+    showLocalAcceptance(status);
+    return status;
+  }
 
   els.grip = panel.querySelector(".aipm-chat__grip");
   /* ================================================================
@@ -792,15 +920,15 @@
     t.regen.onclick = () => regenerate(t.wrap);
   };
 
-  /* 重新生成:截断该回答之后的历史,重发其上方那条用户消息 */
+  /* 重新生成:截断该回答之后的历史,重发其上方那条用户消息、页面与语境。 */
   const regenerate = (aiWrap) => {
     if (streaming) return;
     let prev = aiWrap.previousElementSibling;
     while (prev && !prev.classList.contains("aipm-chat__msg--user"))
       prev = prev.previousElementSibling;
     const idx = prev && prev.getAttribute("data-hidx");
-    const content = idx != null && history[+idx] ? history[+idx].content : null;
-    if (content == null) return;
+    const rec = idx != null && history[+idx] ? history[+idx] : null;
+    if (rec == null) return;
     history.length = +idx + 1;
     persist();
     let n = prev.nextElementSibling;
@@ -809,7 +937,111 @@
       n.remove();
       n = nx;
     }
-    runTurn(content);
+    runTurn(rec.content, rec.context || [], rec.page);
+  };
+
+  const PROPOSAL_VISIBILITIES = ['local', 'private', 'public'];
+
+  /** 一条建议读不读得出来。线上的东西(SSE 帧 / localStorage 里的历史)都要过这里,
+      过不了的不渲染成卡 —— 面板那边还会再校验一遍,两边各自成立。 */
+  const isProposalShaped = (p) =>
+    !!p && typeof p === "object" &&
+    typeof p.id === "string" && p.id !== "" &&
+    typeof p.page === "string" &&
+    typeof p.quote === "string" &&
+    (p.scope === "text" || p.scope === "page") &&
+    PROPOSAL_VISIBILITIES.includes(p.visibility);
+
+  const addProposalCard = (wrap, proposal, historical = false) => {
+    if (typeof proposal.requestId !== 'string' ||
+        !/^[A-Za-z0-9_-]{8,128}$/.test(proposal.requestId)) {
+      throw new Error('proposal request identity unavailable');
+    }
+    const protectedCard = document.createElement('div');
+    protectedCard.className = 'aipm-chat__proposal';
+    const heading = document.createElement('strong');
+    heading.className = 'aipm-chat__proposal-head';
+    heading.textContent = '批注建议';
+    protectedCard.appendChild(heading);
+    const choice = proposalEntry.visibilityChoice(proposal);
+    let selectedVisibility = choice.visibility;
+    let choiceLocked = choice.locked;
+    const choices = document.createElement('div');
+    choices.className = 'aipm-chat__proposal-vis';
+    choices.setAttribute('role', 'group');
+    choices.setAttribute('aria-label', '批注可见范围');
+    const visButtons = [
+      { visibility: 'local', label: '仅本机' },
+      { visibility: 'private', label: '仅自己可见' },
+      { visibility: 'public', label: '公开' }
+    ].map(({ visibility, label }) => {
+      const button = document.createElement('button');
+      button.className = 'aipm-chat__proposal-visbtn';
+      button.type = 'button';
+      button.textContent = label;
+      button.disabled = choiceLocked;
+      button.setAttribute('aria-pressed', String(selectedVisibility === visibility));
+      button.addEventListener('click', (event) => {
+        if (!event.isTrusted || open.disabled || choiceLocked) return;
+        proposalEntry.chooseVisibility(proposal, visibility);
+        selectedVisibility = visibility;
+        for (const item of visButtons) {
+          item.setAttribute('aria-pressed', String(item === button));
+        }
+      });
+      return button;
+    });
+    choices.append(...visButtons);
+    const open = document.createElement('button');
+    open.className = 'aipm-chat__proposal-accept';
+    open.type = 'button';
+    open.textContent = '查看批注建议';
+    const notice = document.createElement('span');
+    notice.className = 'aipm-chat__proposal-state';
+    notice.setAttribute('role', 'status');
+    notice.setAttribute('aria-live', 'polite');
+    protectedCard.append(choices, open, notice);
+    wrap.appendChild(protectedCard);
+    open.addEventListener('click', async (event) => {
+      if (!event.isTrusted || open.disabled) return;
+      proposalEntry.chooseVisibility(proposal, selectedVisibility, { lock: true });
+      choiceLocked = true;
+      protectedCard.dataset.state = 'loading';
+      notice.textContent = '正在打开确认界面…';
+      open.disabled = true;
+      for (const button of visButtons) button.disabled = true;
+      const submittedVisibility = selectedVisibility;
+      const chosenProposal = { ...proposal, visibility: submittedVisibility };
+      const entry = proposalEntry;
+      try {
+        const frame = entry.mount({ proposal: chosenProposal, historical, host: protectedCard });
+        frame.addEventListener('load', () => frame.focus(), { once: true });
+        notice.textContent = '';
+      } catch (error) {
+        if (['authentication required', 'original identity unavailable'].includes(error.message) &&
+            !window.__aipmAnnoAuth.user() &&
+            (!historical || entry?.hasPendingProposal(chosenProposal) || entry?.hasLoginDraft(chosenProposal))) {
+          const login = document.createElement('button');
+          login.className = 'aipm-chat__proposal-accept';
+          login.type = 'button';
+          login.textContent = '登录后手动恢复';
+          login.addEventListener('click', (action) => {
+            if (action.isTrusted) entry.loginDraft(chosenProposal);
+          });
+          protectedCard.append(login);
+          notice.textContent = '登录回跳后，请在历史建议卡中手动确认。';
+          protectedCard.dataset.state = 'warning';
+          return;
+        }
+        if (!['original proposal evidence unavailable', 'unknown request evidence unavailable',
+          'original identity unavailable', 'recovery evidence unavailable', 'authentication required',
+          'request already recorded'].includes(error.message)) throw error;
+        notice.textContent = '原请求依据不足或身份已变化；未提交。';
+        protectedCard.dataset.state = 'error';
+      }
+    });
+    scrollBottom(false);
+    return protectedCard;
   };
 
   /* ================================================================
@@ -830,14 +1062,15 @@
   };
 
   /* 一轮问答:用户消息已入 history(由 postUser / regenerate 负责),
-     这里只负责 AI 气泡与流式接收 */
-  const runTurn = async (message) => {
+     这里只负责 AI 气泡与流式接收。context 是这一轮随行的语境条目。 */
+  const runTurn = async (message, context, page) => {
     const myTurn = ++turnSeq;             // 捕获本 turn 令牌:清空/新 turn 后本 turn 失效
-    const ctx = { acc: "", sourceList: [], sourceSeen: new Set(), requestId: null };
+    const ctx = { acc: "", sourceList: [], sourceSeen: new Set(), requestId: null, proposals: [] };
     const t = addAiBubble();
     let finished = false;                 // 收尾只执行一次(done/error/流自然结束)
     setThinking(t.md);
     setStreamingUI(true);
+    const requestSignal = streaming.ac.signal;
     clearEmpty();
     track("assistant_message_send", env());
     stickBottom = true;
@@ -845,20 +1078,38 @@
 
     const body = {
       message,
-      history: history.slice(0, -1).slice(-HISTORY_SEND), // 最近轮次(不含本条)
+      // 最近的轮次(不含本条);语境不进 history —— 它是随行的,不是对话内容
+      history: history.slice(0, -1).slice(-HISTORY_SEND)
+        .filter(m => m.role !== 'assistant' || !m.terminal || m.terminal === 'done')
+        .map((m) => ({ role: m.role, content: m.content })),
     };
+    if (typeof page === "string") body.page = page;
+    /* 显式语境为空时省略 context；本轮页面单独发送。 */
+    const wire = CTX && context && context.length ? CTX.toPayload(context) : [];
+    if (wire.length) body.context = wire;
 
     /* 收尾统一出口:失效 turn(清空/新 turn 后)不再写 history/DOM,
        避免"只有回答、没有对应问题"的孤儿历史;但流式状态必须复位,
        否则清空后发送按钮仍卡在"停止生成" */
-    const finish = (assistantText) => {
+    let retained = null;
+    const retainProposalTurn = (content, terminal, errorCode) => {
+      if (myTurn !== turnSeq) return;
+      if (!retained) {
+        retained = { role: 'assistant' };
+        history.push(retained);
+        t.wrap.setAttribute('data-hidx', history.length - 1);
+      }
+      Object.assign(retained, { content, terminal, errorCode,
+        proposals: ctx.proposals.length ? ctx.proposals : undefined });
+      persist();
+    };
+    const finish = (assistantText, errorCode = 'network') => {
       if (finished) return;
       finished = true;
       const stale = myTurn !== turnSeq;
-      if (!stale && assistantText) {
-        history.push({ role: "assistant", content: assistantText });
-        t.wrap.setAttribute("data-hidx", history.length - 1);
-        persist();
+      if (!stale && (assistantText || ctx.proposals.length)) {
+        retainProposalTurn(assistantText ?? ctx.acc, assistantText === null ? 'error' : 'done',
+          assistantText === null ? errorCode : undefined);
       }
       setStreamingUI(false);
       updateSendState();
@@ -872,17 +1123,31 @@
     };
 
     try {
+      const acceptance = await refreshLocalAcceptance(requestSignal);
+      if (acceptance && (acceptance.halted || (acceptance.limit !== null && acceptance.sent >= acceptance.limit))) {
+        t.bubble.classList.add('is-error');
+        t.md.textContent = acceptance.halted ? '本机验收模型连接已停止，请联系环境维护者检查。' : ERROR_TEXT.acceptance_limit;
+        finish(null, 'acceptance_limit');
+        return;
+      }
+      const headers = { "Content-Type": "application/json" };
+      const annotationAuth = window.__aipmAnnoAuth;
+      const annotationToken = annotationAuth && typeof annotationAuth.token === "function"
+        ? annotationAuth.token() : null;
+      const annotationIdentity = annotationAuth?.user?.()?.githubId ?? null;
+      if (typeof annotationToken === "string" && annotationToken.length > 0)
+        headers["X-AIPM-Annotation-Token"] = annotationToken;
       const res = await fetch(API_BASE + "/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(body),
-        signal: streaming.ac.signal,
+        signal: requestSignal,
       });
       const ctype = res.headers.get("content-type") || "";
       if (!res.ok || ctype.indexOf("text/event-stream") === -1) {
         // 预校验失败:纯 JSON 响应(400/403/413/429/503)
         let code = "";
-        try { const j = await res.json(); code = j.code || ""; } catch (e) { /* 非 JSON 也兜住 */ }
+        try { const j = await res.json(); code = j.error || j.code || ""; } catch (e) { /* 非 JSON 也兜住 */ }
         const msg = code && ERROR_TEXT[code]
           ? ERROR_TEXT[code] + (code === "rate_limited" && res.headers.get("Retry-After")
               ? `(${res.headers.get("Retry-After")} 秒后可重试)`
@@ -891,7 +1156,7 @@
         t.bubble.classList.add("is-error");
         t.md.innerHTML = escapeHtml(msg);
         track("assistant_panel_error", Object.assign(env(), { status: res.status, code: code || undefined }));
-        finish(null);
+        finish(null, code);
         return;
       }
       const reader = res.body.getReader();
@@ -910,6 +1175,21 @@
             }
             renderSources(ctx);
             break;
+          case "proposal":
+            /* 一条待确认的批注建议。形状过不了的直接不渲染 —— 采纳那一步在批注
+               面板里还会再校验一遍,两边各自成立。 */
+            if (isProposalShaped(data) && !ctx.proposals.some((p) => p.id === data.id)) {
+              if ((annotationAuth?.user?.()?.githubId ?? null) !== annotationIdentity ||
+                  (annotationAuth?.token?.() ?? null) !== annotationToken) {
+                throw new Error('proposal identity changed');
+              }
+              data.requestId = crypto.randomUUID();
+              proposalEntry.rememberProposal(data);
+              ctx.proposals.push(data);
+              retainProposalTurn(ctx.acc, 'pending');
+              addProposalCard(t.wrap, data);
+            }
+            break;
           case "delta":
             if (data.text) {
               ctx.acc += data.text;
@@ -922,6 +1202,7 @@
             if (data.usage || data.costUsd != null || data.durationMs != null || data.numTurns != null)
               t.meta.textContent = fmtUsage(data);
             finish(ctx.acc);
+            if (hasLocalAcceptanceStatus()) void refreshLocalAcceptance();
             break;
           case "error":
             track("assistant_panel_error", Object.assign(env(), { code: data.code }));
@@ -929,7 +1210,10 @@
             t.md.innerHTML =
               (ctx.acc ? mdLite(ctx.acc) : "") +
               (ERROR_TEXT[data.code] ? `<p>${escapeHtml(ERROR_TEXT[data.code])}</p>` : "");
-            finish(null);
+            finish(null, data.code);
+            if (hasLocalAcceptanceStatus()) void refreshLocalAcceptance().then((status) => {
+              if (status && status.limit !== null && status.sent >= status.limit && t.wrap.isConnected) t.md.textContent = ERROR_TEXT.acceptance_limit;
+            });
             break;
         }
       });
@@ -964,31 +1248,37 @@
     if (mode === "sheet" && open && snap === "peek") setSnap("half");
   };
 
-  /* 用户消息入 history + 渲染气泡(附件以 [附件] 文本附注进消息体) */
-  const postUser = (text, files) => {
+  /* 用户消息入 history + 渲染气泡(语境按条列出,附件以 [附件] 文本附注进消息体) */
+  const postUser = (text, files, context) => {
     let sent = text;
     if (files && files.length) {
       const note = files.map((f) => `${f.name}(${f.size != null ? fmtSize(f.size) : "?"})`).join(", ");
       sent = text ? `${text}\n\n[附件] ${note}` : `[附件] ${note}`;
     }
-    history.push({ role: "user", content: sent });
-    const wrap = addUserBubble(text, files);
+    const page = CTX ? CTX.normalizePage(location.pathname) : location.pathname;
+    const ctxItems = context && context.length ? context.filter((item) => item.page === page) : [];
+    history.push({ role: "user", content: sent, context: ctxItems, page });
+    const wrap = addUserBubble(text, files, ctxItems);
     wrap.setAttribute("data-hidx", history.length - 1);
     persist();
     raiseForSend();
-    runTurn(sent);
+    runTurn(sent, ctxItems, page);
   };
 
   const submit = () => {
     if (streaming) return;
+    pruneCtxForPage();
     const text = els.input.value.trim();
     if (!text && !attachments.length) return;
     els.input.value = "";
     autosize();
     const files = attachments.slice();
+    const context = pendingCtx.slice();
     attachments = [];
+    pendingCtx = [];
     renderAttach();
-    postUser(text, files);
+    renderCtx();
+    postUser(text, files, context);
   };
 
   /* ================================================================
@@ -1054,6 +1344,119 @@
     els.composer.classList.remove("is-dragover");
     addFiles(e.dataTransfer && e.dataTransfer.files);
   });
+
+  /* ================================================================
+     语境(与批注面板互通)
+     ----------------------------------------------------------------
+     批注面板点「问助手」→ window.__aipmChat.attachContext(item) → 条目落到输入条
+     上方这条语境条里,随下一次提问以 body.context 发出去。条目的形状、去重与
+     「仅本机不出本机」那道边界都在 context-item.js,这里只负责摆与发。
+
+     语境随本轮消息发送后从输入区清空。历史消息保留本轮语境,供查看与重新生成。
+     ================================================================ */
+  let pendingCtx = [];
+  const expandedCtx = new Set();
+
+  const renderCtx = () => {
+    for (const id of expandedCtx) {
+      if (!pendingCtx.some((item) => item.id === id)) expandedCtx.delete(id);
+    }
+    els.ctxbar.textContent = "";
+    for (const item of pendingCtx) {
+      const expanded = expandedCtx.has(item.id);
+      const category = item.kind === "annotation" ? "批注"
+        : item.kind === "selection" ? "选中文字"
+        : { mermaid: "Mermaid 图", svg: "SVG 图", image: "图片" }[item.chart];
+      const chip = document.createElement("span");
+      chip.className = "aipm-chat__ctx-chip";
+      chip.classList.toggle("is-expanded", expanded);
+      chip.setAttribute("data-kind", item.kind);
+      const label = document.createElement("span");
+      label.className = "aipm-chat__ctx-kind";
+      label.textContent = expanded ? CTX.labelOf(item) : category;
+      const text = document.createElement("span");
+      text.className = "aipm-chat__ctx-text";
+      const fullText = [item.quote, item.body, item.source].filter(Boolean).join("\n\n");
+      text.textContent = fullText;
+      text.hidden = !expanded;
+      const view = document.createElement("button");
+      view.type = "button";
+      view.className = "aipm-chat__ctx-view";
+      view.title = "展开／收起语境：" + category;
+      view.setAttribute("aria-label", view.title);
+      view.setAttribute("aria-expanded", String(expanded));
+      view.append(label, text);
+      view.addEventListener("click", () => {
+        const expanded = chip.classList.toggle("is-expanded");
+        if (expanded) expandedCtx.add(item.id);
+        else expandedCtx.delete(item.id);
+        view.setAttribute("aria-expanded", String(expanded));
+        label.textContent = expanded ? CTX.labelOf(item) : category;
+        text.hidden = !expanded;
+        if (expanded && mode === "sheet") setSnap("expanded");
+        applyMetrics();
+      });
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "aipm-chat__ctx-x";
+      rm.title = "移除这条语境";
+      rm.setAttribute("aria-label", "移除语境：" + category);
+      rm.textContent = "×";
+      rm.addEventListener("click", () => {
+        const index = pendingCtx.findIndex((entry) => entry.id === item.id);
+        pendingCtx = CTX.remove(pendingCtx, item.id);
+        renderCtx();
+        const next = els.ctxbar.children[Math.min(index, pendingCtx.length - 1)];
+        if (next) next.querySelector(".aipm-chat__ctx-x").focus();
+        else els.input.focus();
+        updateSendState();
+        applyMetrics();
+      });
+      chip.append(view, rm);
+      els.ctxbar.appendChild(chip);
+    }
+    els.ctxbar.hidden = pendingCtx.length === 0;
+  };
+
+  /* localStorage 里的语境可能来自旧版本、被手工改坏,或者是从别处恢复出来的
+     「仅本机」条目:形状与那道边界都在 context-item.js 的 sanitize 里,这里不
+     重写一遍 —— 多一处判断就多一处改漏的机会。 */
+  const sanitizeCtx = (list) => (CTX ? CTX.sanitize(list) : []);
+
+  /**
+   * 批注面板的入口。返回 {ok} 或 {ok:false, code} —— 语境条满了要让人知道,
+   * 不然点下去什么都不发生。话由调用方(批注面板的 toast)去说,这里不弹窗。
+   *
+   * 语境不参与发送按钮的可用性:提问必须有文字,光有语境发不出去。
+   */
+  const attachContext = (item) => {
+    if (CTX === null) return { ok: false, code: "unavailable" };
+    const res = CTX.upsert(pendingCtx, item);
+    if (!res.ok) return res;
+    pendingCtx = res.items;
+    renderCtx();
+    return res;
+  };
+
+  /**
+   * 换页时把不属于新页的语境收掉。
+   *
+   * 条目说的是「正在读的这一页上的一段话」,而面板 append 在 body 上、instant
+   * 导航又不换它 —— 不主动收,在页面 A 送进来的那段话会跟着下一次提问发出去,
+   * 而用户此刻读的是页面 B。历史消息里已经发出去的那些不动:它们是「当时拿哪段
+   * 话问的」的记录,「重新生成」要按原样重发。
+   *
+   * 逐条比 page 而不是整条清空:页内锚点跳转不算换页,那一页的语境该留着。
+   */
+  const pruneCtxForPage = () => {
+    if (CTX === null || pendingCtx.length === 0) return;
+    const page = CTX.normalizePage(location.pathname);
+    const left = pendingCtx.filter((it) => it.page === page);
+    if (left.length === pendingCtx.length) return;
+    pendingCtx = left;
+    renderCtx();
+    updateSendState();
+  };
 
   /* ================================================================
      视口 / 软键盘
@@ -1341,12 +1744,19 @@
     history.forEach((m, i) => {
       if (m.role === "user") {
         // 附件形态不持久化:恢复时按存入 history 的完整文本展示
-        const wrap = addUserBubble(m.content, []);
+        const wrap = addUserBubble(m.content, [], m.context || []);
         wrap.setAttribute("data-hidx", i);
       } else {
         const t = addAiBubble();
         t.md.innerHTML = mdLite(m.content);
+        if (m.terminal === 'error' || m.terminal === 'pending') {
+          t.bubble.classList.add('is-error');
+          const message = ERROR_TEXT[m.errorCode] || '回答未完成，批注建议仍需手动确认。';
+          t.md.innerHTML += `<p>${escapeHtml(message)}</p>`;
+        }
         t.wrap.setAttribute("data-hidx", i);
+        /* 建议卡在回答下面,与它刚才那一轮里的位置一致 */
+        for (const p of (m.proposals || [])) addProposalCard(t.wrap, p, true);
         showActions(t, m.content);
       }
     });
@@ -1355,6 +1765,7 @@
   }
   updateSendState();
   applyMode();
+  if (hasLocalAcceptanceStatus()) void refreshLocalAcceptance();
 
   /* 登记到互斥注册表:批注面板打开时会调用 claim("annotation"),
      由注册表先 close("chat") 再开自己 —— 两个方向共用同一个动作。 */
@@ -1364,5 +1775,32 @@
       close: closePanel,
       isOpen: () => open
     });
+  }
+
+  /**
+   * 送语境的入口,调用方只有 annotation.js 的 askAssistant(见那里的注释)。
+   *
+   * attachContext 成功就已经把面板打开了 —— 走共享注册表的 claim,与点 FAB 是同
+   * 一条路(先关掉批注面板再开助手,两个面板互斥);注册表不在时退回直接开。
+   * 调用方因此不必、也不该再自己开一次面板:它手上只有这里导出的这几个成员。
+   */
+  window.__aipmChat = {
+    attachContext: (item) => {
+      const res = attachContext(item);
+      if (!res.ok) return res;
+      if (SHARED) SHARED.claim("chat");
+      else openPanel();
+      raiseForSend();          // 抽屉停在页面优先态时升到半开,语境条与输入条才露出来
+      els.input.focus();
+      return res;
+    },
+    isOpen: () => open
+  };
+
+  /* 换页后把不属于新页的语境收掉。机制与批注面板的条子同一条:mkdocs-material 的
+     document$ 在每次页面(含 instant 导航)就绪后发一次。没有它(未开 instant
+     导航)时换页是整页重载,语境条本来就从头开始,不需要额外兜底。 */
+  if (typeof document$ !== "undefined" && document$.subscribe) {
+    document$.subscribe(pruneCtxForPage);
   }
 })();

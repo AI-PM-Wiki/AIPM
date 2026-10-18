@@ -26,11 +26,18 @@
 */
 (function () {
   "use strict";
+  if (window.__aipmIntegrityFailed) throw new Error("annotation asset integrity failure");
 
-  var ANNO_API_BASE =
-    location.hostname === "localhost" || location.hostname === "127.0.0.1"
-      ? "http://127.0.0.1:8788"
-      : "https://anno-api.nvc.ac";
+  var localHost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  var ANNO_API_BASE = localHost && window.__aipmLocalApi?.annotation
+    ? window.__aipmLocalApi.annotation
+    : localHost ? "http://127.0.0.1:8788" : "https://anno-api.nvc.ac";
+  if (localHost && window.__aipmLocalApi?.annotation) {
+    var endpoint = new URL(ANNO_API_BASE);
+    if (endpoint.protocol !== "http:" || endpoint.hostname !== "127.0.0.1" ||
+        endpoint.pathname !== "/" || endpoint.search || endpoint.hash ||
+        endpoint.username || endpoint.password) throw new Error("invalid local annotation endpoint");
+  }
 
   /* 色板:≥5 色,每色有亮/暗两套值(定义在 annotation.css 的 --aipm-anno-* 变量上)。
      label 是短标签(面板图例与建议条展示),when 是该颜色的使用语义 ——
@@ -46,7 +53,8 @@
 
   var K_LOCAL = "aipm-anno-local";
   var K_MAP = "aipm-anno-map";
-  var K_DRAFT = "aipm-anno-draft";
+  var K_DRAFT = "aipm-anno-manual-draft-v1";
+  var K_LEGACY_DRAFT = "aipm-anno-draft";
   var K_LAST_COLOR = "aipm-anno-last-color";
   var K_PREFS = "aipm-anno-prefs";
   var K_SMART = "aipm-anno-smart";
@@ -77,6 +85,7 @@
   }
 
   function writeJson(key, value) {
+    if (window.__aipmIntegrityFailed || window.__aipmIntegrityReady !== true) throw new Error("annotation asset integrity failure");
     var text = JSON.stringify(value);
     try {
       localStorage.setItem(key, text);
@@ -97,9 +106,16 @@
 
   function request(path, opts) {
     opts = opts || {};
+    if ((window.__aipmIntegrityFailed || window.__aipmIntegrityReady !== true) &&
+        (opts.method || "GET") !== "GET" &&
+        (path.startsWith("/api/annotations") || path.startsWith("/api/annotation-requests") ||
+         path === "/api/annotation-permits" || path === "/api/reply-permits")) {
+      throw new Error("annotation asset integrity failure");
+    }
     var headers = { Accept: "application/json" };
     if (opts.body !== undefined) headers["Content-Type"] = "application/json";
     if (opts.token) headers.Authorization = "Bearer " + opts.token;
+    if (opts.permit) headers["X-Annotation-Permit"] = opts.permit;
     return fetch(ANNO_API_BASE + path, {
       method: opts.method || "GET",
       headers: headers,
@@ -120,6 +136,58 @@
         /* 网络不可达:当作服务不可用,而不是把错误抛给调用方去猜 */
         return { ok: false, status: 0, body: { error: "network" }, headers: null };
       });
+  }
+
+  function matchesAnnotation(annotation, payload, identity) {
+    var selectors = annotation && annotation.target && annotation.target.selectors;
+    var expected = payload.target.selectors;
+    return Boolean(annotation && typeof annotation.id === "string" && annotation.id &&
+      annotation.page === payload.page &&
+      annotation.body === payload.body.trim().replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "") &&
+      annotation.visibility === payload.visibility && annotation.color === payload.color &&
+      annotation.style === payload.style && String(annotation.author?.githubId) === identity &&
+      annotation.target?.scope === payload.target.scope && Array.isArray(selectors) &&
+      selectors.length === expected.length && expected.every(function (selector, index) {
+        return selectors[index] && Object.keys(selector).every(function (key) {
+          var value = selector[key];
+          return selectors[index][key] === (typeof value === "string" ? value.slice(0, 4000) : value);
+        });
+      }));
+  }
+
+  async function createAnnotation(payload, { token, isCurrent, onSend = function () {} }) {
+    if (!token || typeof isCurrent !== "function" || !["public", "private"].includes(payload.visibility)) {
+      throw new TypeError("annotation creation dependencies");
+    }
+    var auth = window.__aipmAnnoAuth;
+    var identity = String(auth.user()?.githubId);
+    function finish(response, outcome) {
+      if (response.status === 401 && auth.token() === token) auth.forget();
+      return Object.assign({}, response, { outcome: outcome });
+    }
+    function unsent() {
+      return { ok: false, status: 0, body: { error: "context_changed" }, outcome: "unsent" };
+    }
+    if (!isCurrent()) return unsent();
+    var issued = await request("/api/annotation-permits", { method: "POST", token: token, body: payload });
+    if (issued.status !== 201 || typeof issued.body?.permit !== "string" || !issued.body.permit) {
+      return finish(issued, "unsent");
+    }
+    if (!isCurrent()) return unsent();
+    var pending = request("/api/annotations", {
+      method: "POST", token: token, permit: issued.body.permit, body: payload
+    });
+    onSend();
+    var response = await pending;
+    if (response.ok && [200, 201].includes(response.status) &&
+        matchesAnnotation(response.body?.annotation, payload, identity)) {
+      return finish(response, "succeeded");
+    }
+    var rejected = response.body && typeof response.body.error === "string" &&
+      ((response.status >= 400 && response.status < 500 && ![408, 409].includes(response.status)) ||
+       (response.status === 503 && response.body.error === "storage_failed") ||
+       (response.status === 507 && ["storage_full", "page_full"].includes(response.body.error)));
+    return finish(response, rejected ? "rejected" : "unknown");
   }
 
   /* ---- 本机(仅本机)---- */
@@ -209,7 +277,7 @@
   }
 
   /* ---- 草稿:必须扛过 OAuth 整轮往返 ----
-     未登录用户选「公开」→ 引导登录 → 回跳后要把刚才那段话发出去。
+     未登录用户选「公开」→ 引导登录 → 回跳后展示待确认请求。
      草稿存 localStorage(不是内存),因为回跳是一次完整的页面加载。 */
 
   function saveDraft(draft) {
@@ -223,6 +291,17 @@
   function peekDraft() {
     return readJson(K_DRAFT, null);
   }
+
+  function peekLegacyDraft() {
+    return readJson(K_LEGACY_DRAFT, null);
+  }
+
+  function saveLegacyDraft(draft) {
+    writeJson(K_LEGACY_DRAFT, Object.assign({}, draft, {
+      savedAt: new Date().toISOString()
+    }));
+  }
+
 
   function clearDraft() {
     try {
@@ -351,6 +430,7 @@
   }
 
   window.__aipmAnnoStore = {
+    assetVersion: 46,
     ANNO_API_BASE: ANNO_API_BASE,
     PALETTE: PALETTE,
     DEFAULT_COLOR: DEFAULT_COLOR,
@@ -358,6 +438,7 @@
     LOCAL_WARN_BYTES: LOCAL_WARN_BYTES,
 
     request: request,
+    createAnnotation: createAnnotation,
     uid: uid,
 
     localList: localList,
@@ -373,6 +454,8 @@
     saveDraft: saveDraft,
     peekDraft: peekDraft,
     clearDraft: clearDraft,
+    peekLegacyDraft: peekLegacyDraft,
+    saveLegacyDraft: saveLegacyDraft,
 
     ANNO_STYLES: ANNO_STYLES,
     DEFAULT_STYLE: DEFAULT_STYLE,

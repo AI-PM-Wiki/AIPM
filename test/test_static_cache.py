@@ -5,6 +5,10 @@ from __future__ import annotations
 import re
 import unittest
 from pathlib import Path
+import yaml
+import pymdownx.slugs
+import pymdownx.emoji
+import pymdownx.superfences
 
 ROOT = Path(__file__).resolve().parents[1]
 NETLIFY = ROOT / "netlify.toml"
@@ -102,6 +106,29 @@ class TestServiceWorkerLongCache(unittest.TestCase):
     def test_takes_over_on_activate(self):
         self.assertIn("skipWaiting", self.src)
         self.assertIn("clients.claim", self.src)
+
+
+class TestAnnotationVersionLink(unittest.TestCase):
+    def test_page_scripts_and_confirmation_module_graph_share_version(self):
+        config = yaml.full_load((ROOT / "mkdocs.yml").read_text(encoding="utf-8"))
+        version = config["extra"]["annotation"]["version"]
+        self.assertEqual(version, config["extra"]["chat_agent"]["version"])
+        js = ROOT / "docs" / "_static" / "js"
+        for name in ("annotation-store.js", "annotation-auth.js", "annotation.js"):
+            src = (js / name).read_text(encoding="utf-8")
+            self.assertIn(f"assetVersion: {version}" if name != "annotation.js"
+                          else f"assetVersion !== {version}", src)
+        for name, dependencies in {
+            "chat-widget.js": ("annotation-agent-entry.js",),
+            "annotation-agent-entry.js": ("annotation-consent-core.js",
+                                          "annotation-proposal-confirm.js"),
+            "annotation-proposal-confirm.js": ("annotation-request-status.js",
+                                             "annotation-confirm-view.js"),
+        }.items():
+            src = (js / name).read_text(encoding="utf-8")
+            for dependency in dependencies:
+                with self.subTest(source=name, dependency=dependency):
+                    self.assertIn(f"./{dependency}?v={version}", src)
 
 
 if __name__ == "__main__":
