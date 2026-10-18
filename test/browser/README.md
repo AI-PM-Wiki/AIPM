@@ -183,4 +183,14 @@ TMPDIR="$PWD/meta/r" AIPM_TEST_HTTP_TRACE="$PWD/meta/browser/http.jsonl" uv run 
 
 批注服务的 `npm run unit-check` 覆盖纯函数、真实索引及本地 HTTP 许可检查。`npm run durability-check` 覆盖持久化、并发与请求记录。两组使用服务自身的会话签发功能进行权限检查。
 
+## 界面反馈检查
+
+`review-feedback-assertions.mjs` 提供三个真实浏览器检查入口：
+
+- `checkPassageOutline(page, annotationId)`：打开对应批注面板后，检查跨超链接的本机批注按连续行绘制定位边框。`check_passage_feedback_ego.mjs` 已调用此入口。
+- `checkInputFocus(page, selector)`：打开评论、批注或回复编辑器后，检查输入焦点、单层边框与外围光圈状态。
+- `checkComposerConsumed(page, question)`：通过页面添加语境和文件附件后，执行真实问答，检查输入区域清空且已发送消息保留对应内容。
+
+这些入口复用当前 ego-browser 任务的 `page`，问答需要已授权的真实 Agent 服务。
+
 `npm run model-check -- llm` 使用上述模型配置检查真实响应、token 计费、部分页面缓存覆盖、重复请求、重启加载及重新生成。`npm run model-check -- jev` 需要独立授权的 `AIPM_REAL_JEV_API_KEY`、`AIPM_REAL_JEV_BASE_URL`、`AIPM_REAL_JEV_MODEL`。缺少配置时输出待验收项目，返回非零退出码。模型限流、输出形状失败、低置信度、provider 切换以及真实 GitHub OAuth 的验收结果需单独提供实际请求证据。

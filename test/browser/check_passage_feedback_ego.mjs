@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFile,writeFile} from 'node:fs/promises';
+import {checkPassageOutline} from './review-feedback-assertions.mjs';
 
 export async function checkPassageFeedback({directory,taskSpace,spaceId}) {
   const config=JSON.parse(await readFile(directory+'/runtime-config.json','utf8'));
@@ -31,7 +32,7 @@ export async function checkPassageFeedback({directory,taskSpace,spaceId}) {
   const id=await page.evaluate(()=>window.__aipmAnnoStore.localList(location.pathname)[0].id);
   const before=await page.evaluate(id=>({fragments:[...document.querySelectorAll('mark.aipm-anno-mark')].filter(mark=>mark.dataset.annoId===id).length}),id);
   assert.ok(before.fragments>1,'test selection did not create multiple annotation fragments');
-  await page.click(`.aipm-anno__item[data-anno-id="${id}"] .aipm-anno__quote-ink`);
+  const outline = await checkPassageOutline(page, id);
   const after=await page.evaluate(id=>{
     const fragments=[...document.querySelectorAll('mark.aipm-anno-mark')].filter(mark=>mark.dataset.annoId===id);
     return {fragments:fragments.length,flashed:fragments.filter(mark=>mark.classList.contains('aipm-anno-flash')).length,
@@ -60,6 +61,6 @@ export async function checkPassageFeedback({directory,taskSpace,spaceId}) {
     cases.push({width,...current});
   }
   await page.waitForFunction(()=>!document.querySelector('mark.aipm-anno-flash'),undefined,{timeout:2500});
-  await writeFile(directory+'/passage-results.json',JSON.stringify({spaceId:task.spaceId,status:'pass',before,after,cases},null,2));
+  await writeFile(directory+'/passage-results.json',JSON.stringify({spaceId:task.spaceId,status:'pass',before,after,outline,cases},null,2));
   return {spaceId:task.spaceId,before,after};
 }

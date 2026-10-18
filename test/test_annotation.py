@@ -2833,16 +2833,6 @@ class TestUiRoundSeven(unittest.TestCase):
         self.assertIn('snap !== "peek"', fn)
         self.assertIn('setSnap("peek")', fn)
 
-    def test_the_landing_is_ringed_in_the_annotations_own_ink(self):
-        """页面是平滑滚过去的,光看落点认不出「到了」的是哪一段 —— 那一段先亮一圈。
-        光圈用这条批注自己的墨色,才认得出亮的是刚点的那条;退到整个块上时那块身上
-        没有墨色,才退回主题强调色。"""
-        fn = _block(self.js, "function jumpToPassage(")
-        self.assertIn("aipm-anno-flash", fn)
-        rule = _block(self.css, ".aipm-anno-flash {")
-        self.assertIn("var(--aipm-mark-ink, var(--md-accent-fg-color))", rule)
-        self.assertIn("outline", rule)
-
 class TestTheFloatingToolbarNeverStrands(unittest.TestCase):
     """第八轮:划词悬浮窗只能跟「当前这一次划词」一样长寿。
 

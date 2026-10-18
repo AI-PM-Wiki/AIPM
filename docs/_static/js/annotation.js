@@ -440,6 +440,7 @@
   }
 
   function clearMarks() {
+    stopPassageFlash();
     var marks = document.querySelectorAll("mark.aipm-anno-mark");
     for (var i = 0; i < marks.length; i++) {
       var mark = marks[i];
@@ -5153,7 +5154,70 @@
    * 等于没跳」。所以先把抽屉收回头一档(peek),落点才在面板外面。桌面停靠是
    * 并排的(页面让开一条,见 CSS 的 3.1),不必动。
    */
-  var passageFlashTimers = new WeakMap();
+  var passageFlash = null;
+
+  function stopPassageFlash() {
+    if (!passageFlash) return;
+    cancelAnimationFrame(passageFlash.frame);
+    passageFlash.fragments.forEach(function (fragment) { fragment.classList.remove("aipm-anno-flash"); });
+    passageFlash.layer.remove();
+    passageFlash = null;
+  }
+
+  function flashPassage(fragments) {
+    stopPassageFlash();
+    var layer = document.createElement("div");
+    layer.className = "aipm-anno-flash-layer rr-block";
+    layer.setAttribute("aria-hidden", "true");
+    var style = getComputedStyle(fragments[0]);
+    layer.style.color = style.getPropertyValue("--aipm-mark-ink").trim() || style.getPropertyValue("--md-accent-fg-color").trim();
+    document.body.appendChild(layer);
+    fragments.forEach(function (fragment) { fragment.classList.add("aipm-anno-flash"); });
+    var state = { fragments: fragments, layer: layer, frame: 0, until: performance.now() + 900 };
+    passageFlash = state;
+    function paint(now) {
+      if (passageFlash !== state) return;
+      if (now >= state.until || fragments.some(function (fragment) { return !fragment.isConnected; })) {
+        stopPassageFlash();
+        return;
+      }
+      var lines = [];
+      fragments.forEach(function (fragment) {
+        var block = fragment.closest(BLOCK_SELECTOR);
+        Array.from(fragment.getClientRects()).forEach(function (rect) {
+          if (!rect.width || !rect.height) return;
+          var line = lines.find(function (entry) {
+            return entry.block === block && Math.min(entry.bottom, rect.bottom) - Math.max(entry.top, rect.top) >
+              Math.min(entry.bottom - entry.top, rect.height) / 2;
+          });
+          if (line) {
+            line.left = Math.min(line.left, rect.left);
+            line.top = Math.min(line.top, rect.top);
+            line.right = Math.max(line.right, rect.right);
+            line.bottom = Math.max(line.bottom, rect.bottom);
+          } else {
+            lines.push({ block: block, left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
+          }
+        });
+      });
+      while (layer.children.length > lines.length) layer.lastElementChild.remove();
+      lines.forEach(function (line, index) {
+        var box = layer.children[index];
+        if (!box) {
+          box = document.createElement("span");
+          box.className = "aipm-anno-flash-outline";
+          layer.appendChild(box);
+        }
+        box.style.left = line.left + "px";
+        box.style.top = line.top + "px";
+        box.style.width = (line.right - line.left) + "px";
+        box.style.height = (line.bottom - line.top) + "px";
+      });
+      state.frame = requestAnimationFrame(paint);
+    }
+    paint(performance.now());
+  }
+
   function jumpToPassage(anno) {
     var target = passageAnchor(anno);
     if (!target) {
@@ -5164,14 +5228,7 @@
     target.scrollIntoView({ block: "center", behavior: "smooth" });
     var fragments = Array.from(document.querySelectorAll('mark.aipm-anno-mark[data-anno-id="' + CSS.escape(anno.id) + '"]'));
     if (!fragments.length) fragments = [target];
-    fragments.forEach(function (fragment) {
-      clearTimeout(passageFlashTimers.get(fragment));
-      fragment.classList.add("aipm-anno-flash");
-      passageFlashTimers.set(fragment, setTimeout(function () {
-        fragment.classList.remove("aipm-anno-flash");
-        passageFlashTimers.delete(fragment);
-      }, 900));
-    });
+    flashPassage(fragments);
   }
 
   /** 从引文元素找回它那条批注,再跳。 */

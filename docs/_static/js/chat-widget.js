@@ -34,10 +34,9 @@
     ready / sources / delta / done / error;预校验失败返回纯 JSON(400/403/
     413/429/503),映射中文提示(429 附 Retry-After 重试时间)
   - 语境(与批注面板互通):批注面板点「问助手」调 window.__aipmChat.attachContext(item),
-    条目落在输入条上方的语境条里,随下一次提问以 body.context 发出。条目的构造与
+    条目显示在输入框上方的语境条里,随下一次提问以 body.context 发出。条目的构造与
     去重在 context-item.js(同一条来源连着送两次只有一条),「仅本机」的批注在那里
-    就不会成为语境。语境条里的条目一直留到被逐条移除或换了页 —— 追问同一段话
-    不必每次重新送一遍
+    就不会成为语境。发送后清空输入区语境,已发送消息保留对应语境供查看与重新生成。
   - 批注建议(反方向:助手 → 批注):SSE 建议只生成不含正文的入口;
     用户在隔离确认界面同意后由批注会话执行。
   - FAB 可拖拽(issue #72):外观与位置一律照旧,加的只是交互。锚点在 CSS
@@ -1274,9 +1273,12 @@
     els.input.value = "";
     autosize();
     const files = attachments.slice();
+    const context = pendingCtx.slice();
     attachments = [];
+    pendingCtx = [];
     renderAttach();
-    postUser(text, files, pendingCtx);
+    renderCtx();
+    postUser(text, files, context);
   };
 
   /* ================================================================
@@ -1350,8 +1352,7 @@
      上方这条语境条里,随下一次提问以 body.context 发出去。条目的形状、去重与
      「仅本机不出本机」那道边界都在 context-item.js,这里只负责摆与发。
 
-     条目一直留到被逐条移除:追问同一段话不必每次重新送一遍。语境是**看着的
-     东西**,不是一次性的动作 —— 它在语境条上一直可见,发出去的与看到的是同一份。
+     语境随本轮消息发送后从输入区清空。历史消息保留本轮语境,供查看与重新生成。
      ================================================================ */
   let pendingCtx = [];
   const expandedCtx = new Set();

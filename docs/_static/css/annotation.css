@@ -1511,8 +1511,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__actions .aipm-anno__save:hover:not(:disabled) {
   background-image: linear-gradient(rgba(0, 0, 0, .14), rgba(0, 0, 0, .14));
 }
-.aipm-anno__composer button:focus-visible,
-.aipm-anno__input:focus-visible {
+.aipm-anno__composer button:focus-visible {
   outline: 2px solid var(--md-accent-fg-color);
   outline-offset: 3px;
 }
@@ -1779,15 +1778,16 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   pointer-events: none;
 }
 
-/* 点引文跳回正文时的落地提示。页面是被平滑滚过去的,光看滚动落点认不出「到了」
-   的是哪一段 —— 那一段先亮一圈。光圈用这条批注自己的墨色,于是「亮的是我点的那
-   条」一眼看得出来;退而求其次落到整个块上时(那句话已被别人的高亮占住,见
-   passageAnchor)它身上没有墨色,退回主题强调色。
-   outline 而不是 box-shadow:与正文里 mark 的焦点环同一档粗细与偏移,落在同一段
-   文字上,两种提示长得一样。行内元素折行时它按每一行的文字片段各描一圈(焦点环
-   也是这么画的),不是一块整的方框。 */
-.aipm-anno-flash {
-  outline: 2px solid var(--aipm-mark-ink, var(--md-accent-fg-color));
+/* 正文定位提示按同一批注的连续行绘制。 */
+.aipm-anno-flash-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.aipm-anno-flash-outline {
+  position: absolute;
+  outline: 2px solid currentColor;
   outline-offset: 1px;
 }
 
