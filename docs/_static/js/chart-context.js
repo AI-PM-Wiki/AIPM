@@ -502,15 +502,15 @@
    * 里,这里只管报信:语境条满了、面板没挂上,按钮点下去都不该毫无动静 ——
    * 「点了没反应」与「坏了」在用户那里是同一件事。
    */
-  function handOff(found) {
+  function handOff(found, page) {
     var chat = window.__aipmChat;
     if (!chat || typeof chat.attachContext !== "function") {
       flash("问答助手未加载,这张图送不进对话。");
       return;
     }
     var item = CTX.forChart({
-      page: pagePath(),
-      title: pageTitle(),
+      page: page.path,
+      title: page.title,
       chart: found.chart,
       source: found.source,
       key: found.key,
@@ -552,11 +552,13 @@
    * 一样的语境(去重会把它们并成一条,但两次请求都发出去了)。
    */
   function ask(el, btn) {
+    var page = { path: pagePath(), title: pageTitle() };
     btn.disabled = true;
     btn.classList.add("is-busy");
     readChart(el).then(function (found) {
       btn.disabled = false;
       btn.classList.remove("is-busy");
+      if (pagePath() !== page.path || !el.isConnected) return;
       if (found === null) {
         flash("图片已切换，请重新点击“问助手”。");
         return;
@@ -565,7 +567,7 @@
         flash(found.error);
         return;
       }
-      handOff(found);
+      handOff(found, page);
     });
   }
 

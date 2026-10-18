@@ -39,7 +39,7 @@
     就不会成为语境。语境条里的条目一直留到被逐条移除或换了页 —— 追问同一段话
     不必每次重新送一遍
   - 批注建议(反方向:助手 → 批注):SSE 建议只生成不含正文的入口;
-    用户在隔离确认界面同意后由批注会话执行,默认禁止执行。
+    用户在隔离确认界面同意后由批注会话执行。
   - FAB 可拖拽(issue #72):外观与位置一律照旧,加的只是交互。锚点在 CSS
     (right/bottom),JS 只写 transform,所以「松手回原位」= 清掉 inline transform
     交回 CSS 过渡 —— JS 不需要知道锚点在哪,锚点被别的面板改(批注面板停靠时让位,
@@ -64,7 +64,7 @@
     关闭后回到触发按钮;手柄是可点可拖的 button
   - localStorage 存最近会话(≤20 条)+「清空对话」;服务端无状态
 */
-(() => {
+(async () => {
   "use strict";
 
   /* ================================================================
@@ -116,6 +116,14 @@
     document.body.appendChild(note);
     return;
   }
+
+  const { createAgentEntry } = await import('./annotation-agent-entry.js?v=46').catch((error) => {
+    window.__aipmIntegrityFailed = true;
+    window.__aipmIntegrityReady = false;
+    window.dispatchEvent(new Event('aipm-integrity-change'));
+    throw error;
+  });
+  const proposalEntry = createAgentEntry();
 
   /* ================================================================
      DOM 构造(body 顶层,instant 导航换页存活)
@@ -956,19 +964,9 @@
     heading.className = 'aipm-chat__proposal-head';
     heading.textContent = '批注建议';
     protectedCard.appendChild(heading);
-    const choiceKey = `aipm-agent-visibility:${proposal.requestId}`;
-    const savedChoice = localStorage.getItem(choiceKey);
-    let selectedVisibility = proposal.visibility;
-    let choiceLocked = false;
-    if (savedChoice) {
-      const choice = JSON.parse(savedChoice);
-      if (choice.proposalId !== proposal.id || choice.page !== proposal.page ||
-          !PROPOSAL_VISIBILITIES.includes(choice.visibility)) {
-        throw new Error('proposal visibility evidence mismatch');
-      }
-      selectedVisibility = choice.visibility;
-      choiceLocked = choice.locked === true;
-    }
+    const choice = proposalEntry.visibilityChoice(proposal);
+    let selectedVisibility = choice.visibility;
+    let choiceLocked = choice.locked;
     const choices = document.createElement('div');
     choices.className = 'aipm-chat__proposal-vis';
     choices.setAttribute('role', 'group');
@@ -982,13 +980,11 @@
       button.className = 'aipm-chat__proposal-visbtn';
       button.type = 'button';
       button.textContent = label;
-      button.disabled = choiceLocked || window.__aipmAnnoAgentEnabled !== true;
+      button.disabled = choiceLocked;
       button.setAttribute('aria-pressed', String(selectedVisibility === visibility));
       button.addEventListener('click', (event) => {
         if (!event.isTrusted || open.disabled || choiceLocked) return;
-        localStorage.setItem(choiceKey, JSON.stringify({
-          proposalId: proposal.id, page: proposal.page, visibility
-        }));
+        proposalEntry.chooseVisibility(proposal, visibility);
         selectedVisibility = visibility;
         for (const item of visButtons) {
           item.setAttribute('aria-pressed', String(item === button));
@@ -1005,16 +1001,11 @@
     notice.className = 'aipm-chat__proposal-state';
     notice.setAttribute('role', 'status');
     notice.setAttribute('aria-live', 'polite');
-    notice.textContent = window.__aipmAnnoAgentEnabled === true ? '' : '建议写入未启用';
-    open.disabled = window.__aipmAnnoAgentEnabled !== true;
     protectedCard.append(choices, open, notice);
     wrap.appendChild(protectedCard);
     open.addEventListener('click', async (event) => {
       if (!event.isTrusted || open.disabled) return;
-      localStorage.setItem(choiceKey, JSON.stringify({
-        proposalId: proposal.id, page: proposal.page,
-        visibility: selectedVisibility, locked: true
-      }));
+      proposalEntry.chooseVisibility(proposal, selectedVisibility, { lock: true });
       choiceLocked = true;
       protectedCard.dataset.state = 'loading';
       notice.textContent = '正在打开确认界面…';
@@ -1022,17 +1013,8 @@
       for (const button of visButtons) button.disabled = true;
       const submittedVisibility = selectedVisibility;
       const chosenProposal = { ...proposal, visibility: submittedVisibility };
-      let entry;
+      const entry = proposalEntry;
       try {
-        const { createAgentEntry } = await import('./annotation-agent-entry.js?v=46').catch((error) => {
-          window.__aipmIntegrityFailed = true;
-          window.__aipmIntegrityReady = false;
-          window.dispatchEvent(new Event('aipm-integrity-change'));
-          notice.textContent = '批注资源未通过完整性校验，请刷新页面重试。';
-          protectedCard.dataset.state = 'error';
-          throw error;
-        });
-        entry = createAgentEntry();
         const frame = entry.mount({ proposal: chosenProposal, historical, host: protectedCard });
         frame.addEventListener('load', () => frame.focus(), { once: true });
         notice.textContent = '';
@@ -1142,8 +1124,6 @@
     };
 
     try {
-      const { createAgentEntry } = await import('./annotation-agent-entry.js?v=46');
-      const proposalEntry = createAgentEntry();
       const acceptance = await refreshLocalAcceptance(requestSignal);
       if (acceptance && (acceptance.halted || (acceptance.limit !== null && acceptance.sent >= acceptance.limit))) {
         t.bubble.classList.add('is-error');

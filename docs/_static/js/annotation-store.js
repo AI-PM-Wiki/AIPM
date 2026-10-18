@@ -138,6 +138,58 @@
       });
   }
 
+  function matchesAnnotation(annotation, payload, identity) {
+    var selectors = annotation && annotation.target && annotation.target.selectors;
+    var expected = payload.target.selectors;
+    return Boolean(annotation && typeof annotation.id === "string" && annotation.id &&
+      annotation.page === payload.page &&
+      annotation.body === payload.body.trim().replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "") &&
+      annotation.visibility === payload.visibility && annotation.color === payload.color &&
+      annotation.style === payload.style && String(annotation.author?.githubId) === identity &&
+      annotation.target?.scope === payload.target.scope && Array.isArray(selectors) &&
+      selectors.length === expected.length && expected.every(function (selector, index) {
+        return selectors[index] && Object.keys(selector).every(function (key) {
+          var value = selector[key];
+          return selectors[index][key] === (typeof value === "string" ? value.slice(0, 4000) : value);
+        });
+      }));
+  }
+
+  async function createAnnotation(payload, { token, isCurrent, onSend = function () {} }) {
+    if (!token || typeof isCurrent !== "function" || !["public", "private"].includes(payload.visibility)) {
+      throw new TypeError("annotation creation dependencies");
+    }
+    var auth = window.__aipmAnnoAuth;
+    var identity = String(auth.user()?.githubId);
+    function finish(response, outcome) {
+      if (response.status === 401 && auth.token() === token) auth.forget();
+      return Object.assign({}, response, { outcome: outcome });
+    }
+    function unsent() {
+      return { ok: false, status: 0, body: { error: "context_changed" }, outcome: "unsent" };
+    }
+    if (!isCurrent()) return unsent();
+    var issued = await request("/api/annotation-permits", { method: "POST", token: token, body: payload });
+    if (issued.status !== 201 || typeof issued.body?.permit !== "string" || !issued.body.permit) {
+      return finish(issued, "unsent");
+    }
+    if (!isCurrent()) return unsent();
+    var pending = request("/api/annotations", {
+      method: "POST", token: token, permit: issued.body.permit, body: payload
+    });
+    onSend();
+    var response = await pending;
+    if (response.ok && [200, 201].includes(response.status) &&
+        matchesAnnotation(response.body?.annotation, payload, identity)) {
+      return finish(response, "succeeded");
+    }
+    var rejected = response.body && typeof response.body.error === "string" &&
+      ((response.status >= 400 && response.status < 500 && ![408, 409].includes(response.status)) ||
+       (response.status === 503 && response.body.error === "storage_failed") ||
+       (response.status === 507 && ["storage_full", "page_full"].includes(response.body.error)));
+    return finish(response, rejected ? "rejected" : "unknown");
+  }
+
   /* ---- 本机(仅本机)---- */
 
   function loadLocalAll() {
@@ -386,6 +438,7 @@
     LOCAL_WARN_BYTES: LOCAL_WARN_BYTES,
 
     request: request,
+    createAnnotation: createAnnotation,
     uid: uid,
 
     localList: localList,

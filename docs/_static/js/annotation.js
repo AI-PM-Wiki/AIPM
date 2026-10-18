@@ -975,6 +975,7 @@
   var activeVis = null;
   var busy = false;
   var cache = {};
+  var loadRevision = 0;
 
   function pagePath() {
     var p = location.pathname;
@@ -1072,6 +1073,7 @@
       return Promise.resolve();
     }
     currentPage = page;
+    var revision = ++loadRevision;
     var token = auth ? auth.token() : null;
     var requests = [
       store.request("/api/annotations?page=" + encodeURIComponent(page) + "&scope=public")
@@ -1084,7 +1086,8 @@
       );
     }
     return Promise.all(requests).then(function (results) {
-      if (currentPage !== page) return; // 期间又换页了
+      if (currentPage !== page || revision !== loadRevision ||
+          token !== (auth ? auth.token() : null)) return;
       publicList = results[0].ok && results[0].body ? results[0].body.annotations || [] : [];
       var mine =
         results[1] && results[1].ok && results[1].body ? results[1].body.annotations || [] : [];
@@ -1103,6 +1106,7 @@
   }
 
   function invalidate() {
+    loadRevision++;
     cache = {};
     currentPage = null;
   }
@@ -3766,6 +3770,8 @@
         }
         clearMatchingDraft(pending);
         if (editorDraft && editorDraft.requestId === pending.requestId) closeEditor();
+        invalidate();
+        return ensureAnnotationsLoaded();
       });
       return;
     }
@@ -4035,27 +4041,18 @@
           visibility: visibility,
           target: target
         };
-    return store.request("/api/annotation-permits", {
-      method: "POST", token: token, body: payload
-    }).then(function (issued) {
-      if (issued.status !== 201 || !issued.body || !issued.body.permit || auth.token() !== token)
-        return { ok: false, status: issued.status, body: issued.body };
-      return store.request("/api/annotations", {
-        method: "POST", token: token, permit: issued.body.permit, body: payload
-      });
+    return store.createAnnotation(payload, {
+      token: token,
+      isCurrent: function () { return auth.token() === token && pagePath() === page; }
     })
       .then(function (res) {
         if (res.status === 401) {
-          if (auth) auth.forget();
           setHint("登录已过期,请重新登录。");
           return detailed ? { ok: false, code: "write_failed" } : false;
         }
-        if (!res.ok) {
+        if (res.outcome !== "succeeded") {
           setHint(serverFailText("保存失败", res));
-          if (detailed && res.status === 409 && res.body && res.body.error === "request_conflict") {
-            return { ok: false, code: "unknown" };
-          }
-          if (detailed) return { ok: false, code: res.status === 0 || (res.status >= 500 && (!res.body || res.body.error !== "storage_failed")) ? "unknown" : "write_failed" };
+          if (detailed) return { ok: false, code: res.outcome === "unknown" ? "unknown" : "write_failed" };
           return false;
         }
         invalidate();
@@ -4179,20 +4176,13 @@
           visibility: visibility,
           target: anno.target
         };
-    store.request("/api/annotation-permits", { method: "POST", token: token, body: payload })
-      .then(function (issued) {
-        if (issued.status !== 201 || !issued.body || !issued.body.permit || auth.token() !== token)
-          return { ok: false, status: issued.status, body: issued.body };
-        return store.request("/api/annotations", {
-        method: "POST",
-        token: token,
-        permit: issued.body.permit,
-        body: payload
-        });
+    store.createAnnotation(payload, {
+      token: token,
+      isCurrent: function () { return auth.token() === token; }
       })
       .then(function (res) {
         setBusy(false);
-        if (!res.ok) {
+        if (res.outcome !== "succeeded") {
           setHint("上传失败:" + ((res.body && res.body.message) || res.status));
           return;
         }
@@ -5387,7 +5377,7 @@
       syncComposer();
       syncHeadIcon();
       if (auth.isLoggedIn()) invalidate();
-      if (open || store.peekDraft() || store.peekLegacyDraft()) ensureAnnotationsLoaded();
+      ensureAnnotationsLoaded();
     });
     auth.onChange(function () {
       if (pendingLoginConsent && !auth.sameStoredSession(

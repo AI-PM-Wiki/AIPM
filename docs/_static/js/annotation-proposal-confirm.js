@@ -1,4 +1,4 @@
-// An isolated confirmation entry. The production Agent bootstrap remains disabled.
+// User confirmation owns consent state; the store owns remote creation.
 import { createAnnotationRequestStatus } from './annotation-request-status.js?v=46';
 import { createConfirmationView } from './annotation-confirm-view.js?v=46';
 
@@ -48,6 +48,12 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     visibility: `最终可见范围：${LABELS[request.visibility]}`
   });
   function setState(state, status = 'pending') { view.update({ state, status }); }
+  function announceChange() {
+    window.dispatchEvent(new CustomEvent(request.visibility === 'local'
+      ? 'aipm-annotation-local-change' : 'aipm-annotation-remote-change', {
+      detail: { page: request.page }
+    }));
+  }
   const agree = { set disabled(value) { view.update({ agreeDisabled: value }); },
     addEventListener(type, handler) { actions.agree = handler; } };
   const retry = { set disabled(value) { view.update({ retryDisabled: value }); },
@@ -68,10 +74,11 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
   function refreshIntegrity() {
     const record = core.inspect({ identity, session, requestId: request.requestId });
     const ready = integrityReady();
-    agree.disabled = !ready || started || cancelled || Boolean(record && record.status !== 'awaiting_confirmation');
+    const confirmable = !record || ['awaiting_confirmation', 'failed'].includes(record.status);
+    agree.disabled = !ready || started || cancelled || !confirmable;
     retry.disabled = true;
-    if (!started && !cancelled && (!record || record.status === 'awaiting_confirmation')) {
-      setState(ready ? '等待同意' :
+    if (!started && !cancelled && confirmable) {
+      setState(ready ? (record?.status === 'failed' ? '上次请求未保存，请再次确认。' : '等待同意') :
         (window.__aipmIntegrityFailed ? '资源校验失败，未提交。' : '资源校验中，未提交。'),
         ready ? 'pending' : (window.__aipmIntegrityFailed ? 'error' : 'loading'));
     }
@@ -135,11 +142,10 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     if (claimed && sent) unknown();
     else setState('已取消，未写入。', 'cancelled');
   });
-  async function submit(event, retryUnknown) {
+  async function submit(event) {
     if (!event.isTrusted) return;
     if (started || cancelled) return;
     if (!integrityReady()) { refreshIntegrity(); return; }
-    if (retryUnknown) return;
     started = true;
     sent = false;
     claimed = false;
@@ -151,7 +157,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     }
     let grantId;
     try {
-      if (resumeExisting && !retryUnknown &&
+      if (resumeExisting &&
           core.inspect({ identity, session, requestId: request.requestId })?.status === 'awaiting_confirmation') {
         core.revoke({ identity, session, requestId: request.requestId });
       }
@@ -180,9 +186,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
         if (!saved) throw new Error('local write missing');
         core.settle({ identity, session, requestId: claimedRequest.requestId,
           status: 'succeeded', annotationId: saved.id });
-        window.dispatchEvent(new CustomEvent('aipm-annotation-local-change', {
-          detail: { page: claimedRequest.page }
-        }));
+        announceChange();
         setState('已写入：仅本机', 'success');
         cancel.disabled = true;
         return;
@@ -191,35 +195,39 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       const payload = { requestId: claimedRequest.requestId, page: claimedRequest.page,
         body: claimedRequest.body, color: claimedRequest.color, style: claimedRequest.style,
         visibility: claimedRequest.visibility, target };
-      const issued = await store.request('/api/annotation-permits', {
-        method: 'POST', token: initialToken, body: payload });
-      if (issued.status !== 201 || !issued.body?.permit) throw new Error('confirmation permit unavailable');
-      if (!sameContext() || cancelled || !integrityReady()) throw new Error('unsent request blocked');
-      const pending = store.request('/api/annotations', { method: 'POST', token: initialToken,
-        permit: issued.body.permit, body: payload });
-      sent = true;
-      const response = await pending;
+      const response = await store.createAnnotation(payload, {
+        token: initialToken, isCurrent: () => sameContext() && !cancelled && integrityReady(),
+        onSend: () => { sent = true; }
+      });
+      if (response.outcome === 'unsent' || response.outcome === 'rejected') {
+        if (response.outcome === 'unsent') {
+          if (core.inspect({ identity, session, requestId: request.requestId })?.status === 'executing') {
+            core.abortUnsent({ identity, session, requestId: request.requestId });
+          }
+        }
+        else core.settle({ identity, session, requestId: request.requestId, status: 'failed' });
+        sent = false;
+        claimed = false;
+        started = false;
+        refreshIntegrity();
+        if (cancelled) { setState('已取消，未写入。', 'cancelled'); return; }
+        const wait = response.headers?.get('Retry-After');
+        setState(response.status === 429
+          ? `写入过于频繁，未保存。${wait ? `请在 ${wait} 秒后再次确认。` : '请稍后再次确认。'}`
+          : '请求未保存，请检查页面与登录状态后再次确认。', 'error');
+        return;
+      }
       if (!sameContext() || cancelled) {
         unknown();
         return;
       }
-      const annotation = response.body?.annotation;
-      if (response.status !== 201 || !response.ok || !annotation ||
-          typeof annotation.id !== 'string' || !annotation.id ||
-          annotation.page !== claimedRequest.page || annotation.body !== claimedRequest.body ||
-          annotation.visibility !== claimedRequest.visibility ||
-          annotation.color !== claimedRequest.color || annotation.style !== claimedRequest.style ||
-          annotation.target?.scope !== target.scope ||
-          JSON.stringify(annotation.target?.selectors) !== JSON.stringify(target.selectors) ||
-          String(annotation.author?.githubId) !== identity) {
+      if (response.outcome !== 'succeeded') {
         unknown();
         return;
       }
       core.settle({ identity, session, requestId: claimedRequest.requestId,
-        status: 'succeeded', annotationId: annotation.id });
-      window.dispatchEvent(new CustomEvent('aipm-annotation-remote-change', {
-        detail: { page: claimedRequest.page }
-      }));
+        status: 'succeeded', annotationId: response.body.annotation.id });
+      announceChange();
       setState(`已写入：${LABELS[claimedRequest.visibility]}`, 'success');
       cancel.disabled = true;
     } catch (error) {
@@ -235,12 +243,12 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
       unknown();
     }
   }
-  agree.addEventListener('click', (event) => submit(event, false));
-  retry.addEventListener('click', (event) => submit(event, true));
+  agree.addEventListener('click', submit);
   check.addEventListener('click', async () => {
     try {
       const result = await createAnnotationRequestStatus({ core }).query(request.requestId);
       if (result?.status === 'succeeded') {
+        announceChange();
         setState(`已写入：${LABELS[request.visibility]}`, 'success');
         check.hidden = true;
         retry.hidden = true;

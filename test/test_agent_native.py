@@ -357,7 +357,7 @@ class TestServerAcceptsContext(unittest.TestCase):
         labels = self.ctx[self.ctx.index("const CHART_LABEL") :]
         labels = labels[: labels.index("};") + 2]
         self.assertIn("源码见下", labels)
-        self.assertIn("图形本身没有送过来", labels)
+        self.assertIn("未附带位图", labels)
         self.assertIn("看不到图像内容", labels)
 
         # 位图那一行随图像在不在而变:取到了还说「看不到图像内容」会把模型引偏。
@@ -499,7 +499,7 @@ class TestAgentWritesAnnotations(unittest.TestCase):
 
     def test_visibility_remains_stable_while_submitting(self):
         self.assertIn('const submittedVisibility = selectedVisibility;', self.chat)
-        self.assertIn('visibility: selectedVisibility, locked: true', self.chat)
+        self.assertIn('proposalEntry.chooseVisibility(proposal, selectedVisibility, { lock: true });', self.chat)
         self.assertIn('for (const button of visButtons) button.disabled = true;', self.chat)
         self.assertIn('const chosenProposal = { ...proposal, visibility: submittedVisibility };', self.chat)
         self.assertIn('entry.mount({ proposal: chosenProposal, historical, host: protectedCard });', self.chat)
@@ -617,19 +617,21 @@ class TestAgentWritesAnnotations(unittest.TestCase):
         self.assertIn("mountProposalConfirmation({ core, proposal:", self.entry)
 
     def test_accept_writes_only_after_bound_confirmation(self):
-        fn = self.body_of(self.confirm, "async function submit(event, retryUnknown)")
+        fn = self.body_of(self.confirm, "async function submit(event)")
         self.assertIn("if (!event.isTrusted) return;", fn)
         self.assertIn("core.confirm({ identity, session, request })", fn)
         self.assertIn("core.claim({ identity, session, request, grantId })", fn)
         self.assertIn("store.localAdd(", fn)
-        self.assertLess(fn.index("'/api/annotation-permits'"), fn.index("'/api/annotations'"))
+        self.assertIn("store.createAnnotation(payload,", fn)
+        self.assertLess(self.store.index('request("/api/annotation-permits"'),
+                        self.store.index('request("/api/annotations"'))
         self.assertNotIn("fetch(", fn)
         self.assertIn("if (!sameContext() || cancelled || !integrityReady())", fn)
 
     def test_local_proposal_never_goes_to_the_server(self):
-        fn = self.body_of(self.confirm, "async function submit(event, retryUnknown)")
+        fn = self.body_of(self.confirm, "async function submit(event)")
         local = fn.index("if (claimedRequest.visibility === 'local')")
-        permit = fn.index("'/api/annotation-permits'")
+        permit = fn.index("store.createAnnotation(payload,")
         self.assertLess(local, permit)
         self.assertIn("store.localAdd(", fn[local:permit])
         self.assertIn("return;", fn[local:permit])

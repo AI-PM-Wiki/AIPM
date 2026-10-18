@@ -7,6 +7,29 @@ export function createAgentEntry({ storage = localStorage, site = location.origi
 
   const KEY = 'aipm-agent-login-draft-v1';
   const PROPOSALS_KEY = 'aipm-agent-proposals-v1';
+  const VISIBILITIES = ['local', 'private', 'public'];
+  function visibilityChoice(proposal) {
+    if (typeof proposal?.id !== 'string' || !proposal.id ||
+        typeof proposal.requestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(proposal.requestId) ||
+        typeof proposal.page !== 'string' || !proposal.page || !VISIBILITIES.includes(proposal.visibility)) {
+      throw new TypeError('proposal visibility');
+    }
+    const raw = storage.getItem(`aipm-agent-visibility:${proposal.requestId}`);
+    if (!raw) return { visibility: proposal.visibility, locked: false };
+    const choice = JSON.parse(raw);
+    if (choice.proposalId !== proposal.id || choice.page !== proposal.page ||
+        !VISIBILITIES.includes(choice.visibility)) throw new Error('proposal visibility evidence mismatch');
+    return { visibility: choice.visibility, locked: choice.locked === true };
+  }
+  function chooseVisibility(proposal, visibility, { lock = false } = {}) {
+    if (!VISIBILITIES.includes(visibility)) throw new TypeError('visibility');
+    const current = visibilityChoice(proposal);
+    if (current.locked && current.visibility !== visibility) throw new Error('proposal visibility locked');
+    const choice = { proposalId: proposal.id, page: proposal.page,
+      visibility, locked: current.locked || lock };
+    storage.setItem(`aipm-agent-visibility:${proposal.requestId}`, JSON.stringify(choice));
+    return { visibility: choice.visibility, locked: choice.locked };
+  }
   function restoreEvidence(requestId, visibility) {
     const auth = window.__aipmAnnoAuth;
     const identity = visibility === 'local' ? 'local' : String(auth.user()?.githubId);
@@ -46,9 +69,8 @@ export function createAgentEntry({ storage = localStorage, site = location.origi
     if (!record || proposal.page !== location.pathname ||
         !FIELDS.filter(field => field !== 'visibility').every(field => record.proposal[field] === proposal[field])) return false;
     if (proposal.visibility !== record.proposal.visibility) {
-      const choice = JSON.parse(storage.getItem(`aipm-agent-visibility:${proposal.requestId}`) || 'null');
-      if (!choice || choice.proposalId !== proposal.id || choice.page !== proposal.page ||
-          choice.visibility !== proposal.visibility || choice.locked !== true) return false;
+      const choice = visibilityChoice(proposal);
+      if (choice.visibility !== proposal.visibility || !choice.locked) return false;
     }
     if (proposal.visibility === 'local') return true;
     const user = window.__aipmAnnoAuth.user();
@@ -133,5 +155,6 @@ export function createAgentEntry({ storage = localStorage, site = location.origi
   }
 
   return Object.freeze({ mount, restoreEvidence, loginDraft, hasLoginDraft, rememberProposal, hasPendingProposal,
+    visibilityChoice, chooseVisibility,
     prune: () => { pruneLoginDraft(); core.prune(); } });
 }

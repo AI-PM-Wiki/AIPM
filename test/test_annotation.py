@@ -569,13 +569,13 @@ class TestThreeVisibilities(unittest.TestCase):
 
     def test_public_and_private_go_to_the_server(self):
         block = _block(self.js, "function submitAnnotation(")
-        self.assertIn('"/api/annotations"', block)
+        self.assertIn('store.createAnnotation(payload,', block)
 
     def test_local_annotations_never_reach_the_server(self):
         """「仅本机」只有 localStorage 一条路 —— 前端没有把它 POST 出去的通路。"""
         block = _block(self.js, "function submitAnnotation(")
         local_branch = block.index('if (visibility === "local")')
-        server_call = block.index('"/api/annotations"')
+        server_call = block.index('store.createAnnotation(payload,')
         self.assertLess(
             local_branch,
             server_call,
@@ -589,7 +589,6 @@ class TestThreeVisibilities(unittest.TestCase):
         payload = block[block.index("var payload = {"):server_call]
         self.assertIn("visibility: visibility", payload)
         self.assertNotIn('visibility: "local"', payload)
-        self.assertLess(payload.index('"/api/annotation-permits"'), len(payload))
 
     def test_local_store_never_talks_to_the_network(self):
         for fn in ("localAdd", "localUpdate", "localRemove", "localList"):

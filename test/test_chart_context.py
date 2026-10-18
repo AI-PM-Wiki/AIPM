@@ -76,8 +76,8 @@ class TestChartContextAssets(unittest.TestCase):
         self.assertIn('btn.className = "aipm-chart__ask"', self.js)
         fn = self.js[self.js.index("function enhance(el)") :]
         fn = fn[: fn.index("\n  }") + 4]
-        self.assertIn("parent.insertBefore(box, el)", fn)
-        self.assertIn("box.appendChild(el)", fn, "容器要包住这张图,按钮才有定位的参照")
+        self.assertIn("parent.insertBefore(box, target)", fn)
+        self.assertIn("box.appendChild(target)", fn)
         self.assertIn("box.appendChild(askButton(el))", fn)
         self.assertIn("el.setAttribute(READY_ATTR", fn, "重复扫描要认得出来,不然会套第二层")
 
@@ -154,22 +154,22 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn("key: source", fn, "同一段源码 = 同一张图,连点两次只有一条语境")
 
     def test_svg_is_fetched_same_origin_and_parsed_as_an_inert_document(self):
-        fn = self._fn("function readImage(img)")
-        self.assertIn("sameOriginSvgUrl(img)", fn, "跨域的图不取")
+        fn = self._fn("function readImageSource(img, src)")
+        self.assertIn("sameOriginSvgUrl(src)", fn)
         self.assertIn("sourceRequest(svg)", fn)
-        self.assertIn("svgLabels(", fn)
+        self.assertIn("svgSource(", fn)
 
         guard = self._fn("function sameOriginUrl(src)")
         self.assertIn("url.origin === location.origin", guard)
         self.assertIn("if (!src) return null", guard, "没有 src 的图连 URL 都拼不出来")
 
-        svg_guard = self._fn("function sameOriginSvgUrl(img)")
-        self.assertIn("sameOriginUrl(img.src)", svg_guard)
+        svg_guard = self._fn("function sameOriginSvgUrl(src)")
+        self.assertIn("sameOriginUrl(src)", svg_guard)
         self.assertIn('endsWith(".svg")', svg_guard)
 
-        parse = self._fn("function svgLabels(markup)")
+        parse = self._fn("function svgSource(markup)")
         self.assertIn('new DOMParser().parseFromString(markup, "image/svg+xml")', parse)
-        self.assertIn('doc.querySelectorAll("title, desc, text")', parse)
+        self.assertIn('new XMLSerializer().serializeToString(doc.documentElement)', parse)
         self.assertIn('doc.querySelector("parsererror")', parse, "不是 SVG 时返回空,交给兜底")
 
     def test_source_fetch_carries_the_marker_the_service_worker_knows(self):
@@ -200,7 +200,7 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn('credentials: "same-origin"', req)
         self.assertNotIn("redirect: \"follow\"", req)
 
-        for read in ("function readRaster(img)", "function readImage(img)"):
+        for read in ("function readRaster(img, src)", "function readImageSource(img, src)"):
             self.assertIn("sourceRequest(", self._fn(read), f"{read} 没走这条取源请求")
 
     def test_reads_stop_at_the_limit_instead_of_after_it(self):
@@ -213,8 +213,8 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn("reader.cancel()", fn, "超限的那条响应要就地取消")
 
         for read, call in (
-            ("function readRaster(img)", "readCapped(res, CTX.IMAGE_MAX_BYTES)"),
-            ("function readImage(img)", "readCapped(res, CTX.IMAGE_MAX_BYTES)"),
+            ("function readRaster(img, src)", "readCapped(res, CTX.IMAGE_MAX_BYTES)"),
+            ("function readImageSource(img, src)", "readCapped(res, CTX.IMAGE_MAX_BYTES)"),
         ):
             self.assertIn(call, self._fn(read), f"{read} 没有走限额读取")
         self.assertNotIn("arrayBuffer()", self.js, "整份读进内存的那两个口子都不该在")
@@ -222,10 +222,10 @@ class TestChartSourceFidelity(unittest.TestCase):
 
     def test_raster_images_send_the_image_itself(self):
         """位图送的是图像本身,不只是替代文本 —— 图里的文字与结构只在像素里。"""
-        fn = self._fn("function readRaster(img)")
+        fn = self._fn("function readRaster(img, src)")
         self.assertIn("altTextOf(img)", fn, "替代文本留着,和图像一并送")
         self.assertIn('chart: "image"', fn)
-        self.assertIn("key: img.src", fn)
+        self.assertIn("key: key", fn)
         self.assertIn("readCapped(res, CTX.IMAGE_MAX_BYTES)", fn, "体积那一关在读的过程中")
         self.assertIn("sniffImageType(bytes)", fn, "种类按字节开头认")
         self.assertIn("base64Of(bytes)", fn)
@@ -235,8 +235,8 @@ class TestChartSourceFidelity(unittest.TestCase):
     def test_raster_fetch_is_limited_in_source_type_and_size(self):
         """三道限制:来源(同源且不跟重定向)、类型(四种之一,按字节)、体积(读的过程中
         不超过上限)。"""
-        read = self._fn("function readRaster(img)")
-        self.assertIn("sameOriginUrl(img.src)", read, "来源:跨域不取")
+        read = self._fn("function readRaster(img, src)")
+        self.assertIn("sameOriginUrl(src)", read)
         self.assertIn("looksLikeRaster(res)", read, "类型:先按 content-type 筛一道")
         self.assertIn("readCapped(res, CTX.IMAGE_MAX_BYTES)", read, "体积:读的过程中限额")
 
@@ -262,10 +262,10 @@ class TestChartSourceFidelity(unittest.TestCase):
 
     def test_failing_any_limit_falls_back_to_the_written_text(self):
         """三道里任何一道不过,都退回只带文字说明的那条路 —— 与原本的行为一致。"""
-        fn = self._fn("function readRaster(img)")
+        fn = self._fn("function readRaster(img, src)")
         self.assertIn('var text = altTextOf(img) || missingText("image", ordinal, "作者没有写替代文本")', fn)
         self.assertEqual(fn.count("mediaType:"), 1, "只有取到图像的那一条分支带 mediaType")
-        self.assertIn('got === null ? { chart: "image", source: text, key: img.src } : got', fn)
+        self.assertIn('got === null ? { chart: "image", source: text, key: key } : got', fn)
 
     def test_every_path_has_a_written_fallback(self):
         """取不到任何文字时写一句说明 —— 它是这条语境唯一的可读内容。"""
@@ -273,7 +273,7 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn("chartName(chart)", missing)
         self.assertIn("为什么", self.raw, "兜底文案要说清哪一张、什么图、为什么没有内容")
 
-        for why in ("源码没有取到", "图里的文字没有取到", "作者没有写替代文本"):
+        for why in ("源码没有取到", "作者没有写替代文本"):
             self.assertIn(why, self.js, f"缺少这条兜底:{why}")
 
         read = self._fn("function readChart(el)")
@@ -282,11 +282,11 @@ class TestChartSourceFidelity(unittest.TestCase):
         self.assertIn('key: "by-position:" + ordinal', read, "源码没收上来时按位置认这张图")
 
     def test_source_is_never_empty(self):
-        """每条返回都用 `||` 兜住:forChart 见空 source 不造条目,按钮就白点了。"""
-        image = self._fn("function readImage(img)")
-        self.assertIn('labels || altTextOf(img) || missingText("svg"', image)
+        """SVG 校验失败返回明确错误，位图保留文字说明。"""
+        image = self._fn("function readImageSource(img, src)")
+        self.assertIn('if (source === null) return { error:', image)
         self.assertEqual(
-            self._fn("function readRaster(img)").count("|| missingText("),
+            self._fn("function readRaster(img, src)").count("|| missingText("),
             1,
             "位图那条兜底",
         )
@@ -312,10 +312,10 @@ class TestUntrustedSvgIsNeverExecuted(unittest.TestCase):
         )
 
     def test_svg_is_parsed_inert_and_only_text_leaves_it(self):
-        fn = self.js[self.js.index("function svgLabels(markup)") :]
+        fn = self.js[self.js.index("function svgSource(markup)") :]
         fn = fn[: fn.index("\n  }") + 4]
         self.assertIn('parseFromString(markup, "image/svg+xml")', fn, "解析成惰性文档:脚本不跑、事件不触发、外链不加载")
-        self.assertIn("textContent", fn)
+        self.assertIn("new XMLSerializer()", fn)
         self.assertNotIn("appendChild", fn, "解析出来的节点从不进本文档")
 
     def test_source_text_reaches_the_dom_as_text(self):
@@ -343,14 +343,14 @@ class TestChartHandsOffThroughTheSharedContract(unittest.TestCase):
             self.assertNotIn(forbidden, self.js, f"chart-context.js 不该自己碰 {forbidden}")
 
     def test_handoff_goes_through_the_chat_panel_export(self):
-        fn = self.js[self.js.index("function handOff(found)") :]
+        fn = self.js[self.js.index("function handOff(found, page)") :]
         fn = fn[: fn.index("\n  }") + 4]
         self.assertIn("window.__aipmChat", fn)
         self.assertIn("chat.attachContext(item)", fn)
 
     def test_handoff_carries_the_image_through(self):
         """取源取到的图像内容要一路交给 forChart —— 少带一个字段,位图那半边就白取。"""
-        fn = self.js[self.js.index("function handOff(found)") :]
+        fn = self.js[self.js.index("function handOff(found, page)") :]
         fn = fn[: fn.index("\n  }") + 4]
         for field in ("mediaType: found.mediaType", "imageData: found.imageData"):
             self.assertIn(field, fn)
@@ -387,7 +387,7 @@ class TestChartHandsOffThroughTheSharedContract(unittest.TestCase):
 
     def test_failures_are_reported_not_swallowed(self):
         """语境条满了、面板没挂上,按钮点下去都不该毫无动静。"""
-        fn = self.js[self.js.index("function handOff(found)") :]
+        fn = self.js[self.js.index("function handOff(found, page)") :]
         fn = fn[: fn.index("\n  }") + 4]
         self.assertIn("flash(", fn)
         self.assertIn('res.code === "context_full"', fn)

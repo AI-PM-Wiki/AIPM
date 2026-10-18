@@ -89,6 +89,22 @@ test('unknown remains read-only across confirmation attempts and reload', async 
   assert.equal(storage.getItem('aipm-anno-consent-v1'), persisted);
 });
 
+test('a rejected request requires fresh confirmation and can succeed after reload', async () => {
+  const core = create();
+  const first = await core.confirm(context);
+  await core.claim({ ...context, grantId: first });
+  core.settle({ ...context, requestId: request.requestId, status: 'failed' });
+  const restored = create();
+  assert.equal(restored.inspect({ ...context, requestId: request.requestId }).status, 'failed');
+  await assert.rejects(restored.claim({ ...context, grantId: first }));
+  const second = await restored.confirm(context);
+  assert.notEqual(second, first);
+  assert.deepEqual(await restored.claim({ ...context, grantId: second }), request);
+  restored.settle({ ...context, requestId: request.requestId, status: 'succeeded', annotationId: 'anno-1' });
+  assert.equal(create().inspect({ ...context, requestId: request.requestId }).status, 'succeeded');
+  await assert.rejects(restored.confirm(context));
+});
+
 test('thirty-day recovery cleanup retains identity-scoped idempotency evidence', async () => {
   const core = create();
   await core.confirm(context);

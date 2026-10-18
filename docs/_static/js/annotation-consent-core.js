@@ -79,13 +79,13 @@ export function createConsentCore({ storage, clock, site, newId }) {
     if (record) {
       checked(record, identity, session, request, digest);
       if (now - record.createdAt >= THIRTY_DAYS) throw new Error('recovery expired');
-      if (record.status !== 'awaiting_confirmation') throw new Error('request already recorded');
+      if (!['awaiting_confirmation', 'failed'].includes(record.status)) throw new Error('request already recorded');
       if (record.permit) {
         const prior = record.permits.find((item) => item.id === record.permit);
         if (!prior || (!prior.revoked && now < prior.expiresAt)) throw new Error('permission already active');
         prior.revoked = true;
       }
-      if (record.permits.some((item) => item.used && !item.unsent) && record.status !== 'unknown') throw new Error('request already used');
+      if (record.permits.some((item) => item.used && !item.unsent && !item.rejected)) throw new Error('request already used');
     } else {
       record = { site, identity, session, requestId: request.requestId, digest, request,
         page: request.page, visibility: request.visibility,
@@ -96,6 +96,7 @@ export function createConsentCore({ storage, clock, site, newId }) {
     requireText(grantId, 'grantId');
     if (record.permits.some((item) => item.id === grantId)) throw new Error('duplicate grant');
     record.permit = grantId;
+    record.status = 'awaiting_confirmation';
     record.permits.push({ id: grantId, at: now, expiresAt: now + FIVE_MINUTES, revoked: false, used: false });
     save(state);
     return grantId;
@@ -113,7 +114,6 @@ export function createConsentCore({ storage, clock, site, newId }) {
         record.status !== 'awaiting_confirmation') throw new Error('permission denied');
     permit.used = true;
     record.permit = null;
-    if (record.status === 'unknown') record.unknownRetained = true;
     record.status = 'executing';
     save(state);
     return structuredClone(record.request);
@@ -175,6 +175,11 @@ export function createConsentCore({ storage, clock, site, newId }) {
     } else {
       record.status = status;
       if (status === 'unknown') record.unknownRetained = true;
+      if (status === 'failed') {
+        const permit = record.permits.findLast((item) => item.used && !item.revoked);
+        if (!permit) throw new Error('no active permission');
+        permit.rejected = true;
+      }
     }
     save(state);
   }
