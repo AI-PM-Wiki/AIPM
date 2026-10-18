@@ -776,128 +776,62 @@ html.aipm-chat-mode--sheet .aipm-chat__local-status { flex: 0 0 100%; }
   color: var(--md-accent-fg-color);
 }
 
-/* 批注建议卡(助手提建议 → 用户挑可见范围 → 采纳那一下由批注面板写入) */
+/* 批注草稿与保存操作。 */
 .aipm-chat__proposal {
   display: flex;
   flex-direction: column;
-  gap: .65rem;
+  gap: .45rem;
   min-width: 0;
   margin-top: .65rem;
-  padding: .7rem;
+  padding: .65rem;
   border: 1px solid var(--md-default-fg-color--lightest);
-  border-left: 3px solid var(--md-accent-fg-color);
   border-radius: .5rem;
   background: var(--md-default-bg-color);
-}
-/* 有结果之后收掉强调色:已写入 / 已丢弃的卡不该继续抢视线 */
-.aipm-chat__proposal[data-state="accepted"] {
-  border-left-color: var(--md-default-fg-color--lighter);
-}
-.aipm-chat__proposal[data-state="success"] {
-  border-left-color: #4caf50;
-}
-.aipm-chat__proposal[data-state="error"],
-.aipm-chat__proposal[data-state="warning"] {
-  border-left-color: var(--md-admonition-fg-color, #ff9100);
-}
-.aipm-chat__proposal[data-state="dismissed"] {
-  border-left-color: var(--md-default-fg-color--lightest);
-  opacity: .7;
-}
-.aipm-chat__proposal[data-state="failed"] {
-  border-left-color: var(--md-default-fg-color);
-}
-.aipm-chat__proposal-head {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  font-size: .8rem;
-  font-weight: 650;
-  letter-spacing: .02em;
-  color: var(--md-default-fg-color);
-}
-.aipm-chat__proposal-quote {
-  margin: 0;
-  padding: .35rem .5rem;
-  border-radius: .35rem;
   font-size: .8125rem;
-  line-height: 1.5;
-  color: var(--md-default-fg-color);
-  background: var(--md-default-bg-color--lighter);
-  /* 引文可能很长:卡片里最多露四行,细节留给正文里那一笔 */
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.6;
 }
-.aipm-chat__proposal-body {
-  margin: 0;
-  font-size: .8125rem;
-  line-height: 1.5;
-  color: var(--md-default-fg-color);
-}
-.aipm-chat__proposal-note {
-  margin: 0;
-  font-size: .75rem;
-  line-height: 1.45;
-  color: var(--md-default-fg-color--light);
+.aipm-chat__proposal-preview {
+  min-width: 0;
 }
 .aipm-chat__proposal-vis {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .4rem;
-}
-.aipm-chat__proposal-visbtn {
   min-width: 0;
+  max-width: 60%;
   min-height: 2.2rem;
-  padding: .4rem .3rem;
+  padding: .3rem .5rem;
   font: inherit;
-  font-size: .7rem;
+  font-size: .75rem;
   line-height: 1.4;
-  border-radius: .4rem;
+  border-radius: .35rem;
   cursor: pointer;
-  color: var(--md-default-fg-color);
-  background: transparent;
-  border: 1px solid var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color--light);
+  background-color: var(--md-default-bg-color);
+  border: 1px solid transparent;
 }
-.aipm-chat__proposal-visbtn[aria-pressed="true"] {
-  color: #fff;
-  background: var(--md-primary-fg-color--dark);
-  border-color: var(--md-primary-fg-color--dark);
-  font-weight: 650;
-}
-.aipm-chat__proposal-visbtn:disabled {
+.aipm-chat__proposal-vis:disabled {
   cursor: default;
   opacity: .6;
-}
-.aipm-chat__proposal-visbtn[aria-pressed="true"]:disabled {
-  opacity: .85;
 }
 .aipm-chat__proposal-foot {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: .4rem;
 }
-.aipm-chat__proposal-accept,
-.aipm-chat__proposal-dismiss {
+.aipm-chat__proposal-foot[hidden] { display: none; }
+.aipm-chat__proposal-accept {
   min-height: 2.2rem;
   padding: .45rem .7rem;
   font-family: inherit;
-  font-weight: 600;
+  font-weight: 500;
   font-size: .75rem;
   border-radius: .35rem;
   cursor: pointer;
   border: 1px solid var(--md-default-fg-color--lightest);
-  background: transparent;
-  color: var(--md-default-fg-color);
-}
-.aipm-chat__proposal-accept {
   color: #fff;
   background: var(--md-primary-fg-color--dark);
   border-color: var(--md-primary-fg-color--dark);
 }
-.aipm-chat__proposal-accept:disabled,
-.aipm-chat__proposal-dismiss:disabled {
+.aipm-chat__proposal-accept:disabled {
   opacity: .45;
   cursor: default;
 }
@@ -908,12 +842,10 @@ html.aipm-chat-mode--sheet .aipm-chat__local-status { flex: 0 0 100%; }
   color: var(--md-default-fg-color--light);
 }
 .aipm-chat__proposal-state:empty { display: none; }
-.aipm-chat__proposal button:focus-visible {
+.aipm-chat__proposal button:focus-visible,
+.aipm-chat__proposal select:focus-visible {
   outline: 2px solid var(--md-accent-fg-color);
   outline-offset: 3px;
-}
-@media (max-width: 24rem) {
-  .aipm-chat__proposal-vis { grid-template-columns: 1fr; }
 }
 
 /* ----------------------------------------------------------------------------

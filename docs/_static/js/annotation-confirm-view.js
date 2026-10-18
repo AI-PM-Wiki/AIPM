@@ -7,26 +7,32 @@ const DOCUMENT = `<!doctype html><html lang="zh-CN"><head>
 :root{color-scheme:light;--surface:#fff;--text:#202124;--muted:#62666d;--line:#d6d9df;--accent:#34408f;--on-accent:#fff;--focus:#526cfe;--success:#1b5e20;--warning:#805b00;--error:#b3261e}
 :root[data-theme="dark"]{color-scheme:dark;--success:#a5d6a7;--warning:#ffe082;--error:#ffb4ab}
 *{box-sizing:border-box}body{margin:0;color:var(--text);background:var(--surface);font:16px/1.6 system-ui,sans-serif}
-section{padding:16px;display:grid;gap:14px;min-width:0}h2{font-size:1em;line-height:1.4;margin:0;font-weight:650}
-.details{display:grid;align-content:start;gap:12px;min-height:0;max-height:320px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.details:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}.field{min-width:0}.label{display:block;font-size:.75em;color:var(--muted);margin-bottom:4px}
-p{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}.body{padding:12px;border:1px solid var(--line);border-radius:8px}
-.visibility{font-weight:600}.notice{font-size:.8em;color:var(--muted)}
-.state{font-size:.875em;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--text) 4%,var(--surface))}
-section[data-status="success"] .state{color:var(--success);border-color:currentColor}
-section[data-status="warning"] .state{color:var(--warning);border-color:currentColor}
-section[data-status="error"] .state{color:var(--error);border-color:currentColor}
+section{padding:4px;display:grid;gap:12px;min-width:0}h2{font-size:.8em;line-height:1.4;margin:0;font-weight:500;color:var(--muted)}
+.details{display:grid;align-content:start;gap:10px;min-height:0;max-height:320px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.details:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}.field{min-width:0}
+p,blockquote{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}blockquote{font-size:.95em;line-height:1.6;color:var(--muted)}
+#target{border-bottom:2px solid transparent;color:var(--text)}
+section[data-style="highlight"] #target,section[data-style="both"] #target{background:var(--markWash)}
+section[data-style="underline"] #target,section[data-style="both"] #target{border-bottom-color:var(--markInk)}
+.visibility,.notice{font-size:.8em;color:var(--muted)}
+.state{font-size:.875em;margin:0}
+section[data-status="success"] .state{color:var(--success)}
+section[data-status="warning"] .state{color:var(--warning)}
+section[data-status="error"] .state{color:var(--error)}
+section[data-status="pending"] .state,.notice:empty{display:none}
+section[data-mode="preview"] .visibility,section[data-mode="preview"] .notice,section[data-mode="preview"] .state,section[data-mode="preview"] .actions{display:none}
+[hidden]{display:none!important}
 section[data-status="loading"] .state::before{content:"";display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 .actions{display:flex;flex-wrap:wrap;gap:8px}button{min-height:44px;min-width:0;padding:9px 14px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);font-family:inherit;font-size:.875em;font-weight:600;line-height:1.4;cursor:pointer;overflow-wrap:anywhere}
 #agree,#retry{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}button:hover:not(:disabled){filter:brightness(.94)}button:disabled{opacity:.5;cursor:default}
 button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}button[hidden]{display:none}
-@media(max-width:260px){.actions button{flex:1 1 100%}section{padding:12px}}
+@media(max-width:260px){.actions button{flex:1 1 100%}}
 @media(prefers-reduced-motion:reduce){section[data-status="loading"] .state::before{animation:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head><body><section role="region" aria-label="受保护内容">
-<h2 id="title"></h2><div id="details" class="details" tabindex="0" role="region" aria-label="批注建议正文，可使用方向键浏览"><div class="field"><span class="label">文章与引文</span><p id="target"></p></div>
-<div class="field body"><span class="label">批注正文</span><p id="body"></p></div>
-<div class="field visibility"><span class="label">可见范围已锁定</span><p id="visibility"></p></div></div><p id="notice" class="notice"></p>
+<h2 id="title"></h2><div id="details" class="details" tabindex="0" role="region" aria-label="批注建议正文，可使用方向键浏览"><blockquote id="quote" class="field" hidden><span id="target"></span></blockquote>
+<p id="body" class="field body"></p></div>
+<p id="visibility" class="visibility"></p><p id="notice" class="notice"></p>
 <p id="state" class="state" role="status" aria-live="polite" aria-atomic="true"></p><div class="actions">
 <button id="agree" type="button" disabled></button>
 <button id="retry" type="button" hidden disabled></button>
@@ -45,18 +51,22 @@ addEventListener('message', (event) => {
   if (!channel) { channel = data.channel; origin = event.origin; }
   if(data.theme){
     document.documentElement.dataset.theme=data.theme.scheme;
-    for(const key of ['surface','text','muted','line','accent','focus']){
+    for(const key of ['surface','text','muted','line','accent','focus','markInk','markWash']){
       if(CSS.supports('color',data.theme[key]))document.documentElement.style.setProperty('--'+key,data.theme[key]);
     }
     document.body.style.fontFamily=data.theme.fontFamily;
     document.body.style.fontSize=data.theme.fontSize;
   }
   document.querySelector('section').dataset.status=data.status;
+  document.querySelector('section').dataset.mode=data.mode;
+  document.querySelector('section').dataset.style=data.style;
   document.querySelector('section').setAttribute('aria-busy',String(data.status==='loading'));
   document.querySelector('#state').setAttribute('role',data.status==='error'?'alert':'status');
   for (const key of ['title', 'target', 'body', 'visibility', 'notice', 'state', 'agree', 'retry', 'cancel', 'check']) {
     if (Object.hasOwn(data, key)) document.getElementById(key).textContent = data[key];
   }
+  document.querySelector('#quote').hidden=!data.target;
+  document.querySelector('#body').hidden=!data.body;
   requestAnimationFrame(layout);
   for (const key of ['agree', 'retry', 'cancel', 'check']) {
     if (Object.hasOwn(data, key + 'Disabled')) document.getElementById(key).disabled = data[key + 'Disabled'];
@@ -70,17 +80,17 @@ for (const action of ['agree', 'retry', 'cancel', 'check']) {
 }
 </script></body></html>`;
 
-export function createConfirmationView(host, onAction) {
+export function createConfirmationView(host, onAction, { preview = false } = {}) {
   const frame = document.createElement('iframe');
-  frame.title = '受保护内容';
+  frame.title = preview ? '批注预览' : '受保护内容';
   frame.setAttribute('sandbox', 'allow-scripts');
-  frame.className = 'aipm-confirmation-frame rr-block';
+  frame.className = (preview ? 'aipm-proposal-preview' : 'aipm-confirmation-frame') + ' rr-block';
   frame.setAttribute('scrolling', 'no');
   frame.style.cssText = 'display:block;box-sizing:border-box;width:100%;min-width:0;height:260px;border:0;border-radius:8px';
   const channel = crypto.randomUUID();
-  const view = { title: '确认写入批注建议', target: '', body: '', visibility: '',
-    notice: '取消只能停止后续发送；已经到达服务的请求无法撤回。',
-    state: '等待同意', status: 'pending', agree: '同意并写入', retry: '再次同意原请求并写入',
+  const view = { title: '保存批注', target: '', body: '', visibility: '',
+    mode: preview ? 'preview' : 'confirmation', color: 'yellow', style: 'highlight', notice: '',
+    state: '等待同意', status: 'pending', agree: '确认保存', retry: '再次同意原请求并写入',
     cancel: '取消', check: '查询写入结果', agreeDisabled: false,
     retryDisabled: false, retryHidden: true, cancelDisabled: false, checkDisabled: false, checkHidden: true };
   let ready = false;
@@ -93,6 +103,8 @@ export function createConfirmationView(host, onAction) {
       accent: '--md-primary-fg-color--dark', focus: '--md-accent-fg-color' })) {
       result[key] = styles.getPropertyValue(variable).trim();
     }
+    result.markInk = styles.getPropertyValue('--aipm-anno-' + view.color).trim();
+    result.markWash = styles.getPropertyValue('--aipm-anno-' + view.color + '-bg').trim();
     frame.style.backgroundColor = result.surface;
     frame.style.colorScheme = scheme;
     return result;
@@ -108,7 +120,7 @@ export function createConfirmationView(host, onAction) {
       }
       return;
     }
-    if (event.data.type !== 'confirmation-action') return;
+    if (event.data.type !== 'confirmation-action' || preview) return;
     onAction(event.data.action, event.data.trusted);
   }
   window.addEventListener('message', receive);

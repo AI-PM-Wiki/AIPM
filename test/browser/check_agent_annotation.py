@@ -232,18 +232,17 @@ class AgentAnnotationCase(unittest.TestCase):
         """点「采纳」。visibility 给了就先在卡上把可见范围切到那一档。"""
         card = self.card(index)
         if visibility is not None:
-            card.locator(".aipm-chat__proposal-visbtn", has_text=VISIBILITY_LABEL[visibility]).click()
+            card.locator(".aipm-chat__proposal-vis").select_option(visibility)
         card.locator(".aipm-chat__proposal-accept").click()
+        frame = card.frame_locator('iframe[title="受保护内容"]')
+        frame.locator("#agree").click()
 
     def settle(self, index: int = 0) -> str:
         """等卡片给出结果(写完 / 失败 / 存成草稿),返回它写下的那句话。"""
         card = self.card(index)
-        self.page.wait_for_function(
-            """(el) => !!el.getAttribute('data-state') && el.getAttribute('data-state') !== 'writing'""",
-            arg=card.element_handle(timeout=8000),
-            timeout=8000,
-        )
-        return card.locator(".aipm-chat__proposal-state").inner_text()
+        frame = card.frame_locator('iframe[title="受保护内容"]')
+        frame.locator('section:not([data-status="loading"]):not([data-status="pending"])').wait_for()
+        return frame.locator("#state").inner_text()
 
     def marks(self) -> list[str]:
         return self.page.locator("mark.aipm-anno-mark").all_inner_texts()
@@ -338,11 +337,12 @@ class AgentAnnotationCase(unittest.TestCase):
         self.wait_card()
 
         card = self.card()
-        self.assertIn(anchor["quote"], card.locator(".aipm-chat__proposal-quote").inner_text())
-        self.assertIn("RAG", card.locator(".aipm-chat__proposal-body").inner_text())
-        self.assertIn("建议标成结论色", card.locator(".aipm-chat__proposal-note").inner_text())
+        preview = card.frame_locator('iframe[title="批注预览"]')
+        self.assertIn(anchor["quote"], preview.locator("#target").inner_text())
+        self.assertIn("RAG", preview.locator("#body").inner_text())
+        self.assertEqual(card.locator(".aipm-chat__proposal-vis").locator("option").count(), 3)
         # 模型说的那一档是卡上的缺省值(用户还能改)
-        self.assertEqual(card.locator(".aipm-chat__proposal-visbtn[aria-pressed='true']").inner_text(), "公开")
+        self.assertEqual(card.locator(".aipm-chat__proposal-vis").input_value(), "public")
 
         self.assertEqual(self.api.writes(), [], "还没点采纳,服务端不该收到写入")
         self.adopt()
@@ -386,7 +386,7 @@ class AgentAnnotationCase(unittest.TestCase):
         """模型提「仅本机」(也是缺省档):采纳之后本地存下,服务端一条写入都没有。"""
         self.propose(body="留在自己机器上", note="这条不用发出去")
         self.wait_card()
-        self.assertIn("仅本机", self.card().locator(".aipm-chat__proposal-visbtn[aria-pressed='true']").inner_text())
+        self.assertEqual(self.card().locator(".aipm-chat__proposal-vis").input_value(), "local")
 
         self.adopt()
         self.assertIn("已写入", self.settle())
@@ -403,18 +403,17 @@ class AgentAnnotationCase(unittest.TestCase):
     def test_visibility_is_locked_while_accepting(self):
         self.propose(visibility="public", body="公开建议")
         self.wait_card()
+        self.adopt()
         result = self.page.evaluate("""() => {
             const card = document.querySelector('.aipm-chat__proposal');
-            card.querySelector('.aipm-chat__proposal-accept').click();
-            const buttons = [...card.querySelectorAll('.aipm-chat__proposal-visbtn')];
-            const locked = buttons.every((button) => button.disabled);
-            buttons.find((button) => button.textContent === '仅本机').click();
-            const selected = card.querySelector('.aipm-chat__proposal-visbtn[aria-pressed="true"]');
-            return { locked, selected: selected.textContent };
+            const selected = card.querySelector('.aipm-chat__proposal-vis');
+            selected.value = 'local';
+            selected.dispatchEvent(new Event('change', { bubbles: true }));
+            return { locked: selected.disabled, selected: selected.value };
         }""")
         self.assertTrue(result["locked"])
-        self.assertEqual(result["selected"], "公开")
-        self.assertIn("已写入:公开", self.settle())
+        self.assertEqual(result["selected"], "public")
+        self.assertIn("已写入：公开", self.settle())
         self.assertEqual(len(self.api.writes()), 1)
         self.assertEqual(self.api.writes()[0]["body"]["visibility"], "public")
         assert_no_page_errors(self, self.browser)
@@ -445,16 +444,19 @@ class AgentAnnotationCase(unittest.TestCase):
         self.assertIn("结果未知", self.settle())
         self.assertEqual(len(self.api.stored), 1)
         self.assertEqual(self.api.stored[0]["visibility"], "public")
-        local_button = self.card().locator(".aipm-chat__proposal-visbtn", has_text="仅本机")
+        local_button = self.card().locator(".aipm-chat__proposal-vis")
         self.assertTrue(local_button.is_disabled())
         self.page.reload(wait_until="load")
         self.open_chat()
         self.wait_card()
-        local_button = self.card().locator(".aipm-chat__proposal-visbtn", has_text="仅本机")
+        local_button = self.card().locator(".aipm-chat__proposal-vis")
         self.assertTrue(local_button.is_disabled())
-        self.assertTrue(self.card().locator(".aipm-chat__proposal-dismiss").is_disabled())
-        self.page.evaluate("() => document.querySelector('.aipm-chat__proposal-visbtn').click()")
-        self.assertEqual(self.card().locator(".aipm-chat__proposal-visbtn[aria-pressed=true]").inner_text(), "公开")
+        self.page.evaluate("""() => {
+            const choice = document.querySelector('.aipm-chat__proposal-vis');
+            choice.value = 'local';
+            choice.dispatchEvent(new Event('change', { bubbles: true }));
+        }""")
+        self.assertEqual(self.card().locator(".aipm-chat__proposal-vis").input_value(), "public")
         self.assertEqual(self.local_annotations(), [])
 
 
@@ -560,7 +562,7 @@ class AgentAnnotationCase(unittest.TestCase):
 #: 卡上三档的中文说法(与 chat-widget.js 的 PROPOSAL_VIS 同一份)。
 VISIBILITY_LABEL = {
     "local": "仅本机",
-    "private": "仅自己可见",
+    "private": "私有",
     "public": "公开",
 }
 

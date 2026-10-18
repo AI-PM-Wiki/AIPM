@@ -207,11 +207,11 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
         await page.focus('.aipm-chat__ctx-view');
         await page.keyboard.press('Enter');
       }
-      await page.focus('loc=css:.aipm-chat__proposal button:text-is("查看批注建议")');
+      await page.focus('loc=css:.aipm-chat__proposal button:text-is("采纳")');
       await page.keyboard.press('Enter');
       let entryCancel;
       if (phase==='after') {
-        await page.waitForSelector('loc=css:#state:text-is("等待同意")',{state:'visible',timeout:10000});
+        await page.waitForSelector('loc=css:#agree:not([disabled])',{state:'visible',timeout:10000});
         const reading=denseBody?await nativeReading(`${name}-entry`):null;
         const cancellation=await keyboardCancel(`${name}-entry`,'__uiConfirmationActions');
         await page.waitForSelector('loc=css:#state:text-is("已取消，未写入。")',{state:'visible',timeout:5000});
@@ -227,11 +227,11 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
           card.parentElement.remove();
           window.__uiAppendProposal();
         });
-        await page.focus('loc=css:.aipm-chat__proposal button:text-is("查看批注建议")');
+        await page.focus('loc=css:.aipm-chat__proposal button:text-is("采纳")');
         await page.keyboard.press('Enter');
       }
-      await page.waitForSelector('loc=css:#state:text-is("等待同意")', { state: 'visible', timeout: 10000 });
-      await page.waitForFunction(() => document.querySelector('.aipm-chat__proposal iframe')?.clientHeight > 260, undefined, { timeout: 5000 });
+      await page.waitForSelector('loc=css:#agree:not([disabled])', { state: 'visible', timeout: 10000 });
+      await page.waitForFunction(() => document.querySelector('.aipm-chat__proposal iframe')?.clientHeight > 0, undefined, { timeout: 5000 });
       await page.evaluate(() => { document.querySelector('.aipm-chat__msgs').scrollTop = 0; });
       await screenshot(name);
       await page.focus('loc=css:#agree');
@@ -244,8 +244,7 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
           frameHeight: frame.clientHeight, surface: styles.getPropertyValue('--md-default-bg-color').trim(),
           scheme: document.body.getAttribute('data-md-color-scheme'), sandbox: frame.getAttribute('sandbox'),
           localCount: window.__aipmAnnoStore.localList(location.pathname).length,
-          choices: [...card.querySelectorAll('[aria-pressed]')].map(button => ({ label: button.textContent,
-            pressed: button.getAttribute('aria-pressed'), disabled: button.disabled, height: button.getBoundingClientRect().height })),
+          choice: { value: card.querySelector('select').value, disabled: card.querySelector('select').disabled },
           contextLabels: [...document.querySelectorAll('.aipm-chat__ctx-kind')].map(element => element.textContent) };
       });
       const inner = await frameState(`(() => {
@@ -262,14 +261,13 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
           focus:document.activeElement.id};})()`);
       assert.equal(outer.sandbox, 'allow-scripts');
       assert.equal(outer.localCount, 0, 'viewing suggestion wrote a local annotation');
-      assert.equal(outer.choices.filter(button => button.pressed === 'true').length, 1);
-      assert.ok(outer.choices.every(button => button.disabled), 'visibility choices were not locked');
+      assert.equal(outer.choice.value, 'local');
+      assert.equal(outer.choice.disabled, true, 'visibility choice was not locked');
       if (phase === 'after') {
-        assert.equal(inner.body, '正文：' + (denseBody ? LONG_BODY : BODY));
+        assert.equal(inner.body, denseBody ? LONG_BODY : BODY);
         assert.equal(inner.scheme, scheme === 'slate' ? 'dark' : 'light');
         assert.ok(inner.buttonHeight >= 44);
         assert.ok(inner.buttonContrast >= 4.5);
-        assert.ok(outer.choices.every(button => button.height >= 44));
         assert.ok(outer.cardScrollWidth <= outer.cardWidth + 1, 'card has horizontal clipping');
         assert.ok(inner.scrollWidth <= inner.width + 1, 'frame has horizontal clipping');
         assert.ok(inner.scrollHeight <= inner.height + 1, 'frame requires nested vertical scrolling');

@@ -40,7 +40,7 @@ assert(rows.length > 0, 'real recorder sent payload');
 assert(rows.some((row) => row.payload.events.some((event) => event.type === 2)), 'full snapshot');
 assert(rows.some((row) => row.payload.events.some((event) => event.type === 3)), 'incremental snapshot');
 for (const marker of [initial.body, initial.quote, next.body, next.quote,
-  '最终可见范围：仅本机', '已写入：仅本机', final.annotationId]) {
+  '仅本机', '已写入：仅本机', final.annotationId]) {
   assert(!captured.includes(marker), `recorder leaked ${marker}`);
 }
 console.log({ rows: rows.length, types: [...new Set(rows.flatMap((row) => row.payload.events.map((event) => event.type)))],

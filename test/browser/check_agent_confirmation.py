@@ -84,7 +84,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
 
     def open_confirmation(self):
         card = self.page.locator(".aipm-chat__proposal").last
-        card.get_by_role("button", name="查看批注建议").click()
+        card.get_by_role("button", name="采纳", exact=True).click()
         frame = card.frame_locator('iframe[title="受保护内容"]')
         frame.locator("#agree").wait_for(state="visible")
         return frame
@@ -100,7 +100,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
     def test_local_confirmation_stays_on_device(self):
         self.propose("local", "只保存在本机的建议")
         frame = self.open_confirmation()
-        self.assertIn("最终可见范围：仅本机", frame.locator("#visibility").inner_text())
+        self.assertEqual("仅本机", frame.locator("#visibility").inner_text())
         self.assertEqual(self.stack.api.writes(), [])
         self.assertEqual(self.permit_posts(), [])
         outbound_bodies = []
@@ -126,7 +126,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         choices.get_by_role("button", name="公开").click()
         self.assertEqual(choices.get_by_role("button", name="公开").get_attribute("aria-pressed"), "true")
         frame = self.open_confirmation()
-        self.assertIn("最终可见范围：公开", frame.locator("#visibility").inner_text())
+        self.assertEqual("公开", frame.locator("#visibility").inner_text())
         self.assertEqual(self.stack.api.writes(), [])
         self.assertEqual(self.permit_posts(), [])
         self.accepted(frame, "公开")
@@ -156,7 +156,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
                 self.stack.api.reset()
                 self.propose(visibility, f"已确认的{label}建议", paragraph_index)
                 frame = self.open_confirmation()
-                self.assertIn(f"最终可见范围：{label}", frame.locator("#visibility").inner_text())
+                self.assertEqual(label, frame.locator("#visibility").inner_text())
                 self.assertEqual(self.stack.api.writes(), [])
                 self.accepted(frame, label)
 

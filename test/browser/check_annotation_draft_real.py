@@ -477,7 +477,7 @@ class RealDraftCase(unittest.TestCase):
         try:
             page.goto(self.site.base + "/ai/rag/", wait_until="load")
             proposal = self.request_proposal(page, proposal)
-            self.assertTrue(page.locator(".aipm-chat__proposal-visbtn").first.is_enabled())
+            self.assertTrue(page.locator(".aipm-chat__proposal-vis").first.is_enabled())
             with page.expect_response(lambda r: "/api/auth/github/start" in r.url) as login:
                 page.locator(".aipm-chat__proposal-accept").click()
             self.assertEqual(login.value.status, 503)

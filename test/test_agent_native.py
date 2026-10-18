@@ -500,7 +500,7 @@ class TestAgentWritesAnnotations(unittest.TestCase):
     def test_visibility_remains_stable_while_submitting(self):
         self.assertIn('const submittedVisibility = selectedVisibility;', self.chat)
         self.assertIn('proposalEntry.chooseVisibility(proposal, selectedVisibility, { lock: true });', self.chat)
-        self.assertIn('for (const button of visButtons) button.disabled = true;', self.chat)
+        self.assertIn('choices.disabled = true;', self.chat)
         self.assertIn('const chosenProposal = { ...proposal, visibility: submittedVisibility };', self.chat)
         self.assertIn('entry.mount({ proposal: chosenProposal, historical, host: protectedCard });', self.chat)
 
@@ -604,7 +604,7 @@ class TestAgentWritesAnnotations(unittest.TestCase):
     def test_widget_renders_the_card_and_lets_the_user_pick_visibility(self):
         self.assertIn('case "proposal":', self.chat)
         self.assertIn("isProposalShaped(data)", self.chat, "形状过不了的帧不渲染成卡")
-        for label in ("仅本机", "仅自己可见", "公开"):
+        for label in ("仅本机", "私有", "公开"):
             self.assertIn(f"label: '{label}'", self.chat, f"卡上少了「{label}」这一档")
         self.assertIn("entry.loginDraft(chosenProposal)", self.chat)
         self.assertIn("登录回跳后，请在历史建议卡中手动确认。", self.chat)
