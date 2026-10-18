@@ -502,38 +502,16 @@
   background-color: #0B0C0F;
 }
 
-/* 5.7 批注入口 + 多色高亮色板(issue #67 的位置与样式,行为改为切换自建批注面板)
-
-   页头右侧是一对按钮,都由 annotation.js 注入到 .md-header__inner 末尾:✨ 智能高亮
-   在左,‹ 批注入口贴在浏览器右边缘。两个都沿用顶栏图标按钮的类
-   (.md-header__button.md-icon —— 24px 线性图标、currentcolor 填充、hover 用 5.1 的
-   accent 底色),只接管定位,站在页头高度内。页头内容让出这一对按钮的宽度,
-   搜索框与 GitHub 图标不会钻到它们下面。
-
-   入口是个开关:收起态是 ‹、展开态是 ›(annotation.js 的 syncEntry),箭头指面板将要
-   移动的方向 —— 面板停靠在右侧,故收起时向左(拉出来)、展开时向右(推回去)。
-   开合不必在这里画:两个箭头同 viewBox 同填充,多一条 color/背景规则只会和 5.1 的
-   hover 底色打架。
-
-   智能高亮原先长在面板页头里,随入口一起搬了出来:它判的是页面正文,不是面板里的
-   列表,没道理等人开了面板才够得着。它没有第二态可画(点一次就是一次请求),
-   所以只跟入口共用高度与命中区,不需要自己的 color / 背景规则。
-
-   色板放在这里(而不是 annotation.css)有两个理由:一是 <mark> 的底色与面板里的
-   色点、色板按钮引用的是同一组值,放一处才不会两边走样;二是这组变量是站点级的
-   视觉 token,批注功能开关(extra.annotation.enabled)不影响它。
-
-   每色亮/暗各一套。高亮用**半透明底 + 彩色下划线**,正文颜色一律 inherit ——
-   这样暗色模式下正文对比度不被底色拉低(<mark> 的规则在 annotation.css 里)。 */
+/* 5.7 页头入口与多色高亮色板。
+   AI 总结与批注入口共用页头右侧空间，色板供正文与批注面板共同使用。 */
 /* 让出两颗按钮的宽度。它们绝对定位在 .md-header 的右边缘上,不占 flex 的位 ——
    页头内容(搜索框、GitHub 图标)靠这条内边距退到它们左边。 */
 .md-header__inner {
   padding-inline-end: 4.8rem;
 }
 
-/* 两颗按钮共用的几何:页头高度内的方形命中区,贴顶,在右边缘上一路排开。 */
-.md-header .md-header__button.aipm-anno-entry,
-.md-header .md-header__button.aipm-anno-smart {
+/* 批注入口采用页头高度内的方形点击区域。 */
+.md-header .md-header__button.aipm-anno-entry {
   position: absolute;
   top: 0;
   display: flex;
@@ -551,17 +529,9 @@
   border-radius: .4rem 0 0 .4rem;
 }
 
-/* 智能高亮紧挨在入口左边(两颗合起来正好是上面让出的 4.8rem)。它不贴边,
-   四角都给圆角,悬停底色是一颗独立的胶囊。 */
-.md-header .md-header__button.aipm-anno-smart {
-  right: 2.4rem;
-  border-radius: .4rem;
-}
-
-/* 移动端搜索铺满全屏,搜索结果之上不能浮着批注入口与智能高亮 */
+/* 全屏搜索期间隐藏批注入口。 */
 @media screen and (max-width: 59.984375em) {
-  [data-md-toggle="search"]:checked ~ .md-header .aipm-anno-entry,
-  [data-md-toggle="search"]:checked ~ .md-header .aipm-anno-smart {
+  [data-md-toggle="search"]:checked ~ .md-header .aipm-anno-entry {
     display: none;
   }
 }

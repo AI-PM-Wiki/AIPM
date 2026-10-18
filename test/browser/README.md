@@ -26,6 +26,25 @@ TMPDIR=meta/r uv run python3 test/browser/run.py --group oauth --report meta/bro
 
 真实 GitHub OAuth 用例需要 `AIPM_REAL_GITHUB_CLIENT_ID`、`AIPM_REAL_GITHUB_CLIENT_SECRET` 和 `AIPM_REAL_GITHUB_ID`，并需要对应账号完成浏览器授权。批注服务的开发登录接口只用于隔离服务的许可与持久化检查；该结果不覆盖 GitHub OAuth。
 
+## 全文 AI 总结验收
+
+全文 AI 总结使用真实模型和真实索引运行。以下命令执行六个客户端的并发请求、完整文章输入检查、服务重启后的缓存复用，然后保留隔离服务供 ego-browser 继续检查：
+
+```bash
+mkdir -p meta/browser/summary-runtime
+TMPDIR="$PWD/meta/browser/summary-runtime" uv run --env-file ~/.config/ai-pm-wiki/test.env python3 test/browser/article_summary_stack.py --site site --output meta/browser/summary-acceptance
+```
+
+环境文件需要包含 `AIPM_REAL_MODEL_API_KEY`、`AIPM_REAL_MODEL_BASE_URL` 和 `AIPM_REAL_MODEL_NAME`。输出目录必须全新。后端边界检查使用同一组实际缓存与索引：
+
+```bash
+TMPDIR="$PWD/meta/browser/summary-runtime" node --import ./agent-server/node_modules/tsx/dist/loader.mjs agent-server/src/summary-check.ts "$PWD/meta/browser/summary-acceptance" ~/.config/ai-pm-wiki/test.env
+```
+
+通过 ego-browser 导入 `check_article_summary_ego.mjs` 的 `checkArticleSummary`，依次传入 `phase: 'inspect'`、`'exercise'`、`'offline'`、`'followup'`、`'diagram-retry'`，保持同一个 `spaceId`。`directory` 使用上述输出目录的绝对路径。检查覆盖六组宽度／主题、图中节点和精读标题的原文定位、助手复用、刷新恢复、网络中断与显式重试、独立宿主中的 Mermaid 加载重试，以及真实模型对完整总结的后续回答。结果分别保存在 `http-results.json`、`service-boundaries.json`、`browser-results.json`、`offline-results.json`、`followup-results.json`、`diagram-results.json`。
+
+结束后向 `runtime-config.json` 的 `control` 地址追加 `/stop` 发送 POST，并对同一浏览器任务空间执行 `task.finish({ keep: [] })`。`--cache-from <已有 summaries 目录>` 可以验收已有真实缓存；该运行在报告中记录实际生成次数和 `warmCache`。
+
 ## 端口与数据
 
 静态站点通过操作系统分配回环端口。Agent、批注记录代理与服务端口均可由环境变量指定，缺省使用操作系统分配的端口。绑定失败即终止，测试不停止已有服务。

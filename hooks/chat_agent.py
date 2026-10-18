@@ -9,8 +9,8 @@ CSS/JS 追加进 extra_css / extra_javascript(带 ?v= 占位版本号),
 纯字符串或 ExtraScriptValue(此处 YAML 写的就是纯字符串),统一按 path 去重。
 """
 
-JS_PATH = "_static/js/chat-widget.js"
-CSS_PATH = "_static/css/chat-widget.css"
+JS_PATHS = ("_static/js/article-summary.js", "_static/js/chat-widget.js")
+CSS_PATHS = ("_static/css/article-summary.css", "_static/css/chat-widget.css")
 
 
 def on_config(config, **kwargs):
@@ -20,13 +20,15 @@ def on_config(config, **kwargs):
         return config
     version = opts.get("version") or 1
 
-    js = f"{JS_PATH}?v={version}"
-    if not any(_path_of(e) == JS_PATH for e in config["extra_javascript"]):
-        config["extra_javascript"].append(js)
+    for path in JS_PATHS:
+        js = f"{path}?v={version}"
+        if not any(_path_of(e) == path for e in config["extra_javascript"]):
+            config["extra_javascript"].append(js)
 
-    css = f"{CSS_PATH}?v={version}"
-    if not any(_path_of(e) == CSS_PATH for e in config["extra_css"]):
-        config["extra_css"].append(css)
+    for path in CSS_PATHS:
+        css = f"{path}?v={version}"
+        if not any(_path_of(e) == path for e in config["extra_css"]):
+            config["extra_css"].append(css)
 
     return config
 

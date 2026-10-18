@@ -522,9 +522,7 @@
     ICON.swap +
     "</button>" +
     '<span class="aipm-anno__count" hidden></span>' +
-    /* 账号按钮是这串动作里的头一颗(顺序即视觉顺序):登录态的唯一入口。
-       头一颗原先的智能高亮搬去了页头(见 smartBtn)—— 按钮一旦站在面板外面,
-       它的可见性就不该再跟着面板里的模式走。 */
+    /* 账号按钮提供登录入口。 */
     '<button type="button" class="aipm-anno__iconbtn aipm-anno__account" title="用 GitHub 登录" aria-label="账号">' +
     ICON.login +
     "</button>" +
@@ -622,9 +620,7 @@
   smartClose.setAttribute("aria-label", "关闭通知");
   smartClose.innerHTML = ICON.close;
   smartClose.addEventListener("click", function () {
-    /* 只收条子,不撤结果:高亮建议还缓存在 suggestCache 里,再点页头的 ✨ 原地
-       摆回来,既不重新请求,也不会撞上冷却。记下「这一页被关过」,免得换页回来
-       时又被自动摆出来。 */
+    /* 关闭通知后保留本页缓存，并记录用户的关闭状态。 */
     smartbarDismissed = pagePath();
     setSmartbar("", "");
   });
@@ -638,21 +634,6 @@
   entry.setAttribute("aria-expanded", "false");
   entry.setAttribute("data-state", "closed");
   entry.innerHTML = ICON.chevronLeft;
-
-  /* 智能高亮按钮:它判的是**页面正文**,不是面板里的列表,所以跟入口并排站在
-     页头,不开面板也够得着(顺序即视觉顺序:✨ 在 ‹ 左边,位置由 extra.css 的
-     right: 2.4rem / right: 0 定)。
-
-     它在面板里时是跟着模式显隐的(评论模式下收起,那边没有正文可划)。搬到面板
-     外面之后这条规则不再成立:面板关着的时候,用户根本看不见当前是哪一份列表,
-     一颗「有时在、有时不在」的页头按钮就成了没来由的闪烁。所以它一直可见,
-     点击时把面板叫出来、回执摆在智能高亮条上(见 smartHighlight 开头那段)。 */
-  var smartBtn = document.createElement("button");
-  smartBtn.type = "button";
-  smartBtn.className = "md-header__button md-icon aipm-anno-smart";
-  smartBtn.title = "智能高亮";
-  smartBtn.setAttribute("aria-label", "智能高亮");
-  smartBtn.innerHTML = ICON.spark;
 
   /* 入口是**开关**,不是「只负责开」:面板开着时再点一次即收起。这个来回只能由它
      自己承担 —— 助手的 FAB 在面板开着时直接隐藏(.is-hidden),批注入口一直可见。
@@ -677,9 +658,6 @@
   function mountEntry() {
     var inner = document.querySelector(".md-header__inner");
     if (!inner || entry.parentNode === inner) return;
-    /* 先 smart 后 entry:两颗都绝对定位,谁在左由 CSS 定,这里的先后只管 Tab 序
-       —— 从左到右,✨ 再 ‹。 */
-    inner.appendChild(smartBtn);
     inner.appendChild(entry);
   }
 
@@ -4199,11 +4177,7 @@
      ================================================================ */
   var suggestCache = {};
   var cooldownUntil = 0;
-  /* 手上那一笔判分请求:null = 没有在飞,其余是它的来路 —— "auto" 是进页面自己跑
-     的那条,"refresh" 是站长在面板页头那支笔上点的重新生成,"judge" 是手动判分。
-     页头那颗 ✨ 靠 disabled 挡住连点,面板页头那支笔没有 disabled 可言,所以这里
-     另记一笔 —— 重新生成一次就是一轮真金白银的 provider 调用,连点两下会让第二下
-     也走一遍「缓存未命中」,多花一次钱。 */
+  /* 当前判分来源：自动生成、管理员重新生成，或者手动判分。 */
   var smartInFlight = null;
   /* 自动判分在飞的时候用户点的那一下重新生成:排在这里,等手上那一笔收尾再发
      (见 drainPendingRefresh)。存的是他点的时候看的是哪一页。 */
@@ -4264,16 +4238,9 @@
     return out;
   }
 
-  /**
-   * 记下手上这一笔判分请求(`kind` 为 null = 收尾了)。
-   *
-   * 页头那颗 ✨ 在自动判分期间保持可点:用户点它的时候面板照常打开,判分回来结果
-   * 就摆在条子上,比一颗按不动的按钮说得清楚。用户自己点出来的那几笔则把它收起来
-   * —— 一次判分就是一轮 provider 调用,连点两下会让第二下也走一遍「缓存未命中」。
-   */
+  /** 记录当前判分请求；null 表示请求结束。 */
   function setSmartBusy(kind) {
     smartInFlight = kind;
-    smartBtn.disabled = kind !== null && kind !== "auto";
   }
 
   /**
@@ -4351,7 +4318,7 @@
       if (!auto) renderSuggestions(suggestCache[page]);
       return;
     }
-    /* 判分一律送这一页**全部**可判定块,三条来路(自动、✨、重新生成)送的是同一份。
+    /* 判分始终发送本页全部可判定内容，所有请求来源使用相同内容。
        跳过已落过高亮的块会送出一份**子集**,而服务端那份同页缓存只有页面粒度
        (它的 key 是页面 + 内容哈希 + judge + 色板,不含这一次送了哪些块),判完照
        原样覆盖整页那一格:漏掉的那几段在缓存里从此没有结论,后面进这一页的人身上
@@ -4394,8 +4361,7 @@
       })
       .then(function (res) {
         setSmartBusy(null);
-        /* 自动判分是后台动作,失败不该往用户眼前摆条子 —— 那是他点 ✨ 时才要的回执。
-           服务端没配密钥这种真的不可用仍要收掉按钮,与手动那条路同一个状态。 */
+        /* 自动判分在后台执行；站长手动重新生成时显示请求结果。 */
         var say = auto ? function () {} : setSmartbar;
         /* 服务端那两道路闸(未登录 / 不是站长)。界面上这颗笔只对站长可点,所以走到
            这里通常意味着会话在这中间过期了 —— 如实说一句,别把 403 念成「失败」。 */
@@ -4413,12 +4379,9 @@
           return;
         }
         if (res.status === 503) {
-          /* 两种 503 要分开对待,否则用户只能刷新页面:
-             - not_configured 是服务端没配判分密钥,重试永远不会好 → 停掉按钮;
-             - 其余(片全挂 / 排队满)是暂时性的 → 按 Retry-After 冷却,按钮留着。 */
+          /* 缺少判分密钥时显示配置提示，临时故障按照 Retry-After 设置冷却时间。 */
           if (res.body && res.body.error === "highlight_not_configured") {
             say("智能高亮未启用(服务端缺少判分密钥),批注功能不受影响。", "warn");
-            smartBtn.disabled = true;
             return;
           }
           var retry503 =
@@ -4475,7 +4438,7 @@
    * 进一个页面就自动判一次(issue #102)。
    *
    * 页内没有这一页的结果时,让服务端判一遍 —— 它那份同页缓存命中就直接复用,没有
-   * 就生成并缓存下来,拿回的建议当场写成「仅本机」高亮。用户不必先去点页头那颗 ✨。
+   * 就生成并缓存下来，返回的建议保存为「仅本机」高亮。
    *
    * 四道闸,任一命中就不跑:
    *   - 这一页的自动判分已经用过了(store.smartDone:判成过,或者用户把这一页整批
@@ -4858,7 +4821,7 @@
     }
   });
 
-  /* 账号按钮:登录态的唯一入口,夹在智能高亮与关闭之间 */
+  /* 账号按钮提供登录与账号管理入口。 */
   els.account.addEventListener("click", function () {
     if (auth && auth.isLoggedIn()) {
       els.acct.hidden = !els.acct.hidden;
@@ -5106,10 +5069,6 @@
       setHint("写入结果未知，请保持原内容及可见范围重试。");
     }
   }
-
-  smartBtn.addEventListener("click", function () {
-    smartHighlight();
-  });
 
   /* 面板页头那支笔:站长点它是「重新生成」,其余人点它换一份列表(身份那半边见
      syncHeadIcon)。监听器常驻,身份却是会变的,所以每次点击都重新问一遍。 */
