@@ -192,8 +192,6 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             raise ValueError("test document has no head")
         bootstrap = document.new_tag("script", attrs={"data-aipm-test-api": ""})
         bootstrap.string = "window.__aipmLocalApi=" + json.dumps(self.server.local_api) + ";"
-        if self.server.enable_agent_confirmation:
-            bootstrap.string += "window.__aipmAnnoAgentEnabled=true;"
         document.head.insert(0, bootstrap)
         self.local_document_bytes = str(document).encode("utf-8")
         self.send_response(HTTPStatus.OK)
@@ -390,7 +388,6 @@ class StaticSite:
         self.httpd.stream_aborted = self.stream_aborted
         self.httpd.requests = self.requests
         self.httpd.local_api = None
-        self.httpd.enable_agent_confirmation = False
         self.port = self.httpd.server_address[1]
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self.thread.start()
@@ -406,7 +403,7 @@ class StaticSite:
         self.root = Path(root)
         self.httpd.root = self.root
 
-    def set_local_api(self, endpoints: dict[str, str], *, enable_agent_confirmation: bool = False) -> None:
+    def set_local_api(self, endpoints: dict[str, str]) -> None:
         if set(endpoints) != {"agent", "annotation"}:
             raise ValueError("test endpoints require agent and annotation")
         for endpoint in endpoints.values():
@@ -416,7 +413,6 @@ class StaticSite:
                     parsed.query or parsed.fragment):
                 raise ValueError("test endpoint must be a loopback origin")
         self.httpd.local_api = dict(endpoints)
-        self.httpd.enable_agent_confirmation = enable_agent_confirmation
 
     def write(self, relpath: str, data: bytes, content_type: str | None = None) -> str:
         """往当前根目录里放一份用例素材,返回它的站内路径。"""

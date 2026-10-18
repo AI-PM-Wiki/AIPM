@@ -46,6 +46,29 @@ TMPDIR=meta/r uv run python3 test/browser/run.py --group oauth --report meta/bro
 
 ## 结果范围
 
+PR 审查回归使用 `review_acceptance_stack.py` 启动真实服务和构建站点。输出目录必须全新；模型组需要上表中的三项模型配置。
+
+```bash
+mkdir -p meta/review/runtime
+TMPDIR="$PWD/meta/review/runtime" uv run mkdocs build -q
+TMPDIR="$PWD/meta/review/runtime" uv run python3 test/browser/review_acceptance_stack.py --site site --output meta/review/acceptance --model
+```
+
+将以下调用保存为忽略目录中的 JavaScript 文件，通过 `ego-browser nodejs < 脚本路径` 执行。首次运行后保存返回的 `spaceId`，后续调用传入同一个 ID。
+
+```javascript
+const { checkReviewAcceptance } = await import('/absolute/repo/test/browser/check_review_acceptance_ego.mjs');
+let spaceId;
+for (const phase of ['local', 'normalized', 'rejected', 'unknown', 'manual', 'upload', 'navigation', 'controls', 'integrity', 'model']) {
+  const result = await checkReviewAcceptance({ directory: '/absolute/repo/meta/review/acceptance', phase, taskSpace, spaceId });
+  spaceId = result.spaceId;
+}
+```
+
+各阶段分别保存 JSON 结果：本机空正文高亮、公开／私有正文规范化及刷新恢复、真实 429 后重新确认、保存响应中断后的只读查询、手写私有评论、本机批注上传、延迟取图期间导航、匿名／管理员页头操作、资源不可用时的完整性失败，以及正常聊天入口产生的真实模型建议。Agent 建议使用受保护界面的原生键盘确认，手写评论与上传使用对应产品按钮。身份检查使用隔离服务的开发会话，GitHub OAuth 单独验收。
+
+服务关闭时，向 `runtime.json` 的 `control` 地址追加 `/stop` 发送 POST；服务记录保存为 `service-results.json`。浏览器结束时，对相同任务空间执行一次 `task.finish({ keep: [] })`。不带 `--model` 可以执行前九个阶段。测试 sitemap 使用当前回环地址，导航阶段同时核对原文档未刷新。
+
 本地确认回归通过生产 `createAgentEntry` 入口、受保护确认界面、真实批注服务和本机存储运行，不需要模型凭据。持续断言核对一次写入、通知／标记／确认时序、零许可请求、各 origin 的批注业务请求、已观察 fetch 的明文本机正文，以及十次重复通知后的存储、标记和请求数量。
 
 每次完整运行使用新的隔离输出目录。运行中的继续操作使用该目录保存的浏览器空间 ID。在两个终端运行，下面的绝对路径使用当前候选副本的位置：
@@ -63,7 +86,7 @@ await checkLocalConfirmation({ directory: '/absolute/repo/meta/local-confirmatio
 
 将上述 JavaScript 保存为忽略目录中的脚本，使用 `ego-browser nodejs < 脚本路径` 执行。结果保存在 `after-timing.json`，断言映射见 `local-confirmation-assertions.json`。完成后使用 `browser-space.json` 的 ID 关闭浏览器空间，向 `runtime-config.json` 的 `control` 地址发送 POST 关闭服务。Multica 环境可通过 `--protected-pid` 提供 daemon PID，关闭前校验子进程身份。
 
-`StaticSite.set_local_api()` 在每份测试 HTML 的 head 中提供专用回环端点，覆盖首次加载、导航和刷新。`enable_agent_confirmation=True` 用于该隔离回归。构建产物和生产默认端点保持正常配置。
+`StaticSite.set_local_api()` 在每份测试 HTML 的 head 中提供专用回环端点，覆盖首次加载、导航和刷新。建议确认使用正常产品入口。
 
 上传结果分别登记：批注业务请求与已观察 fetch 的明文正文检查；外部 recorder 的 sendBeacon、XHR、编码载荷仍为 `not_run`。本脚本结果不覆盖完整录制上传链路。真实模型工具建议的端到端证据需要单独记录候选提交和请求用量。
 

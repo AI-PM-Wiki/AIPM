@@ -29,7 +29,6 @@ class AgentConfirmationAcceptance(unittest.TestCase):
             "(raw) => localStorage.setItem('aipm-anno-auth', raw)",
             _js(self.session),
         )
-        self.page.add_init_script("window.__aipmAnnoAgentEnabled = true")
         self.page.reload(wait_until="load")
         self.page.wait_for_function(
             "() => window.__aipmIntegrityReady === true || window.__aipmIntegrityFailed === true",

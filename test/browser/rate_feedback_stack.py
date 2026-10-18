@@ -44,7 +44,7 @@ with ExitStack() as cleanup:
         assert time.monotonic() < deadline, 'rate service readiness timeout'
         time.sleep(.05)
     agent = json.loads((base / 'rate-runtime.json').read_text())
-    site.set_local_api({'agent': agent['base'], 'annotation': annotation.base}, enable_agent_confirmation=True)
+    site.set_local_api({'agent': agent['base'], 'annotation': annotation.base})
     with urlopen(args.gateway + '/healthz', timeout=5) as response:
         actual = json.load(response)
     assert actual['sent'] > 0 and not actual['halted']

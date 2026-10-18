@@ -30,6 +30,7 @@ class RealAnnotationApi:
         self.drop_next_write_response = False
         self.service = None
         self.log = None
+        self.http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
         self.reset()
         self._httpd = http.server.ThreadingHTTPServer(("127.0.0.1", port), _AnnotationForwarder)
         self._httpd.owner = self
@@ -61,11 +62,12 @@ class RealAnnotationApi:
             if self.service.poll() is not None:
                 raise RuntimeError((self.data / "service.log").read_text(encoding="utf-8"))
             try:
-                with urllib.request.urlopen(f"http://127.0.0.1:{self.service_port}/healthz", timeout=1):
+                with self.http.open(f"http://127.0.0.1:{self.service_port}/healthz", timeout=1):
                     break
-            except urllib.error.URLError:
+            except (urllib.error.URLError, TimeoutError):
                 time.sleep(0.1)
         else:
+            self.stop_service()
             raise RuntimeError("annotation service readiness timeout")
         self.requests.clear()
         self.drop_next_write_response = False
@@ -73,7 +75,7 @@ class RealAnnotationApi:
     def login(self) -> dict:
         request = urllib.request.Request(self.base + "/api/auth/dev", data=b"{}",
                                          headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(request, timeout=10) as response:
+        with self.http.open(request, timeout=10) as response:
             return json.load(response)
 
     def writes(self) -> list[dict]:

@@ -354,7 +354,6 @@ class RealServiceConfirmationAcceptance(check_agent_confirmation.AgentConfirmati
         self.addCleanup(self.browser.close)
         self.page = self.browser.page
         self.session = self.stack.api.login()
-        self.page.add_init_script("window.__aipmAnnoAgentEnabled = true")
         self.page.goto(self.stack.site.base + check_agent_confirmation.PAGE, wait_until="load")
         self.page.evaluate(
             "(raw) => localStorage.setItem('aipm-anno-auth', raw)",

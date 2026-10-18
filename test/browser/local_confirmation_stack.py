@@ -64,7 +64,7 @@ config = {"site": site.base, "annotation": api.base,
           "agent": f"http://127.0.0.1:{control.server_port}",
           "control": f"http://127.0.0.1:{control.server_port}",
           "annotationPid": api.service.pid}
-site.set_local_api({"agent": config["agent"], "annotation": config["annotation"]}, enable_agent_confirmation=True)
+site.set_local_api({"agent": config["agent"], "annotation": config["annotation"]})
 (BASE / "runtime-config.json").write_text(json.dumps(config), encoding="utf-8")
 print(json.dumps({"ready": True, **config}), flush=True)
 closed.wait()

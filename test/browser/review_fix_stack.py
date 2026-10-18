@@ -73,7 +73,7 @@ with socket.socket() as listener:
     api_port = listener.getsockname()[1]
 api = RealAnnotationApi(root, output, site, api_port)
 site.httpd.RequestHandlerClass = Handler
-site.set_local_api({'agent': site.base, 'annotation': api.base}, enable_agent_confirmation=True)
+site.set_local_api({'agent': site.base, 'annotation': api.base})
 control = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Control)
 thread = threading.Thread(target=control.serve_forever)
 thread.start()

@@ -38,7 +38,7 @@ class RealModel:
         return f"http://127.0.0.1:{self.port}"
 
     def messages(self) -> list[dict]:
-        return [request for request in self.requests if request["path"].endswith("/messages")]
+        return [request for request in self.requests if urlsplit(request["path"]).path.endswith("/messages")]
 
     @property
     def reject_images(self) -> bool:
