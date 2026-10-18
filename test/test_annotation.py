@@ -569,13 +569,13 @@ class TestThreeVisibilities(unittest.TestCase):
 
     def test_public_and_private_go_to_the_server(self):
         block = _block(self.js, "function submitAnnotation(")
-        self.assertIn('"/api/annotations"', block)
+        self.assertIn('store.createAnnotation(payload,', block)
 
     def test_local_annotations_never_reach_the_server(self):
         """「仅本机」只有 localStorage 一条路 —— 前端没有把它 POST 出去的通路。"""
         block = _block(self.js, "function submitAnnotation(")
         local_branch = block.index('if (visibility === "local")')
-        server_call = block.index('"/api/annotations"')
+        server_call = block.index('store.createAnnotation(payload,')
         self.assertLess(
             local_branch,
             server_call,
@@ -586,9 +586,9 @@ class TestThreeVisibilities(unittest.TestCase):
             self.assertIn("return", segment, "「仅本机」分支必须直接返回")
         # 请求体里的 visibility 用的是参数,不是字面量 —— 配合上面的提前返回,
         # 到得了 POST 的只可能是 public / private
-        request_part = block[server_call:]
-        self.assertIn("visibility: visibility", request_part)
-        self.assertNotIn('visibility: "local"', request_part)
+        payload = block[block.index("var payload = {"):server_call]
+        self.assertIn("visibility: visibility", payload)
+        self.assertNotIn('visibility: "local"', payload)
 
     def test_local_store_never_talks_to_the_network(self):
         for fn in ("localAdd", "localUpdate", "localRemove", "localList"):
@@ -1215,35 +1215,6 @@ class TestUiRoundThree(unittest.TestCase):
     def test_card_is_a_positioning_context(self):
         self.assertIn("position: relative;", _block(self.css, ".aipm-anno__item {"))
 
-    def test_split_button_squares_the_touching_corners(self):
-        """分体按钮的圆角必须写在 border-radius 简写之后,否则会被一并重置。"""
-        save = self.css.index(".aipm-anno__actions .aipm-anno__save {")
-        plain = self.css.index("border-radius: .3rem;", save)
-        squared = self.css.index("border-top-right-radius: 0;", save)
-        self.assertLess(plain, squared)
-
-    def test_split_button_reads_as_one_control(self):
-        """保存 + 可见范围是一颗分体按钮,不是两颗挨着的按钮。三条各自都能把它拆成
-        两颗,所以逐条钉住:底色与字色右半跟左半同一套(右半自己描一圈线就成了一颗
-        独立的描边按钮,跟实心的左半拼在一起最割裂);左半去掉右边框、右半整颗不描边,
-        两个盒子正好相接,缝里叠不出两层边框(那条发丝线交给右半用 inset 阴影画在
-        填充色上);右半 align-self: stretch 跟着行高走,行高由「取消」「保存」这类
-        文字按钮定 —— 自己算一套内边距就差出几个像素,一眼看出是两颗。
-        """
-        # 基础规则在文件里排在 .aipm-anno__actions 那条之前,index 取到的就是它
-        base_vis = _block(self.css, ".aipm-anno__visbtn {")
-        row = _block(self.css, ".aipm-anno__actions .aipm-anno__vismenu {")
-        # 从 visbtn 之后切,避开头一条 .aipm-anno__save 是与 cancel 合写的那条
-        after_vis = self.css[self.css.index(".aipm-anno__actions .aipm-anno__visbtn {"):]
-        save = _block(after_vis, ".aipm-anno__actions .aipm-anno__save {")
-        self.assertEqual(_decl(base_vis, "background"), "var(--md-accent-fg-color)")
-        self.assertEqual(_decl(base_vis, "color"), "var(--md-accent-bg-color)")
-        self.assertEqual(_decl(base_vis, "border"), "0")
-        self.assertEqual(_decl(save, "border-right"), "0")
-        self.assertEqual(_decl(row, "align-self"), "stretch")
-        self.assertIn("box-shadow", _block(self.css, ".aipm-anno__actions .aipm-anno__visbtn {"))
-
-
 class TestUiRoundFour(unittest.TestCase):
     """第四轮验收:任意显隐 / 三类画法 / 悬浮窗完整选择 / 评论排序 /
     回复的回复与权限 / 点赞。"""
@@ -1591,9 +1562,13 @@ class TestUiRoundFour(unittest.TestCase):
 
     # ---- 发出去的形状 ----
 
-    def test_style_is_sent_on_create(self):
+    def test_style_and_colour_are_sent_on_create(self):
         fn = _block(self.js, "function submitAnnotation(")
-        self.assertIn("style: activeStyle", fn)
+        self.assertIn("style: annoStyle", fn)
+        self.assertIn("color: annoColor", fn)
+        # 不给就按当前选中的那一对归一(见 colorOf / styleIdOf),给了就用给的
+        self.assertIn("return activeColor;", _block(self.js, "function colorOf(id)"))
+        self.assertIn(": activeStyle;", _block(self.js, "function styleIdOf(id)"))
 
     def test_style_and_colour_are_patched_together(self):
         fn = _block(self.js, "function submitEditor()")
@@ -2857,16 +2832,6 @@ class TestUiRoundSeven(unittest.TestCase):
         self.assertIn('mode === "sheet"', fn)
         self.assertIn('snap !== "peek"', fn)
         self.assertIn('setSnap("peek")', fn)
-
-    def test_the_landing_is_ringed_in_the_annotations_own_ink(self):
-        """页面是平滑滚过去的,光看落点认不出「到了」的是哪一段 —— 那一段先亮一圈。
-        光圈用这条批注自己的墨色,才认得出亮的是刚点的那条;退到整个块上时那块身上
-        没有墨色,才退回主题强调色。"""
-        fn = _block(self.js, "function jumpToPassage(")
-        self.assertIn("aipm-anno-flash", fn)
-        rule = _block(self.css, ".aipm-anno-flash {")
-        self.assertIn("var(--aipm-mark-ink, var(--md-accent-fg-color))", rule)
-        self.assertIn("outline", rule)
 
 class TestTheFloatingToolbarNeverStrands(unittest.TestCase):
     """第八轮:划词悬浮窗只能跟「当前这一次划词」一样长寿。

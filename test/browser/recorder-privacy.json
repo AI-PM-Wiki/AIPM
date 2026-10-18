@@ -1,0 +1,19 @@
+{
+  "sourceUrl": "https://umami.nvc.ac/recorder.js",
+  "sha256": "21e6312866db01a71841b772c9882333231be1bc3fdbeeac1ed5193794ad80c6",
+  "locations": {
+    "configured": { "line": 1, "column": 190636 },
+    "emit": { "line": 1, "column": 187730 },
+    "transport": { "line": 1, "column": 185094 }
+  },
+  "assertions": ["blocked_before_insertion", "required_scene_insertion_delta_positive", "visible_text_and_aria_unchanged", "local_confirmation_gate", "local_annotation_edit", "local_comment_edit", "local_reply_editor_save_refresh", "existing_local_visibility_round_trip", "new_public_draft_to_local", "redraw", "restore", "incremental_events", "full_snapshot_placeholders", "public_control_recorded", "JSON_payload", "JSON_fragment_reassembly", "duplicate_fragment_rejected", "missing_fragment_rejected", "inconsistent_fragment_total_rejected"],
+  "requiredInsertionScenes": ["annotation_created", "annotation_editor", "annotation_edited", "comment_created", "comment_editor", "comment_edited", "reply_editor", "reply_saved", "redraw", "restore", "refresh_comment_restore", "reply_restored", "authenticated_restore", "existing_local_editor", "new_draft_restore", "new_local_draft_saved"],
+  "requiredEditorInsertionScenes": ["annotation_editor", "comment_editor", "reply_editor", "existing_local_editor", "new_public_draft"],
+  "insertionMethods": ["Node.appendChild", "Node.insertBefore", "Node.replaceChild"],
+  "in_place_scenes": ["existing_local_visibility_0_private", "existing_local_visibility_1_local", "existing_local_visibility_2_public", "existing_local_visibility_3_local", "new_public_draft_to_local"],
+  "native_send": "not_run_session_gate",
+  "sendBeacon": "not_run_no_recorder_call",
+  "XHR": "not_run_no_recorder_call",
+  "gzipBase64": "not_run_no_transport_observed",
+  "independent_review": "pending_release_blocked"
+}
