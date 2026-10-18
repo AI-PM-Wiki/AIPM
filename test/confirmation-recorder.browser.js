@@ -20,7 +20,7 @@ const initial = await page.evaluate(() => {
 });
 assert(initial.sandbox === 'allow-scripts' && initial.document === null, 'opaque origin');
 assert(!initial.parentText.includes(initial.body) && !initial.parentText.includes(initial.quote), 'parent DOM clean');
-await page.click('text="同意并写入"', { label: 'approve isolated local proposal' });
+await page.click('text="确认保存"', { label: 'approve isolated local proposal' });
 await page.waitForFunction(() => {
   const { core, proposal, session, identity } = window.currentConfirmation;
   return core.inspect({ identity, session, requestId: proposal.requestId })?.status === 'succeeded';
