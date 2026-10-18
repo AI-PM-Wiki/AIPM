@@ -102,7 +102,7 @@ export async function checkLocalConfirmation({ directory, taskSpace }) {
     window.__regressionQuote = quote;
     createAgentEntry().mount({ proposal, host });
   }, LOCAL_BODY);
-  await page.waitForSelector(`loc=css:#body:text-is("正文：${LOCAL_BODY}")`, { state: 'visible' });
+  await page.waitForSelector(`loc=css:#body:text-is("${LOCAL_BODY}")`, { state: 'visible' });
   const before = await page.evaluate(() => ({
     trace: window.__confirmationTrace.slice(),
     count: Object.values(JSON.parse(localStorage.getItem('aipm-anno-local') || '{"pages":{}}').pages || {}).flat().length,

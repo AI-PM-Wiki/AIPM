@@ -43,6 +43,8 @@ flowchart LR
 
 [求职黑话合集](jargon.md)、[内推机制](referral.md)与[简历与作品集](resume-portfolio.md)：先听懂 HR 通知和谈薪口径，再准备材料、寻找内推，并把项目经历整理成可验证、可追问的证据。
 
+[字节跳动 2027 校招空宣：AI 产品岗位与求职准备](bytedance-2027-campus-talk.md)：业务负责人与校招生分享的岗位变化、团队选择、个人项目、简历作品集与面试经验。
+
 #### JD 拆解
 
 [JD 拆解](jd-breakdowns/index.md)：一篇文章拆一份真实 JD，逐条还原岗位职责、用户、技术协作、指标、面试信号和投递前需要确认的问题。先用[产品经理岗位类别](product-manager-types/index.md)确定方向，再用具体案例判断某个团队的实际工作范围。

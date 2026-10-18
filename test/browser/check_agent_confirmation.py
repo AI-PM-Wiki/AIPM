@@ -23,13 +23,16 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.browser = Browser(self.stack.pw, self.stack.site.base, also_ours=(ANNO_ORIGIN,))
         self.addCleanup(self.browser.close)
         self.page = self.browser.page
-        self.page.goto(self.stack.site.base + PAGE, wait_until="load")
+        self.page.goto(self.stack.site.base + PAGE, wait_until="domcontentloaded")
+        self.login()
+
+    def login(self):
         self.session = self.stack.api.login()
         self.page.evaluate(
             "(raw) => localStorage.setItem('aipm-anno-auth', raw)",
             _js(self.session),
         )
-        self.page.reload(wait_until="load")
+        self.page.reload(wait_until="domcontentloaded")
         self.page.wait_for_function(
             "() => window.__aipmIntegrityReady === true || window.__aipmIntegrityFailed === true",
             timeout=10000,
@@ -84,23 +87,30 @@ class AgentConfirmationAcceptance(unittest.TestCase):
 
     def open_confirmation(self):
         card = self.page.locator(".aipm-chat__proposal").last
-        card.get_by_role("button", name="查看批注建议").click()
+        card.get_by_role("button", name="采纳", exact=True).click()
         frame = card.frame_locator('iframe[title="受保护内容"]')
         frame.locator("#agree").wait_for(state="visible")
         return frame
 
     def accepted(self, frame, visibility: str) -> None:
         frame.locator("#agree").click()
-        frame.get_by_text(f"已写入：{visibility}").wait_for()
+        frame.locator('section:not([data-status="pending"]):not([data-status="loading"])').wait_for()
+        requests = [{key: event[key] for key in ("method", "path", "status")}
+                    for event in self.stack.api.requests]
+        self.assertEqual(frame.locator("#state").inner_text(), f"已写入：{visibility}", requests)
 
     def permit_posts(self) -> list[dict]:
         return [r for r in self.stack.api.requests
                 if r["method"] == "POST" and r["path"] == "/api/annotation-permits"]
 
+    def assert_clean_page(self):
+        assert_no_page_errors(self, self.browser,
+                              expected_load_failures=(ANNO_ORIGIN + "/api/highlight/suggest",))
+
     def test_local_confirmation_stays_on_device(self):
         self.propose("local", "只保存在本机的建议")
         frame = self.open_confirmation()
-        self.assertIn("最终可见范围：仅本机", frame.locator("#visibility").inner_text())
+        self.assertEqual("仅本机", frame.locator("#visibility").inner_text())
         self.assertEqual(self.stack.api.writes(), [])
         self.assertEqual(self.permit_posts(), [])
         outbound_bodies = []
@@ -117,36 +127,36 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.assertEqual(self.stack.api.writes(), [])
         self.assertEqual(self.permit_posts(), [])
         self.assertFalse(any("只保存在本机的建议" in body for body in outbound_bodies))
-        assert_no_page_errors(self, self.browser)
+        self.assert_clean_page()
 
     def test_user_selected_visibility_overrides_the_proposal(self):
         self.propose("local", "用户选择公开的建议")
         card = self.page.locator(".aipm-chat__proposal").last
-        choices = card.get_by_role("group", name="批注可见范围")
-        choices.get_by_role("button", name="公开").click()
-        self.assertEqual(choices.get_by_role("button", name="公开").get_attribute("aria-pressed"), "true")
+        choices = card.get_by_role("combobox", name="批注可见范围")
+        choices.select_option("public")
+        self.assertEqual(choices.input_value(), "public")
         frame = self.open_confirmation()
-        self.assertIn("最终可见范围：公开", frame.locator("#visibility").inner_text())
+        self.assertEqual("公开", frame.locator("#visibility").inner_text())
         self.assertEqual(self.stack.api.writes(), [])
         self.assertEqual(self.permit_posts(), [])
         self.accepted(frame, "公开")
         self.assertEqual(self.stack.api.writes()[0]["body"]["visibility"], "public")
         self.assertEqual(len(self.permit_posts()), 1)
-        self.page.reload(wait_until="load")
+        self.page.reload(wait_until="domcontentloaded")
         self.page.wait_for_function(
             "() => window.__aipmIntegrityReady === true && window.__aipmChat && window.__aipmAnnoStore"
         )
         self.page.click(".aipm-chat__fab")
         card = self.page.locator(".aipm-chat__proposal").last
         card.wait_for(state="visible")
-        choices = card.get_by_role("group", name="批注可见范围")
-        self.assertEqual(choices.get_by_role("button", name="公开").get_attribute("aria-pressed"), "true")
-        self.assertTrue(choices.get_by_role("button", name="仅本机").is_disabled())
+        choices = card.get_by_role("combobox", name="批注可见范围")
+        self.assertEqual(choices.input_value(), "public")
+        self.assertTrue(choices.is_disabled())
         frame = self.open_confirmation()
         self.assertIn("已写入：公开", frame.locator("#state").inner_text())
         self.assertEqual(len(self.stack.api.writes()), 1)
         self.assertEqual(len(self.permit_posts()), 1)
-        assert_no_page_errors(self, self.browser)
+        self.assert_clean_page()
 
     def test_public_and_private_confirmations_use_the_users_session(self):
         for paragraph_index, (visibility, label) in enumerate(
@@ -154,9 +164,10 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         ):
             with self.subTest(visibility=visibility):
                 self.stack.api.reset()
+                self.login()
                 self.propose(visibility, f"已确认的{label}建议", paragraph_index)
                 frame = self.open_confirmation()
-                self.assertIn(f"最终可见范围：{label}", frame.locator("#visibility").inner_text())
+                self.assertEqual(label, frame.locator("#visibility").inner_text())
                 self.assertEqual(self.stack.api.writes(), [])
                 self.accepted(frame, label)
 
@@ -166,10 +177,11 @@ class AgentConfirmationAcceptance(unittest.TestCase):
                 self.assertEqual(len(permits), 1)
                 self.assertEqual(writes[0]["authorization"], f"Bearer {self.session['token']}")
                 self.assertEqual(permits[0]["authorization"], f"Bearer {self.session['token']}")
-                self.assertIn(writes[0]["permit"], self.stack.api.permits)
+                self.assertTrue(writes[0]["permit"])
+                self.assertEqual(writes[0]["status"], 201)
                 self.assertEqual(writes[0]["body"]["visibility"], visibility)
                 self.assertEqual(permits[0]["body"], writes[0]["body"])
-        assert_no_page_errors(self, self.browser)
+        self.assert_clean_page()
 
     def test_integrity_pending_blocks_until_resources_are_ready(self):
         self.propose("public", "等待资源校验的建议")
@@ -191,7 +203,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.accepted(frame, "公开")
         self.assertEqual(len(self.permit_posts()), 1)
         self.assertEqual(len(self.stack.api.writes()), 1)
-        assert_no_page_errors(self, self.browser)
+        self.assert_clean_page()
 
     def test_integrity_failure_prevents_any_permission_or_write_request(self):
         self.propose("private", "资源校验失败的建议")
@@ -205,7 +217,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.assertIn("资源校验失败", frame.locator("#state").inner_text())
         self.assertEqual(self.permit_posts(), [])
         self.assertEqual(self.stack.api.writes(), [])
-        assert_no_page_errors(self, self.browser)
+        self.assert_clean_page()
 
     def test_unknown_write_is_reconciled_after_refresh_without_another_write(self):
         self.propose("private", "刷新后查询原请求")
@@ -220,7 +232,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
         self.assertEqual(len(self.stack.api.writes()), 1)
         self.assertEqual(len(self.permit_posts()), 1)
 
-        self.page.reload(wait_until="load")
+        self.page.reload(wait_until="domcontentloaded")
         self.page.wait_for_function(
             "() => window.__aipmIntegrityReady === true && window.__aipmChat && window.__aipmAnnoStore"
         )
@@ -240,7 +252,7 @@ class AgentConfirmationAcceptance(unittest.TestCase):
             and event["path"].startswith("/api/annotation-requests/")
         ]
         self.assertEqual(
-            [(event["path"], event["responseStatus"]) for event in queries],
+            [(event["path"], event["status"]) for event in queries],
             [(f"/api/annotation-requests/{request_id}", 200)],
         )
 

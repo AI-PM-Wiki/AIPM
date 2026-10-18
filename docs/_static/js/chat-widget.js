@@ -37,8 +37,8 @@
     条目显示在输入框上方的语境条里,随下一次提问以 body.context 发出。条目的构造与
     去重在 context-item.js(同一条来源连着送两次只有一条),「仅本机」的批注在那里
     就不会成为语境。发送后清空输入区语境,已发送消息保留对应语境供查看与重新生成。
-  - 批注建议(反方向:助手 → 批注):SSE 建议只生成不含正文的入口;
-    用户在隔离确认界面同意后由批注会话执行。
+  - 批注建议(反方向:助手 → 批注):隔离预览呈现引文与正文;
+    用户选择可见范围并在确认界面同意后由批注会话执行。
   - FAB 可拖拽(issue #72):外观与位置一律照旧,加的只是交互。锚点在 CSS
     (right/bottom),JS 只写 transform,所以「松手回原位」= 清掉 inline transform
     交回 CSS 过渡 —— JS 不需要知道锚点在哪,锚点被别的面板改(批注面板停靠时让位,
@@ -116,7 +116,10 @@
     return;
   }
 
-  const { createAgentEntry } = await import('./annotation-agent-entry.js?v=46').catch((error) => {
+  const [{ createAgentEntry }, { createConfirmationView }] = await Promise.all([
+    import('./annotation-agent-entry.js?v=46'),
+    import('./annotation-confirm-view.js?v=46')
+  ]).catch((error) => {
     window.__aipmIntegrityFailed = true;
     window.__aipmIntegrityReady = false;
     window.dispatchEvent(new Event('aipm-integrity-change'));
@@ -949,6 +952,7 @@
     typeof p.id === "string" && p.id !== "" &&
     typeof p.page === "string" &&
     typeof p.quote === "string" &&
+    typeof p.body === "string" &&
     (p.scope === "text" || p.scope === "page") &&
     PROPOSAL_VISIBILITIES.includes(p.visibility);
 
@@ -959,62 +963,82 @@
     }
     const protectedCard = document.createElement('div');
     protectedCard.className = 'aipm-chat__proposal';
-    const heading = document.createElement('strong');
-    heading.className = 'aipm-chat__proposal-head';
-    heading.textContent = '批注建议';
-    protectedCard.appendChild(heading);
+    const previewHost = document.createElement('div');
+    previewHost.className = 'aipm-chat__proposal-preview';
+    protectedCard.append(previewHost);
+    const preview = createConfirmationView(previewHost, null, { preview: true,
+      onLocate: () => {
+        notice.textContent = '';
+        if (!window.__aipmAnno.jumpToQuote(proposal)) {
+          notice.textContent = proposal.page !== location.pathname
+            ? '请在草稿所属页面定位原文。' : '未找到对应原文，页面内容可能已更新。';
+          return;
+        }
+        if (mode === 'sheet') {
+          setSnap('peek');
+          els.grip.focus({ preventScroll: true });
+        }
+        else if (mode === 'overlay') closePanel();
+      } });
+    preview.update({ title: proposal.scope === 'page' ? '评论草稿' : '批注草稿',
+      target: proposal.scope === 'text' ? proposal.quote : '', body: proposal.body,
+      color: proposal.color ?? 'yellow', style: proposal.style ?? 'highlight' });
     const choice = proposalEntry.visibilityChoice(proposal);
     let selectedVisibility = choice.visibility;
     let choiceLocked = choice.locked;
-    const choices = document.createElement('div');
+    const footer = document.createElement('div');
+    footer.className = 'aipm-chat__proposal-foot';
+    const choices = document.createElement('select');
     choices.className = 'aipm-chat__proposal-vis';
-    choices.setAttribute('role', 'group');
     choices.setAttribute('aria-label', '批注可见范围');
-    const visButtons = [
+    choices.disabled = choiceLocked;
+    for (const { visibility, label } of [
       { visibility: 'local', label: '仅本机' },
-      { visibility: 'private', label: '仅自己可见' },
+      { visibility: 'private', label: '私有' },
       { visibility: 'public', label: '公开' }
-    ].map(({ visibility, label }) => {
-      const button = document.createElement('button');
-      button.className = 'aipm-chat__proposal-visbtn';
-      button.type = 'button';
-      button.textContent = label;
-      button.disabled = choiceLocked;
-      button.setAttribute('aria-pressed', String(selectedVisibility === visibility));
-      button.addEventListener('click', (event) => {
-        if (!event.isTrusted || open.disabled || choiceLocked) return;
-        proposalEntry.chooseVisibility(proposal, visibility);
-        selectedVisibility = visibility;
-        for (const item of visButtons) {
-          item.setAttribute('aria-pressed', String(item === button));
-        }
-      });
-      return button;
+    ]) {
+      const option = document.createElement('option');
+      option.value = visibility;
+      option.textContent = label;
+      choices.append(option);
+    }
+    choices.value = selectedVisibility;
+    choices.addEventListener('change', () => {
+      if (open.disabled || choiceLocked) {
+        choices.value = selectedVisibility;
+        return;
+      }
+      proposalEntry.chooseVisibility(proposal, choices.value);
+      selectedVisibility = choices.value;
     });
-    choices.append(...visButtons);
     const open = document.createElement('button');
     open.className = 'aipm-chat__proposal-accept';
     open.type = 'button';
-    open.textContent = '查看批注建议';
+    open.textContent = '采纳';
     const notice = document.createElement('span');
     notice.className = 'aipm-chat__proposal-state';
     notice.setAttribute('role', 'status');
     notice.setAttribute('aria-live', 'polite');
-    protectedCard.append(choices, open, notice);
+    footer.append(choices, open);
+    protectedCard.append(footer, notice);
     wrap.appendChild(protectedCard);
     open.addEventListener('click', async (event) => {
       if (!event.isTrusted || open.disabled) return;
+      selectedVisibility = choices.value;
       proposalEntry.chooseVisibility(proposal, selectedVisibility, { lock: true });
       choiceLocked = true;
       protectedCard.dataset.state = 'loading';
       notice.textContent = '正在打开确认界面…';
       open.disabled = true;
-      for (const button of visButtons) button.disabled = true;
+      choices.disabled = true;
       const submittedVisibility = selectedVisibility;
       const chosenProposal = { ...proposal, visibility: submittedVisibility };
       const entry = proposalEntry;
       try {
         const frame = entry.mount({ proposal: chosenProposal, historical, host: protectedCard });
+        preview.dispose();
+        previewHost.remove();
+        footer.hidden = true;
         frame.addEventListener('load', () => frame.focus(), { once: true });
         notice.textContent = '';
       } catch (error) {
@@ -1721,7 +1745,7 @@
     /* 遮罩态焦点不逸出面板(浮层 / 抽屉半开、近全屏) */
     if (e.key !== "Tab" || !locked()) return;
     const items = panel.querySelectorAll(
-      'button:not([disabled]), textarea, input:not([type="hidden"]), a[href], [tabindex]:not([tabindex="-1"])');
+      'button:not([disabled]), select:not([disabled]), textarea, input:not([type="hidden"]), a[href], [tabindex]:not([tabindex="-1"])');
     if (!items.length) return;
     const first = items[0];
     const last = items[items.length - 1];

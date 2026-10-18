@@ -20,7 +20,7 @@ const initial = await page.evaluate(() => {
 });
 assert(initial.sandbox === 'allow-scripts' && initial.document === null, 'opaque origin');
 assert(!initial.parentText.includes(initial.body) && !initial.parentText.includes(initial.quote), 'parent DOM clean');
-await page.click('text="同意并写入"', { label: 'approve isolated local proposal' });
+await page.click('text="确认保存"', { label: 'approve isolated local proposal' });
 await page.waitForFunction(() => {
   const { core, proposal, session, identity } = window.currentConfirmation;
   return core.inspect({ identity, session, requestId: proposal.requestId })?.status === 'succeeded';
@@ -40,7 +40,7 @@ assert(rows.length > 0, 'real recorder sent payload');
 assert(rows.some((row) => row.payload.events.some((event) => event.type === 2)), 'full snapshot');
 assert(rows.some((row) => row.payload.events.some((event) => event.type === 3)), 'incremental snapshot');
 for (const marker of [initial.body, initial.quote, next.body, next.quote,
-  '最终可见范围：仅本机', '已写入：仅本机', final.annotationId]) {
+  '仅本机', '已写入：仅本机', final.annotationId]) {
   assert(!captured.includes(marker), `recorder leaked ${marker}`);
 }
 console.log({ rows: rows.length, types: [...new Set(rows.flatMap((row) => row.payload.events.map((event) => event.type)))],

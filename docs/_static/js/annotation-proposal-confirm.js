@@ -43,11 +43,14 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
     if (trusted && actions[action]) actions[action]({ isTrusted: true });
   });
   view.update({
-    target: `目标：${request.page}${request.scope === 'text' ? ` · 引文：${request.quote}` : ' · 整篇文章'}`,
-    body: `正文：${request.body}`,
-    visibility: `最终可见范围：${LABELS[request.visibility]}`
+    title: request.scope === 'page' ? '保存评论' : '保存批注',
+    target: request.scope === 'text' ? request.quote : '', body: request.body,
+    visibility: LABELS[request.visibility], color: request.color, style: request.style
   });
-  function setState(state, status = 'pending') { view.update({ state, status }); }
+  function setState(state, status = 'pending') {
+    view.update({ state, status, notice: status === 'loading'
+      ? '取消只能停止后续发送；已经到达服务的请求无法撤回。' : '' });
+  }
   function announceChange() {
     window.dispatchEvent(new CustomEvent(request.visibility === 'local'
       ? 'aipm-annotation-local-change' : 'aipm-annotation-remote-change', {

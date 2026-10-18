@@ -40,9 +40,9 @@ const network = (latency) => page.cdp('Network.emulateNetworkConditions', {
 const unknown = () => page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"');
 
 const before = await page.evaluate(() => window.prepareConfirmation('private'));
-await page.waitForSelector('text="同意并写入"');
+await page.waitForSelector('text="确认保存"');
 await fill();
-await page.click('text="同意并写入"', { label: 'approve when storage is full' });
+await page.click('text="确认保存"', { label: 'approve when storage is full' });
 await unknown();
 const blocked = await inspect();
 assert(blocked.requestId === before.requestId && blocked.record === null && blocked.posts === 0,
@@ -51,9 +51,9 @@ assert((await receipt(before.requestId)).status === 404, 'no server operation be
 await release();
 
 const after = await prepare();
-await page.waitForSelector('text="同意并写入"');
+await page.waitForSelector('text="确认保存"');
 await network(2500);
-await page.click('text="同意并写入"', { label: 'approve delayed original write' });
+await page.click('text="确认保存"', { label: 'approve delayed original write' });
 await page.waitForFunction(() => {
   const { core, identity, session, proposal } = window.currentConfirmation;
   return core.inspect({ identity, session, requestId: proposal.requestId })?.status === 'executing';
@@ -78,9 +78,9 @@ assert(restored.record.annotationId === saved.body.operation.annotationId &&
   restored.record.permits[0].used && restored.posts === 1, 'read-only query restores success');
 
 const refreshed = await prepare();
-await page.waitForSelector('text="同意并写入"');
+await page.waitForSelector('text="确认保存"');
 await network(2500);
-await page.click('text="同意并写入"', { label: 'approve refresh recovery request' });
+await page.click('text="确认保存"', { label: 'approve refresh recovery request' });
 await page.waitForFunction(() => {
   const { core, identity, session, proposal } = window.currentConfirmation;
   return core.inspect({ identity, session, requestId: proposal.requestId })?.status === 'executing';

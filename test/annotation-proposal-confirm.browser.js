@@ -37,7 +37,7 @@ const prepare = async (visibility, options = {}) => {
     session: `session-${requestId}` };
   return { requestId, identity: window.__confirmCase.identity };
 }, { visibility, options });
-  await page.waitForSelector('text="同意并写入"');
+  await page.waitForSelector('text="确认保存"');
   return { ...result, visible: await page.snapshot({ scope: 'full_page' }) };
 };
 
@@ -60,9 +60,9 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 const logged = [];
 
 let target = await prepare('private');
-assert(target.visible.includes('目标：') && target.visible.includes('正文：') &&
-  target.visible.includes('最终可见范围：仅自己可见') &&
-  target.visible.includes('同意并写入'), 'visible consent details');
+assert(target.visible.includes(`verification ${target.requestId}`) && target.visible.includes('保存评论') &&
+  target.visible.includes('仅自己可见') &&
+  target.visible.includes('确认保存'), 'visible consent details');
 assert((await inspect()).record === null, 'display does not grant');
 await page.evaluate(() => window.__confirmCase.card.click());
 assert((await inspect()).record === null, 'scripted click is not user consent');
@@ -77,7 +77,7 @@ await clear();
 target = await prepare('private');
 const before = (await inspect()).requests;
 try {
-  await page.dblclick('text="同意并写入"', { label: 'approve proposal twice' });
+  await page.dblclick('text="确认保存"', { label: 'approve proposal twice' });
 } catch (error) {
   if (!String(error).includes('element is disabled')) throw error;
 }
@@ -95,7 +95,7 @@ await clear();
 
 target = await prepare('private');
 await page.evaluate(() => window.__aipmAnnoAuth.forget());
-await page.click('text="同意并写入"', { label: 'reject stale identity' });
+await page.click('text="确认保存"', { label: 'reject stale identity' });
 outcome = await inspect();
 assert(outcome.record === null && outcome.state.includes('未写入'), 'stale identity no permission');
 logged.push({ scenario: 'expired session', result: outcome.state });
@@ -104,7 +104,7 @@ await clear();
 target = await prepare('local');
 const outgoingBefore = (await inspect()).requests;
 const externalBefore = (await inspect()).external;
-await page.click('text="同意并写入"', { label: 'approve local proposal' });
+await page.click('text="确认保存"', { label: 'approve local proposal' });
 await page.waitForSelector('text="已写入：仅本机"');
 outcome = await inspect();
 assert(outcome.record.status === 'succeeded' && outgoingBefore === outcome.requests &&
@@ -131,7 +131,7 @@ target = await prepare('private');
 await page.cdp('Network.enable');
 await page.cdp('Network.emulateNetworkConditions', { offline: true, latency: 0,
   downloadThroughput: 0, uploadThroughput: 0 });
-await page.click('text="同意并写入"', { label: 'approve while offline' });
+await page.click('text="确认保存"', { label: 'approve while offline' });
 await page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"');
 outcome = await inspect();
 assert(outcome.record.status === 'unknown' && outcome.record.permits[0].used === true,
@@ -150,7 +150,7 @@ const quota = await page.evaluate(() => {
   localStorage.setItem('aipm-confirm-quota', 'x'.repeat(5_242_880 - existing - 100));
   return existing;
 });
-await page.click('text="同意并写入"', { label: 'reject storage exhaustion' });
+await page.click('text="确认保存"', { label: 'reject storage exhaustion' });
 await page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"');
 outcome = await inspect();
 assert(outcome.record === null && outcome.requests === baseline, 'storage failure stops before sending');
@@ -159,7 +159,7 @@ logged.push({ scenario: 'real storage quota', priorBytes: quota, result: outcome
 await clear();
 
 target = await prepare('private', { style: 'not-a-valid-style' });
-await page.click('text="同意并写入"', { label: 'observe rejected server write' });
+await page.click('text="确认保存"', { label: 'observe rejected server write' });
 await page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"');
 outcome = await inspect();
 assert(outcome.record.status === 'unknown', 'rejected response does not certify success');
@@ -172,7 +172,7 @@ await clear();
 target = await prepare('private');
 await page.cdp('Network.emulateNetworkConditions', { offline: false, latency: 2500,
   downloadThroughput: -1, uploadThroughput: -1 });
-await page.click('text="同意并写入"', { label: 'send then revoke identity' });
+await page.click('text="确认保存"', { label: 'send then revoke identity' });
 await page.waitForSelector('text="写入中…"');
 await page.evaluate(() => window.__aipmAnnoAuth.forget());
 await page.waitForSelector('text="结果未知；只能查询原请求，不能再次提交。"', { timeout: 12000 });
