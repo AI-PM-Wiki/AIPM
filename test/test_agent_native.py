@@ -328,7 +328,7 @@ class TestServerAcceptsContext(unittest.TestCase):
         """图表是第三种 kind:字段、枚举与长度都要与前端同源。"""
         item = self.srv[self.srv.index("const ContextItemSchema") :]
         item = item[: item.index("const ChatBodySchema")]
-        self.assertIn("z.enum(['selection', 'annotation', 'chart'])", _squash(item))
+        self.assertIn("z.enum(['selection', 'annotation', 'chart', 'summary'])", _squash(item))
         self.assertIn("chart: z.enum(['', ...CHART_KINDS]).default('')", _squash(item))
         self.assertIn("source: z.string().max(CONTEXT_LIMITS.source).default('')", _squash(item))
         self.assertIn("source: 4000", self.ctx, "CONTEXT_LIMITS 缺 source")

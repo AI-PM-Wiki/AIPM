@@ -15,6 +15,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
+import xml.etree.ElementTree as ET
 
 from annotation_service import RealAnnotationApi
 from harness import StaticSite, free_port
@@ -24,6 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--site', type=Path, required=True)
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--cache-from', type=Path)
+parser.add_argument('--concurrency', type=int, default=4)
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[2]
 output = args.output.resolve()
@@ -36,6 +39,13 @@ model = RealModel()
 resources.callback(model.close)
 site = StaticSite(args.site.resolve())
 resources.callback(site.close)
+sitemap_path = site.root / 'sitemap.xml'
+sitemap = ET.parse(sitemap_path)
+namespace = 'http://www.sitemaps.org/schemas/sitemap/0.9'
+for location in sitemap.iterfind(f'.//{{{namespace}}}loc'):
+    location.text = site.base + urlsplit(location.text).path
+ET.register_namespace('', namespace)
+sitemap.write(sitemap_path, encoding='utf-8', xml_declaration=True)
 for name in list(os.environ):
     if name.startswith(('ANTHROPIC_', 'AIPM_REAL_', 'TYPESAFE_', 'GITHUB_')):
         del os.environ[name]
@@ -51,6 +61,7 @@ env.update(HOST='127.0.0.1', PORT=str(port), SITE_BASE=site.base, ALLOWED_ORIGIN
            SUMMARY_MODEL=model.name, SUMMARY_CACHE_DIR=str(output / 'summaries'),
            ANTHROPIC_API_KEY=model.api_key, ANTHROPIC_BASE_URL=model.base,
            MAX_BUDGET_USD='0', DAILY_BUDGET_USD='0', MAX_TURNS='8', RATE_LIMIT_MAX='200',
+           CONCURRENCY_LIMIT=str(args.concurrency), MAX_RUN_MS='180000',
            ANNOTATION_API_BASE=annotation.base, SCRATCH_DIR=str(output / 'scratch'),
            TMPDIR=str(output), CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC='1')
 agent = None
@@ -144,6 +155,8 @@ class Control(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         payload = json.dumps({'modelRequests': len(model.messages()), 'responses': model.responses,
                               'summaryInFollowup': any(summary['reading']['sections'][-1]['explanation'] in
+                                  json.dumps(message['body'], ensure_ascii=False) for message in model.messages()),
+                              'summaryTopicsInFollowup': any('用户选择的 AI 总结主题' in
                                   json.dumps(message['body'], ensure_ascii=False) for message in model.messages()),
                               'summary': summary, 'http': results}).encode('utf-8')
         self.send_response(200)

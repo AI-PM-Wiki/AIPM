@@ -45,6 +45,10 @@ TMPDIR="$PWD/meta/browser/summary-runtime" node --import ./agent-server/node_mod
 
 `check_article_summary_ui_ego.mjs` 的 `checkArticleSummaryUi` 使用相同参数与任务空间，检查八组宽度／主题下的独立停靠、平板浮层、手机抽屉、导图全屏、主题要点展开与收起、键盘焦点、图标缩放控件、随内容滚动的讨论入口及标签滚动位置。宽度调整检查覆盖鼠标、键盘、320–640px 边界、视口变化、刷新记忆和三个面板之间的共享宽度。结果保存在 `ui-results.json`，并保存桌面与移动端的精读截图。
 
+助手联动使用同一套真实服务，启动时添加 `--concurrency 1`。通过 ego-browser 调用 `check_summary_agent_ego.mjs` 的 `checkSummaryAgent({directory, taskSpace, spaceId, phase})`，依次运行 `mindmap`、`reading`、`sources`、`pointer`、`topics`、`navigation`、`uncached`，全程复用同一任务空间。检查覆盖模型调用对应视图、检索来源与总结同时展示、回答文本持续生成、刷新恢复、1280／390／320 宽度下的指针与键盘主题选择、重复主题去重、语境发送给真实模型、导航清理，以及单个并发名额下首次生成另一篇文章的总结。各阶段保存为 `agent-<phase>.json`。
+
+`agent-server/src/summary-tool-check.ts` 通过真实 MCP 传输调用工具，验证已生成缓存的两个视图、缺少当前文章、非法视图、取消，以及主题的服务端语境校验。参数依次为构建索引路径、上述验收目录和已授权的模型环境文件。只提供索引路径时检查工具清单与不可用提示。
+
 结束后向 `runtime-config.json` 的 `control` 地址追加 `/stop` 发送 POST，并对同一浏览器任务空间执行 `task.finish({ keep: [] })`。`--cache-from <已有 summaries 目录>` 可以验收已有真实缓存；该运行在报告中记录实际生成次数和 `warmCache`。
 
 ## 端口与数据
@@ -53,6 +57,7 @@ TMPDIR="$PWD/meta/browser/summary-runtime" node --import ./agent-server/node_mod
 
 | 环境变量 | 用途 |
 | --- | --- |
+| `AIPM_TEST_WORK_DIR` | 浏览器组的独立工作目录，缺省为仓库内的 `meta/browser`；同时运行多组检查时分别指定 |
 | `AIPM_TEST_AGENT_PORT` | Agent 服务 |
 | `AIPM_TEST_ANNOTATION_PORT` | 批注请求记录代理 |
 | `AIPM_TEST_MODEL_PROXY_PORT` | 模型请求记录代理 |

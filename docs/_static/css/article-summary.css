@@ -498,6 +498,13 @@
   font-weight: 500;
 }
 
+.aipm-summary__topic-discuss {
+  margin-top: 0.6rem;
+  font-size: 0.65rem;
+  min-height: 2.2rem;
+  color: var(--md-default-fg-color--light);
+}
+
 .aipm-summary__discuss > .aipm-summary__icon:last-child {
   margin-inline-start: auto;
 }

@@ -309,6 +309,7 @@
      会话状态与持久化
      ================================================================ */
   const history = [];       // [{role, content}] 内存态,与 localStorage 同步
+  const summaryViews = new WeakMap();
   let streaming = null;     // { ac: AbortController }
   let turnSeq = 0;          // turn 级令牌:runTurn 捕获自增值;清空/新 turn 使在飞 turn 失效
   let attachments = [];     // [{name, size, type}] 纯 UI 附件
@@ -347,7 +348,10 @@
       for (const m of arr.slice(-HISTORY_MAX))
         if (m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string") {
           const rec = { role: m.role, content: m.content };
-          if (m.role === 'assistant' && window.__aipmSummary.isSummary(m.summary)) rec.summary = m.summary;
+          if (m.role === 'assistant' && window.__aipmSummary.isSummary(m.summary)) {
+            rec.summary = m.summary;
+            rec.summaryView = m.summaryView === 'reading' ? 'reading' : 'mindmap';
+          }
           /* 语境随用户消息一起恢复:重新生成那一轮时要按原样重发,
              少了它就会答成另一个问题 */
           if (m.role === "user") {
@@ -359,9 +363,9 @@
           else if (Array.isArray(m.proposals)) {
             const kept = m.proposals.filter(isProposalShaped);
             if (kept.length) rec.proposals = kept;
-            if (['pending', 'done', 'error'].includes(m.terminal)) rec.terminal = m.terminal;
-            if (typeof m.errorCode === 'string') rec.errorCode = m.errorCode.slice(0, 64);
           }
+          if (m.role === 'assistant' && ['pending', 'done', 'error'].includes(m.terminal)) rec.terminal = m.terminal;
+          if (typeof m.errorCode === 'string') rec.errorCode = m.errorCode.slice(0, 64);
           history.push(rec);
         }
     } catch (e) { /* 坏数据直接忽略 */ }
@@ -1091,8 +1095,8 @@
      这里只负责 AI 气泡与流式接收。context 是这一轮随行的语境条目。 */
   const runTurn = async (message, context, page) => {
     const myTurn = ++turnSeq;             // 捕获本 turn 令牌:清空/新 turn 后本 turn 失效
-    const ctx = { acc: "", sourceList: [], sourceSeen: new Set(), requestId: null, proposals: [] };
     const t = addAiBubble();
+    const ctx = { acc: "", sources: t.sources, sourceList: [], sourceSeen: new Set(), requestId: null, proposals: [], summary: null };
     let finished = false;                 // 收尾只执行一次(done/error/流自然结束)
     setThinking(t.md);
     setStreamingUI(true);
@@ -1128,6 +1132,7 @@
         t.wrap.setAttribute('data-hidx', history.length - 1);
       }
       Object.assign(retained, { content, terminal, errorCode,
+        summary: ctx.summary || undefined,
         proposals: ctx.proposals.length ? ctx.proposals : undefined });
       persist();
     };
@@ -1135,7 +1140,7 @@
       if (finished) return;
       finished = true;
       const stale = myTurn !== turnSeq;
-      if (!stale && (assistantText || ctx.proposals.length)) {
+      if (!stale && (assistantText || ctx.proposals.length || ctx.summary)) {
         retainProposalTurn(assistantText ?? ctx.acc, assistantText === null ? 'error' : 'done',
           assistantText === null ? errorCode : undefined);
       }
@@ -1190,6 +1195,7 @@
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       const feed = parseSse((event, data) => {
+        if (myTurn !== turnSeq || finished) return;
         switch (event) {
           case "ready":
             ctx.requestId = data.requestId || null;
@@ -1202,6 +1208,19 @@
               }
             }
             renderSources(ctx);
+            break;
+          case "summary":
+            if (requestSignal.aborted || !window.__aipmSummary.isSummary(data.summary) ||
+                data.summary.page !== page || !['mindmap', 'reading'].includes(data.view)) {
+              throw new Error('invalid article summary event');
+            }
+            ctx.summary = data.summary;
+            retainProposalTurn(ctx.acc, 'pending');
+            retained.summaryView = data.view;
+            persist();
+            t.md.innerHTML = ctx.acc ? mdLite(ctx.acc) : '';
+            renderSummary(t, retained);
+            scrollBottom(false);
             break;
           case "proposal":
             /* 一条待确认的批注建议。形状过不了的直接不渲染 —— 采纳那一步在批注
@@ -1394,6 +1413,7 @@
       const expanded = expandedCtx.has(item.id);
       const category = item.kind === "annotation" ? "批注"
         : item.kind === "selection" ? "选中文字"
+        : item.kind === "summary" ? "AI 总结主题"
         : { mermaid: "Mermaid 图", svg: "SVG 图", image: "图片" }[item.chart];
       const chip = document.createElement("span");
       chip.className = "aipm-chat__ctx-chip";
@@ -1776,9 +1796,8 @@
         wrap.setAttribute("data-hidx", i);
       } else {
         const t = addAiBubble();
-        if (m.summary) {
-          window.__aipmSummary.createView({ host: t.md, navigate: navigateSummary }).setData(m.summary);
-        } else t.md.innerHTML = mdLite(m.content);
+        if (!m.summary || m.terminal) t.md.innerHTML = mdLite(m.content);
+        if (m.summary) renderSummary(t, m);
         if (m.terminal === 'error' || m.terminal === 'pending') {
           t.bubble.classList.add('is-error');
           const message = ERROR_TEXT[m.errorCode] || '回答未完成，批注建议仍需手动确认。';
@@ -1829,15 +1848,52 @@
     location.assign(page + (anchor ? '#' + encodeURIComponent(anchor) : ''));
   }
 
+  function renderSummary(turn, record) {
+    summaryViews.get(record)?.dispose();
+    const host = document.createElement('div');
+    host.className = 'aipm-chat__summary';
+    turn.bubble.querySelector('.aipm-chat__summary')?.remove();
+    turn.md.after(host);
+    const view = window.__aipmSummary.createView({
+      host, navigate: navigateSummary, view: record.summaryView,
+      onViewChange: selected => { record.summaryView = selected; persist(); },
+      continueChat: (summary, selection) => {
+        const result = window.__aipmChat.openSummary(summary, selection);
+        if (!result.ok) view.setError(result.message);
+      },
+    });
+    view.setData(record.summary);
+    summaryViews.set(record, view);
+  }
+
   window.__aipmChat = {
-    openSummary: (summary) => {
+    openSummary: (summary, selection = { view: 'mindmap' }) => {
       if (!window.__aipmSummary.isSummary(summary) || summary.page !== location.pathname) {
         return { ok: false, message: '总结对应的文章已经变化，请重新打开总结。' };
       }
       if (streaming) return { ok: false, message: '请等待当前回答结束后继续讨论。' };
+      if (!selection || !['mindmap', 'reading'].includes(selection.view)) {
+        return { ok: false, message: '请选择思维导图或 AI 精读。' };
+      }
+      if (selection.index !== undefined) {
+        const entries = selection.view === 'mindmap' ? summary.mindmap.branches : summary.reading.sections;
+        if (!Number.isInteger(selection.index) || !entries[selection.index]) {
+          return { ok: false, message: '所选主题不存在，请重新选择。' };
+        }
+        const entry = entries[selection.index];
+        const source = selection.view === 'mindmap'
+          ? ['思维导图主题：' + entry.label, '原文章节：#' + entry.anchor, ...entry.points].join('\n')
+          : ['AI 精读主题：' + entry.heading, '原文章节：#' + entry.anchor, entry.explanation, ...entry.takeaways].join('\n');
+        const topic = CTX.forSummary({ page: summary.page, title: summary.title, source,
+          key: summary.revision + ':' + selection.view + ':' + selection.index });
+        const result = CTX.upsert(pendingCtx, topic);
+        if (!result.ok) return { ok: false, message: '语境数量已达上限，请移除部分语境后重试。' };
+        pendingCtx = result.items;
+        renderCtx();
+      }
       const content = window.__aipmSummary.contextText(summary);
-      const last = history[history.length - 1];
-      if (last?.summary?.revision !== summary.revision) {
+      let record = history.findLast(turn => turn.summary?.revision === summary.revision && turn.summary.page === summary.page);
+      if (!record) {
         clearEmpty();
         const message = '一起阅读《' + summary.title + '》的 AI 总结。';
         const user = addUserBubble(message, [], []);
@@ -1845,11 +1901,13 @@
         history.push({ role: 'user', content: message, page: summary.page });
         const t = addAiBubble();
         t.wrap.setAttribute('data-hidx', history.length);
-        window.__aipmSummary.createView({ host: t.md, navigate: navigateSummary }).setData(summary);
-        history.push({ role: 'assistant', content, summary });
+        record = { role: 'assistant', content, summary, summaryView: selection.view };
+        history.push(record);
+        renderSummary(t, record);
         showActions(t, content);
         persist();
       }
+      summaryViews.get(record).selectView(selection.view);
       SHARED.claim('chat');
       raiseForSend();
       els.input.focus();
