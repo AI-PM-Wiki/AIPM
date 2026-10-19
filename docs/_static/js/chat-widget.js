@@ -395,23 +395,37 @@
   };
 
   /* 空态:欢迎语 + 可点的建议问题 */
-  const SUGGESTIONS = ["这个网站是做什么的?", "什么是 RAG?", "如何准备产品经理面试?"];
+  const SUGGESTIONS = [
+    { label: "认识 AI-PM", question: "这个网站是做什么的？" },
+    { label: "理解 AI 概念", question: "什么是 RAG？" },
+    { label: "准备求职面试", question: "如何准备产品经理面试？" }
+  ];
 
   const ensureEmpty = () => {
     if (els.msgs.querySelector(".aipm-chat__empty")) return;
     const d = document.createElement("div");
     d.className = "aipm-chat__empty";
     d.innerHTML =
-      '<div class="aipm-chat__empty-icon">' + SPARK_ICON + "</div>" +
-      '<p class="aipm-chat__empty-text">你好,我是 AI-PM 文档助手,<br>可以回答站内文档相关的问题。</p>' +
-      '<div class="aipm-chat__suggest">' +
-        SUGGESTIONS.map((s) =>
-          `<button type="button" class="aipm-chat__suggest-btn">${escapeHtml(s)}</button>`).join("") +
+      '<div class="aipm-chat__welcome">' +
+        '<div class="aipm-chat__empty-icon">' + SPARK_ICON + "</div>" +
+        '<p class="aipm-chat__empty-label">AI-PM 文档助手</p>' +
+        '<h2 class="aipm-chat__empty-title">从一个问题开始</h2>' +
+        '<p class="aipm-chat__empty-text">查找站内知识，理解 AI 概念，<br>一起探索 AI 产品管理。</p>' +
+      "</div>" +
+      '<div class="aipm-chat__suggest" role="group" aria-label="推荐问题">' +
+        SUGGESTIONS.map(({ label, question }) =>
+          `<button type="button" class="aipm-chat__suggest-btn" aria-label="${escapeHtml(question)}">` +
+            '<span class="aipm-chat__suggest-content">' +
+              `<span class="aipm-chat__suggest-label" aria-hidden="true">${escapeHtml(label)}</span>` +
+              `<span class="aipm-chat__suggest-question">${escapeHtml(question)}</span>` +
+            "</span>" +
+            '<svg class="aipm-chat__suggest-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>' +
+          "</button>").join("") +
       "</div>";
-    for (const btn of d.querySelectorAll(".aipm-chat__suggest-btn"))
+    for (const [index, btn] of d.querySelectorAll(".aipm-chat__suggest-btn").entries())
       btn.addEventListener("click", () => {
         if (streaming) return;
-        postUser(btn.textContent, []);
+        postUser(SUGGESTIONS[index].question, []);
       });
     els.msgs.appendChild(d);
   };
