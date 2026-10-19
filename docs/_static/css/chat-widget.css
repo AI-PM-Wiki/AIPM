@@ -546,55 +546,172 @@ html.aipm-chat-mode--sheet .aipm-chat__local-status { flex: 0 0 100%; }
 
 /* 空态:欢迎语 + 建议问题 */
 .aipm-chat__empty {
+  flex: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: .8rem;
-  margin: auto 0;
-  padding: .5rem .25rem;
-  text-align: center;
+  gap: 1.4rem;
+  width: 100%;
+  max-width: 22rem;
+  margin: auto;
+  padding: 1.5rem .2rem;
+  text-align: left;
+}
+.aipm-chat__welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .aipm-chat__empty-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 50%;
-  color: var(--md-accent-bg-color);
-  background: var(--md-accent-fg-color);
+  width: 2.2rem;
+  height: 2.2rem;
+  margin-bottom: .9rem;
+  border: 1px solid var(--md-accent-fg-color--transparent);
+  border-radius: .7rem;
+  color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
 }
 .aipm-chat__empty-icon svg {
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.2rem;
+  height: 1.2rem;
   fill: currentColor;
 }
-.aipm-chat__empty-text {
-  margin: 0;
+.aipm-chat__empty-label {
+  margin: 0 0 .35rem;
   color: var(--md-default-fg-color--light);
+  font-size: .65rem;
+  line-height: 1.5;
+}
+.aipm-chat__empty-title {
+  margin: 0;
+  color: var(--md-default-fg-color);
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: .015em;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+.aipm-chat__empty-text {
+  margin: .55rem 0 0;
+  color: var(--md-default-fg-color--light);
+  font-size: .725rem;
+  line-height: 1.8;
 }
 .aipm-chat__suggest {
   display: flex;
   flex-direction: column;
-  gap: .4rem;
+  gap: .5rem;
   width: 100%;
 }
 .aipm-chat__suggest-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
   width: 100%;
-  padding: .5rem .7rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: .6rem;
-  background: transparent;
+  min-height: 3.35rem;
+  padding: .65rem .8rem;
+  border: 1px solid color-mix(in srgb, var(--md-default-fg-color) 9%, transparent);
+  border-radius: .7rem;
+  background: color-mix(in srgb, var(--md-default-fg-color) 3%, transparent);
   color: var(--md-default-fg-color);
   font-family: inherit;
-  font-size: .75rem;
   text-align: left;
   cursor: pointer;
   transition: border-color .12s ease, background-color .12s ease;
 }
 .aipm-chat__suggest-btn:hover {
-  border-color: var(--md-accent-fg-color);
+  border-color: color-mix(in srgb, var(--md-accent-fg-color) 40%, transparent);
   background: var(--md-accent-fg-color--transparent);
+}
+.aipm-chat__suggest-btn:active {
+  background: color-mix(in srgb, var(--md-accent-fg-color) 16%, transparent);
+}
+.aipm-chat__suggest-btn:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 3px;
+}
+.aipm-chat__suggest-content {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 0;
+}
+.aipm-chat__suggest-label {
+  color: var(--md-default-fg-color--light);
+  font-size: .6rem;
+  line-height: 1.4;
+}
+.aipm-chat__suggest-question {
+  font-size: .725rem;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.aipm-chat__suggest-arrow {
+  flex: none;
+  width: .85rem;
+  height: .85rem;
+  color: var(--md-default-fg-color--light);
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+@media screen and (max-width: 47.9875em) and (max-height: 40em) {
+  .aipm-chat__msgs {
+    padding-bottom: .25rem;
+  }
+  .aipm-chat__empty {
+    gap: .5rem;
+    padding: .1rem .2rem;
+  }
+  .aipm-chat__welcome {
+    display: grid;
+    grid-template-columns: 2rem 1fr;
+    column-gap: .6rem;
+    align-items: center;
+  }
+  .aipm-chat__empty-icon {
+    grid-row: 1 / 3;
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+  }
+  .aipm-chat__empty-label {
+    margin-bottom: .15rem;
+    font-size: .6rem;
+    line-height: 1.4;
+  }
+  .aipm-chat__empty-title {
+    font-size: 1rem;
+  }
+  .aipm-chat__empty-text {
+    grid-column: 1 / -1;
+    margin-top: .25rem;
+    font-size: .65rem;
+    line-height: 1.6;
+  }
+  .aipm-chat__suggest {
+    gap: .3rem;
+  }
+  .aipm-chat__suggest-btn {
+    min-height: 2.6rem;
+    padding: .3rem .7rem;
+  }
+  .aipm-chat__suggest-content {
+    gap: .1rem;
+  }
+  .aipm-chat__suggest-label {
+    font-size: .55rem;
+  }
+  .aipm-chat__suggest-question {
+    font-size: .7rem;
+  }
 }
 
 .aipm-chat__msg {
@@ -1168,6 +1285,7 @@ html.aipm-chat-mode--sheet .aipm-chat__composer {
   .aipm-chat__fab,
   /* 回弹那条规则带 !important 且选择器更具体(2 类),得在这里同样点名才压得住 */
   .aipm-chat__fab.is-returning,
+  .aipm-chat__suggest-btn,
   .aipm-chat,
   .aipm-chat__scrim,
   .md-header,
