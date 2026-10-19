@@ -34,6 +34,8 @@
     spark: '<path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3L12 3Z"/><path d="M20 2v4m-2-2h4"/>',
     map: '<rect x="3" y="9" width="5" height="6" rx="1"/><rect x="16" y="3" width="5" height="6" rx="1"/><rect x="16" y="15" width="5" height="6" rx="1"/><path d="M8 12h4m4-6h-4v12h4"/>',
     reading: '<path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3"/>',
+    expandPoints: '<path d="M4 4h16M4 8h10M7 12v6h5m5-5v8m-4-4h8"/>',
+    collapsePoints: '<path d="M4 4h16M4 8h10M7 12v6h5m1-1h8"/>',
     close: '<path d="m6 6 12 12M6 18 18 6"/>',
     minus: '<path d="M5 12h14"/>',
     plus: '<path d="M5 12h14M12 5v14"/>',
@@ -202,7 +204,7 @@
     async function draw(current, restoreFocus = false) {
       const graph = element('section', 'aipm-summary__graph');
       const toolbar = element('div', 'aipm-summary__toolbar');
-      const detail = button(expanded ? '收起要点' : '展开要点', () => {
+      const detail = iconButton(expanded ? 'collapsePoints' : 'expandPoints', expanded ? '收起要点' : '展开要点', () => {
         const focused = document.activeElement === detail;
         stopDrawing();
         expanded = !expanded;
@@ -412,7 +414,8 @@
   entry.append(icon('spark'));
   const panel = element('aside', 'aipm-summary');
   panel.id = 'aipm-summary';
-  panel.hidden = true;
+  panel.inert = true;
+  panel.setAttribute('aria-hidden', 'true');
   panel.setAttribute('aria-labelledby', 'aipm-summary-title');
   const grip = button('', () => {});
   grip.className = 'aipm-summary__grip';
@@ -430,7 +433,8 @@
   backdrop.className = 'aipm-summary__backdrop';
   backdrop.setAttribute('aria-label', '关闭 AI 总结');
   backdrop.tabIndex = -1;
-  backdrop.hidden = true;
+  backdrop.dataset.level = 'none';
+  backdrop.setAttribute('aria-hidden', 'true');
   panel.append(grip, head, articleTitle, host);
   document.body.append(backdrop, panel);
   let opened = false;
@@ -482,18 +486,22 @@
   }
 
   function syncChrome() {
+    document.documentElement.classList.toggle('aipm-summary-open', opened);
     document.documentElement.classList.toggle('aipm-summary-locked', locked());
+    panel.inert = !opened;
+    panel.setAttribute('aria-hidden', String(!opened));
     panel.setAttribute('role', mode === 'dock' ? 'complementary' : 'dialog');
     if (locked()) panel.setAttribute('aria-modal', 'true');
     else panel.removeAttribute('aria-modal');
-    backdrop.hidden = !locked();
-    backdrop.dataset.level = mode === 'sheet' && snap === 'half' ? 'half' : 'full';
+    backdrop.dataset.level = !locked() ? 'none' : mode === 'sheet' && snap === 'half' ? 'half' : 'full';
+    backdrop.setAttribute('aria-hidden', String(!locked()));
   }
 
   function clearDragHeight() {
     panel.style.height = '';
     panel.style.minHeight = '';
     panel.classList.remove('is-dragging');
+    backdrop.classList.remove('is-dragging');
     backdrop.style.opacity = '';
   }
 
@@ -551,21 +559,16 @@
   function open() {
     previousFocus = document.activeElement;
     opened = true;
-    panel.hidden = false;
     snap = 'half';
-    document.documentElement.classList.add('aipm-summary-open');
     entry.setAttribute('aria-expanded', 'true');
     syncMode();
-    closeButton.focus();
+    closeButton.focus({ preventScroll: true });
     if (!loaded || currentPage !== location.pathname) void load();
   }
 
   function close(restoreFocus = true) {
     view.exitFullscreen();
     opened = false;
-    panel.hidden = true;
-    backdrop.hidden = true;
-    document.documentElement.classList.remove('aipm-summary-open');
     entry.setAttribute('aria-expanded', 'false');
     clearDragHeight();
     syncChrome();
@@ -590,7 +593,7 @@
     isActive: () => opened && mode === 'sheet', getMetrics: metrics, getSnap: () => snap,
     setSnap, clearDragHeight, markSnapping: () => {}, onClose: () => close(),
     onDragHeight: (height, dimensions) => {
-      backdrop.hidden = false;
+      backdrop.classList.add('is-dragging');
       backdrop.style.opacity = String(panels.snapLerp(panels.ORDER, dimensions, height, panels.SCRIM_AT));
     },
   });
