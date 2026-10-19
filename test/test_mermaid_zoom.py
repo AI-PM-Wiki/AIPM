@@ -53,7 +53,7 @@ class TestMermaidZoomAssets(unittest.TestCase):
         self.assertIn("showModal", self.javascript)
 
     def test_dialog_title_has_no_instruction_hint(self):
-        self.assertIn('"Mermaid 放大视图" +', self.javascript)
+        self.assertIn('Mermaid<span class="mermaid-zoom__subtitle">图表预览</span>', self.javascript)
         self.assertNotIn("Mermaid 图放大视图", self.javascript)
         self.assertNotIn("可拖动图表查看不同区域", self.javascript)
         self.assertNotIn("aipm-mermaid-dialog-hint", self.javascript)
@@ -100,13 +100,11 @@ class TestMermaidZoomAssets(unittest.TestCase):
         self.assertIn("width: 2rem", self.stylesheet)
         self.assertIn("pointer-events: none", self.stylesheet)
 
-    def test_mobile_close_has_own_grid_cell_and_controls_can_wrap(self):
+    def test_mobile_viewer_uses_viewport_and_compact_header(self):
         mobile = self.stylesheet.split("@media (max-width: 44rem) {")[1].split("\n}\n", 1)[0]
-        self.assertRegex(mobile, r"\.mermaid-zoom__header\s*\{[^}]*display: grid;")
-        self.assertRegex(mobile, r"\.mermaid-zoom__actions\s*\{[^}]*grid-row: 2;[^}]*flex-wrap: wrap;")
-        self.assertRegex(mobile, r"\.mermaid-zoom__button--close\s*\{[^}]*grid-row: 1;")
-        self.assertIn("min-width: clamp(2rem, 10vw, 2.25rem)", mobile)
-        self.assertIn("font-size: clamp(.65rem, 2.5vw, .75rem)", mobile)
+        self.assertIn("height: 100dvh", mobile)
+        self.assertIn("border-radius: 0", mobile)
+        self.assertRegex(mobile, r"\.mermaid-zoom__header\s*\{[^}]*padding-inline: \.4rem;")
         self.assertIn('data-mermaid-action="close" aria-label="关闭"', self.javascript)
         self.assertIn('<svg viewBox="0 0 24 24" aria-hidden="true"', self.javascript)
 

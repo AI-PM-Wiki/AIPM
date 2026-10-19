@@ -38,7 +38,7 @@
     minus: '<path d="M5 12h14"/>',
     plus: '<path d="M5 12h14M12 5v14"/>',
     fullscreen: '<path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/>',
-    fit: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 8H7v3m8-3h2v3M7 14v2h2m6 0h2v-2"/>',
+    fit: '<rect x="9" y="7" width="6" height="10" rx="1"/><path d="M2 4v16m20-16v16M2 12h5m-2-2 2 2-2 2m17-2h-5m2-2-2 2 2 2"/>',
     chat: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-1 2V11.5a8.5 8.5 0 0 1 17 0Z"/><path d="M7 10h9M7 14h6"/>',
     arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>',
   };
