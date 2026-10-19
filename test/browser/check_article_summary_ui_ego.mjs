@@ -17,7 +17,61 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
       await page.cdp('Emulation.setDeviceMetricsOverride', { width, height: 960, deviceScaleFactor: 1, mobile: false });
       const previous = await page.evaluate(() => document.querySelector('#aipm-summary .aipm-summary__diagram svg')?.id);
       await page.evaluate(theme => document.body.setAttribute('data-md-color-scheme', theme), theme);
-      if (await page.evaluate(() => document.querySelector('#aipm-summary').hidden)) await page.click('button[aria-label="AI 总结"]');
+      await page.mouse.move(8, 8, { label: 'observe assistant resting appearance' });
+      await page.waitForSelector('.aipm-chat__fab:not(.is-hidden)', { state: 'visible' });
+      await page.waitForFunction(() => {
+        const style = getComputedStyle(document.querySelector('.aipm-chat__fab'));
+        return style.transform === 'none' && style.opacity === '1';
+      });
+      const fab = await page.evaluate(() => {
+        const button = document.querySelector('.aipm-chat__fab');
+        const rect = button.getBoundingClientRect();
+        const style = getComputedStyle(button);
+        return { width: rect.width, height: rect.height, radius: style.borderRadius,
+          text: button.textContent, label: button.getAttribute('aria-label'), title: button.title,
+          background: style.backgroundImage, color: style.color, svg: !!button.querySelector('svg') };
+      });
+      assert.ok(Math.abs(fab.width - fab.height) < 1 && fab.width >= 44);
+      assert.equal(fab.radius, '50%');
+      assert.equal(fab.text, '');
+      assert.equal(fab.label, '询问助手');
+      assert.equal(fab.title, '询问助手');
+      assert.equal(fab.svg, true);
+      console.log({ width, theme, stage: 'fab-ready' });
+      if (width === 1440 && theme === 'default') {
+        const anchor = await page.evaluate(() => {
+          const rect = document.querySelector('.aipm-chat__fab').getBoundingClientRect();
+          return { x: rect.x, y: rect.y };
+        });
+        await page.evaluate(() => {
+          const button = document.querySelector('.aipm-chat__fab');
+          window.__aipmFabDragSeen = false;
+          window.__aipmFabDragObserver = new MutationObserver(records => {
+            if (button.classList.contains('is-dragging') || records.some(record => record.oldValue.includes('is-dragging'))) {
+              window.__aipmFabDragSeen = true;
+            }
+          });
+          window.__aipmFabDragObserver.observe(button, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+        });
+        await page.dragAndDrop('.aipm-chat__fab', '.md-content__inner', { targetPosition: { x: 100, y: 100 }, label: 'drag circular assistant entry' });
+        await page.waitForFunction(({ x, y }) => {
+          const button = document.querySelector('.aipm-chat__fab');
+          const rect = button.getBoundingClientRect();
+          return window.__aipmFabDragSeen && !button.classList.contains('is-returning') &&
+            Math.abs(rect.x - x) < 1 && Math.abs(rect.y - y) < 1;
+        }, anchor);
+        await page.evaluate(() => window.__aipmFabDragObserver.disconnect());
+        console.log({ width, theme, stage: 'drag-returned' });
+        assert.equal(await page.evaluate(() => window.__aipmChat.isOpen()), false);
+        await page.focus('.aipm-chat__fab');
+        await page.press('.aipm-chat__fab', 'Enter');
+        await page.waitForFunction(() => window.__aipmChat.isOpen());
+        console.log({ width, theme, stage: 'keyboard-open' });
+        await page.press('.aipm-chat__input', 'Escape');
+        await page.waitForFunction(() => !window.__aipmChat.isOpen());
+      }
+      if (await page.evaluate(() => document.querySelector('#aipm-summary').inert)) await page.click('button[aria-label="AI 总结"]');
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('#aipm-summary')).transform === 'none');
       if (width < 768) {
         await page.click('#aipm-summary .aipm-summary__grip');
         await page.waitForFunction(() => Math.abs(document.querySelector('#aipm-summary').getBoundingClientRect().height - (innerHeight - 16)) < 1);
@@ -29,6 +83,14 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
       }, { count: compactCount, previous }, { timeout: 30000 });
       console.log({ width, theme, stage: 'compact' });
       assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary .aipm-summary__detail-toggle').getAttribute('aria-pressed')), 'false');
+      const compactIcon = await page.evaluate(() => {
+        const button = document.querySelector('#aipm-summary .aipm-summary__detail-toggle');
+        return { text: button.textContent, label: button.getAttribute('aria-label'), title: button.title,
+          path: button.querySelector('svg path').getAttribute('d') };
+      });
+      assert.equal(compactIcon.text, '');
+      assert.equal(compactIcon.label, '展开要点');
+      assert.equal(compactIcon.title, '展开要点');
       if (width >= 1200) await page.waitForFunction(() =>
         Math.abs(document.querySelector('.md-header').getBoundingClientRect().right - document.querySelector('#aipm-summary').getBoundingClientRect().left) < 1);
       const dimensions = await page.evaluate(() => {
@@ -38,15 +100,19 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
         const bounds = panel.getBoundingClientRect();
         const svg = panel.querySelector('.aipm-summary__diagram svg');
         const header = document.querySelector('.md-header').getBoundingClientRect();
+        const discussStyle = getComputedStyle(panel.querySelector('.aipm-summary__discuss'));
         return { panel: { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom },
           header: { right: header.right }, mode: panel.dataset.mode,
           footerInScrollArea: panel.querySelector('.aipm-summary__body').contains(panel.querySelector('.aipm-summary__footer')),
           footer: { top: footer.top, bottom: footer.bottom },
-          discuss: { top: discuss.top, bottom: discuss.bottom, height: discuss.height },
+          discuss: { top: discuss.top, bottom: discuss.bottom, height: discuss.height,
+            background: discussStyle.backgroundImage, color: discussStyle.color },
           compactHeight: svg.viewBox.baseVal.height, overflow: document.documentElement.scrollWidth > innerWidth };
       });
       assert.ok(dimensions.panel.left >= 0 && dimensions.panel.right <= width + 1);
       assert.ok(dimensions.discuss.height >= 44);
+      assert.equal(dimensions.discuss.background, fab.background);
+      assert.equal(dimensions.discuss.color, fab.color);
       assert.equal(dimensions.footerInScrollArea, true);
       assert.ok(dimensions.footer.top > dimensions.panel.bottom);
       assert.equal(dimensions.mode, width >= 1200 ? 'dock' : width >= 768 ? 'overlay' : 'sheet');
@@ -61,6 +127,16 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
       await page.waitForFunction(count => document.querySelector('#aipm-summary .aipm-summary__diagram svg')?.querySelectorAll('.node').length === count, expandedCount, { timeout: 30000 });
       console.log({ width, theme, stage: 'expanded' });
       assert.equal(await page.evaluate(() => document.activeElement.classList.contains('aipm-summary__detail-toggle')), true);
+      const expandedIcon = await page.evaluate(() => {
+        const button = document.querySelector('#aipm-summary .aipm-summary__detail-toggle');
+        return { text: button.textContent, label: button.getAttribute('aria-label'), title: button.title,
+          pressed: button.getAttribute('aria-pressed'), path: button.querySelector('svg path').getAttribute('d') };
+      });
+      assert.equal(expandedIcon.text, '');
+      assert.equal(expandedIcon.label, '收起要点');
+      assert.equal(expandedIcon.title, '收起要点');
+      assert.equal(expandedIcon.pressed, 'true');
+      assert.notEqual(expandedIcon.path, compactIcon.path);
       await page.press('#aipm-summary .aipm-summary__detail-toggle', 'Enter');
       await page.waitForFunction(count => document.querySelector('#aipm-summary .aipm-summary__diagram svg')?.querySelectorAll('.node').length === count, compactCount, { timeout: 30000 });
       const scale = await page.evaluate(() => Number(document.querySelector('#aipm-summary .aipm-summary__scale').value.replace('%', '')));
@@ -70,6 +146,7 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
       assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary button[aria-label="适应窗口"]').textContent), '');
       await page.click('#aipm-summary button[aria-label="全屏显示"]');
       await page.waitForSelector('.aipm-summary__fullscreen[open] .aipm-summary__diagram svg', { state: 'visible' });
+      console.log({ width, theme, stage: 'fullscreen' });
       const fullscreen = await page.evaluate(() => {
         const dialog = document.querySelector('.aipm-summary__fullscreen[open]');
         const rect = dialog.getBoundingClientRect();
@@ -85,7 +162,7 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
       await page.press('.aipm-summary__fullscreen[open] button[aria-label="退出全屏"]', 'Escape');
       await page.waitForSelector('#aipm-summary .aipm-summary__diagram svg', { state: 'visible' });
       assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), '全屏显示');
-      assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').hidden), false);
+      assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').inert), false);
       const point = await page.evaluate(() => {
         const body = document.querySelector('#aipm-summary .aipm-summary__body');
         const rect = body.getBoundingClientRect();
@@ -117,8 +194,9 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
       assert.ok(typography.fontSize >= 14 && typography.lineHeight >= 24);
       if (width === 1440 && theme === 'default') await page.screenshot({ path: directory + '/reading-desktop.png' });
       if (width === 390 && theme === 'slate') await page.screenshot({ path: directory + '/reading-mobile.png' });
-      records.push({ width, theme, compactCount, expandedCount, dimensions, typography,
+      records.push({ width, theme, compactCount, expandedCount, fab, compactIcon, expandedIcon, dimensions, typography,
         keyboardExpansion: true, zoom: true, scrollingFooter: true, independentTabScroll: true, fullscreen });
+      console.log({ width, theme, stage: 'complete' });
       await page.press('#aipm-summary .aipm-summary__head button', 'Escape');
     }
   }
@@ -162,7 +240,7 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
     y: innerHeight / 2,
   }));
   await page.mouse.click(backdropPoint.x, backdropPoint.y, { label: 'close tablet overlay outside' });
-  assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').hidden), true);
+  assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').inert), true);
   await page.cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 960, deviceScaleFactor: 1, mobile: false });
   await page.click('button[aria-label="AI 总结"]');
   const grip = '#aipm-summary .aipm-summary__grip';
@@ -176,10 +254,10 @@ export async function checkArticleSummaryUi({ directory, taskSpace, spaceId }) {
   await page.mouse.down();
   await page.mouse.move(gripPoint.x, 920, { label: 'close summary sheet downward' });
   await page.mouse.up();
-  await page.waitForFunction(() => document.querySelector('#aipm-summary').hidden);
+  await page.waitForFunction(() => document.querySelector('#aipm-summary').inert);
   assert.equal(await page.evaluate(() => document.documentElement.classList.contains('aipm-summary-locked')), false);
-  await page.hover('.mermaid-zoom__figure >> nth=0');
-  await page.click('.mermaid-zoom__trigger >> nth=0');
+  await page.focus('.mermaid-zoom__trigger >> nth=0');
+  await page.press('.mermaid-zoom__trigger >> nth=0', 'Enter');
   await page.waitForSelector('#aipm-mermaid-dialog[open]', { state: 'visible' });
   const fitIcon = await page.evaluate(() => {
     const button = document.querySelector('#aipm-mermaid-dialog [data-mermaid-action="fit"]');

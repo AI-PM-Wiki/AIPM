@@ -1,3 +1,15 @@
+.aipm-panel-switching .aipm-summary,
+.aipm-panel-switching .aipm-chat,
+.aipm-panel-switching .aipm-anno,
+.aipm-panel-switching .aipm-summary__backdrop,
+.aipm-panel-switching .aipm-chat__scrim,
+.aipm-panel-switching .aipm-anno__scrim,
+.aipm-panel-switching .aipm-chat__fab,
+.aipm-panel-switching .md-header,
+.aipm-panel-switching .md-container {
+  transition: none !important;
+}
+
 .aipm-panel-resize {
   display: none;
 }

@@ -17,7 +17,7 @@ export async function checkArticleSummary({ directory, taskSpace, spaceId, phase
     return { spaceId: task.spaceId };
   }
   if (phase === 'followup') {
-    if (await page.evaluate(() => document.querySelector('#aipm-summary').hidden)) {
+    if (await page.evaluate(() => document.querySelector('#aipm-summary').inert)) {
       await page.click('button[aria-label="AI 总结"]');
     }
     await page.waitForSelector('#aipm-summary .aipm-summary__footer button', { state: 'visible' });
@@ -97,7 +97,7 @@ export async function checkArticleSummary({ directory, taskSpace, spaceId, phase
         width, height: 900, deviceScaleFactor: 1, mobile: false,
       });
       await page.evaluate(theme => document.body.setAttribute('data-md-color-scheme', theme), theme);
-      if (await page.evaluate(() => document.querySelector('#aipm-summary').hidden)) {
+      if (await page.evaluate(() => document.querySelector('#aipm-summary').inert)) {
         await page.click('button[aria-label="AI 总结"]');
       }
       await page.waitForSelector('#aipm-summary .aipm-summary__diagram svg', { state: 'attached', timeout: 30000 });
@@ -112,7 +112,7 @@ export async function checkArticleSummary({ directory, taskSpace, spaceId, phase
       const anchor = summary.mindmap.branches[graphIndex].anchor;
       await page.waitForFunction(anchor => document.activeElement?.id === anchor, anchor);
       if (width < 1200) {
-        assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').hidden), true);
+        assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').inert), true);
         await page.click('button[aria-label="AI 总结"]');
       }
       await page.focus(mapTab);
@@ -144,7 +144,7 @@ export async function checkArticleSummary({ directory, taskSpace, spaceId, phase
   await page.click('#aipm-summary .aipm-summary__footer button');
   await page.waitForSelector('#aipm-chat .aipm-summary-view', { state: 'visible' });
   assert.equal(await page.evaluate(() => window.__aipmPanels.active()), 'chat');
-  assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').hidden), true);
+  assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').inert), true);
   await page.waitForSelector('#aipm-chat .aipm-summary__diagram svg', { state: 'attached', timeout: 30000 });
   await page.click('#aipm-chat button[aria-label="全屏显示"]');
   await page.waitForSelector('.aipm-summary__fullscreen[open]', { state: 'visible' });

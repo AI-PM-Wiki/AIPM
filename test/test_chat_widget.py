@@ -354,7 +354,7 @@ class TestChatWidgetStyles(unittest.TestCase):
 
 
 class TestChatWidgetEntryDrag(unittest.TestCase):
-    """入口按钮(FAB):样式与位置照旧,只在拖拽时有一套同族的按/拖态。"""
+    """圆形助手入口、主题配色与拖拽交互。"""
 
     @classmethod
     def setUpClass(cls):
@@ -386,37 +386,31 @@ class TestChatWidgetEntryDrag(unittest.TestCase):
         self.assertIsNotNone(m, f"未找到小节:{title}")
         return m.group(1)
 
-    # -- 样式与位置照旧 ----------------------------------------------------
-    def test_fab_look_is_unchanged(self):
-        """原胶囊:图标 + 引导语、999px 圆角、accent 实色、2.5rem 高。"""
+    # -- 样式与位置 --------------------------------------------------------
+    def test_fab_is_a_circle_with_theme_colors(self):
         fab = self._rule(".aipm-chat__fab")
-        self.assertIn("border-radius: 999px;", fab)
-        self.assertIn("height: 2.5rem;", fab)
-        self.assertIn("padding: 0 .95rem 0 .72rem;", fab)
-        self.assertIn("background: var(--md-accent-fg-color);", fab)
-        self.assertIn("color: var(--md-accent-bg-color);", fab)
-        self.assertIn("box-shadow: 0 2px 10px rgba(0, 0, 0, .18);", fab)
+        self.assertIn("border-radius: 50%;", fab)
+        self.assertIn("width: 2.7rem;", fab)
+        self.assertIn("height: 2.7rem;", fab)
+        self.assertIn("padding: 0;", fab)
+        self.assertIn("background: var(--aipm-assistant-surface);", fab)
+        self.assertIn("color: var(--aipm-assistant-ink);", fab)
         self.assertIn(".aipm-chat__fab svg {", self.css)
-        self.assertIn(".aipm-chat__fab-label {", self.css)
+        self.assertIn(".aipm-chat__fab:focus-visible {", self.css)
 
     def test_fab_anchor_is_unchanged(self):
         """原来的位置:右下角 1.25rem,桌面与移动端一视同仁。"""
         fab = self._rule(".aipm-chat__fab")
         self.assertIn("right: 1.25rem;", fab)
         self.assertIn("bottom: 1.25rem;", fab)
-        # 悬浮球那一版留下的尺寸/锚点变量与移动端断点都得清干净
-        self.assertNotIn("--aipm-chat-ball", self.css)
-        self.assertNotIn("aipm-chat__fab-face", self.css)
-        self.assertNotIn("aipm-chat__fab-face", self.js)
-        self.assertNotIn("BALL_FACE", self.js)
-
-    def test_fab_keeps_icon_and_label(self):
-        self.assertIn("fab.innerHTML = SPARK_ICON +", self.js)
-        self.assertIn("aipm-chat__fab-label", self.js)
-        self.assertIn("询问助手", self.js)
+    def test_fab_has_an_icon_and_accessible_name(self):
+        self.assertIn("fab.innerHTML = SPARK_ICON;", self.js)
+        self.assertIn('fab.setAttribute("aria-label", "询问助手");', self.js)
+        self.assertIn('fab.setAttribute("aria-controls", "aipm-chat");', self.js)
+        self.assertIn('fab.title = "询问助手";', self.js)
 
     def test_no_viewport_scoped_fab_rules(self):
-        """FAB 的样式与位置不随视口断点变:移动端也照旧。"""
+        """FAB 的样式与位置使用统一尺寸。"""
         drag = self._section("2.1 拖拽交互")
         self.assertNotIn("@media", drag)
         self.assertNotIn("max-width", drag)
@@ -431,7 +425,7 @@ class TestChatWidgetEntryDrag(unittest.TestCase):
         self.assertIn("cursor: grabbing;", drag)
         # 拎起来的投影与静息/hover 同一个阴影家族,只是更深
         self.assertIn("box-shadow: 0 10px 24px rgba(0, 0, 0, .3);", drag)
-        # 交互属性写在 2.1 的 .aipm-chat__fab 里,静息态那段(第 2 节原文)不掺
+        # 拖拽属性集中在 2.1。
         sec = self._section("2.1 拖拽交互")
         self.assertIn("cursor: grab;", sec)
         self.assertIn("touch-action: none;", sec)
@@ -446,8 +440,8 @@ class TestChatWidgetEntryDrag(unittest.TestCase):
         self.assertIn('fab.style.transform = "";', self.js)
         self.assertIn('fab.classList.add("is-returning")', self.js)
 
-    def test_drag_never_rotates_the_capsule(self):
-        """拖拽只做「拎起来」(位移 + 轻微放大),不旋转 —— 胶囊全程保持水平。"""
+    def test_drag_preserves_icon_orientation(self):
+        """拖拽使用位移与缩放。"""
         self.assertNotIn("rotate(", self.js)
         self.assertNotIn("TILT", self.js)
         self.assertNotIn("tilt", self.js)

@@ -1,14 +1,12 @@
 /*
   AI-PM 面板共享件(panel-shared.js,2026-09-20)
 
-  AI 助手面板(#aipm-chat)与批注面板(#aipm-annotations)占同一块屏幕区域
-  (桌面右侧停靠 / 移动三段抽屉),同一时刻只能有一个存在。这个文件收两件公共事,
-  免得两个面板各抄一份、日后改一处漏一处:
+  AI 总结、AI 助手与批注面板共用桌面停靠区域和移动抽屉区域,
+  同一时刻只显示一个面板。这里提供公共交互:
 
   1. 互斥注册表 window.__aipmPanels
-     每个面板注册 {open, close, isOpen}。claim(name) 打开自己的同时关掉另一个,
-     于是「点 FAB 从批注切到助手」「点页头按钮从助手切回批注」是同一个动作。
-     切换在一个同步任务里完成(先关后开),浏览器只画一帧,页面宽度不跳。
+     每个面板注册 {open, close, isOpen}。claim(name) 同步切换面板内容,
+     切换期间停用面板与页面布局的过渡动画。
 
   2. 三段抽屉的拖拽与吸附 attachSheetDrag()
      pointer 事件统一处理触摸/鼠标/触控笔:4px 阈值后才算拖拽、跟手高度、
@@ -16,8 +14,8 @@
      几何仍由各面板自己算(助手有输入条、批注有列表,peek 高度不同),
      共享件只吃 metrics() 回调。
 
-  两个文件都是 IIFE,通过 window 上挂一个命名空间协作 —— 资源列表里
-  panel-shared.js 必须排在两个面板脚本之前(见 mkdocs.yml extra_javascript)。
+  面板通过 window 命名空间协作。panel-shared.js 必须在面板脚本之前加载
+  (见 mkdocs.yml extra_javascript)。
 */
 (function () {
   "use strict";
@@ -405,12 +403,22 @@
   function claim(name) {
     var target = api(name);
     if (target === null) return false;
+    var switching = Object.keys(panels).some(function (other) {
+      return other !== name && panels[other].isOpen();
+    });
+    var root = document.documentElement;
+    if (switching) root.classList.add("aipm-panel-switching");
     for (var other in panels) {
       if (!Object.prototype.hasOwnProperty.call(panels, other)) continue;
       if (other !== name && panels[other].isOpen()) close(other, "switch");
     }
     current = name;
     if (!target.isOpen()) target.open();
+    if (switching) {
+      // Apply the replacement before restoring transitions.
+      void root.offsetWidth;
+      root.classList.remove("aipm-panel-switching");
+    }
     return true;
   }
 
