@@ -37,6 +37,8 @@
     close: '<path d="m6 6 12 12M6 18 18 6"/>',
     minus: '<path d="M5 12h14"/>',
     plus: '<path d="M5 12h14M12 5v14"/>',
+    fullscreen: '<path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/>',
+    fit: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 8H7v3m8-3h2v3M7 14v2h2m6 0h2v-2"/>',
     chat: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-1 2V11.5a8.5 8.5 0 0 1 17 0Z"/><path d="M7 10h9M7 14h6"/>',
     arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>',
   };
@@ -132,6 +134,39 @@
     let expanded = false;
     let stopDrawing = () => {};
     const footer = element('footer', 'aipm-summary__footer');
+    body.append(footer);
+    const fullscreen = element('dialog', 'aipm-summary-view aipm-summary__fullscreen');
+    fullscreen.setAttribute('aria-label', '思维导图全屏显示');
+    const fullscreenHead = element('header', 'aipm-summary__head');
+    const fullscreenTitle = element('h2');
+    const exitButton = iconButton('close', '退出全屏', () => fullscreen.close());
+    fullscreenHead.append(fullscreenTitle, exitButton);
+    fullscreen.append(fullscreenHead);
+    fullscreen.addEventListener('keydown', event => event.stopPropagation());
+    fullscreen.addEventListener('cancel', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      fullscreen.close();
+    });
+    fullscreen.addEventListener('close', () => {
+      document.documentElement.classList.remove('aipm-summary-fullscreen-open');
+      const graph = fullscreen.querySelector('.aipm-summary__graph');
+      if (graph) {
+        map.prepend(graph);
+        graph.querySelector('[data-summary-fullscreen]')?.focus({ preventScroll: true });
+      }
+    });
+    function exitFullscreen() {
+      if (!fullscreen.open) return;
+      const graph = fullscreen.querySelector('.aipm-summary__graph');
+      if (graph) map.prepend(graph);
+      fullscreen.close();
+      document.documentElement.classList.remove('aipm-summary-fullscreen-open');
+    }
+    function goToSource(page, anchor) {
+      exitFullscreen();
+      navigate(page, anchor);
+    }
     function select(index) {
       scrollPositions[active] = body.scrollTop;
       active = index;
@@ -160,7 +195,7 @@
       link.addEventListener('click', event => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        navigate(data.page, anchor);
+        goToSource(data.page, anchor);
       });
       return link;
     }
@@ -176,12 +211,24 @@
       });
       detail.classList.add('aipm-summary__detail-toggle');
       detail.setAttribute('aria-pressed', String(expanded));
-      toolbar.append(element('span', 'aipm-summary__graph-label', '文章脉络'), detail);
+      const actions = element('div', 'aipm-summary__graph-actions');
+      const fullButton = iconButton('fullscreen', '全屏显示', () => {
+        fullscreenTitle.textContent = data.title + ' · 思维导图';
+        document.body.append(fullscreen);
+        fullscreen.append(graph);
+        fullscreen.showModal();
+        document.documentElement.classList.add('aipm-summary-fullscreen-open');
+        exitButton.focus();
+      });
+      fullButton.dataset.summaryFullscreen = '';
+      actions.append(detail, fullButton);
+      toolbar.append(element('span', 'aipm-summary__graph-label', '文章脉络'), actions);
       const diagram = element('div', 'aipm-summary__diagram');
       diagram.setAttribute('aria-label', '文章思维导图');
       const notice = element('p', 'aipm-summary__status', '正在绘制思维导图…');
       graph.append(toolbar, diagram, notice);
-      map.prepend(graph);
+      if (fullscreen.open) fullscreen.append(graph);
+      else map.prepend(graph);
       if (restoreFocus) detail.focus();
       try {
         const mermaid = await loadMermaid();
@@ -211,7 +258,7 @@
             node.setAttribute('role', 'link');
             node.setAttribute('tabindex', '0');
             node.setAttribute('aria-label', '阅读原文：' + branch.label);
-            const go = () => navigate(data.page, branch.anchor);
+            const go = () => goToSource(data.page, branch.anchor);
             node.addEventListener('click', go);
             node.addEventListener('keydown', event => {
               if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -233,10 +280,14 @@
         };
         const fit = () => {
           fitWidth = true;
-          if (diagram.clientWidth) apply(Math.min(1, (diagram.clientWidth - 32) / naturalWidth));
+          if (diagram.clientWidth) {
+            const widthScale = (diagram.clientWidth - 32) / naturalWidth;
+            const heightScale = fullscreen.open ? (diagram.clientHeight - 32) / svg.viewBox.baseVal.height : 1;
+            apply(Math.min(1, widthScale, heightScale));
+          }
         };
         controls.append(iconButton('minus', '缩小', () => { fitWidth = false; apply(scale / 1.3); }),
-          scaleLabel, iconButton('plus', '放大', () => { fitWidth = false; apply(scale * 1.3); }), button('适应宽度', fit));
+          scaleLabel, iconButton('plus', '放大', () => { fitWidth = false; apply(scale * 1.3); }), iconButton('fit', '适应窗口', fit));
         graph.append(element('p', 'aipm-summary__graph-hint', '点击主题节点，阅读对应原文'), controls);
         const resize = new ResizeObserver(() => { if (fitWidth) fit(); });
         resize.observe(diagram);
@@ -250,6 +301,7 @@
       }
     }
     function setLoading() {
+      exitFullscreen();
       stopDrawing();
       generation++;
       data = null;
@@ -277,6 +329,7 @@
     }
     function setData(summary) {
       if (!isSummary(summary)) throw new Error('invalid article summary');
+      exitFullscreen();
       stopDrawing();
       data = summary;
       const current = ++generation;
@@ -322,16 +375,17 @@
       footer.append(element('small', '', 'AI 生成内容，请结合原文核对。'));
       void draw(current);
     }
-    root.append(tabs, status, body, footer);
+    root.append(tabs, status, body);
     host.append(root);
     select(0);
     const theme = new MutationObserver(() => {
-      if (!root.isConnected) { theme.disconnect(); return; }
+      if (!root.isConnected) { exitFullscreen(); fullscreen.remove(); theme.disconnect(); return; }
       if (data) setData(data);
     });
     theme.observe(document.body, { attributes: true, attributeFilter: ['data-md-color-scheme'] });
-    return { setLoading, setError, setData, dispose: () => {
-      disposed = true; generation++; stopDrawing(); theme.disconnect(); root.remove();
+    return { setLoading, setError, setData, exitFullscreen, dispose: () => {
+      exitFullscreen();
+      disposed = true; generation++; stopDrawing(); theme.disconnect(); fullscreen.remove(); root.remove();
     } };
   }
 
@@ -360,6 +414,10 @@
   panel.id = 'aipm-summary';
   panel.hidden = true;
   panel.setAttribute('aria-labelledby', 'aipm-summary-title');
+  const grip = button('', () => {});
+  grip.className = 'aipm-summary__grip';
+  grip.setAttribute('aria-label', '调整 AI 总结抽屉高度');
+  grip.append(element('span'));
   const head = element('header', 'aipm-summary__head');
   const title = element('h2', '', 'AI 总结');
   title.prepend(icon('spark'));
@@ -373,14 +431,17 @@
   backdrop.setAttribute('aria-label', '关闭 AI 总结');
   backdrop.tabIndex = -1;
   backdrop.hidden = true;
-  panel.append(head, articleTitle, host);
+  panel.append(grip, head, articleTitle, host);
   document.body.append(backdrop, panel);
   let opened = false;
   let request;
   let currentPage = '';
   let loaded = false;
   let previousFocus;
-  const mobile = window.matchMedia('(max-width: 74.999em)');
+  const dock = window.matchMedia('(min-width: 75em)');
+  const sheet = window.matchMedia('(max-width: 47.9875em)');
+  let mode = 'dock';
+  let snap = 'half';
   const view = createView({
     host,
     navigate,
@@ -400,7 +461,7 @@
       view.setError('该章节已更新，请刷新文章后重新打开总结。');
       return;
     }
-    if (mobile.matches) close(false);
+    if (mode !== 'dock') close(false);
     target.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
     if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
     target.focus({ preventScroll: true });
@@ -409,11 +470,53 @@
     history.replaceState(history.state, '', url);
   }
 
-  function syncMode() {
-    panel.setAttribute('role', mobile.matches ? 'dialog' : 'complementary');
-    if (mobile.matches) panel.setAttribute('aria-modal', 'true');
+  function metrics() {
+    const viewport = panels.viewportHeights();
+    const height = Math.min(viewport.vh, viewport.visible);
+    return panels.computeMetrics({ vh: height, visible: height,
+      peek: Math.min(220, height * .4), peekMin: 136, halfVh: .55, topGap: 16 });
+  }
+
+  function locked() {
+    return opened && mode !== 'dock' && (mode !== 'sheet' || snap !== 'peek');
+  }
+
+  function syncChrome() {
+    document.documentElement.classList.toggle('aipm-summary-locked', locked());
+    panel.setAttribute('role', mode === 'dock' ? 'complementary' : 'dialog');
+    if (locked()) panel.setAttribute('aria-modal', 'true');
     else panel.removeAttribute('aria-modal');
-    backdrop.hidden = !opened || !mobile.matches;
+    backdrop.hidden = !locked();
+    backdrop.dataset.level = mode === 'sheet' && snap === 'half' ? 'half' : 'full';
+  }
+
+  function clearDragHeight() {
+    panel.style.height = '';
+    panel.style.minHeight = '';
+    panel.classList.remove('is-dragging');
+    backdrop.style.opacity = '';
+  }
+
+  function setSnap(next, afterDrag) {
+    snap = next;
+    panel.dataset.snap = next;
+    if (afterDrag) requestAnimationFrame(clearDragHeight);
+    else clearDragHeight();
+    syncChrome();
+  }
+
+  function syncMode() {
+    const next = sheet.matches ? 'sheet' : dock.matches ? 'dock' : 'overlay';
+    if (next !== mode) clearDragHeight();
+    mode = next;
+    panel.dataset.mode = mode;
+    panel.dataset.snap = snap;
+    const dimensions = metrics();
+    for (const key of panels.ORDER) panel.style.setProperty('--aipm-summary-sheet-' + key, dimensions[key] + 'px');
+    if (!document.documentElement.classList.contains('aipm-summary-locked')) {
+      document.documentElement.style.setProperty('--aipm-summary-sbw', panels.scrollbarWidth() + 'px');
+    }
+    syncChrome();
   }
 
   async function load() {
@@ -449,6 +552,7 @@
     previousFocus = document.activeElement;
     opened = true;
     panel.hidden = false;
+    snap = 'half';
     document.documentElement.classList.add('aipm-summary-open');
     entry.setAttribute('aria-expanded', 'true');
     syncMode();
@@ -457,11 +561,14 @@
   }
 
   function close(restoreFocus = true) {
+    view.exitFullscreen();
     opened = false;
     panel.hidden = true;
     backdrop.hidden = true;
     document.documentElement.classList.remove('aipm-summary-open');
     entry.setAttribute('aria-expanded', 'false');
+    clearDragHeight();
+    syncChrome();
     if (restoreFocus !== false) (previousFocus?.isConnected ? previousFocus : entry).focus();
   }
 
@@ -477,13 +584,24 @@
   }
 
   panels.register('summary', { open, close: () => close(false), isOpen: () => opened });
+  panels.attachDockResize(panel);
+  panels.attachSheetDrag({
+    panel, gripSelector: '.aipm-summary__grip', headSelector: '.aipm-summary__head',
+    isActive: () => opened && mode === 'sheet', getMetrics: metrics, getSnap: () => snap,
+    setSnap, clearDragHeight, markSnapping: () => {}, onClose: () => close(),
+    onDragHeight: (height, dimensions) => {
+      backdrop.hidden = false;
+      backdrop.style.opacity = String(panels.snapLerp(panels.ORDER, dimensions, height, panels.SCRIM_AT));
+    },
+  });
   document.addEventListener('keydown', event => {
     if (!opened || event.isComposing) return;
+    if (document.querySelector('.aipm-summary__fullscreen[open]')) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       close();
     }
-    if (event.key !== 'Tab' || !mobile.matches) return;
+    if (event.key !== 'Tab' || !locked()) return;
     const nodes = [...panel.querySelectorAll('button, a, [tabindex="0"]')]
       .filter(node => !node.disabled && node.getClientRects().length);
     const first = nodes[0];
@@ -494,7 +612,11 @@
       event.preventDefault(); first.focus();
     }
   });
-  mobile.addEventListener('change', syncMode);
+  dock.addEventListener('change', syncMode);
+  sheet.addEventListener('change', syncMode);
+  window.addEventListener('resize', syncMode);
+  window.visualViewport?.addEventListener('resize', syncMode);
+  syncMode();
   mount();
   if (typeof document$ !== 'undefined' && document$.subscribe) document$.subscribe(mount);
 })();

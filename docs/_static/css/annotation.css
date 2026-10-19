@@ -22,7 +22,7 @@
    ---------------------------------------------------------------------------- */
 :root {
   /* 面板宽:与助手同一值 —— 两个面板占同一块屏幕区域,切换时宽度必须一样 */
-  --aipm-anno-w: var(--aipm-chat-w, clamp(20rem, 28vw, 26.25rem));
+  --aipm-anno-w: var(--aipm-chat-w, var(--aipm-panel-width, clamp(20rem, 28vw, 26.25rem)));
   --aipm-anno-dur: var(--aipm-chat-dur, .24s);
   --aipm-anno-ease: var(--aipm-chat-ease, cubic-bezier(.4, 0, .2, 1));
   --aipm-anno-sbw: 0px;
