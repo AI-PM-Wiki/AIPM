@@ -231,12 +231,15 @@ export async function checkReviewAcceptance({ directory, phase, taskSpace, space
       await ready();
       await page.click('button[aria-label="打开批注面板"]');
       const previous = await page.evaluate(() => document.querySelector('.aipm-anno__title-label').textContent);
-      await page.press('.aipm-anno__head-icon', 'Enter');
+      await page.press('.aipm-anno__title', 'Enter');
       assert.notEqual(await page.evaluate(() => document.querySelector('.aipm-anno__title-label').textContent), previous);
       await login();
       await page.click('button[aria-label="打开批注面板"]');
+      if (await page.evaluate(() => document.querySelector('.aipm-anno__title-label').textContent !== '批注')) {
+        await page.press('.aipm-anno__title', 'Enter');
+      }
       const current = await page.evaluate(() => document.querySelector('.aipm-anno__title-label').textContent);
-      await page.press('.aipm-anno__head-icon', 'Enter');
+      await page.press('.aipm-anno__group-smart', 'Enter');
       await page.waitForFunction(() => document.querySelector('.aipm-anno__smartbar').textContent.includes('智能高亮未启用'));
       assert.equal(await page.evaluate(() => document.querySelector('.aipm-anno__title-label').textContent), current);
       const after = await state();
