@@ -153,13 +153,15 @@
   const TRASH_ICON =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6v12zM19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z"/></svg>';
 
-  /* FAB:外观与位置照旧(图标 + 引导语胶囊);可拖拽见文末「FAB 拖拽」一节 */
+  /* FAB:圆形助手入口;可拖拽见文末「FAB 拖拽」一节 */
   const fab = document.createElement("button");
   fab.type = "button";
   fab.className = "aipm-chat__fab";
-  fab.title = "打开问答助手";
+  fab.title = "询问助手";
+  fab.setAttribute("aria-label", "询问助手");
+  fab.setAttribute("aria-controls", "aipm-chat");
   fab.setAttribute("aria-expanded", "false");
-  fab.innerHTML = SPARK_ICON + '<span class="aipm-chat__fab-label">询问助手</span>';
+  fab.innerHTML = SPARK_ICON;
   document.body.appendChild(fab);
 
   /* 遮罩:浮层形态与抽屉半开/近全屏时显示,点击关闭面板 */
@@ -1682,11 +1684,11 @@
   /* ================================================================
      交互(打开 / 关闭 / Escape / 焦点环)
      ================================================================ */
-  els.fab.addEventListener("click", () => {
+  els.fab.addEventListener("click", (event) => {
     /* 刚拖过的那一下不算数:松手弹回不是「点击」 */
     if (dragSwallow) {
       dragSwallow = false;
-      return;
+      if (event.detail > 0) return;
     }
     /* 走注册表而不是直接 openPanel:批注面板开着时点 FAB 是「切到助手」,
        两个面板占同一块屏幕区域,不能同时存在 */

@@ -45,6 +45,10 @@ TMPDIR="$PWD/meta/browser/summary-runtime" node --import ./agent-server/node_mod
 
 `check_article_summary_ui_ego.mjs` 的 `checkArticleSummaryUi` 使用相同参数与任务空间，检查八组宽度／主题下的独立停靠、平板浮层、手机抽屉、导图全屏、主题要点展开与收起、键盘焦点、图标缩放控件、随内容滚动的讨论入口及标签滚动位置。宽度调整检查覆盖鼠标、键盘、320–640px 边界、视口变化、刷新记忆和三个面板之间的共享宽度。结果保存在 `ui-results.json`，并保存桌面与移动端的精读截图。
 
+该检查同时核对要点按钮的图标、提示与状态，圆形助手入口的尺寸、拖动回位与键盘打开，以及入口和讨论按钮在明暗主题下的共享配色。
+
+`check_panel_motion_ego.mjs` 的 `checkPanelMotion` 使用相同参数与任务空间，检查 1440、1024、390px 下三个面板的打开和关闭动画，并记录实际过渡时长、缓动与位置采样。六个切换方向均持续观察可见面板数量，要求立即显示目标面板且没有过渡动画；桌面通过原生按钮切换，平板和手机通过共享面板 API 切换。减少动画设置同时检查即时关闭、焦点移出及无障碍状态。结果保存在 `panel-motion-results.json`。
+
 `check_mermaid_ui_ego.mjs` 的 `checkMermaidUi` 使用相同参数与任务空间，检查八组尺寸／主题下的紧凑工具栏、手机全屏画布、初始适应窗口、按钮及滚轮缩放、拖动、键盘焦点循环、关闭后的原图恢复，以及总结导图使用相同的适应窗口图标。结果保存在 `mermaid-ui-results.json`。
 
 结束后向 `runtime-config.json` 的 `control` 地址追加 `/stop` 发送 POST，并对同一浏览器任务空间执行 `task.finish({ keep: [] })`。`--cache-from <已有 summaries 目录>` 可以验收已有真实缓存；该运行在报告中记录实际生成次数和 `warmCache`。
