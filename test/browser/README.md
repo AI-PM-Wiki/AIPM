@@ -43,7 +43,7 @@ TMPDIR="$PWD/meta/browser/summary-runtime" node --import ./agent-server/node_mod
 
 通过 ego-browser 导入 `check_article_summary_ego.mjs` 的 `checkArticleSummary`，依次传入 `phase: 'inspect'`、`'exercise'`、`'offline'`、`'followup'`、`'diagram-retry'`，保持同一个 `spaceId`。`directory` 使用上述输出目录的绝对路径。检查覆盖六组宽度／主题、图中节点和精读标题的原文定位、助手复用、刷新恢复、网络中断与显式重试、独立宿主中的 Mermaid 加载重试，以及真实模型对完整总结的后续回答。结果分别保存在 `http-results.json`、`service-boundaries.json`、`browser-results.json`、`offline-results.json`、`followup-results.json`、`diagram-results.json`。
 
-`check_article_summary_ui_ego.mjs` 的 `checkArticleSummaryUi` 使用相同参数与任务空间，检查六组宽度／主题下的主题导图、全部要点展开与收起、键盘焦点、缩放比例、固定讨论入口及标签独立滚动位置。结果保存在 `ui-results.json`，并保存桌面与移动端的精读截图。
+`check_article_summary_ui_ego.mjs` 的 `checkArticleSummaryUi` 使用相同参数与任务空间，检查八组宽度／主题下的独立停靠、平板浮层、手机抽屉、导图全屏、主题要点展开与收起、键盘焦点、图标缩放控件、随内容滚动的讨论入口及标签滚动位置。宽度调整检查覆盖鼠标、键盘、320–640px 边界、视口变化、刷新记忆和三个面板之间的共享宽度。结果保存在 `ui-results.json`，并保存桌面与移动端的精读截图。
 
 结束后向 `runtime-config.json` 的 `control` 地址追加 `/stop` 发送 POST，并对同一浏览器任务空间执行 `task.finish({ keep: [] })`。`--cache-from <已有 summaries 目录>` 可以验收已有真实缓存；该运行在报告中记录实际生成次数和 `warmCache`。
 

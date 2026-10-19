@@ -1800,6 +1800,7 @@
   /* 登记到互斥注册表:批注面板打开时会调用 claim("annotation"),
      由注册表先 close("chat") 再开自己 —— 两个方向共用同一个动作。 */
   if (SHARED) {
+    SHARED.attachDockResize(panel);
     SHARED.register("chat", {
       open: openPanel,
       close: closePanel,

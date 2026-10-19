@@ -19,7 +19,7 @@
    ---------------------------------------------------------------------------- */
 :root {
   /* 桌面停靠面板宽:320–420px 区间,窄桌面取小值保住正文列 */
-  --aipm-chat-w: clamp(20rem, 28vw, 26.25rem);
+  --aipm-chat-w: var(--aipm-panel-width, clamp(20rem, 28vw, 26.25rem));
   /* 近全屏停靠点顶部保留的页面间隙(PRD 12–24px) */
   --aipm-chat-top-gap: 1rem;
   --aipm-chat-dur: .24s;

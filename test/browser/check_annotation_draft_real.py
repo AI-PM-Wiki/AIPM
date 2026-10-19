@@ -94,7 +94,7 @@ class RealDraftCase(unittest.TestCase):
             try:
                 with urllib.request.urlopen(SERVICE_ORIGIN + "/healthz", timeout=1):
                     return
-            except urllib.error.URLError:
+            except (urllib.error.URLError, TimeoutError):
                 time.sleep(0.1)
         raise AssertionError("批注服务启动超时")
 
