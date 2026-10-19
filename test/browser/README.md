@@ -47,6 +47,10 @@ TMPDIR="$PWD/meta/browser/summary-runtime" node --import ./agent-server/node_mod
 
 该检查同时核对要点按钮的图标、提示与状态，圆形助手入口的尺寸、拖动回位与键盘打开，以及入口和讨论按钮在明暗主题下的共享配色。
 
+助手联动使用同一套真实服务，启动时添加 `--concurrency 1`。通过 ego-browser 调用 `check_summary_agent_ego.mjs` 的 `checkSummaryAgent({directory, taskSpace, spaceId, phase})`，依次运行 `mindmap`、`reading`、`sources`、`pointer`、`topics`、`navigation`、`uncached`，全程复用同一任务空间。检查覆盖模型调用对应视图、检索来源与总结同时展示、回答文本持续生成、刷新恢复、1280／390／320 宽度下的指针与键盘主题选择、重复主题去重、语境发送给真实模型、导航清理，以及单个并发名额下首次生成另一篇文章的总结。各阶段保存为 `agent-<phase>.json`。
+
+`agent-server/src/summary-tool-check.ts` 通过真实 MCP 传输调用工具，验证已生成缓存的两个视图、缺少当前文章、非法视图、取消，以及主题的服务端语境校验。参数依次为构建索引路径、上述验收目录和已授权的模型环境文件。只提供索引路径时检查工具清单与不可用提示。
+
 `check_panel_motion_ego.mjs` 的 `checkPanelMotion` 使用相同参数与任务空间，检查 1440、1024、390px 下三个面板的打开和关闭动画，并记录实际过渡时长、缓动与位置采样。六个切换方向均持续观察可见面板数量，要求立即显示目标面板且没有过渡动画；桌面通过原生按钮切换，平板和手机通过共享面板 API 切换。减少动画设置同时检查即时关闭、焦点移出及无障碍状态。结果保存在 `panel-motion-results.json`。
 
 `check_mermaid_ui_ego.mjs` 的 `checkMermaidUi` 使用相同参数与任务空间，检查八组尺寸／主题下的紧凑工具栏、手机全屏画布、初始适应窗口、按钮及滚轮缩放、拖动、键盘焦点循环、关闭后的原图恢复，以及总结导图使用相同的适应窗口图标。结果保存在 `mermaid-ui-results.json`。
@@ -59,6 +63,7 @@ TMPDIR="$PWD/meta/browser/summary-runtime" node --import ./agent-server/node_mod
 
 | 环境变量 | 用途 |
 | --- | --- |
+| `AIPM_TEST_WORK_DIR` | 浏览器组的独立工作目录，缺省为仓库内的 `meta/browser`；同时运行多组检查时分别指定 |
 | `AIPM_TEST_AGENT_PORT` | Agent 服务 |
 | `AIPM_TEST_ANNOTATION_PORT` | 批注请求记录代理 |
 | `AIPM_TEST_MODEL_PROXY_PORT` | 模型请求记录代理 |

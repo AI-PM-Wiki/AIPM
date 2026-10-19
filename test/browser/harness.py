@@ -39,7 +39,7 @@ from model_provider import RealModel
 from annotation_service import RealAnnotationApi
 
 ROOT = Path(__file__).resolve().parents[2]
-WORK = ROOT / "meta" / "browser"
+WORK = Path(os.environ.get("AIPM_TEST_WORK_DIR", ROOT / "meta" / "browser")).resolve()
 AGENT_SERVER = ROOT / "agent-server"
 
 
@@ -505,7 +505,7 @@ class AgentServer:
     def __init__(self, site: StaticSite, model: RealModel, max_turns: int = 2,
                  search_index_url: str | None = None):
         self.proc = subprocess.Popen(
-            ["npx", "tsx", "src/server.ts"],
+            ["node", "--import", "tsx", "src/server.ts"],
             cwd=str(AGENT_SERVER),
             env={
                 "PATH": _path_env(),

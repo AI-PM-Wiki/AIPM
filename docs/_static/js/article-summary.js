@@ -103,7 +103,7 @@
   }
 
   // The view owns presentation only; hosts supply article navigation and conversation actions.
-  function createView({ host, navigate, continueChat }) {
+  function createView({ host, navigate, continueChat, view = 'mindmap', onViewChange }) {
     const id = 'aipm-summary-view-' + (++sequence);
     const root = element('section', 'aipm-summary-view');
     const tabs = element('div', 'aipm-summary__tabs');
@@ -169,7 +169,7 @@
       exitFullscreen();
       navigate(page, anchor);
     }
-    function select(index) {
+    function select(index, notify = true) {
       scrollPositions[active] = body.scrollTop;
       active = index;
       tabButtons.forEach((tab, current) => {
@@ -178,6 +178,18 @@
         content[current].hidden = current !== index;
       });
       body.scrollTop = scrollPositions[index];
+      if (notify) onViewChange?.(index === 0 ? 'mindmap' : 'reading');
+    }
+    function selectView(view) {
+      if (view !== 'mindmap' && view !== 'reading') throw new Error('invalid summary view');
+      select(view === 'mindmap' ? 0 : 1);
+    }
+    function topicButton(view, index, title) {
+      const discuss = button('讨论这个主题', () => continueChat(data, { view, index }));
+      discuss.classList.add('aipm-summary__topic-discuss');
+      discuss.setAttribute('aria-label', '讨论主题：' + title);
+      discuss.prepend(icon('chat'));
+      return discuss;
     }
     tabs.addEventListener('keydown', event => {
       let next;
@@ -352,6 +364,7 @@
         const points = element('ul');
         branch.points.forEach(point => points.append(element('li', '', point)));
         item.append(heading, points);
+        if (continueChat) item.append(topicButton('mindmap', index, branch.label));
         outline.append(item);
       });
       map.append(element('h3', 'aipm-summary__outline-title', '主题要点'), outline);
@@ -364,11 +377,12 @@
         const points = element('ul');
         section.takeaways.forEach(point => points.append(element('li', '', point)));
         card.append(title, element('p', '', section.explanation), points);
+        if (continueChat) card.append(topicButton('reading', index, section.heading));
         reading.append(card);
       });
       footer.replaceChildren();
       if (continueChat) {
-        const discuss = button('与 AI 继续讨论', () => continueChat(data));
+        const discuss = button('与 AI 继续讨论', () => continueChat(data, { view: active === 0 ? 'mindmap' : 'reading' }));
         discuss.classList.add('aipm-summary__discuss');
         discuss.prepend(icon('chat'));
         discuss.append(icon('arrow'));
@@ -379,13 +393,13 @@
     }
     root.append(tabs, status, body);
     host.append(root);
-    select(0);
+    select(view === 'reading' ? 1 : 0, false);
     const theme = new MutationObserver(() => {
       if (!root.isConnected) { exitFullscreen(); fullscreen.remove(); theme.disconnect(); return; }
       if (data) setData(data);
     });
     theme.observe(document.body, { attributes: true, attributeFilter: ['data-md-color-scheme'] });
-    return { setLoading, setError, setData, exitFullscreen, dispose: () => {
+    return { setLoading, setError, setData, selectView, exitFullscreen, dispose: () => {
       exitFullscreen();
       disposed = true; generation++; stopDrawing(); theme.disconnect(); fullscreen.remove(); root.remove();
     } };
@@ -449,8 +463,8 @@
   const view = createView({
     host,
     navigate,
-    continueChat: data => {
-      const result = window.__aipmChat?.openSummary(data);
+    continueChat: (data, selection) => {
+      const result = window.__aipmChat?.openSummary(data, selection);
       if (!result?.ok) view.setError(result?.message || 'AI 助手尚未就绪，请稍后重试。');
     },
   });

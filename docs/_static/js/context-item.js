@@ -152,6 +152,7 @@
   }
 
   function labelOf(item) {
+    if (item.kind === "summary") return "AI 总结主题";
     if (item.kind === "selection") return "选中文字";
     if (item.kind === "chart") return "图表 · " + (CHART_LABEL[item.chart] || "图");
     return "批注 · " + (VISIBILITY_LABEL[item.visibility] || VISIBILITY_LABEL.public);
@@ -179,9 +180,10 @@
   function isDeliverable(item) {
     if (!item || typeof item !== "object") return false;
     if (typeof item.id !== "string" || item.id === "") return false;
-    if (item.kind !== "selection" && item.kind !== "annotation" && item.kind !== "chart") return false;
+    if (item.kind !== "selection" && item.kind !== "annotation" && item.kind !== "chart" && item.kind !== "summary") return false;
     if (typeof item.page !== "string" || item.page === "") return false;
     if (item.visibility !== "public" && item.visibility !== "private") return false;
+    if (item.kind === "summary" && (typeof item.source !== "string" || !item.source.trim())) return false;
     if (item.kind === "chart") {
       if (CHART_KINDS.indexOf(item.chart) < 0) return false;
       if (typeof item.source !== "string" || item.source === "") return false;
@@ -239,6 +241,18 @@
       body: body,
       color: trim(input.color, LIMITS.color),
       visibility: visibility
+    };
+  }
+
+  function forSummary(input) {
+    var page = normalizePage(input.page);
+    var source = trim(input.source, LIMITS.source);
+    if (!page || !source || typeof input.key !== "string" || !input.key) return null;
+    return {
+      id: "summary:" + page + "#" + input.key,
+      kind: "summary", page: page, title: trim(input.title, LIMITS.title),
+      quote: "", prefix: "", suffix: "", body: "", color: "",
+      source: source, visibility: "public"
     };
   }
 
@@ -356,7 +370,7 @@
         body: item.body,
         color: item.color,
         chart: item.kind === "chart" ? item.chart : "",
-        source: item.kind === "chart" ? item.source : "",
+        source: item.kind === "chart" || item.kind === "summary" ? item.source : "",
         mediaType: image.mediaType,
         imageData: image.data,
         visibility: item.visibility
@@ -377,6 +391,7 @@
     forSelection: forSelection,
     forAnnotation: forAnnotation,
     forChart: forChart,
+    forSummary: forSummary,
     isDeliverable: isDeliverable,
     sanitize: sanitize,
     upsert: upsert,

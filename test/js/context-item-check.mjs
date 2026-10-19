@@ -321,5 +321,19 @@ check('导出的入口齐全', ['forSelection', 'forAnnotation', 'forChart', 'is
   check('恢复: 好条目原样留下(不丢字段)', restored[0].quote === '公开的一段话。' && restored[0].page === '/ai/rag/' && restored[0].visibility === 'public');
 }
 
+{
+  const input = { page: '/ai/rag/', title: 'RAG 基础', key: 'revision:reading:0',
+    source: 'AI 精读主题：检索质量\n原文章节：#产品经理的评估视角\n检索结果需要核对。' };
+  const topic = CTX.forSummary(input);
+  check('总结主题保留类型与来源', topic.kind === 'summary' && topic.source === input.source);
+  check('相同总结主题重复添加保持一条', CTX.upsert([topic], CTX.forSummary(input)).items.length === 1);
+  check('不同主题分别保存', CTX.upsert([topic], CTX.forSummary({ ...input, key: 'revision:mindmap:0' })).items.length === 2);
+  check('总结主题出网时保留内容', CTX.toPayload([topic])[0].source === input.source);
+  check('总结主题保留原文与生成资料的区分', CTX.toPayload([topic])[0].quote === '');
+  check('空白总结主题拒绝构造', CTX.forSummary({ ...input, source: ' ' }) === null);
+  check('空白总结主题拒绝发送', CTX.toPayload([{ ...topic, source: '' }]).length === 0);
+  check('本机总结语境拒绝发送', CTX.toPayload([{ ...topic, visibility: 'local' }]).length === 0);
+}
+
 console.log(`\n${failed === 0 ? '全部通过' : `${failed} 项失败`}`);
 process.exit(failed === 0 ? 0 : 1);
