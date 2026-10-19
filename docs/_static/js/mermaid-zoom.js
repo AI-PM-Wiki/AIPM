@@ -86,16 +86,17 @@
     dialog.innerHTML =
       '<div class="mermaid-zoom__shell">' +
         '<header class="mermaid-zoom__header">' +
+          '<span class="mermaid-zoom__mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="5" height="6" rx="1"/><rect x="16" y="3" width="5" height="6" rx="1"/><rect x="16" y="15" width="5" height="6" rx="1"/><path d="M8 12h4m4-6h-4v12h4"/></svg></span>' +
           '<h2 class="mermaid-zoom__title" id="aipm-mermaid-dialog-title">' +
-            "Mermaid 放大视图" +
+            'Mermaid<span class="mermaid-zoom__subtitle">图表预览</span>' +
           "</h2>" +
-          '<div class="mermaid-zoom__actions">' +
-            '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--icon" data-mermaid-action="fit" aria-label="适应窗口" title="适应窗口">' +
-              '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 8H7v3m8-3h2v3M7 14v2h2m6 0h2v-2"/></svg>' +
+          '<div class="mermaid-zoom__actions" role="group" aria-label="图表缩放">' +
+            '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--icon" data-mermaid-action="zoom-out" aria-label="缩小" title="缩小"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>' +
+            '<output class="mermaid-zoom__scale" aria-label="缩放比例" aria-live="polite">100%</output>' +
+            '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--icon" data-mermaid-action="zoom-in" aria-label="放大" title="放大"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>' +
+            '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--icon mermaid-zoom__button--fit" data-mermaid-action="fit" aria-label="适应窗口" title="适应窗口">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="7" width="6" height="10" rx="1"/><path d="M2 4v16m20-16v16M2 12h5m-2-2 2 2-2 2m17-2h-5m2-2-2 2 2 2"/></svg>' +
             "</button>" +
-            '<button type="button" class="mermaid-zoom__button" data-mermaid-action="zoom-out" aria-label="缩小">−</button>' +
-            '<output class="mermaid-zoom__scale" aria-live="polite">100%</output>' +
-            '<button type="button" class="mermaid-zoom__button" data-mermaid-action="zoom-in" aria-label="放大">＋</button>' +
           "</div>" +
           '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--close" data-mermaid-action="close" aria-label="关闭" title="关闭">' +
             '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
@@ -129,16 +130,26 @@
       event.preventDefault();
       closeViewer(true);
     });
-    dialog.addEventListener("close", finishClose);
+    dialog.addEventListener("close", () => {
+      if (!dialog.open) finishClose();
+    });
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) closeViewer(true);
     });
-    dialog.addEventListener("keydown", trapFocus);
+    dialog.addEventListener("keydown", (event) => {
+      trapFocus(event);
+      event.stopPropagation();
+    });
     state.viewport.addEventListener("pointerdown", startPointer);
     state.viewport.addEventListener("pointermove", movePointer);
     state.viewport.addEventListener("pointerup", endPointer);
     state.viewport.addEventListener("pointercancel", endPointer);
     state.viewport.addEventListener("wheel", zoomWithWheel, { passive: false });
+    new ResizeObserver(() => {
+      if (!state.source) return;
+      state.scale = Math.min(DEFAULT_SCALE_CAP, fitScale());
+      centerCanvas();
+    }).observe(state.viewport);
 
     return true;
   };
@@ -416,6 +427,7 @@
     host.style.transform = "none";
     host.style.zoom = "1";
     document.body.style.overflow = "hidden";
+    document.documentElement.classList.add("mermaid-zoom-open");
 
     try {
       state.dialog.showModal();
@@ -428,8 +440,7 @@
 
     requestAnimationFrame(() => {
       if (!state.source) return;
-      // 宽图默认适度放大;仍完整落在视口时直接居中,用户可继续缩放。
-      state.scale = clamp(Math.min(DEFAULT_SCALE_CAP, Math.max(1, fitScale())), MIN_SCALE, MAX_SCALE);
+      state.scale = Math.min(DEFAULT_SCALE_CAP, fitScale());
       centerCanvas();
       state.closeButton.focus();
     });
@@ -462,6 +473,7 @@
       state.canvas.style.transform = "";
     }
     document.body.style.overflow = state.previousOverflow;
+    document.documentElement.classList.remove("mermaid-zoom-open");
 
     state.source = null;
     state.sourceParent = null;

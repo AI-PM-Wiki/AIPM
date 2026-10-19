@@ -45,6 +45,8 @@ TMPDIR="$PWD/meta/browser/summary-runtime" node --import ./agent-server/node_mod
 
 `check_article_summary_ui_ego.mjs` 的 `checkArticleSummaryUi` 使用相同参数与任务空间，检查八组宽度／主题下的独立停靠、平板浮层、手机抽屉、导图全屏、主题要点展开与收起、键盘焦点、图标缩放控件、随内容滚动的讨论入口及标签滚动位置。宽度调整检查覆盖鼠标、键盘、320–640px 边界、视口变化、刷新记忆和三个面板之间的共享宽度。结果保存在 `ui-results.json`，并保存桌面与移动端的精读截图。
 
+`check_mermaid_ui_ego.mjs` 的 `checkMermaidUi` 使用相同参数与任务空间，检查八组尺寸／主题下的紧凑工具栏、手机全屏画布、初始适应窗口、按钮及滚轮缩放、拖动、键盘焦点循环、关闭后的原图恢复，以及总结导图使用相同的适应窗口图标。结果保存在 `mermaid-ui-results.json`。
+
 结束后向 `runtime-config.json` 的 `control` 地址追加 `/stop` 发送 POST，并对同一浏览器任务空间执行 `task.finish({ keep: [] })`。`--cache-from <已有 summaries 目录>` 可以验收已有真实缓存；该运行在报告中记录实际生成次数和 `warmCache`。
 
 ## 端口与数据
