@@ -30,6 +30,33 @@
     return node;
   }
 
+  const ICON = {
+    spark: '<path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3L12 3Z"/><path d="M20 2v4m-2-2h4"/>',
+    map: '<rect x="3" y="9" width="5" height="6" rx="1"/><rect x="16" y="3" width="5" height="6" rx="1"/><rect x="16" y="15" width="5" height="6" rx="1"/><path d="M8 12h4m4-6h-4v12h4"/>',
+    reading: '<path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3"/>',
+    close: '<path d="m6 6 12 12M6 18 18 6"/>',
+    minus: '<path d="M5 12h14"/>',
+    plus: '<path d="M5 12h14M12 5v14"/>',
+    chat: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-1 2V11.5a8.5 8.5 0 0 1 17 0Z"/><path d="M7 10h9M7 14h6"/>',
+    arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>',
+  };
+
+  function icon(name) {
+    const holder = element('span', 'aipm-summary__icon');
+    holder.setAttribute('aria-hidden', 'true');
+    holder.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + ICON[name] + '</svg>';
+    return holder;
+  }
+
+  function iconButton(name, label, action) {
+    const node = button('', action);
+    node.classList.add('aipm-summary__icon-button');
+    node.setAttribute('aria-label', label);
+    node.title = label;
+    node.append(icon(name));
+    return node;
+  }
+
   function isSummary(data) {
     const string = value => typeof value === 'string';
     const strings = value => Array.isArray(value) && value.length > 0 && value.length <= 5 && value.every(string);
@@ -51,14 +78,14 @@
       .replace(/%/g, '#37;').replace(/`/g, '#96;').replace(/[\r\n]/g, ' ');
   }
 
-  function diagramSource(data) {
+  function diagramSource(data, expanded = true) {
     const lines = ['flowchart LR', 'root["' + label(data.title) + '"]'];
     data.mindmap.branches.forEach((branch, index) => {
       lines.push('root --> s' + index + '["' + label(branch.label) + '"]');
-      branch.points.forEach((point, child) => {
+      if (expanded) branch.points.forEach((point, child) => {
         lines.push('s' + index + ' --> p' + index + '_' + child + '["' + label(point) + '"]');
       });
-      const nodes = ['s' + index, ...branch.points.map((_, child) => 'p' + index + '_' + child)];
+      const nodes = ['s' + index, ...(expanded ? branch.points.map((_, child) => 'p' + index + '_' + child) : [])];
       lines.push('class ' + nodes.join(',') + ' aipm-summary-branch-' + index + ';');
     });
     return lines.join('\n');
@@ -83,8 +110,11 @@
     const map = element('div', 'aipm-summary__content');
     const reading = element('div', 'aipm-summary__content');
     const content = [map, reading];
+    const body = element('div', 'aipm-summary__body');
+    body.append(map, reading);
     const tabButtons = ['思维导图', 'AI 精读'].map((title, index) => {
       const tab = button(title, () => select(index));
+      tab.prepend(icon(index === 0 ? 'map' : 'reading'));
       tab.id = id + '-tab-' + index;
       tab.setAttribute('role', 'tab');
       tab.setAttribute('aria-controls', id + '-panel-' + index);
@@ -95,18 +125,22 @@
       return tab;
     });
     let active = 0;
+    const scrollPositions = [0, 0];
     let generation = 0;
     let data = null;
     let disposed = false;
+    let expanded = false;
     let stopDrawing = () => {};
     const footer = element('footer', 'aipm-summary__footer');
     function select(index) {
+      scrollPositions[active] = body.scrollTop;
       active = index;
       tabButtons.forEach((tab, current) => {
         tab.setAttribute('aria-selected', String(current === index));
         tab.tabIndex = current === index ? 0 : -1;
         content[current].hidden = current !== index;
       });
+      body.scrollTop = scrollPositions[index];
     }
     tabs.addEventListener('keydown', event => {
       let next;
@@ -121,6 +155,7 @@
     });
     function sourceLink(text, anchor) {
       const link = element('a', 'aipm-summary__source', text);
+      link.title = '阅读原文：' + text;
       link.href = data.page + (anchor ? '#' + encodeURIComponent(anchor) : '');
       link.addEventListener('click', event => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -129,25 +164,46 @@
       });
       return link;
     }
-    async function draw(current) {
+    async function draw(current, restoreFocus = false) {
+      const graph = element('section', 'aipm-summary__graph');
+      const toolbar = element('div', 'aipm-summary__toolbar');
+      const detail = button(expanded ? '收起要点' : '展开要点', () => {
+        const focused = document.activeElement === detail;
+        stopDrawing();
+        expanded = !expanded;
+        graph.remove();
+        void draw(++generation, focused);
+      });
+      detail.classList.add('aipm-summary__detail-toggle');
+      detail.setAttribute('aria-pressed', String(expanded));
+      toolbar.append(element('span', 'aipm-summary__graph-label', '文章脉络'), detail);
       const diagram = element('div', 'aipm-summary__diagram');
       diagram.setAttribute('aria-label', '文章思维导图');
       const notice = element('p', 'aipm-summary__status', '正在绘制思维导图…');
-      map.prepend(diagram, notice);
+      graph.append(toolbar, diagram, notice);
+      map.prepend(graph);
+      if (restoreFocus) detail.focus();
       try {
         const mermaid = await loadMermaid();
         if (disposed || current !== generation) return;
         const dark = document.body.getAttribute('data-md-color-scheme') === 'slate';
+        const styles = getComputedStyle(root);
         const source = '%%{init: ' + JSON.stringify({
           theme: dark ? 'dark' : 'neutral', securityLevel: 'strict',
-          flowchart: { htmlLabels: false, useMaxWidth: false, curve: 'basis' },
-        }) + '}%%\n' + diagramSource(data);
+          themeVariables: { fontFamily: styles.fontFamily, fontSize: '15px' },
+          flowchart: { htmlLabels: false, useMaxWidth: false, curve: 'basis', nodeSpacing: 6, rankSpacing: 36, padding: 6 },
+        }) + '}%%\n' + diagramSource(data, expanded);
         const rendered = await mermaid.render(id + '-graph-' + current, source);
         if (disposed || current !== generation) return;
         diagram.innerHTML = rendered.svg;
         const svg = diagram.querySelector('svg');
-        svg.setAttribute('role', 'img');
+        svg.setAttribute('role', 'group');
         svg.setAttribute('aria-label', data.title + '思维导图，点击节点阅读原文');
+        svg.querySelectorAll('.node rect').forEach(rect => {
+          rect.setAttribute('rx', '8');
+          rect.setAttribute('ry', '8');
+        });
+        svg.querySelector('.node:not([class*="aipm-summary-branch-"])')?.classList.add('aipm-summary__root-node');
         data.mindmap.branches.forEach((branch, index) => {
           const nodes = diagram.querySelectorAll('.aipm-summary-branch-' + index);
           nodes.forEach(node => {
@@ -165,20 +221,23 @@
           });
         });
         const controls = element('div', 'aipm-summary__zoom');
+        const scaleLabel = element('output', 'aipm-summary__scale');
+        scaleLabel.setAttribute('aria-label', '导图缩放比例');
         const naturalWidth = svg.viewBox.baseVal.width;
         let scale = 1;
         let fitWidth = true;
         const apply = next => {
           scale = Math.max(.1, Math.min(2, next));
           svg.style.width = naturalWidth * scale + 'px';
+          scaleLabel.textContent = Math.round(scale * 100) + '%';
         };
         const fit = () => {
           fitWidth = true;
-          if (diagram.clientWidth) apply((diagram.clientWidth - 24) / naturalWidth);
+          if (diagram.clientWidth) apply(Math.min(1, (diagram.clientWidth - 32) / naturalWidth));
         };
-        controls.append(button('适应宽度', fit), button('缩小', () => { fitWidth = false; apply(scale / 1.3); }),
-          button('放大', () => { fitWidth = false; apply(scale * 1.3); }));
-        diagram.before(controls);
+        controls.append(iconButton('minus', '缩小', () => { fitWidth = false; apply(scale / 1.3); }),
+          scaleLabel, iconButton('plus', '放大', () => { fitWidth = false; apply(scale * 1.3); }), button('适应宽度', fit));
+        graph.append(element('p', 'aipm-summary__graph-hint', '点击主题节点，阅读对应原文'), controls);
         const resize = new ResizeObserver(() => { if (fitWidth) fit(); });
         resize.observe(diagram);
         stopDrawing = () => resize.disconnect();
@@ -187,23 +246,33 @@
       } catch (error) {
         if (disposed || current !== generation) return;
         notice.textContent = '思维导图绘制失败。';
-        notice.append(button('重新绘制', () => { diagram.remove(); notice.remove(); void draw(current); }));
+        notice.append(button('重新绘制', () => { graph.remove(); void draw(current, true); }));
       }
     }
     function setLoading() {
       stopDrawing();
       generation++;
       data = null;
+      expanded = false;
       select(0);
       map.replaceChildren();
       reading.replaceChildren();
+      body.scrollTop = 0;
+      scrollPositions.fill(0);
       footer.replaceChildren();
       root.setAttribute('aria-busy', 'true');
-      status.textContent = '正在同时生成思维导图和 AI 精读…';
+      status.dataset.state = 'loading';
+      status.textContent = '正在整理全文，生成思维导图与 AI 精读…';
+      const placeholder = element('div', 'aipm-summary__loading');
+      placeholder.setAttribute('aria-hidden', 'true');
+      for (let index = 0; index < 3; index++) placeholder.append(element('span'));
+      map.append(placeholder);
     }
     function setError(message, retry) {
       root.setAttribute('aria-busy', 'false');
+      status.dataset.state = 'error';
       status.textContent = message;
+      root.querySelector('.aipm-summary__loading')?.remove();
       if (retry) status.append(button('重试', retry));
     }
     function setData(summary) {
@@ -212,31 +281,48 @@
       data = summary;
       const current = ++generation;
       root.setAttribute('aria-busy', 'false');
-      status.textContent = 'AI 生成，请结合原文阅读。';
+      status.dataset.state = 'ready';
+      status.textContent = data.mindmap.branches.length + ' 个主题 · ' + data.reading.sections.length + ' 节精读';
       map.replaceChildren();
-      reading.replaceChildren(element('p', 'aipm-summary__overview', data.reading.overview));
-      const outline = element('ul', 'aipm-summary__outline');
-      data.mindmap.branches.forEach(branch => {
+      const intro = element('section', 'aipm-summary__intro');
+      intro.append(element('span', 'aipm-summary__eyebrow', '全文导读'), element('p', 'aipm-summary__overview', data.reading.overview));
+      reading.replaceChildren(intro);
+      const outline = element('ol', 'aipm-summary__outline');
+      data.mindmap.branches.forEach((branch, index) => {
         const item = element('li');
-        item.append(sourceLink(branch.label, branch.anchor));
-        branch.points.forEach(point => item.append(element('p', '', point)));
+        const heading = element('h3');
+        const number = element('span', 'aipm-summary__number', String(index + 1).padStart(2, '0'));
+        number.setAttribute('aria-hidden', 'true');
+        heading.append(number, sourceLink(branch.label, branch.anchor));
+        const points = element('ul');
+        branch.points.forEach(point => points.append(element('li', '', point)));
+        item.append(heading, points);
         outline.append(item);
       });
-      map.append(outline);
-      data.reading.sections.forEach(section => {
+      map.append(element('h3', 'aipm-summary__outline-title', '主题要点'), outline);
+      data.reading.sections.forEach((section, index) => {
         const card = element('section', 'aipm-summary__section');
         const title = element('h3');
-        title.append(sourceLink(section.heading, section.anchor));
+        const number = element('span', 'aipm-summary__number', String(index + 1).padStart(2, '0'));
+        number.setAttribute('aria-hidden', 'true');
+        title.append(number, sourceLink(section.heading, section.anchor));
         const points = element('ul');
         section.takeaways.forEach(point => points.append(element('li', '', point)));
         card.append(title, element('p', '', section.explanation), points);
         reading.append(card);
       });
-      footer.replaceChildren(element('small', '', new Date(data.generatedAt).toLocaleString() + ' · ' + data.model));
-      if (continueChat) footer.append(button('与 AI 继续讨论', () => continueChat(data)));
+      footer.replaceChildren();
+      if (continueChat) {
+        const discuss = button('与 AI 继续讨论', () => continueChat(data));
+        discuss.classList.add('aipm-summary__discuss');
+        discuss.prepend(icon('chat'));
+        discuss.append(icon('arrow'));
+        footer.append(discuss);
+      }
+      footer.append(element('small', '', 'AI 生成内容，请结合原文核对。'));
       void draw(current);
     }
-    root.append(tabs, status, map, reading, footer);
+    root.append(tabs, status, body, footer);
     host.append(root);
     select(0);
     const theme = new MutationObserver(() => {
@@ -269,16 +355,16 @@
   entry.setAttribute('aria-label', 'AI 总结');
   entry.setAttribute('aria-expanded', 'false');
   entry.setAttribute('aria-controls', 'aipm-summary');
-  entry.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 2.9 6.1L22 9l-5 4.9 1.2 7-6.2-3.3L5.8 21 7 13.9 2 9l7.1-.9L12 2z"/></svg>';
+  entry.append(icon('spark'));
   const panel = element('aside', 'aipm-summary');
   panel.id = 'aipm-summary';
   panel.hidden = true;
   panel.setAttribute('aria-labelledby', 'aipm-summary-title');
   const head = element('header', 'aipm-summary__head');
   const title = element('h2', '', 'AI 总结');
+  title.prepend(icon('spark'));
   title.id = 'aipm-summary-title';
-  const closeButton = button('×', () => close());
-  closeButton.setAttribute('aria-label', '关闭 AI 总结');
+  const closeButton = iconButton('close', '关闭 AI 总结', () => close());
   head.append(title, closeButton);
   const articleTitle = element('p', 'aipm-summary__article');
   const host = element('div', 'aipm-summary__host');
