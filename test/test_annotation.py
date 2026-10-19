@@ -152,22 +152,13 @@ class TestEntryButton(unittest.TestCase):
         # 打开那一路抽成了 revealPanel(),入口与智能高亮共用同一份
         self.assertIn('panels.claim("annotation")', _block(self.js, "function revealPanel()"))
 
-    def test_entry_icon_flips_between_chevrons(self):
-        """入口两个状态各一枚方向箭头:收起态 ‹、展开态 ›。
-
-        箭头指面板**将要移动的方向** —— 面板停靠在右侧,所以收起时向左(拉出来)、
-        展开时向右(推回去)。刻意不用叉:页头那个叉会和面板头部自己的关闭叉在
-        同一屏里打架(验收意见)。收起路径(叉按钮 / Esc / 遮罩 / 下拉)都经
-        syncChrome,所以图标始终跟得上。
-        """
-        self.assertIn("chevronLeft:", self.js)
-        self.assertIn("chevronRight:", self.js)
+    def test_entry_uses_a_sidebar_icon_with_expanded_state(self):
+        """右侧面板图标对应入口，无障碍属性同步面板状态。"""
+        self.assertIn("dockRight:", self.js)
+        self.assertIn("entry.innerHTML = ICON.dockRight", self.js)
+        self.assertIn('entry.setAttribute("aria-controls", panel.id)', self.js)
         sync = _block(self.js, "function syncEntry()")
-        self.assertIn("ICON.chevronLeft", sync)
-        self.assertIn("ICON.chevronRight", sync)
         self.assertIn("aria-expanded", sync)
-        self.assertNotIn("ICON.close", sync, "页头不该出现叉(那是面板头部自己的图标)")
-        # 由 syncChrome 驱动 —— 忘了接上,图标就跟不上开合
         self.assertIn("syncEntry();", _block(self.js, "function syncChrome()"))
 
 
@@ -284,11 +275,11 @@ class TestJudgeDegradation(unittest.TestCase):
 
 
 class TestHeadIconClick(unittest.TestCase):
-    """面板页头那支笔点下去做什么,看身份(issue #97 与 #103)。
+    """智能批注的缓存、管理员重新生成与服务端授权。
 
     三条容易悄悄回退的约定:
     - 默认仍是缓存优先,只有重新生成这一条路跳过页内那层缓存;
-    - 重新生成要认人:站长走重新生成,其余人换一份列表;服务端另有一道闸
+    - 重新生成检查管理员身份；服务端校验权限，
       (未登录 401、非站长 403)拦住伪造的请求 —— 判分一次就是一次真金白银的调用。
       站长按登录名也认得出:服务端比站点旧的那段窗口里,签发会话与 /api/auth/me
       都还没有 admin 标记;
@@ -319,28 +310,15 @@ class TestHeadIconClick(unittest.TestCase):
         self.assertIn("refresh: refresh", block)
         self.assertIn("auth.token()", block)
 
-    # ---- 前端:那支笔 ----
-
-    def test_the_head_icon_is_a_real_button_for_everyone(self):
-        """两种身份点它都有事发生,所以它常驻按钮语义 —— 键盘与焦点圈不必自己补。"""
-        self.assertIn(
-            '<button type="button" class="aipm-anno__head-icon aipm-anno__iconbtn">', self.js
-        )
-        self.assertNotIn('<span class="aipm-anno__head-icon">', self.js)
-
-    def test_the_head_icon_branches_on_identity(self):
-        handler = _block(self.js, "function headIconAction()")
+    def test_smart_annotation_branches_on_identity(self):
+        handler = _block(self.js, "function smartAnnotationAction()")
         self.assertIn("auth.isAdmin()", handler)
         self.assertIn("smartHighlight({ refresh: true })", handler)
-        self.assertIn("togglePanelMode()", handler)
-        # 监听器常驻,身份却会变 —— 每次点击都要重新问一遍
-        self.assertIn('els.headIcon.addEventListener("click", headIconAction)', self.js)
+        self.assertIn("smartHighlight();", handler)
+        self.assertIn('smart.addEventListener("click", smartAnnotationAction)', self.js)
 
     def test_the_owner_is_recognised_by_name_too(self):
-        """站长不能只认服务端回的 admin 标记:站点合并进 main 就上线,批注服务要等
-        重建容器,中间那段窗口里签发会话与 /api/auth/me 都还没有这个字段 —— 只认它
-        的话,站长在这段窗口里被当成普通访客,页头那颗图标退回「换一份列表」(线上
-        报回来的就是这个现象)。"""
+        """管理员身份支持服务端标记与配置的登录名。"""
         block = _block(self.auth, "function isAdmin()")
         self.assertIn("session.admin === true", block)
         self.assertIn("ADMIN_LOGINS.indexOf(login.toLowerCase())", block)
@@ -358,10 +336,9 @@ class TestHeadIconClick(unittest.TestCase):
         for login in entries:
             self.assertIn(f"ADMIN_LOGINS: z.string().default('{login}')", self._server_file("config.ts"))
 
-    def test_the_owner_click_regenerates_in_both_lists(self):
-        """页头只有这一颗图标,批注那份列表与评论那份列表共用它。站长点它到哪一份
-        列表上都是重新生成 —— 判据里不许掺「现在看的是哪一份」。"""
-        handler = _block(self.js, "function headIconAction()")
+    def test_the_owner_click_regenerates(self):
+        """管理员的智能批注操作请求重新生成。"""
+        handler = _block(self.js, "function smartAnnotationAction()")
         self.assertNotIn("panelMode", handler)
         self.assertLess(
             handler.index("auth.isAdmin()"),
@@ -379,21 +356,6 @@ class TestHeadIconClick(unittest.TestCase):
         caller = _block(self.js, "function smartHighlight(")
         self.assertIn("{ refreshed: refresh }", caller)
 
-    def test_the_head_icon_label_says_what_the_click_does(self):
-        block = _block(self.js, "function syncHeadIcon()")
-        self.assertIn("auth.isAdmin()", block)
-        self.assertIn("modeSwitchHint()", block)
-        self.assertIn('setAttribute("aria-label", label)', block)
-        # 换列表那一半是开关,aria-pressed 跟着当前模式
-        self.assertIn('setAttribute("aria-pressed"', block)
-        # 「不是站长」不能用 disabled 表达:那说的是「按不动」
-        self.assertNotIn("disabled", block)
-
-    def test_no_identity_styling_is_written_into_the_stylesheet(self):
-        """身份不出现在样式里:两条路共用同一副外观,分开的只有点击去向与措辞。
-        那枚图标自身的尺寸与配色由 TestHeadIconTellsTheTwoListsApart 盯着。"""
-        self.assertNotIn(".aipm-anno__head-icon.is-regenerate", self.css)
-
     def test_a_click_during_the_automatic_pass_is_queued_not_dropped(self):
         """自动判分要跑几秒,这几秒里页头那颗图标仍然点得动。那一下不能丢(站长点
         了却什么都没发生),也不能并着发第二笔(旧那一份结果会落在新的上面):排一笔
@@ -407,17 +369,11 @@ class TestHeadIconClick(unittest.TestCase):
         # 排的是哪一页就冲哪一页发:等的过程里翻页,那一笔不再替他花出去
         self.assertIn("if (pagePath() !== page) return;", queue)
 
-    def test_the_head_icon_does_not_double_spend(self):
+    def test_smart_annotation_does_not_double_spend(self):
         """重新生成通过进行中的请求状态防止重复调用。"""
         block = _block(self.js, "function setSmartBusy(")
         self.assertIn("smartInFlight = kind;", block)
-        self.assertNotIn("headIcon", block)
         self.assertIn("if (smartInFlight !== null) {", _block(self.js, "function smartHighlight("))
-
-    def test_the_head_icon_state_follows_the_login(self):
-        """未登录 → 登录 → 退出登录这条来回里,标记必须跟着身份走。"""
-        self.assertIn("syncHeadIcon();", _block(self.js, "auth.onChange(function ()"))
-        self.assertIn("syncHeadIcon();", self.js[self.js.index("auth.ready().then(") :])
 
     def test_the_admin_flag_comes_from_the_server(self):
         self.assertIn("isAdmin: isAdmin", self.auth)
@@ -450,29 +406,24 @@ class TestHeadIconClick(unittest.TestCase):
 
     # ---- 前端:换一份列表(普通用户那条路) ----
 
-    def test_both_switchers_go_through_one_helper(self):
-        """标题那颗胶囊与页头那支笔换的是同一份列表,不该各写一遍换法。"""
+    def test_title_switches_lists(self):
+        """标题切换列表并清理当前编辑状态。"""
         block = _block(self.js, "function togglePanelMode()")
         self.assertIn('panelMode === "comments" ? "annotations" : "comments"', block)
         self.assertIn("syncMode();", block)
         self.assertIn("render();", block)
         # 在编辑卡里写了一半的草稿不该跨模式跟过去
         self.assertIn("editorDraft = null;", block)
-        # 换法只此一处:两个入口都从这里走,不再有人自己写一遍取反
         self.assertEqual(self.js.count('panelMode === "comments" ? "annotations" : "comments"'), 1)
         self.assertIn('els.title.addEventListener("click", togglePanelMode)', self.js)
 
-    def test_the_switchers_share_one_wording(self):
-        """两处说的都是「点下去会发生什么」,措辞只有一份。"""
+    def test_title_describes_its_switch_action(self):
+        """标题提示对应当前模式的切换动作。"""
         hint = _block(self.js, "function modeSwitchHint()")
         self.assertIn('panelMode === "comments"', hint)
         self.assertIn("切回批注", hint)
         self.assertIn("切到评论", hint)
         self.assertIn("var hint = modeSwitchHint();", _block(self.js, "function syncMode()"))
-
-    def test_the_head_icon_says_which_way_it_switches(self):
-        """换模式之后那支笔的措辞要跟着走 —— 它写的是「切到评论」还是「切回批注」。"""
-        self.assertIn("syncHeadIcon();", _block(self.js, "function syncMode()"))
 
 
 class TestSmartHighlightIsOnByDefault(unittest.TestCase):
@@ -1252,7 +1203,7 @@ class TestUiRoundFour(unittest.TestCase):
         """空栏平时不露头(一页干净的时候不该挂着三行 0),被眼睛收走的那一栏例外:
         标题与眼睛是唯一的回来路。"""
         block = _block(self.js, "function render()")
-        self.assertIn("if (visible.length === 0 && !draftHere && !hidden) return;", block)
+        self.assertIn("if (visible.length === 0 && !draftHere && !hidden && !hasSmartAction) return;", block)
 
     def test_empty_panel_counts_content_not_chrome(self):
         """面板空不空只看真正的内容。判据不能是 childNodes.length —— 排序条与
@@ -1454,12 +1405,13 @@ class TestUiRoundFour(unittest.TestCase):
         self.assertIn("draftRank <= positionKey(anno)", block)
 
     def test_new_comment_editor_lands_on_the_button_slot(self):
-        """新评论的编辑卡就长在「写一条评论」那颗按钮的位置上 —— 不是另起一张按
-        位置插进分栏里(评论压根没有正文位置),发出去之后也还在这一条上。"""
+        """评论入口和新建编辑器位于评论内容后方。"""
         block = _block(self.js, "function render()")
         self.assertIn("editorDraft.page === true ? materializeEditor()", block)
         self.assertIn('"new-comment"', block)
-        # 评论不走 draftSlot:编辑卡在上面那颗按钮的位置上,不参与分组
+        self.assertLess(block.index("els.list.appendChild(empty)"),
+                        block.index('"new-comment"'))
+        # 整页评论编辑器独立于批注分组。
         slot = _block(self.js, "function draftSlot()")
         self.assertIn('if (panelMode === "comments") return null;', slot)
         # 于是 render 里不再需要「评论钉在最上面」那个特例
@@ -2682,34 +2634,16 @@ class TestUiRoundSix(unittest.TestCase):
         cls.js = ANNO_JS.read_text(encoding="utf-8")
         cls.css = ANNO_CSS.read_text(encoding="utf-8")
 
-    def test_title_wears_an_outline_at_rest(self):
-        """原先这颗按钮只有一条 :hover 底色 —— 那等于把「这里能点」只讲给鼠标听:
-        触屏没有悬停,键盘更是什么都看不见。所以静息态就得有轮廓:边框 + 胶囊圆角,
-        底色留空(紧挨着它的条数徽章是**实底无框**的,一虚一实才不会混成一片)。
-
-        边框色钉 --md-default-fg-color--lighter 而不是页头那条发丝线
-        --aipm-anno-line:发丝线是给「分隔」用的,深色下也只到 20% 白(见 extra.css
-        3. 节),拿去勾控件轮廓仍然太轻;--lighter 两套配色都是 40%,静息态看得清。
-        退回发丝线 = 暗色下这颗按钮又变回一段纯文字。
-
-        (2026-09-21 之前,--aipm-anno-line 别名写在 :root 上,深色下实际取到的是
-        亮色那份 rgba(0,0,0,.12),黑底黑线整条消失 —— 那是求值域写错,已改到
-        body。但发丝线即便修好也不适合当控件轮廓,所以这条判据不变。)
-        """
+    def test_title_has_no_border_at_rest(self):
+        """标题切换按钮使用无边框样式。"""
         rule = _block(self.css, ".aipm-anno__title {")
-        self.assertIn(
-            "border: 1px solid var(--md-default-fg-color--lighter)", rule
-        )
-        self.assertIn("border-radius: 999px", rule)
+        self.assertIn("border: 0", rule)
+        self.assertIn("border-radius: .2rem", rule)
         self.assertIn("cursor: pointer", rule)
         self.assertIn("background: transparent", rule)
-        self.assertNotIn("border: 0", rule)
 
     def test_title_carries_a_swap_glyph(self):
-        """光有边框还不说明点下去会怎样;尾巴上那对反向箭头才是「会换一份列表」
-        那句话。它得写在按钮里面,并且 aria-hidden —— 名字已经由 title /
-        aria-label 说了,读屏不该把图标也念一遍。
-        """
+        """切换箭头位于标题按钮中，并设置 aria-hidden。"""
         self.assertIn("swap:", self.js)
         panel = self.js[self.js.index('var panel = document.createElement("div");') :]
         panel = panel[: panel.index("document.body.appendChild(panel)")]
@@ -3001,60 +2935,12 @@ class TestSmartbarNotificationsCanBeDismissed(unittest.TestCase):
         self.assertIn(".aipm-anno__smart-close:focus-visible", self.css)
 
 
-class TestHeadIconTellsTheTwoListsApart(unittest.TestCase):
-    """面板头上那颗图标得说明眼下是哪一份列表(AIPM-9)。
-
-    批注锚在正文某一段上,评论对整页说话 —— 两份列表共用同一个面板,头图标跟着
-    当前那一份走:批注是笔,评论是对话气泡。
-    """
+class TestAnnotationToolbar(unittest.TestCase):
+    """正文选区的批注工具栏。"""
 
     @classmethod
     def setUpClass(cls):
         cls.js = ANNO_JS.read_text(encoding="utf-8")
-        cls.css = ANNO_CSS.read_text(encoding="utf-8")
-
-    def _icon_map(self):
-        """ICON 表那一段源码。"""
-        src = self.js[self.js.index("var ICON = {") :]
-        return src[: src.index("\n  };")]
-
-    def test_the_shell_opens_on_the_pen(self):
-        """首屏那一份列表是批注,静态外壳里先摆笔 —— 它和默认的 panelMode 同值,
-        不会先画一颗气泡再被 syncMode() 翻回去。"""
-        shell = self.js[
-            self.js.index("panel.innerHTML =") : self.js.index("document.body.appendChild(panel)")
-        ]
-        head = shell[shell.index("aipm-anno__head-icon") :]
-        head = head[: head.index("aipm-anno__title")]
-        self.assertIn("ICON.pen", head)
-        self.assertIn('var panelMode = "annotations"', self.js)
-
-    def test_switching_lists_swaps_the_head_icon(self):
-        """两个模式的所有入口都走 syncMode(),换图标写在这里就够。"""
-        block = _block(self.js, "function syncMode()")
-        self.assertIn("els.headIcon.innerHTML = isComments ? ICON.comment : ICON.pen", block)
-        # 换的是那颗 span。写 els.head.innerHTML 会把标题按钮、条数徽章、账号与
-        # 关闭按钮一起抹掉,面板的头就秃了。
-        self.assertNotIn("els.head.innerHTML", self.js)
-
-    def test_the_comment_glyph_is_a_bubble_of_the_same_family(self):
-        """气泡与同表其余图标一样:24 方格坐标系里的实心路径、对读屏隐藏。
-        头图标是纯装饰,「这份列表是评论」由标题按钮上的字与 aria-pressed 说。"""
-        icons = self._icon_map()
-        self.assertIn("\n    comment:\n", icons)
-        bubble = icons[icons.index("\n    comment:") :]
-        bubble = bubble[: bubble.index("\n    close:")]
-        self.assertIn('viewBox="0 0 24 24"', bubble)
-        self.assertIn('aria-hidden="true"', bubble)
-        self.assertIn("<path d=", bubble)
-        self.assertNotIn("stroke", bubble)
-
-    def test_one_rule_paints_whichever_glyph_is_inside(self):
-        """两颗图标共用 .aipm-anno__head-icon svg 这一条:尺寸与配色写在选择器上,
-        换图标不带动头部排版。"""
-        rule = _block(self.css, ".aipm-anno__head-icon svg {")
-        self.assertEqual(_decl(rule, "width"), _decl(rule, "height"))
-        self.assertIn("fill: var(--md-accent-fg-color)", rule)
 
     def test_the_pen_still_marks_the_write_annotation_button(self):
         """笔没有从别处消失:工具栏上那颗「写批注」还是它。"""

@@ -271,34 +271,16 @@ html.aipm-anno-mode--sheet .aipm-anno__grip {
 html.aipm-anno-mode--sheet .aipm-anno__head {
   cursor: pointer;
 }
-.aipm-anno__head-icon {
-  display: inline-flex;
-  flex: none;
-}
-/* 这枚图标的尺寸与颜色写在下面按钮那一档里(见 .aipm-anno__iconbtn 之后的
-   .aipm-anno__head-icon svg):它换的是笔还是气泡,头部的排版都不动。 */
-/* 标题是「批注 ↔ 评论」的切换器,所以它是一颗按钮 —— 但按钮得在**不悬停**的
-   时候也看得出来。原先只有一条 :hover 底色,那等于把「这里能点」这句话只讲给
-   鼠标听:触屏没有悬停,键盘更是什么都看不见。
-
-   所以正面直接做成一颗胶囊:边框勾出控件轮廓,左边写当前模式,尾巴上一对反向
-   箭头说明点下去会换一份列表。
-
-   边框用 --md-default-fg-color--lighter 而不是页头那条发丝线 --aipm-anno-line:
-   发丝线是"分隔"档(暗色下 20% 白,见 extra.css 3. 节),勾控件轮廓还是太轻;
-   --lighter 两套配色都是 40%,静息态就看得清。手柄条用的也是这一档。
-
-   底色刻意留空 —— 紧挨着的条数徽章是**实底无框**的,一虚一实才不会看成一串
-   同样的标记。悬停时才填底,填的就是徽章那一档,顺手把边框再加重一档。 */
+/* 矩形标题按钮显示当前模式与切换箭头。 */
 .aipm-anno__title {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: .22rem;
-  height: 1.5rem;
-  padding: 0 .45rem;
-  border: 1px solid var(--md-default-fg-color--lighter);
-  border-radius: 999px;
+  gap: .4rem;
+  height: 1.6rem;
+  padding: 0 .5rem;
+  border: 0;
+  border-radius: .2rem;
   color: inherit;
   background: transparent;
   font-family: inherit;
@@ -306,7 +288,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-size: .8125rem;
   line-height: 1;
   cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
+  transition: background-color .15s ease;
 }
 /* 箭头比文字矮一档、颜色也轻一档:它是副手,当前模式才是主角。 */
 .aipm-anno__title svg {
@@ -316,11 +298,14 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   transition: fill .15s ease;
 }
 .aipm-anno__title:hover {
-  border-color: var(--md-default-fg-color--light);
   background: var(--md-default-fg-color--lightest);
 }
 .aipm-anno__title:hover svg {
   fill: var(--md-default-fg-color);
+}
+.aipm-anno__title:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
 }
 /* 按下要「陷」一下,否则点完等于没点过。用 1px 下沉而不是再换一档底色:
    底色在亮/暗两套下的对比走向相反(亮色下加深、暗色下提亮),换错一边暗色下
@@ -337,13 +322,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-size: .6875rem;
   text-align: center;
 }
-/* 页头是一条「标题在左、动作在右」的横条:笔 + 面板名 + 条数贴着左边,账号与关闭
-   贴着右边。auto 必须只落在这一串里的**第一颗**身上 —— 两颗各给一个的话,富余
-   空间会被平摊成两段,账号就飘到中间去了(这正是改之前的样子)。
-
-   头一颗曾经是智能高亮,它连同「[hidden] 时把 auto 交接给下一颗」那条相邻兄弟
-   规则一起随按钮搬去了页头(见 extra.css 的 .aipm-anno-smart):这一串现在固定
-   是账号 → 关闭,不再随模式改换头一颗,交接规则也就没有存在的理由。 */
+/* 标题与条数靠左，账号与关闭按钮靠右。 */
 .aipm-anno__head .aipm-anno__account {
   margin-left: auto;
 }
@@ -379,19 +358,6 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   height: 1.05rem;
   fill: currentColor;
 }
-/* 页头那枚图标同属图标按钮一档:命中区与悬停底色都来自上面那条
-   .aipm-anno__iconbtn,颜色与尺寸另写在这里 —— 笔与气泡都取强调色,通用那条给的是
-   currentColor。两条选择器同权,先后即是生效顺序:这一条必须排在通用规则之后。
-   悬停时交回 currentColor,与账号、关闭两颗走的是同一条规则。 */
-.aipm-anno__head-icon svg {
-  width: 1.05rem;
-  height: 1.05rem;
-  fill: var(--md-accent-fg-color);
-}
-.aipm-anno__head-icon:hover svg {
-  fill: currentColor;
-}
-
 /* ----------------------------------------------------------------------------
    5. 列表
    ---------------------------------------------------------------------------- */
@@ -470,7 +436,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   justify-content: center;
   gap: .3rem;
   width: 100%;
-  margin: 0 0 .6rem;
+  margin: .6rem 0 0;
   padding: .5rem;
   border: 1px dashed var(--aipm-anno-line);
   border-radius: .3rem;
@@ -632,6 +598,37 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 }
 .aipm-anno__group-count {
   font-weight: 400;
+}
+.aipm-anno__group-smart {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: .2rem;
+  min-height: 1.6rem;
+  margin-inline-end: .25rem;
+  padding: 0 .4rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .2rem;
+  color: var(--md-default-fg-color--light);
+  background: transparent;
+  font-family: inherit;
+  font-size: .6875rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.aipm-anno__group-smart:hover {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__group-smart:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+.aipm-anno__group-smart svg {
+  width: .8rem;
+  height: .8rem;
+  fill: currentColor;
 }
 .aipm-anno__group-eye {
   display: inline-flex;

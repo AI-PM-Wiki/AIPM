@@ -112,18 +112,10 @@
   ];
 
   var ICON = {
-    /* 页头入口的开合图标:箭头指面板**将要移动的方向**。面板停靠在右侧,
-       所以收起态指向左(点它拉出来)、展开态指向右(点它推回去)。 */
-    chevronLeft:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.41,7.41L14,6l-6,6 6,6 1.41,-1.41L10.83,12z"/></svg>',
-    chevronRight:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.59,16.59L10,18l6,-6 -6,-6 -1.41,1.41L13.17,12z"/></svg>',
+    dockRight:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M15 18H4V6H15Z"/></svg>',
     pen:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z"/></svg>',
-    /* 评论列表那一边的头图标:一颗对话气泡。批注是在正文某一段上写字,评论是对
-       整个页面说话,面板头上的图标得跟着当前那一份列表走(见 syncMode)。 */
-    comment:
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20,2H4c-1.1,0 -2,0.9 -2,2v18l4,-4h14c1.1,0 2,-0.9 2,-2V4c0,-1.1 -0.9,-2 -2,-2z"/></svg>',
     close:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19,6.4L17.6,5L12,10.6L6.4,5L5,6.4L10.6,12L5,17.6L6.4,19L12,13.4L17.6,19L19,17.6L13.4,12L19,6.4z"/></svg>',
     spark:
@@ -507,16 +499,7 @@
     '<button type="button" class="aipm-anno__grip" aria-label="调整批注面板高度">' +
     '<span class="aipm-anno__grip-bar"></span></button>' +
     '<header class="aipm-anno__head">' +
-    /* 这一枚是面板的标记,也是一颗按钮:站长点它是「重新生成智能高亮」,其余人点
-       它换一份列表(见 syncHeadIcon)。所以它是真 <button> —— 键盘与焦点圈都不必
-       自己补,面板那条「按钮不吞正文选区」的规则也一并盖到它。 */
-    '<button type="button" class="aipm-anno__head-icon aipm-anno__iconbtn">' +
-    ICON.pen +
-    "</button>" +
-    /* 标题即「批注 ↔ 评论」的切换器:它同时是当前模式的指示。但它首先是**按钮**,
-       而按钮得在不悬停的时候就看得出来 —— 悬停底色只帮得到鼠标,触屏没有悬停。
-       所以正面是一颗带边框的胶囊:左边写当前模式(syncMode() 改的就是这个 span),
-       尾巴上一对双向箭头说明点下去会换一份列表。 */
+    /* 标题按钮显示当前模式，双向箭头表示切换批注与评论。 */
     '<button type="button" class="aipm-anno__title" aria-label="切换批注与评论">' +
     '<span class="aipm-anno__title-label">批注</span>' +
     ICON.swap +
@@ -597,7 +580,6 @@
     toolbar: toolbar,
     grip: panel.querySelector(".aipm-anno__grip"),
     head: panel.querySelector(".aipm-anno__head"),
-    headIcon: panel.querySelector(".aipm-anno__head-icon"),
     title: panel.querySelector(".aipm-anno__title"),
     titleLabel: panel.querySelector(".aipm-anno__title-label"),
     count: panel.querySelector(".aipm-anno__count"),
@@ -632,24 +614,16 @@
   entry.title = "打开批注面板";
   entry.setAttribute("aria-label", "打开批注面板");
   entry.setAttribute("aria-expanded", "false");
+  entry.setAttribute("aria-controls", panel.id);
   entry.setAttribute("data-state", "closed");
-  entry.innerHTML = ICON.chevronLeft;
+  entry.innerHTML = ICON.dockRight;
 
-  /* 入口是**开关**,不是「只负责开」:面板开着时再点一次即收起。这个来回只能由它
-     自己承担 —— 助手的 FAB 在面板开着时直接隐藏(.is-hidden),批注入口一直可见。
-
-     开合用一对方向箭头表示:收起态 ‹、展开态 ›,箭头指面板**将要移动的方向**
-     (面板停靠在右侧,故收起时向左=拉出来,展开时向右=推回去)。刻意不用叉 ——
-     页头那个叉会和面板头部自己的关闭叉在同一屏里打架(验收意见)。
-
-     图标只在状态真的翻转时换一次:syncChrome() 在拖拽吸附、换形态、开关面板时都会
-     被调到,每次重建 innerHTML 会让图标白闪一下。 */
+  /* 页头入口切换面板开合，并同步提示与无障碍状态。 */
   function syncEntry() {
     var state = open ? "open" : "closed";
     if (entry.getAttribute("data-state") === state) return;
     entry.setAttribute("data-state", state);
     entry.setAttribute("aria-expanded", open ? "true" : "false");
-    entry.innerHTML = open ? ICON.chevronRight : ICON.chevronLeft;
     var label = open ? "收起批注面板" : "打开批注面板";
     entry.title = label;
     entry.setAttribute("aria-label", label);
@@ -1361,6 +1335,16 @@
     spacer.className = "aipm-anno__spacer";
     head.appendChild(spacer);
 
+    if (panelMode === "annotations" && key === "local") {
+      var smart = document.createElement("button");
+      smart.type = "button";
+      smart.className = "aipm-anno__group-smart";
+      smart.title = "智能批注";
+      smart.innerHTML = ICON.spark + "<span>智能批注</span>";
+      smart.addEventListener("click", smartAnnotationAction);
+      head.appendChild(smart);
+    }
+
     var eye = document.createElement("button");
     eye.type = "button";
     eye.className = "aipm-anno__group-eye";
@@ -1456,34 +1440,14 @@
     els.count.hidden = items.length === 0;
     els.list.textContent = "";
 
-    /* 评论模式没有「划词」这个动作,新建得有一颗看得见的按钮 —— 而且新评论的
-       编辑卡就长在这颗按钮的位置上:点开它,写的时候看到的排版就是发出去之后的
-       排版,发出去之后也还在这一条上,不再另起一张落到某个分栏里。
-       编辑器一轮 render 只能物化一次(它会覆写 els 里那组指针),所以这里物化了,
-       下面的分组循环就不会再碰它 —— 评论不走 draftSlot()。 */
     if (panelMode === "comments") {
-      var composer = editorDraft !== null && editorDraft.page === true ? materializeEditor() : null;
-      if (composer !== null) {
-        els.list.appendChild(composer);
-      } else if (editorDraft === null) {
-        var newbtn = document.createElement("button");
-        newbtn.type = "button";
-        newbtn.className = "aipm-anno__newbtn";
-        newbtn.setAttribute("data-action", "new-comment");
-        newbtn.innerHTML = ICON.edit + "<span>写一条评论</span>";
-        newbtn.addEventListener("click", function () {
-          startPageComment();
-        });
-        els.list.appendChild(newbtn);
-      }
       els.list.appendChild(sortRow());
     }
 
     var draft = draftSlot();
     var prefs = store.prefs();
     var commentSort = prefs.commentSort;
-    /* 新批注按落点插进排序好的列表。评论已经没有这一节了(draftSlot 对评论返回
-       null,它的编辑卡在上面那颗按钮的位置上)。 */
+    /* 新批注按正文位置排序，整页评论的编辑器位于评论列表末尾。 */
     var draftRank = draft === null || draft.inline ? null : draftKey();
 
     /* 面板「空不空」只看真正的内容。排序条与「写一条评论」是常驻的 chrome,
@@ -1513,10 +1477,11 @@
          空栏平时不露头(一页干净的时候不该挂着三行 0),被眼睛收走的那一栏例外 ——
          标题与眼睛是唯一的回来路,栏里空了也得留着。 */
       var hidden = prefs[groupShownKey(g.key)] === false;
-      if (visible.length === 0 && !draftHere && !hidden) return;
+      var hasSmartAction = panelMode === "annotations" && g.key === "local";
+      if (visible.length === 0 && !draftHere && !hidden && !hasSmartAction) return;
 
       els.list.appendChild(groupHead(g.key, visible.length + (draftHere ? 1 : 0), prefs));
-      contentCount++;
+      if (visible.length > 0 || draftHere || hidden) contentCount++;
 
       /* 编辑器由 render 现场产出(列表每轮整体重建),而且要落在它该在的位置上:
          新批注按它选中那段文字的位置插进排序好的列表,不再钉在分组最前面。 */
@@ -1585,6 +1550,24 @@
           ? "还没有人对这一页留下评论。"
           : "选中正文里的一段话就能加批注。";
       els.list.appendChild(empty);
+    }
+
+    /* 评论入口与新建编辑器共用列表末尾的位置。 */
+    if (panelMode === "comments") {
+      var composer = editorDraft !== null && editorDraft.page === true ? materializeEditor() : null;
+      if (composer !== null) {
+        els.list.appendChild(composer);
+      } else if (editorDraft === null) {
+        var newbtn = document.createElement("button");
+        newbtn.type = "button";
+        newbtn.className = "aipm-anno__newbtn";
+        newbtn.setAttribute("data-action", "new-comment");
+        newbtn.innerHTML = ICON.edit + "<span>写一条评论</span>";
+        newbtn.addEventListener("click", function () {
+          startPageComment();
+        });
+        els.list.appendChild(newbtn);
+      }
     }
 
     /* 手机上 peek 的高度按「一张卡」算,而卡片是这里刚建出来的 —— 重建完顺手
@@ -4245,35 +4228,12 @@
   }
 
   /**
-   * 面板页头那支笔点下去做什么,看身份:
-   *   站长(服务端 ADMIN_LOGINS)→ 重新生成智能高亮(跳过两层缓存重新判分);
-   *   其余人 → 在「批注 / 评论」两份列表之间切换,与标题那颗胶囊同一件事。
-   *
-   * 两条路都不改这颗按钮的形与位,所以身份不写进样式,只写进它的标题与 aria ——
-   * 读屏与悬停提示说的都该是「点下去会发生什么」。身份是会变的(未登录 → 登录 →
-   * 退出登录),所以每次都要按当下的身份重写一遍。
-   */
-  function syncHeadIcon() {
-    var admin = !!(auth && auth.isAdmin && auth.isAdmin());
-    var label = admin ? "重新生成智能高亮(重新判分并覆盖本页缓存)" : modeSwitchHint();
-    els.headIcon.title = label;
-    els.headIcon.setAttribute("aria-label", label);
-    if (admin) {
-      els.headIcon.removeAttribute("aria-pressed");
-      return;
-    }
-    /* 换列表那一半是开关,状态跟着当前模式走 —— 与标题那颗胶囊同一套 aria。 */
-    els.headIcon.setAttribute("aria-pressed", panelMode === "comments" ? "true" : "false");
-  }
-
-  /**
    * 判这一页的正文。
    *
    * 默认先读缓存:页内已有的那份结果(本次会话点过一次)直接摆回来,服务端那层
    * 同页缓存也照样命中 —— 一次判分的结果不该因为第二次点而被重算一遍。
    *
-   * `opts.refresh` 是站长在面板页头那支笔上点的「重新生成」:跳过这两层缓存、
-   * 让服务端重新判分并覆盖它那份缓存(见 syncHeadIcon)。
+   * `opts.refresh` 由管理员的智能批注操作传入，重新判分并更新服务端缓存。
    *
    * `opts.auto` 是进页面时自己跑的那一条(见 autoSmart):不动界面、失败不出声、
    * 拿到的建议直接写成「仅本机」高亮。
@@ -4282,9 +4242,7 @@
     var refresh = !!(opts && opts.refresh);
     var auto = !!(opts && opts.auto);
     if (!auto) {
-      /* 判的是正文,与面板里看的是哪一份列表无关:回执落在智能高亮条上,而那条长
-         在面板里、不跟着列表换。所以这里不切列表 —— 站长在「评论」那一份里点页头
-         那颗图标,判完之后人还在评论里。 */
+      /* 智能批注的请求状态与建议显示在面板通知区。 */
       /* 回执落在面板里的智能高亮条上,面板关着的话点了等于没反应 —— 先把它叫出来。
          移动端还得多一步:抽屉停在 peek 那一条上时,智能高亮条是被 .is-compact
          压成 opacity:0 的,得展开到第三段才看得见(与写批注那条路一致)。 */
@@ -4296,9 +4254,7 @@
       if (mode === "sheet") setSnap("expanded", false);
     }
     if (smartInFlight !== null) {
-      /* 手上有别的一笔在飞。自动判分要跑几秒,这几秒里页头那颗图标仍然点得动 ——
-         那一下不能丢,也不能并着发第二笔:记在 pendingRefresh 上,等它收尾再发,
-         连点几下合并成一次(见 drainPendingRefresh)。 */
+      /* 自动判分期间的管理员重新生成请求合并为一次，等待当前请求结束。 */
       if (!refresh || smartInFlight !== "auto") return;
       pendingRefresh = pagePath();
       setSmartbar("正在重新生成…(等这一页当前的判分跑完)", "busy");
@@ -4758,13 +4714,12 @@
      面板外壳:模式切换 / 账号 / 分组折叠与显示
      ================================================================ */
 
-  /** 点下去会发生什么(相对当前模式而言的反向动作)。标题那颗胶囊与面板页头那支
-      笔共用这一份措辞 —— 两处说的是同一件事,不该各写一句。 */
+  /** 标题按钮切换到另一种模式的提示。 */
   function modeSwitchHint() {
     return panelMode === "comments" ? "切回批注(锚在正文某一段上)" : "切到评论(对整页说话)";
   }
 
-  /** 换一份列表:批注 ↔ 评论。两个入口(标题、页头那支笔)共用这一条。 */
+  /** 切换批注与评论列表。 */
   function togglePanelMode() {
     panelMode = panelMode === "comments" ? "annotations" : "comments";
     // 换模式等于换了一份列表,正在写的那张卡不该跨模式跟过去
@@ -4774,25 +4729,15 @@
     render();
   }
 
-  /** 标题就是模式开关 —— 它写着什么,列表里就是什么。
-
-      只改 label span 的 textContent:按钮里还有那颗双向箭头,整颗重写 innerHTML
-      会把图标一起抹掉。aria 三件套跟着当前模式走 —— 读屏听到的应该是**点下去
-      会发生什么**(切到评论),而不是一句恒定的「切换批注与评论」。
-
-      头上的图标跟着模式一起换:批注是笔,评论是对话气泡。它在标题按钮外面,
-      整颗 span 重写 innerHTML,里面没有别的东西要留。 */
+  /** 同步标题文字、切换提示与当前模式。 */
   function syncMode() {
     var isComments = panelMode === "comments";
     var label = isComments ? "评论" : "批注";
     var hint = modeSwitchHint();
     els.titleLabel.textContent = label;
-    els.headIcon.innerHTML = isComments ? ICON.comment : ICON.pen;
     els.title.title = hint;
     els.title.setAttribute("aria-label", hint);
     els.title.setAttribute("aria-pressed", isComments ? "true" : "false");
-    /* 页头那支笔的措辞跟着模式走(它写的是「切到评论」还是「切回批注」)。 */
-    syncHeadIcon();
   }
 
   els.title.addEventListener("click", togglePanelMode);
@@ -5071,16 +5016,14 @@
     }
   }
 
-  /* 面板页头那支笔:站长点它是「重新生成」,其余人点它换一份列表(身份那半边见
-     syncHeadIcon)。监听器常驻,身份却是会变的,所以每次点击都重新问一遍。 */
-  function headIconAction() {
+  /** 智能批注读取建议；管理员可以重新生成本页建议。 */
+  function smartAnnotationAction() {
     if (auth && auth.isAdmin && auth.isAdmin()) {
       smartHighlight({ refresh: true });
       return;
     }
-    togglePanelMode();
+    smartHighlight();
   }
-  els.headIcon.addEventListener("click", headIconAction);
 
   /* ================================================================
      面板 ↔ 正文:两头的定位
@@ -5430,7 +5373,6 @@
   if (auth) {
     auth.ready().then(function () {
       syncComposer();
-      syncHeadIcon();
       if (auth.isLoggedIn()) invalidate();
       ensureAnnotationsLoaded();
     });
@@ -5439,7 +5381,6 @@
         pendingLoginConsent.ticket.token, pendingLoginConsent.ticket.githubId
       )) closeLoginConsent();
       syncComposer();
-      syncHeadIcon();
     });
   }
 
