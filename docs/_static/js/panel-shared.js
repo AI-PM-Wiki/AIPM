@@ -295,6 +295,86 @@
 
   var panels = {};
   var current = null;
+  var widthKey = "aipm-panel-width";
+  var preferredWidth = Number(localStorage.getItem(widthKey));
+  var resizeHandles = [];
+
+  function widthLimits() {
+    return { min: 320, max: Math.max(320, Math.min(640, document.documentElement.clientWidth - 720)) };
+  }
+
+  function applyWidth(width, persist) {
+    var limits = widthLimits();
+    var clamped = Math.round(Math.max(limits.min, Math.min(limits.max, width)));
+    document.documentElement.style.setProperty("--aipm-panel-width", clamped + "px");
+    if (persist) {
+      preferredWidth = clamped;
+      localStorage.setItem(widthKey, String(clamped));
+    }
+    resizeHandles.forEach(function (handle) {
+      handle.setAttribute("aria-valuemin", String(limits.min));
+      handle.setAttribute("aria-valuemax", String(limits.max));
+      handle.setAttribute("aria-valuenow", String(clamped));
+    });
+  }
+
+  function attachDockResize(panel) {
+    var handle = document.createElement("div");
+    handle.className = "aipm-panel-resize";
+    handle.tabIndex = 0;
+    handle.setAttribute("role", "separator");
+    handle.setAttribute("aria-label", "调整侧控栏宽度");
+    handle.setAttribute("aria-orientation", "vertical");
+    handle.setAttribute("aria-controls", panel.id);
+    panel.appendChild(handle);
+    resizeHandles.push(handle);
+    var drag = null;
+    function updateAria() {
+      var limits = widthLimits();
+      handle.setAttribute("aria-valuemin", String(limits.min));
+      handle.setAttribute("aria-valuemax", String(limits.max));
+      handle.setAttribute("aria-valuenow", String(Math.round(panel.getBoundingClientRect().width)));
+    }
+    handle.addEventListener("pointerdown", function (event) {
+      if (event.button !== 0 || !window.matchMedia("(min-width: 75em)").matches) return;
+      event.preventDefault();
+      handle.focus();
+      drag = { id: event.pointerId, x: event.clientX, width: panel.getBoundingClientRect().width };
+      handle.setPointerCapture(event.pointerId);
+      document.documentElement.classList.add("aipm-panel-resizing");
+    });
+    handle.addEventListener("pointermove", function (event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      applyWidth(drag.width + drag.x - event.clientX, false);
+    });
+    function finish(event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      drag = null;
+      document.documentElement.classList.remove("aipm-panel-resizing");
+      applyWidth(panel.getBoundingClientRect().width, true);
+    }
+    handle.addEventListener("pointerup", finish);
+    handle.addEventListener("pointercancel", finish);
+    handle.addEventListener("lostpointercapture", finish);
+    handle.addEventListener("keydown", function (event) {
+      var limits = widthLimits();
+      var width = panel.getBoundingClientRect().width;
+      if (event.key === "ArrowLeft") width += event.shiftKey ? 48 : 16;
+      else if (event.key === "ArrowRight") width -= event.shiftKey ? 48 : 16;
+      else if (event.key === "Home") width = limits.min;
+      else if (event.key === "End") width = limits.max;
+      else return;
+      event.preventDefault();
+      applyWidth(width, true);
+    });
+    new ResizeObserver(updateAria).observe(panel);
+    updateAria();
+  }
+
+  if (Number.isFinite(preferredWidth) && preferredWidth >= 320) applyWidth(preferredWidth, false);
+  window.addEventListener("resize", function () {
+    if (preferredWidth >= 320) applyWidth(preferredWidth, false);
+  });
 
   function api(name) {
     return panels[name] || null;
@@ -357,6 +437,7 @@
     get: api,
     // 共享件(两个面板都用同一套几何与手势)
     attachSheetDrag: attachSheetDrag,
+    attachDockResize: attachDockResize,
     stepSnap: stepSnap,
     nearestSnap: nearestSnap,
     snapLerp: snapLerp,

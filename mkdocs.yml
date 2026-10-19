@@ -836,6 +836,7 @@ extra_javascript:
   - '_static/js/chart-context.js?v=5'
   - '_static/js/panel-shared.js?v=1'
 extra_css:
+  - '_static/css/panel-shared.css'
   - '_static/css/extra.css?v=43'
   - '_static/css/mermaid-zoom.css?v=8'
   - '_static/css/chart-context.css?v=1'

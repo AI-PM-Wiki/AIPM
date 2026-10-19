@@ -142,17 +142,22 @@
   background: var(--md-accent-fg-color--transparent);
 }
 
+.mermaid-zoom__button--icon,
 .mermaid-zoom__button--close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  margin-left: .2rem;
   padding: .35rem;
+}
+
+.mermaid-zoom__button--close {
+  margin-left: .2rem;
   border-color: var(--md-accent-fg-color);
   color: var(--md-accent-fg-color);
 }
 
+.mermaid-zoom__button--icon svg,
 .mermaid-zoom__button--close svg {
   width: 1.15rem;
   height: 1.15rem;

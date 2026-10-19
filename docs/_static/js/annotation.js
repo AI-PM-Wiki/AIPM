@@ -898,6 +898,7 @@
       clearDragHeight: clearDragHeight,
       onClose: closePanel
     });
+    panels.attachDockResize(panel);
     panels.register("annotation", {
       open: openPanel,
       close: closePanel,

@@ -1,0 +1,40 @@
+.aipm-panel-resize {
+  display: none;
+}
+
+@media (min-width: 75em) {
+  .aipm-panel-resize {
+    position: absolute;
+    z-index: 1;
+    inset: 0 auto 0 -5px;
+    display: block;
+    width: 10px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .aipm-panel-resize::after {
+    position: absolute;
+    inset: 0 4px;
+    background: var(--md-accent-fg-color);
+    opacity: 0;
+    content: "";
+  }
+
+  .aipm-panel-resize:hover::after,
+  .aipm-panel-resize:focus-visible::after,
+  .aipm-panel-resizing .aipm-panel-resize::after {
+    opacity: 1;
+  }
+}
+
+.aipm-panel-resizing,
+.aipm-panel-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.aipm-panel-resizing .md-header,
+.aipm-panel-resizing .md-container {
+  transition: none !important;
+}

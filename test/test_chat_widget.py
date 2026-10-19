@@ -115,12 +115,12 @@ class TestChatWidgetStyles(unittest.TestCase):
         self.assertIn("[data-md-color-primary] .md-tabs {", extra)
         self.assertIn("border-bottom: 0;", extra)
 
-    def test_panel_width_within_prd_range(self):
-        m = re.search(r"--aipm-chat-w:\s*clamp\(([^)]+)\)", self.css)
+    def test_panel_default_width_within_prd_range(self):
+        m = re.search(r"--aipm-chat-w:\s*var\(--aipm-panel-width,\s*clamp\(([^)]+)\)", self.css)
         self.assertIsNotNone(m)
         lo, _, hi = [v.strip() for v in m.group(1).split(",")]
-        self.assertEqual(lo, "20rem")   # 320px 最小宽
-        self.assertEqual(hi, "26.25rem")  # 420px 最大宽
+        self.assertEqual(lo, "20rem")
+        self.assertEqual(hi, "26.25rem")
 
     def test_message_list_reserves_its_scrollbar_gutter(self):
         """消息列不能因为「历史长了」而换一个宽度。

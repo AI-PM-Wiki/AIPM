@@ -90,8 +90,8 @@
             "Mermaid 放大视图" +
           "</h2>" +
           '<div class="mermaid-zoom__actions">' +
-            '<button type="button" class="mermaid-zoom__button" data-mermaid-action="fit">' +
-              "适应窗口" +
+            '<button type="button" class="mermaid-zoom__button mermaid-zoom__button--icon" data-mermaid-action="fit" aria-label="适应窗口" title="适应窗口">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 8H7v3m8-3h2v3M7 14v2h2m6 0h2v-2"/></svg>' +
             "</button>" +
             '<button type="button" class="mermaid-zoom__button" data-mermaid-action="zoom-out" aria-label="缩小">−</button>' +
             '<output class="mermaid-zoom__scale" aria-live="polite">100%</output>' +

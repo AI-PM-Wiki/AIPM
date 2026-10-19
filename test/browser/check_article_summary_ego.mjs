@@ -145,6 +145,12 @@ export async function checkArticleSummary({ directory, taskSpace, spaceId, phase
   await page.waitForSelector('#aipm-chat .aipm-summary-view', { state: 'visible' });
   assert.equal(await page.evaluate(() => window.__aipmPanels.active()), 'chat');
   assert.equal(await page.evaluate(() => document.querySelector('#aipm-summary').hidden), true);
+  await page.waitForSelector('#aipm-chat .aipm-summary__diagram svg', { state: 'attached', timeout: 30000 });
+  await page.click('#aipm-chat button[aria-label="全屏显示"]');
+  await page.waitForSelector('.aipm-summary__fullscreen[open]', { state: 'visible' });
+  await page.press('.aipm-summary__fullscreen[open] button[aria-label="退出全屏"]', 'Escape');
+  await page.waitForSelector('#aipm-chat .aipm-summary__diagram svg', { state: 'attached' });
+  assert.equal(await page.evaluate(() => window.__aipmPanels.active()), 'chat');
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('aipm-chat-history')));
   assert.equal(stored.at(-1).summary.revision, summary.revision);
   assert.ok(stored.at(-1).content.includes(summary.reading.overview));
