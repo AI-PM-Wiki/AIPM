@@ -71,7 +71,8 @@
     title.textContent = `注释 ${link.textContent.trim()}`;
     const dismiss = document.createElement("button");
     dismiss.type = "button";
-    dismiss.textContent = "关闭";
+    dismiss.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5l14 14M19 5 5 19"></path></svg>';
+    dismiss.title = "关闭注释";
     dismiss.setAttribute("aria-label", "关闭注释");
     dismiss.addEventListener("click", () => close(true));
     header.append(title, dismiss);

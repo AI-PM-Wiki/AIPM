@@ -49,11 +49,26 @@
 }
 
 .book-footnote-popover__header button {
-  padding: .3rem .4rem;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: .3rem;
   border-radius: .25rem;
   color: var(--md-default-fg-color--light);
-  font-size: .65rem;
   cursor: pointer;
+}
+
+.book-footnote-popover__header button svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .book-footnote-popover__header button:hover {
