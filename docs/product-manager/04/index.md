@@ -14,7 +14,13 @@ title: 第04章 需求：采集与用户研究
 
 ## 第04章　需求：采集与用户研究
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00235.jpeg){ width="633" height="473" }
+</p>
+
+</figure>
 
 **第04章　需求：采集与用户研究/97**
 

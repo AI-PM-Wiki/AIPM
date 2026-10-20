@@ -14,7 +14,13 @@ title: 第05章 转化：需求分析与Y模型
 
 ## 第05章　转化：需求分析与Y模型
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00249.jpeg){ width="634" height="474" }
+</p>
+
+</figure>
 
 **第05章　转化：需求分析与Y模型/123**
 

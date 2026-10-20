@@ -20,12 +20,28 @@ title: 11.2 产品经理的七层修炼
 
 安排这一节内容的初衷是，想让大家看看自己到底走到了哪一步，想到达下一步需要做到哪些关键的提升。个人认为，初级产品的技能将被越来越多的人，甚至是非产品经理掌握，所以至少要走到第四层，才算到了一个相对安全的位置。
 
+<figure markdown="1">
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 表11-1　产品经理的七层修炼
+</figcaption>
 
+<p markdown="span" style="margin:0">
 ![img](../../images/image00346.jpeg){ width="619" height="282" }
+</p>
 
+</figure>
+
+<figure markdown="1">
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 续表
+</figcaption>
 
+<p markdown="span" style="margin:0">
 ![img](../../images/image00347.jpeg){ width="619" height="124" }
+</p>
+
+</figure>
 
 </div>

@@ -18,9 +18,17 @@ title: 7.1 从“想清楚”到“做出来”
 截止第06章，我们几乎已经想清楚了要做什么。第03到06章提到的关键步骤可以概括为图7-1，也可以把这个过程称作“创意设计”环节。图中特意放置了一个老式电话机，是为了再次提醒，这些步骤不是Step by Step顺序完成的，而是更像老式电话机的拨号过程<a id="footnote_quote_txt008_1"></a>[[1]](../05/index.md#footnote_content_txt008_1)
 ，要不停地回溯到前面进行过的步骤去验证，如经验证发现步骤有误，需要继续向前追溯，以进一步修正相关步骤。
 
-![img](../../images/image00296.jpeg){ width="419" height="295" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00296.jpeg){ width="419" height="295" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图7-1　“想清楚”的几大步骤
+</figcaption>
+
+</figure>
 
 本章的开始，先说说产品项目执行前最后的验证——评审立项。因为必须找到一群人来完成执行，接着会聊聊组队的话题，最后再讲讲执行过程中有哪些注意事项，以确保通过合理、准确的研发生产把产品做出来。
 

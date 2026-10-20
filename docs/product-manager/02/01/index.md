@@ -31,8 +31,16 @@ title: 2.1 产品：解决某个问题的东西
 
 图2-1示意了这些关键词的包含关系，下面将依次展开解释。
 
-![img](../../images/image00215.jpeg){ width="251" height="118" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00215.jpeg){ width="251" height="118" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图2-1　一些关键词的关系
+</figcaption>
+
+</figure>
 
 </div>

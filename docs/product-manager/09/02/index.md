@@ -35,9 +35,17 @@ title: 9.2 运营工作的分类
 
 根据产品的不同，用户运营的对象也会有所不同。以电商运营为例，就可以分为针对商家和针对买家两种。
 
-![img](../../images/image00322.jpeg){ width="318" height="224" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00322.jpeg){ width="318" height="224" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图9-1　有效与无效活动的对比
+</figcaption>
+
+</figure>
 
 有会员体系的产品，会花很多精力做会员运营，比如QQ为会员准备的各种颜色的钻，实体商家给客户办的各种级别的VIP卡。淘宝有一种VIP叫APASS，面向的都是每年在淘宝消费几十万元以上的用户，淘宝甚至会为其中最高级别的那部分人在豪华酒店里举办线下聚会，场面宛如一些高端的时尚界晚宴。
 

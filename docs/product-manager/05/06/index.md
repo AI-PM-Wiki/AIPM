@@ -16,13 +16,31 @@ title: 5.6 延伸阅读与练习
 
 本章关联到另外几本书的相关章节不多，大家可以试着去“读”一些真实的产品，亦可根据一些关键词扩展阅读。
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00266.jpeg){ width="403" height="62" }
+</p>
+
+</figure>
 
 可以做的练习任务如下。
 
-![img](../../images/image00267.jpeg){ width="623" height="457" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00267.jpeg){ width="623" height="457" }
+</p>
+
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00268.jpeg){ width="633" height="994" }
+</p>
+
+</figure>
 
 ---
 

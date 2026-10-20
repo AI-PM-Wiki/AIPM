@@ -14,7 +14,13 @@ title: 第08章 成长：规划与迭代
 
 ## 第08章　成长：规划与迭代
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00306.jpeg){ width="634" height="474" }
+</p>
+
+</figure>
 
 **第08章　成长：规划与迭代/219**
 

@@ -12,12 +12,30 @@ title: 人人都是产品经理2.0——写给泛产品经理
 
 ![人人都是产品经理2.0——写给泛产品经理](product-manager/images/cover00185.jpeg)
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![cover](product-manager/images/image00187.jpeg)
+</p>
+
+</figure>
 
 <a id="aid-21"></a>
 
-![img](product-manager/images/image00188.jpeg){ width="839" height="1185" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](product-manager/images/image00188.jpeg){ width="839" height="1185" }
+</p>
+
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](product-manager/images/image00189.jpeg){ width="841" height="1193" }
+</p>
+
+</figure>
 
 </div>

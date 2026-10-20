@@ -14,7 +14,13 @@ title: 第03章 概念：提出与筛选
 
 ## 第03章　概念：提出与筛选
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00221.jpeg){ width="634" height="474" }
+</p>
+
+</figure>
 
 **第03章　概念：提出与筛选/67**
 

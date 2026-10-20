@@ -20,9 +20,17 @@ title: 6.[1] 一个功能的DNA
 
 一个功能，涉及表6-1中所列的很多属性（更具体的介绍请参见《人人都是产品经理（纪念版）》）。
 
-表6-1　一个功能的DNA1
+<figure markdown="1">
 
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
+表6-1　一个功能的DNA1
+</figcaption>
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00270.jpeg){ width="621" height="434" }
+</p>
+
+</figure>
 
 表6-1中最基础的信息，是功能的描述。必须要让技术同学看了之后，就大概知道要做什么事情，这里的描述，通常只是一两句话，界面、逻辑等细节，还需要等到项目中的PRD（产品需求文档）阶段才会细化。
 

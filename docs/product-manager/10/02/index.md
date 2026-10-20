@@ -24,8 +24,16 @@ title: 10.2 创新那点事儿
 
 既然产品经理、创业者是最具创新能力的群体，下面就来聊聊创新。
 
-![img](../../images/image00338.jpeg){ width="332" height="204" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00338.jpeg){ width="332" height="204" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图10-5　创新的定义
+</figcaption>
+
+</figure>
 
 </div>

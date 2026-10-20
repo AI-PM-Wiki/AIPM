@@ -18,9 +18,21 @@ title: 2.3 延伸阅读与练习
 
 可以做的练习任务如下。
 
-![img](../../images/image00219.jpeg){ width="621" height="215" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00219.jpeg){ width="621" height="215" }
+</p>
+
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00220.jpeg){ width="634" height="874" }
+</p>
+
+</figure>
 
 ---
 

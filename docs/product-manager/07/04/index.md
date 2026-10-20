@@ -16,9 +16,17 @@ title: 7.4 研发生产时，我们做什么
 
 本节说的研发生产阶段，是指立项到产品发布之间的过程。作为产品经理，在这个过程中要做些什么事情呢？图7-4是对《人人都是产品经理（纪念版）》里描述项目流程的图略做修改后的结果。
 
-![img](../../images/image00301.jpeg){ width="614" height="427" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00301.jpeg){ width="614" height="427" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图7-4　产品经理视角的项目流程
+</figcaption>
+
+</figure>
 
 简单地讲，原型验证完成、产品委员会评审通过以后，要经历立项、需求、开发、测试、发布几大环节，然后再拿着做出来的产品找用户验证，最后做项目总结。
 

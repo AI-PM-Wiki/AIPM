@@ -16,15 +16,39 @@ title: 6.4 延伸阅读与练习
 
 本章关联到另外几本书的相关章节如下。其中的图标表示推荐阅读（笑脸）与选择阅读（冷漠脸），亦可根据一些关键词扩展阅读。
 
-![img](../../images/image00291.jpeg){ width="73" height="73" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00291.jpeg){ width="73" height="73" }
+</p>
+
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00292.jpeg){ width="478" height="181" }
+</p>
+
+</figure>
 
 可以做的练习任务如下。
 
-![img](../../images/image00293.jpeg){ width="640" height="354" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00293.jpeg){ width="640" height="354" }
+</p>
+
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00294.jpeg){ width="824" height="570" }
+</p>
+
+</figure>
 
 ---
 

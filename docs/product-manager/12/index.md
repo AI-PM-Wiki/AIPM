@@ -14,7 +14,13 @@ title: 第12章 结束：写在正文之后
 
 ## 第12章　结束：写在正文之后
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00355.jpeg){ width="633" height="474" }
+</p>
+
+</figure>
 
 **第11章　蜕变：从产品助理到CEO/305**
 

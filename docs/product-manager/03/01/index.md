@@ -35,8 +35,16 @@ Ta们碰到最痛的痛点是什么。
 
 以上的五个要素，就是产品的“切入点”（并不是完整的产品），下面一条条来讲述。通过前三个要素，可以顺便加深对第02章说的“用户”、“需求”、“场景”的理解。
 
-![img](../../images/image00222.jpeg){ width="197" height="194" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00222.jpeg){ width="197" height="194" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图 3-1　产品概念提出的几个关键要素
+</figcaption>
+
+</figure>
 
 </div>

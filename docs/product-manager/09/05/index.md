@@ -18,17 +18,41 @@ title: 9.5 延伸阅读与练习
 
 以下为运营与销售部分：
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00329.jpeg){ width="353" height="121" }
+</p>
+
+</figure>
 
 以下为市场与品牌部分：
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00330.jpeg){ width="552" height="120" }
+</p>
+
+</figure>
 
 可以做的练习任务如下。
 
-![img](../../images/image00331.jpeg){ width="623" height="427" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00331.jpeg){ width="623" height="427" }
+</p>
+
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00332.jpeg){ width="824" height="569" }
+</p>
+
+</figure>
 
 ---
 

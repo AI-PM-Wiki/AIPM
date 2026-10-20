@@ -16,9 +16,17 @@ title: 10.1 聊聊商业模式
 
 这一章比较综合，会把第02到09章涉及的内容串起来讲。首先提一个“商业模式画布”（如图10-1）的概念，它有九个要素，覆盖非常全面。理解透这一概念，也就想清楚了完整的商业闭环。
 
-![img](../../images/image00334.jpeg){ width="472" height="354" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00334.jpeg){ width="472" height="354" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图10-1　商业模式画布
+</figcaption>
+
+</figure>
 
 下面，用产品视角来重新解读一下这些要素。
 

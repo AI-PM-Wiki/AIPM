@@ -10,8 +10,20 @@ title: 封底
 
 <div class="book-original" markdown="1">
 
-![img](images/image00367.jpeg){ width="840" height="1191" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](images/image00367.jpeg){ width="840" height="1191" }
+</p>
+
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![cover](images/image00368.jpeg)
+</p>
+
+</figure>
 
 </div>

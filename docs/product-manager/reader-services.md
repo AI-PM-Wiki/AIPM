@@ -24,6 +24,12 @@ title: 读者服务
 
 页面入口：http://www.broadview.com.cn/3.1.0
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](images/image00190.jpeg){ width="104" height="104" }
+</p>
+
+</figure>
 
 </div>

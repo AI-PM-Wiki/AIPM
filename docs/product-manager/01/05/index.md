@@ -17,22 +17,48 @@ title: 1.5 延伸阅读与练习
 本书在每一章的最后（除了第00章以及第12章），会提供“和我有关的5本书”<a id="footnote_quote_txt002_6"></a>[[6]](#footnote_content_txt002_6)
 里与本章内容关联的章节，作为扩展阅读。其中的笑脸图标表示推荐阅读，冷漠脸图标表示选择阅读。书名与对应章节，这里采取了一些简化的写法，相信大家可以看懂。另外，也可以根据每一章提到的各个关键词来进行扩展阅读。
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00210.jpeg){ width="432" height="269" }
+</p>
+
+</figure>
 
 最后，每一章都会给出一些练习作业。本书的练习作业多为文章，也有少量的案例分析、模板设计，输出的形式不限，可以是Word、PPT、Excel，甚至几张图。我个人就因为多年来不断地总结、输出而受益颇多。所以，建议读者可以从现在开始，开通一个属于自己的自媒体账号，微信公众号、个人博客、知乎专栏、简书等都可以，关键是要坚持，哪怕一周一篇，坚持一年，收获必定不菲。
 
 如果你真的这么做了，记得告诉我。也许，它们会作为更新的内容，出现在本书的新版本里。
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00211.jpeg){ width="619" height="119" }
+</p>
 
+</figure>
+
+<figure markdown="1">
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 续表
+</figcaption>
 
+<p markdown="span" style="margin:0">
 ![img](../../images/image00212.jpeg){ width="619" height="236" }
+</p>
 
 **注：**
 表中耗时的单位是“小时”。
 
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00213.jpeg){ width="824" height="575" }
+</p>
+
+</figure>
 
 ---
 

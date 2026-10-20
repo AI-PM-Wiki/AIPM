@@ -18,17 +18,41 @@ title: 7.5 延伸阅读与练习
 
 以下是立项组队部分：
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00302.jpeg){ width="379" height="184" }
+</p>
+
+</figure>
 
 以下是研发生产部分：
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00303.jpeg){ width="419" height="156" }
+</p>
+
+</figure>
 
 可以做的练习任务如下。
 
-![img](../../images/image00304.jpeg){ width="623" height="460" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00304.jpeg){ width="623" height="460" }
+</p>
+
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00305.jpeg){ width="824" height="632" }
+</p>
+
+</figure>
 
 ---
 

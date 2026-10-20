@@ -18,9 +18,17 @@ title: 自序
 
 若干年前在重庆，和朋友一起吃火锅，我第一次见到图1这种啤酒瓶盖子，它有点像易拉罐的拉环，开瓶体验不错。朋友说很多人就因为这种啤酒可以无工具开瓶，加上拉开的那一声“Biu”而成为了忠实用户。
 
-![img](images/image00191.jpeg){ width="342" height="254" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](images/image00191.jpeg){ width="342" height="254" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图1 某品牌啤酒的盖子
+</figcaption>
+
+</figure>
 
 再看看如图2所示的鸳鸯锅，相比更常见的左右分隔，这个内外分隔的锅解决了以下几个问题。
 
@@ -30,9 +38,17 @@ title: 自序
 
 第三，红汤、清汤沸点不同，左右分隔不会同时开锅，而内外分隔，配合合理的火头，可以同时开锅。
 
-![img](images/image00192.jpeg){ width="323" height="217" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](images/image00192.jpeg){ width="323" height="217" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图2 内外分隔的鸳鸯锅
+</figcaption>
+
+</figure>
 
 “人人都是产品经理”这句口号，已经提出小十年了，我们看到世界美好了一些，但生活中的Bug依然很多。只要用心，人人都可以发现，并提出自己的想法，直接或间接地为优化这个世界做出贡献，我也渐渐体会到《人人都是产品经理》的神奇之处。
 
@@ -62,9 +78,17 @@ title: 自序
 
 《四步创业法》是一本在国内被严重低估的书，2012年引进，其实这才是硅谷的创业圣经。《精益创业》的作者是《四步创业法》作者的学生和忠实信徒，李开复老师也推荐过它，如图3所示。做产品久了会发现，产品和创业的方法论其实很像，只是创业更难。在创业的方法论中，我们能学到很多对产品经理有用的东西。
 
-![img](images/image00193.jpeg){ width="407" height="221" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](images/image00193.jpeg){ width="407" height="221" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图3 李开复点评《四步创业法》
+</figcaption>
+
+</figure>
 
 《淘宝十年产品事》是一本案例集，正好于2013年淘宝成立十周年的时候出版。淘宝系产品的复杂度和多样性，可以说是国内互联网行业20年来独此一家，从前台到后台，从2B（to Business）到2C（to Customer），从Web到App，不一而足。产品经理成长到一定阶段，再看方法论已经作用不大，只能通过案例来提升。自己犯错后的成长最扎实。比如，早在2008年，阿里和微软合作的一个项目上，我就花掉了公司1000多万人民币的项目经费，这种机会不是每个人都能有的，所以通过别人的案例来学习会更加高效。
 

@@ -19,15 +19,29 @@ title: 1.1 从一个小故事谈起
 
 问：什么是“伪需求”？能否举例说明？
 
-![img](../../images/image00198.jpeg){ width="333" height="486" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00198.jpeg){ width="333" height="486" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图1-1　伪需求的故事
+</figcaption>
+
+</figure>
 
 时隔多年，我觉得不应该光抖机灵，还要来点有用的。
 
 宾馆大爷的故事，其实在工作生活中经常发生——这个大爷，就是产品经理；这家宾馆，就是一个产品；而学生们，就是用户。不合格的产品经理处处可见，他们共同创造了一个可怕的世界。那么，这个例子中到底有哪些坑？
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00199.jpeg){ width="73" height="73" }
+</p>
+
+</figure>
 
 **产品定位阶段**
 

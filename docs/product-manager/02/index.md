@@ -14,7 +14,13 @@ title: 第02章 产品：关键词与分类
 
 ## 第02章　产品：关键词与分类
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00214.jpeg){ width="634" height="473" }
+</p>
+
+</figure>
 
 **第02章　产品：关键词与分类/41**
 

@@ -14,7 +14,13 @@ title: 第11章 蜕变：从产品助理到CEO
 
 ## 第11章　蜕变：从产品助理到CEO
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00345.jpeg){ width="634" height="473" }
+</p>
+
+</figure>
 
 **11.1　在人力资源部做产品经理/307**
 

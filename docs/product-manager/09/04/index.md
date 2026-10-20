@@ -46,8 +46,16 @@ title: 9.4 产品的生命周期
 
 本书从第02到09章，按时间顺序讲述了一个产品从无到有的演变过程。下一章，再用更完整的商业视角来检阅产品、创新及相关案例。
 
-![img](../../images/image00328.jpeg){ width="527" height="243" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00328.jpeg){ width="527" height="243" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图9-7　跨越鸿沟（Geoffrey Moore，1991）
+</figcaption>
+
+</figure>
 
 </div>

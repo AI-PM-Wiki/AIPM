@@ -32,9 +32,17 @@ title: 12.2 重新定义“读书会”
 
 至本书出版的2017年春，读书会应该正在做第三期，以后打算每年春秋各一期。它也有了很多优化。如果你感兴趣，想一起参与，可以通过微信公众号联系我，也可以扫描图12-1二维码获取更多信息。
 
-![img](../../images/image00356.jpeg){ width="155" height="155" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00356.jpeg){ width="155" height="155" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图12-1　扫码加入读书会
+</figcaption>
+
+</figure>
 
 我更希望，通过“读书会”形成一个新型的组织，以规避我的弱点，即在性格上更适合当老师，而不是老板——好的老师擅长启发，不会灌输的，更不希望强制，而是习惯于通过讲解，让学生产生自己的想法，进而由内驱力来做事。所以，这要求团队是因为共识组成，而不是因为权力或利益聚在一起。
 
@@ -42,12 +50,28 @@ title: 12.2 重新定义“读书会”
 
 关于我重新定义的“读书会”，还可以扫码阅读更多，参见图12.2.12　-3。
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00357.jpeg){ width="155" height="154" }
+</p>
 
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图12-2　为什么说“只读模式”是无意义的
+</figcaption>
 
+</figure>
+
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../../images/image00358.jpeg){ width="155" height="155" }
+</p>
 
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图12-3　说说“会”交流的真正价值
+</figcaption>
+
+</figure>
 
 </div>

@@ -14,7 +14,13 @@ title: 第09章 运营：先验证再扩张
 
 ## 第09章　运营：先验证再扩张
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00319.jpeg){ width="633" height="473" }
+</p>
+
+</figure>
 
 **第09章　运营：先验证再扩张/249**
 

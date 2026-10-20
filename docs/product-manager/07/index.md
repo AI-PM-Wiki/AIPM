@@ -14,7 +14,13 @@ title: 第07章 执行：立项组队与研发生产
 
 ## 第07章　执行：立项组队与研发生产
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00295.jpeg){ width="634" height="474" }
+</p>
+
+</figure>
 
 **第07章　执行：立项组队与研发生产/191**
 

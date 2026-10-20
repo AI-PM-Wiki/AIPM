@@ -25,9 +25,17 @@ title: 4.2 一些实用的采集方法
 利用网络也是好办法，比如这个例子：智能路由器厂家的产品经理，可以试试用百度搜索关键词“路由器”，搜索引擎的大数据就会告诉我们很多用户痛点，如图4-3所示。比如非技术出身的用户，普遍都搞不清家里网络环境设置中的三组账号密码<a id="footnote_quote_txt005_3"></a>[[3]](../05/index.md#footnote_content_txt005_3)
 到底是怎么回事，所以路由器产品可以对相关设置进行更多的引导和简化。
 
-![img](../../images/image00238.jpeg){ width="247" height="239" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00238.jpeg){ width="247" height="239" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图4-3　百度搜“路由器”的联想
+</figcaption>
+
+</figure>
 
 类似地，用微博搜索自己产品的关键词，也经常能发现很多抱怨，可以直接找到这些用户，进行一对一的沟通。
 

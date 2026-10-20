@@ -14,7 +14,13 @@ title: 第10章 案例：商业模式、创新与行业
 
 ## 第10章　案例：商业模式、创新与行业
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00333.jpeg){ width="634" height="474" }
+</p>
+
+</figure>
 
 **第10章　案例：商业模式、创新与行业/277**
 

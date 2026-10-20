@@ -19,9 +19,17 @@ title: 0.3 本书内容与阅读方法
 
 本书从人开始，以人结束，中间说事，以一个产品从无到有的过程为框架——想清楚、做出来、推出去，外加一章综合案例。其中，最重要的想清楚、做出来、推出去，对应着互联网公司里三个最核心的岗位——产品、技术、运营，而本书的内容重点，则对应着“产品”。
 
-![img](../../images/image00196.jpeg){ width="622" height="503" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00196.jpeg){ width="622" height="503" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图0-2　全书视觉引导图
+</figcaption>
+
+</figure>
 
 接下来简单介绍一下各章的主要内容。
 

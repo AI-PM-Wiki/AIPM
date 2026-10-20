@@ -14,7 +14,13 @@ title: 第01章 初识：大话产品经理
 
 ## 第01章　初识：大话产品经理
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00197.jpeg){ width="633" height="473" }
+</p>
+
+</figure>
 
 **第01章　初识：大话产品经理/13**
 

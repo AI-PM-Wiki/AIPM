@@ -22,8 +22,16 @@ title: 3.3 产品概念的筛选
 
 筛选要考虑的维度有很多，如果能有一个模板，会为大家省不少力气。接下来就提供一个我的总结：如何从内部的能力、意愿，以及外部的价值、成本这几个方面来完成筛选，如图3-6所示。先说理念，再说案例。
 
-![img](../../images/image00227.jpeg){ width="517" height="289" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00227.jpeg){ width="517" height="289" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图3-6　 产品概念筛选的要素
+</figcaption>
+
+</figure>
 
 </div>

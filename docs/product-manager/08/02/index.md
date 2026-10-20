@@ -28,9 +28,17 @@ title: 8.2 规划：只看最短和最长
 ►**一个业务模型：**
 包括这个业务内部分为哪些模块，彼此之间有什么关系，与产业链中的各个角色怎么配合，如何平衡各方的利益，自己如何赚钱等。为了更加清晰，可以画几张图来表达。图8-1出现在阿里集团20.6.7　月的公开季度财报，它从最宏观的视角描绘出阿里的完整业务模型。
 
-![img](../../images/image00308.jpeg){ width="548" height="407" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00308.jpeg){ width="548" height="407" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图8-1　阿里集团2016年的业务模型
+</figcaption>
+
+</figure>
 
 ►**三五个业务关键点：**
 接下来的一段时间，主攻的几个业务难点是什么。比如“入驻平台的卖家数在1个月内达到1.0.0　”“3个月内把服务扩展到所有省会城市”或“半年内谈妥ABC几个战略合作伙伴”。

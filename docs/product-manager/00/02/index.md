@@ -35,9 +35,17 @@ title: 0.2 本书的产品定位
 
 这是KK在2011年的思考，可以表达为图0-1。
 
-![img](../../images/image00195.jpeg){ width="477" height="263" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00195.jpeg){ width="477" height="263" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图0-1　《技术元素》里的插图
+</figcaption>
+
+</figure>
 
 图中的左侧“前实体系统”会更加重要，意味着互动。社区与对话的建立，在前实体系统阶段就已经开始，永不停歇。比如有的作者，在图书出版之前，就通过自媒体与读者分享部分章节、讨论内容、建立微信群保持沟通。
 

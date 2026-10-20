@@ -16,9 +16,17 @@ title: 5.2 Y模型的基本概念
 
 产品经理们工作中经常说的“需求分析”一词，就是指从问题到方法（解决方案）的转化，或者说从用户需求到产品功能的转化。我的总结非常简单，就是一个大写的字母Y，我把它叫作“Y模型”，如图5-1所示。先看看Y模型中的一些概念，如果看过前面的章节，对这些术语应该并不陌生。
 
-![img](../../images/image00250.jpeg){ width="457" height="271" }
+<figure markdown="1">
 
+<p markdown="span" style="margin:0">
+![img](../../images/image00250.jpeg){ width="457" height="271" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
 图5-1　Y模型的基本概念
+</figcaption>
+
+</figure>
 
 “1”是用户需求场景，经常简单说成用户需求。这是起点，是表象，是需求的第一种深度——观点和行为。
 

@@ -14,7 +14,13 @@ title: 第00章 开始：写在正文之前
 
 ## 第00章　开始：写在正文之前
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00194.jpeg){ width="634" height="474" }
+</p>
+
+</figure>
 
 **第00章　开始：写在正文之前/1**
 

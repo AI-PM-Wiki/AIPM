@@ -14,7 +14,13 @@ title: 第06章 功能：细化与打包
 
 ## 第06章　功能：细化与打包
 
+<figure markdown="1">
+
+<p markdown="span" style="margin:0">
 ![img](../images/image00269.jpeg){ width="634" height="474" }
+</p>
+
+</figure>
 
 **第06章　功能：细化与打包/155**
 
