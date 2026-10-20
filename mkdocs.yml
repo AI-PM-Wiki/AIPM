@@ -32,248 +32,85 @@ nav:
   - 第01章 初识：大话产品经理:
     - 第01章 初识：大话产品经理: product-manager/01/index.md
     - 1.1 从一个小故事谈起: product-manager/01/01/index.md
-    - 1.2 产品经理的前世今生:
-      - 1.2 产品经理的前世今生: product-manager/01/02/index.md
-      - 1.2.1 从人类社会出现分工说起: product-manager/01/02/01.md
-      - 1.2.2 岗位诞生，宝洁的故事: product-manager/01/02/02.md
-      - 1.2.3 从项目经理到产品经理: product-manager/01/02/03.md
-      - 1.2.4 与“传统”产品经理的区别: product-manager/01/02/04.md
-      - 1.2.5 十年，产品经理逐渐成熟: product-manager/01/02/05.md
-    - 1.3 思维方式与性格特点:
-      - 1.3 思维方式与性格特点: product-manager/01/03/index.md
-      - 1.3.1 从“学生”到“职场”: product-manager/01/03/01.md
-      - 1.3.2 从“用户”到“产品经理”: product-manager/01/03/02.md
-      - 1.3.3 从“现象”到“本质”: product-manager/01/03/03.md
-      - 1.3.4 还有什么性格特质是加分项: product-manager/01/03/04.md
-    - 1.4 产品经理的日常:
-      - 1.4 产品经理的日常: product-manager/01/04/index.md
-      - 1.4.1 入行，社招与校招: product-manager/01/04/01.md
-      - 1.4.2 一天里的典型任务: product-manager/01/04/02.md
-      - 1.4.3 周边团队从小到大: product-manager/01/04/03.md
+    - 1.2 产品经理的前世今生: product-manager/01/02/index.md
+    - 1.3 思维方式与性格特点: product-manager/01/03/index.md
+    - 1.4 产品经理的日常: product-manager/01/04/index.md
     - 1.5 延伸阅读与练习: product-manager/01/05/index.md
   - 第02章 产品：关键词与分类:
     - 第02章 产品：关键词与分类: product-manager/02/index.md
-    - 2.1 产品：解决某个问题的东西:
-      - 2.1 产品：解决某个问题的东西: product-manager/02/01/index.md
-      - 2.1.1 某个：明确定位: product-manager/02/01/01.md
-      - 2.1.2 问题：用户、需求、场景: product-manager/02/01/02.md
-      - 2.1.3 东西：解决方案: product-manager/02/01/03.md
-    - 2.2 常见的产品分类维度:
-      - 2.2 常见的产品分类维度: product-manager/02/02/index.md
-      - 2.2.1 用户关系角度: product-manager/02/02/01.md
-      - 2.2.2 用户需求角度: product-manager/02/02/02.md
-      - 2.2.3 用户类型角度: product-manager/02/02/03.md
-      - 2.2.4 产品形态角度: product-manager/02/02/04.md
-      - 2.2.5 各种其他角度: product-manager/02/02/05.md
+    - 2.1 产品：解决某个问题的东西: product-manager/02/01/index.md
+    - 2.2 常见的产品分类维度: product-manager/02/02/index.md
     - 2.3 延伸阅读与练习: product-manager/02/03/index.md
   - 第03章 概念：提出与筛选:
     - 第03章 概念：提出与筛选: product-manager/03/index.md
-    - 3.1 产品概念的提出:
-      - 3.1 产品概念的提出: product-manager/03/01/index.md
-      - 3.1.1 核心用户: product-manager/03/01/01.md
-      - 3.1.2 刚性需求: product-manager/03/01/02.md
-      - 3.1.3 典型场景: product-manager/03/01/03.md
-      - 3.1.4 产品概念: product-manager/03/01/04.md
-      - 3.1.5 竞争优势: product-manager/03/01/05.md
-    - 3.2 概念提出的综合案例:
-      - 3.2 概念提出的综合案例: product-manager/03/02/index.md
-      - 3.2.1 案例1：智能长命锁: product-manager/03/02/01.md
-      - 3.2.2 案例2：淘宝首页: product-manager/03/02/02.md
-    - 3.3 产品概念的筛选:
-      - 3.3 产品概念的筛选: product-manager/03/03/index.md
-      - 3.3.1 内部因素：能力: product-manager/03/03/01.md
-      - 3.3.2 内部因素：意愿: product-manager/03/03/02.md
-      - 3.3.3 外部因素：价值: product-manager/03/03/03.md
-      - 3.3.4 外部因素：成本: product-manager/03/03/04.md
-    - 3.4 概念筛选的综合案例:
-      - 3.4 概念筛选的综合案例: product-manager/03/04/index.md
-      - 3.4.1 案例1：阿里旺旺的成与败: product-manager/03/04/01.md
-      - 3.4.2 案例2：B12在方向上的思考: product-manager/03/04/02.md
+    - 3.1 产品概念的提出: product-manager/03/01/index.md
+    - 3.2 概念提出的综合案例: product-manager/03/02/index.md
+    - 3.3 产品概念的筛选: product-manager/03/03/index.md
+    - 3.4 概念筛选的综合案例: product-manager/03/04/index.md
     - 3.5 延伸阅读与练习: product-manager/03/05/index.md
   - 第04章 需求：采集与用户研究:
     - 第04章 需求：采集与用户研究: product-manager/04/index.md
-    - 4.1 需求采集方法的分类:
-      - 4.1 需求采集方法的分类: product-manager/04/01/index.md
-      - 4.1.1 直接采集与间接采集: product-manager/04/01/01.md
-      - 4.1.2 说和做，定性与定量: product-manager/04/01/02.md
-      - 4.1.3 是否在真实场景里: product-manager/04/01/03.md
-      - 4.1.4 是否和产品发生交互: product-manager/04/01/04.md
+    - 4.1 需求采集方法的分类: product-manager/04/01/index.md
     - 4.2 一些实用的采集方法: product-manager/04/02/index.md
-    - 4.3 用户、需求的再理解:
-      - 4.3 用户、需求的再理解: product-manager/04/03/index.md
-      - 4.3.1 需求的三种深度: product-manager/04/03/01.md
-      - 4.3.2 如何理解战略需要这类内部需求: product-manager/04/03/02.md
-      - 4.3.3 用户：抽象到具象再到抽象: product-manager/04/03/03.md
-    - 4.4 产品原则与初心:
-      - 4.4 产品原则与初心: product-manager/04/04/index.md
-      - 4.4.1 案例：“小得”的产品原则: product-manager/04/04/01.md
-      - 4.4.2 美好初心：知乎与豆瓣: product-manager/04/04/02.md
-      - 4.4.3 跨界参考对象：美国宪法: product-manager/04/04/03.md
+    - 4.3 用户、需求的再理解: product-manager/04/03/index.md
+    - 4.4 产品原则与初心: product-manager/04/04/index.md
     - 4.5 延伸阅读与练习: product-manager/04/05/index.md
   - 第05章 转化：需求分析与Y模型:
     - 第05章 转化：需求分析与Y模型: product-manager/05/index.md
     - 5.1 从问题到解决方案: product-manager/05/01/index.md
-    - 5.2 Y模型的基本概念:
-      - 5.2 Y模型的基本概念: product-manager/05/02/index.md
-      - 5.2.1 最经典的例子: product-manager/05/02/01.md
-      - 5.2.2 用心听，但不要照着做: product-manager/05/02/02.md
-      - 5.2.3 不照着做的好处: product-manager/05/02/03.md
-    - 5.3 实战中如何深入浅出:
-      - 5.3 实战中如何深入浅出: product-manager/05/03/index.md
-      - 5.3.1 深入：如何深挖人性: product-manager/05/03/01.md
-      - 5.3.2 浅出：如何设计功能: product-manager/05/03/02.md
-    - 5.4 一些综合案例:
-      - 5.4 一些综合案例: product-manager/05/04/index.md
-      - 5.4.1 淘宝首页: product-manager/05/04/01.md
-      - 5.4.2 健身应用: product-manager/05/04/02.md
-      - 5.4.3 直播应用: product-manager/05/04/03.md
-      - 5.4.4 企业内训: product-manager/05/04/04.md
-    - 5.5 Y模型的更多理解:
-      - 5.5 Y模型的更多理解: product-manager/05/05/index.md
-      - 5.5.1 用户视角与公司视角: product-manager/05/05/01.md
-      - 5.5.2 新手思维与专家思维: product-manager/05/05/02.md
-      - 5.5.3 普通青年与文艺青年: product-manager/05/05/03.md
-      - 5.5.4 复习、预习一些概念: product-manager/05/05/04.md
+    - 5.2 Y模型的基本概念: product-manager/05/02/index.md
+    - 5.3 实战中如何深入浅出: product-manager/05/03/index.md
+    - 5.4 一些综合案例: product-manager/05/04/index.md
+    - 5.5 Y模型的更多理解: product-manager/05/05/index.md
     - 5.6 延伸阅读与练习: product-manager/05/06/index.md
   - 第06章 功能：细化与打包:
     - 第06章 功能：细化与打包: product-manager/06/index.md
-    - 6.[1] 一个功能的DNA:
-      - 6.[1] 一个功能的DNA: product-manager/06/01/index.md
-      - 6.1.1 功能的价值判断: product-manager/06/01/01.md
-      - 6.1.2 几个价值判断的案例: product-manager/06/01/02.md
-      - 6.1.3 成本评估与性价比: product-manager/06/01/03.md
-      - 6.1.4 功能分类：KANO模型: product-manager/06/01/04.md
-    - 6.2 功能打包，确定MVP:
-      - 6.2 功能打包，确定MVP: product-manager/06/02/index.md
-      - 6.2.1 尽可能多地放弃: product-manager/06/02/01.md
-      - 6.2.2 案例：QQ的MVP: product-manager/06/02/02.md
-      - 6.2.3 MVP的限制因素: product-manager/06/02/03.md
-      - 6.2.4 MVP的表达，产品架构图: product-manager/06/02/04.md
-      - 6.2.5 功能分分合合的本质: product-manager/06/02/05.md
-    - 6.3 把需求和功能管起来:
-      - 6.3 把需求和功能管起来: product-manager/06/03/index.md
-      - 6.3.1 空间维度：功能列表: product-manager/06/03/01.md
-      - 6.3.2 时间维度：需求流程: product-manager/06/03/02.md
+    - 6.[1] 一个功能的DNA: product-manager/06/01/index.md
+    - 6.2 功能打包，确定MVP: product-manager/06/02/index.md
+    - 6.3 把需求和功能管起来: product-manager/06/03/index.md
     - 6.4 延伸阅读与练习: product-manager/06/04/index.md
   - 第07章 执行：立项组队与研发生产:
     - 第07章 执行：立项组队与研发生产: product-manager/07/index.md
-    - 7.1 从“想清楚”到“做出来”:
-      - 7.1 从“想清楚”到“做出来”: product-manager/07/01/index.md
-      - 7.1.1 原型验证与NPS: product-manager/07/01/01.md
-      - 7.1.2 产品委员会与关键节点: product-manager/07/01/02.md
-    - 7.2 立项：搞定各种资源:
-      - 7.2 立项：搞定各种资源: product-manager/07/02/index.md
-      - 7.2.1 关于人：团队、组织: product-manager/07/02/01.md
-      - 7.2.2 关于物：政策、资金等: product-manager/07/02/02.md
-    - 7.3 组队：聊聊初创团队:
-      - 7.3 组队：聊聊初创团队: product-manager/07/03/index.md
-      - 7.3.1 如何快速知己知彼: product-manager/07/03/01.md
-      - 7.3.2 小团队的沟通协作: product-manager/07/03/02.md
-      - 7.3.3 小团队与大公司的区别: product-manager/07/03/03.md
-      - 7.3.4 借助第三方力量做产品: product-manager/07/03/04.md
-    - 7.4 研发生产时，我们做什么:
-      - 7.4 研发生产时，我们做什么: product-manager/07/04/index.md
-      - 7.4.1 产品经理要不要懂技术: product-manager/07/04/01.md
-      - 7.4.2 如何做一个让Ta们讨厌的人: product-manager/07/04/02.md
+    - 7.1 从“想清楚”到“做出来”: product-manager/07/01/index.md
+    - 7.2 立项：搞定各种资源: product-manager/07/02/index.md
+    - 7.3 组队：聊聊初创团队: product-manager/07/03/index.md
+    - 7.4 研发生产时，我们做什么: product-manager/07/04/index.md
     - 7.5 延伸阅读与练习: product-manager/07/05/index.md
   - 第08章 成长：规划与迭代:
     - 第08章 成长：规划与迭代: product-manager/08/index.md
     - 8.1 好产品步步为营: product-manager/08/01/index.md
-    - 8.2 规划：只看最短和最长:
-      - 8.2 规划：只看最短和最长: product-manager/08/02/index.md
-      - 8.2.1 从规划向上看战略: product-manager/08/02/01.md
-      - 8.2.2 通过提问把别人干翻: product-manager/08/02/02.md
-      - 8.2.3 提升规划能力的实践: product-manager/08/02/03.md
-    - 8.3 迭代：再理解敏捷:
-      - 8.3 迭代：再理解敏捷: product-manager/08/03/index.md
-      - 8.3.1 价值观、宣言与原则: product-manager/08/03/01.md
-      - 8.3.2 敏捷项目管理的实践: product-manager/08/03/02.md
-    - 8.4 天下武功，唯快不破:
-      - 8.4 天下武功，唯快不破: product-manager/08/04/index.md
-      - 8.4.1 互联网速度到底有多快: product-manager/08/04/01.md
-      - 8.4.2 烧钱是为了抢时间: product-manager/08/04/02.md
-      - 8.4.3 省时间的低成本验证: product-manager/08/04/03.md
+    - 8.2 规划：只看最短和最长: product-manager/08/02/index.md
+    - 8.3 迭代：再理解敏捷: product-manager/08/03/index.md
+    - 8.4 天下武功，唯快不破: product-manager/08/04/index.md
     - 8.5 与用户一起成长: product-manager/08/05/index.md
     - 8.6 延伸阅读与练习: product-manager/08/06/index.md
   - 第09章 运营：先验证再扩张:
     - 第09章 运营：先验证再扩张: product-manager/09/index.md
-    - 9.1 产品与运营的关系:
-      - 9.1 产品与运营的关系: product-manager/09/01/index.md
-      - 9.1.1 需求、功能到卖点: product-manager/09/01/01.md
-      - 9.1.2 多相爱，少相杀: product-manager/09/01/02.md
-      - 9.1.3 给运营提需求的模板: product-manager/09/01/03.md
-    - 9.2 运营工作的分类:
-      - 9.2 运营工作的分类: product-manager/09/02/index.md
-      - 9.2.1 不同阶段的运营目标: product-manager/09/02/01.md
-      - 9.2.2 综合案例：星巴克: product-manager/09/02/02.md
-    - 9.3 大运营的其他职责:
-      - 9.3 大运营的其他职责: product-manager/09/03/index.md
-      - 9.3.1 产品与销售的关系: product-manager/09/03/01.md
-      - 9.3.2 服务是广义的用户运营: product-manager/09/03/02.md
-      - 9.3.3 市场的几种分类维度: product-manager/09/03/03.md
-      - 9.3.4 品牌到底是什么: product-manager/09/03/04.md
-      - 9.3.5 公关是企业的戾气与利器: product-manager/09/03/05.md
+    - 9.1 产品与运营的关系: product-manager/09/01/index.md
+    - 9.2 运营工作的分类: product-manager/09/02/index.md
+    - 9.3 大运营的其他职责: product-manager/09/03/index.md
     - 9.4 产品的生命周期: product-manager/09/04/index.md
     - 9.5 延伸阅读与练习: product-manager/09/05/index.md
   - 第10章 案例：商业模式、创新与行业:
     - 第10章 案例：商业模式、创新与行业: product-manager/10/index.md
-    - 10.1 聊聊商业模式:
-      - 10.1 聊聊商业模式: product-manager/10/01/index.md
-      - 10.1.1 对比：商业、业务、盈利模式: product-manager/10/01/01.md
-      - 10.1.2 分析100块去哪儿了: product-manager/10/01/02.md
-    - 10.2 创新那点事儿:
-      - 10.2 创新那点事儿: product-manager/10/02/index.md
-      - 10.2.1 “活着”就是为了创新: product-manager/10/02/01.md
-      - 10.2.2 创业公司的创新坑: product-manager/10/02/02.md
-      - 10.2.3 大型公司的创新坑: product-manager/10/02/03.md
-      - 10.2.4 传统企业的创新坑: product-manager/10/02/04.md
-      - 10.2.5 再谈创新者的窘境: product-manager/10/02/05.md
-    - 10.3 行业案例分析:
-      - 10.3 行业案例分析: product-manager/10/03/index.md
-      - 10.3.1 各种上门与O2O: product-manager/10/03/01.md
-      - 10.3.2 知识类共享经济: product-manager/10/03/02.md
-      - 10.3.3 中老年的广场舞江湖: product-manager/10/03/03.md
+    - 10.1 聊聊商业模式: product-manager/10/01/index.md
+    - 10.2 创新那点事儿: product-manager/10/02/index.md
+    - 10.3 行业案例分析: product-manager/10/03/index.md
     - 10.4 延伸阅读与练习: product-manager/10/04/index.md
   - 第11章 蜕变：从产品助理到CEO:
     - 第11章 蜕变：从产品助理到CEO: product-manager/11/index.md
     - 11.1 在人力资源部做产品经理: product-manager/11/01/index.md
-    - 11.2 产品经理的七层修炼:
-      - 11.2 产品经理的七层修炼: product-manager/11/02/index.md
-      - 11.2.1 第一层，需求细化与研发跟进: product-manager/11/02/01.md
-      - 11.2.2 第二层，主动挖掘与项目管理: product-manager/11/02/02.md
-      - 11.2.3 第三层，完整产品与大局观: product-manager/11/02/03.md
-      - 11.2.4 第四层，产品线与带团队: product-manager/11/02/04.md
-      - 11.2.5 第五层，成功案例与影响力: product-manager/11/02/05.md
-      - 11.2.6 第六层，商业闭环与全职能管理: product-manager/11/02/06.md
-      - 11.2.7 第七层，自己成功到助人成功: product-manager/11/02/07.md
-      - 11.2.8 七层里的三个阶段: product-manager/11/02/08.md
+    - 11.2 产品经理的七层修炼: product-manager/11/02/index.md
     - 11.3 十年后，再无产品经理: product-manager/11/03/index.md
-    - 11.4 归宿：无非广义创业:
-      - 11.4 归宿：无非广义创业: product-manager/11/04/index.md
-      - 11.4.1 从产品经理到创业者: product-manager/11/04/01.md
-      - 11.4.2 体验创业的三种选择: product-manager/11/04/02.md
-      - 11.4.3 互联网创业的五个启动步骤: product-manager/11/04/03.md
-      - 11.4.4 互联网创业的地域鄙视链: product-manager/11/04/04.md
-      - 11.4.5 下一个硅谷在哪里: product-manager/11/04/05.md
-    - 11.5 从生活态度到社会推动力:
-      - 11.5 从生活态度到社会推动力: product-manager/11/05/index.md
-      - 11.5.1 先说生活态度: product-manager/11/05/01.md
-      - 11.5.2 再说社会推动力: product-manager/11/05/02.md
+    - 11.4 归宿：无非广义创业: product-manager/11/04/index.md
+    - 11.5 从生活态度到社会推动力: product-manager/11/05/index.md
     - 11.6 延伸阅读与练习: product-manager/11/06/index.md
   - 第12章 结束：写在正文之后:
     - 第12章 结束：写在正文之后: product-manager/12/index.md
     - 12.1 国产产品图书盘点: product-manager/12/01/index.md
     - 12.2 重新定义“读书会”: product-manager/12/02/index.md
-    - 12.3 七印部落翻译的书:
-      - 12.3 七印部落翻译的书: product-manager/12/03/index.md
-      - 12.3.1 打造用户喜爱产品的《启示录》: product-manager/12/03/01.md
-      - 12.3.2 被严重低估的《四步创业法》: product-manager/12/03/02.md
-      - 12.3.3 杜绝浪费，《有的放矢》: product-manager/12/03/03.md
-    - 12.4 其他资源:
-      - 12.4 其他资源: product-manager/12/04/index.md
-      - 12.4.1 一些组织的公众号: product-manager/12/04/01.md
-      - 12.4.2 最近看过的一些杂书: product-manager/12/04/02.md
-      - 12.4.3 一次众包本书索引的尝试: product-manager/12/04/03.md
+    - 12.3 七印部落翻译的书: product-manager/12/03/index.md
+    - 12.4 其他资源: product-manager/12/04/index.md
   - 封底: product-manager/back-cover.md
 
 # Theme
@@ -349,6 +186,7 @@ extra_javascript:
   - '_static/js/header-line.js?v=1'
   - '_static/js/umami.js?v=1'
   - '_static/js/mermaid-zoom.js?v=6'
+  - '_static/js/book-figures.js'
   - '_static/js/context-item.js?v=3'
   - '_static/js/vendor/svg-xml.js'
   - '_static/js/chart-context.js?v=5'
@@ -357,6 +195,7 @@ extra_css:
   - '_static/css/panel-shared.css'
   - '_static/css/extra.css?v=43'
   - '_static/css/mermaid-zoom.css?v=8'
+  - '_static/css/book-figures.css'
   - '_static/css/chart-context.css?v=1'
   - '_static/css/annotation-login-consent.css?v=1'
 

@@ -1,0 +1,25 @@
+.book-original figure[id^="figure-"] {
+  scroll-margin-block: 5rem;
+  outline: 3px solid transparent;
+  outline-offset: .5rem;
+  border-radius: .5rem;
+}
+
+.book-original figure.is-figure-target {
+  outline-color: var(--md-accent-fg-color);
+  background: var(--md-accent-fg-color--transparent);
+  box-shadow: 0 0 0 .65rem var(--md-accent-fg-color--transparent);
+}
+
+.book-original a[href*="#figure-"] {
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+@media print {
+  .book-original figure.is-figure-target {
+    outline: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+}

@@ -65,16 +65,16 @@ title: 1.5 延伸阅读与练习
 <a id="footnote_content_txt002_1"></a>[[1]](../01/index.md#footnote_quote_txt002_1)
 读者可扫描右侧二维码访问原知乎页面。
 
-<a id="footnote_content_txt002_2"></a>[[2]](../02/04.md#footnote_quote_txt002_2)
+<a id="footnote_content_txt002_2"></a>[[2]](../02/index.md#footnote_quote_txt002_2)
 笔者对此并不认同，认为产品和技术应该是并列的两个部门。
 
-<a id="footnote_content_txt002_3"></a>[[3]](../02/05.md#footnote_quote_txt002_3)
+<a id="footnote_content_txt002_3"></a>[[3]](../02/index.md#footnote_quote_txt002_3)
 20.6.10　月我去硅谷考察，确实发现那里的技术、设计人员做掉了部分初级产品经理的工作。但这需要整体人才结构的支撑，国内的技术、设计人员还做不到。另外，对高级产品经理的需求，无论哪里都很旺盛。
 
-<a id="footnote_content_txt002_4"></a>[[4]](../03/02.md#footnote_quote_txt002_4)
+<a id="footnote_content_txt002_4"></a>[[4]](../03/index.md#footnote_quote_txt002_4)
 这句话需要大家辩证理解，说的只是看问题的视角，而在服务心态上，产品经理要把用户当上帝。
 
-<a id="footnote_content_txt002_5"></a>[[5]](../03/03.md#footnote_quote_txt002_5)
+<a id="footnote_content_txt002_5"></a>[[5]](../03/index.md#footnote_quote_txt002_5)
 有时，技术层面的小动作能带来商业层面的大效果，反之，技术层面的大动作也可能没什么商业价值。
 
 <a id="footnote_content_txt002_6"></a>[[6]](#footnote_quote_txt002_6)

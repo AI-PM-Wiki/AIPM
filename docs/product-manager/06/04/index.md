@@ -55,19 +55,19 @@ title: 6.4 延伸阅读与练习
 <a id="footnote_content_txt007_1"></a>[[1]](../01/index.md#footnote_quote_txt007_1)
 表6-1中标记\*的功能属性比较重要，为必填项。
 
-<a id="footnote_content_txt007_2"></a>[[2]](../01/01.md#footnote_quote_txt007_2)
+<a id="footnote_content_txt007_2"></a>[[2]](../01/index.md#footnote_quote_txt007_2)
 举个例子，假设某产品在当前关注用户数与收入两个指标中更看重前者，就可以用“用户数\*0.7 + 收入\*0.3”来作为加权合并后的综合指标。
 
-<a id="footnote_content_txt007_3"></a>[[3]](../01/04.md#footnote_quote_txt007_3)
+<a id="footnote_content_txt007_3"></a>[[3]](../01/index.md#footnote_quote_txt007_3)
 KANO 模型是东京理工大学教授狩野纪昭（Noriaki Kano）发明的一种对用户需求进行分类和优先排序的实用工具，以分析用户需求对用户满意的影响为基础，体现了产品性能和用户满意之间的非线性关系。
 
-<a id="footnote_content_txt007_4"></a>[[4]](../01/04.md#footnote_quote_txt007_4)
+<a id="footnote_content_txt007_4"></a>[[4]](../01/index.md#footnote_quote_txt007_4)
 第02章里提过的概念，指需要几个不同人群一起使用才能产生价值的产品。
 
-<a id="footnote_content_txt007_5"></a>[[5]](../02/02.md#footnote_quote_txt007_5)
+<a id="footnote_content_txt007_5"></a>[[5]](../02/index.md#footnote_quote_txt007_5)
 猫是Modem的谐音，即调制解调器，是早年的拨号上网设备。
 
-<a id="footnote_content_txt007_6"></a>[[6]](../03/02.md#footnote_quote_txt007_6)
+<a id="footnote_content_txt007_6"></a>[[6]](../03/index.md#footnote_quote_txt007_6)
 想看更多产品经理的内心OS，可以扫右侧二维码看我自拍的一个小视频。
 
 </div>

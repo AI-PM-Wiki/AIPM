@@ -14,12 +14,12 @@ title: 1.1 从一个小故事谈起
 
 ## 1.1　从一个小故事谈起
 
-这是我在知乎上获得最多赞的一个回答。没有字，只有一张网上找来的图，如图1-1<a id="footnote_quote_txt002_1"></a>[[1]](../05/index.md#footnote_content_txt002_1)
+这是我在知乎上获得最多赞的一个回答。没有字，只有一张网上找来的图，如[图1-1](#figure-1-1)<a id="footnote_quote_txt002_1"></a>[[1]](../05/index.md#footnote_content_txt002_1)
 。
 
 问：什么是“伪需求”？能否举例说明？
 
-<figure markdown="1">
+<figure id="figure-1-1" tabindex="-1" markdown="1">
 
 <p markdown="span" style="margin:0">
 ![img](../../images/image00198.jpeg){ width="333" height="486" }

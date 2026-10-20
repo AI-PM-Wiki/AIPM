@@ -59,13 +59,13 @@ title: 9.5 延伸阅读与练习
 <a id="footnote_content_txt010_1"></a>[[1]](../01/index.md#footnote_quote_txt010_1)
 前百度产品副总裁，2017年担任滴滴产品负责人，业内著名的产品前辈。
 
-<a id="footnote_content_txt010_2"></a>[[2]](../02/01.md#footnote_quote_txt010_2)
+<a id="footnote_content_txt010_2"></a>[[2]](../02/index.md#footnote_quote_txt010_2)
 “幂次法则”也叫“80/20法则”，由经济学家维尔弗雷多·帕累托在1906年提出。他认为，在任何一组事物中，最重要的只占其中一小部分，约20%，其余80%尽管是多数，却是次要的。
 
-<a id="footnote_content_txt010_3"></a>[[3]](../02/01.md#footnote_quote_txt010_3)
+<a id="footnote_content_txt010_3"></a>[[3]](../02/index.md#footnote_quote_txt010_3)
 Acquisition（获取用户）、Activation（提高活跃度）、Retention（提高留存率）、Revenue（获取收入）、Refer（自传播），是产品运营工作的5个重要部分，AARRR是这5个单词的首字母缩写。此模型被硅谷产品运营圈广泛使用，是一个获取业务增长的方法论集合，俗称“海盗模型”。
 
-<a id="footnote_content_txt010_4"></a>[[4]](../02/01.md#footnote_quote_txt010_4)
+<a id="footnote_content_txt010_4"></a>[[4]](../02/index.md#footnote_quote_txt010_4)
 网址bilibili.com，中文站名哔哩哔哩，是国内知名的视频弹幕网站。
 
 </div>

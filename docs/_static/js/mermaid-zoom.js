@@ -1,5 +1,5 @@
 /*
-  Mermaid 图放大查看器(mermaid-zoom.js)
+  Mermaid 与文章图片放大查看器(mermaid-zoom.js)
 
   Mermaid 由 Material 主题异步渲染。这里不依赖主题私有 API,只增强已经
   出现的 .mermaid 宿主元素。当前主题可能把 SVG 放进 closed ShadowRoot,
@@ -39,6 +39,7 @@
     viewport: null,
     canvas: null,
     scaleText: null,
+    title: null,
     closeButton: null,
     source: null,
     sourceParent: null,
@@ -114,6 +115,7 @@
     state.viewport = dialog.querySelector(".mermaid-zoom__viewport");
     state.canvas = dialog.querySelector(".mermaid-zoom__canvas");
     state.scaleText = dialog.querySelector(".mermaid-zoom__scale");
+    state.title = dialog.querySelector(".mermaid-zoom__title");
     state.closeButton = dialog.querySelector('[data-mermaid-action="close"]');
 
     dialog.querySelector('[data-mermaid-action="fit"]').addEventListener("click", fitToWindow);
@@ -353,13 +355,15 @@
 
   const enhance = (host) => {
     if (host.hasAttribute(READY_ATTR)) return;
-    if (!isRenderedMermaid(host)) return;
+    const isImage = host.tagName === "IMG";
+    if (isImage ? !host.complete || !host.naturalWidth : !isRenderedMermaid(host)) return;
 
     const parent = host.parentNode;
     if (!parent) return;
 
     const figure = document.createElement("div");
     figure.className = "mermaid-zoom__figure";
+    if (isImage) figure.classList.add("mermaid-zoom__figure--image");
     parent.insertBefore(figure, host);
     figure.appendChild(host);
 
@@ -371,8 +375,9 @@
         '<circle cx="10.8" cy="10.8" r="6.5"></circle>' +
         '<path d="m16 16 5 5"></path>' +
       "</svg>";
-    trigger.title = "打开 Mermaid 大图";
-    trigger.setAttribute("aria-label", "打开 Mermaid 大图");
+    const label = isImage ? "打开图片大图" : "打开 Mermaid 大图";
+    trigger.title = label;
+    trigger.setAttribute("aria-label", label);
     trigger.setAttribute("aria-haspopup", "dialog");
     trigger.setAttribute("aria-controls", DIALOG_ID);
     trigger.addEventListener("click", (event) => {
@@ -381,12 +386,20 @@
       openViewer(host, trigger);
     });
     figure.appendChild(trigger);
+    if (isImage) {
+      host.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openViewer(host, trigger);
+      });
+      host.draggable = false;
+    }
     host.setAttribute(READY_ATTR, "");
   };
 
   const scan = () => {
     if (!state.dialog && !ensureDialog()) return;
-    document.querySelectorAll(".mermaid").forEach((host) => {
+    document.querySelectorAll(".mermaid, .book-original img").forEach((host) => {
       if (state.dialog && state.dialog.contains(host)) return;
       enhance(host);
     });
@@ -401,8 +414,11 @@
     if (!ensureDialog() || state.source || !host.parentNode) return;
 
     const rect = host.getBoundingClientRect();
-    state.baseWidth = Math.max(rect.width, host.scrollWidth, 1);
-    state.baseHeight = Math.max(rect.height, host.scrollHeight, 1);
+    const isImage = host.tagName === "IMG";
+    const caption = isImage && host.closest("figure")?.querySelector("figcaption");
+    state.baseWidth = isImage ? host.naturalWidth : Math.max(rect.width, host.scrollWidth, 1);
+    state.baseHeight = isImage ? host.naturalHeight : Math.max(rect.height, host.scrollHeight, 1);
+    state.title.textContent = isImage ? (caption?.textContent.trim() || "图片") : "Mermaid 图表预览";
     state.source = host;
     state.sourceParent = host.parentNode;
     state.placeholder = document.createComment("mermaid-zoom-placeholder");
@@ -529,6 +545,9 @@
     if (!supportsDialog()) return;
     ensureDialog();
     scan();
+    document.addEventListener("load", (event) => {
+      if (event.target.tagName === "IMG") scheduleScan();
+    }, true);
     observer.observe(document.body, { childList: true, subtree: true });
     observeTheme.observe(document.body, {
       attributes: true,
