@@ -1,0 +1,89 @@
+.md-typeset .book-original {
+  --book-heading-color: #172033;
+  --book-strong-color: #26325d;
+  --book-heading-rule: #4051b52e;
+  --book-emphasis-marker: #526cfe24;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .book-original {
+  --book-heading-color: #f4f6ff;
+  --book-strong-color: #e1e8ff;
+  --book-heading-rule: #a6b4ff40;
+  --book-emphasis-marker: #a6b4ff2e;
+}
+
+.md-typeset .book-original :is(h2, h3, h4) {
+  color: var(--book-heading-color);
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.md-typeset .book-original h2 {
+  margin: 1.9rem 0 .85rem;
+  padding-bottom: .45rem;
+  border-bottom: 1px solid var(--book-heading-rule);
+  font-size: 1.2rem;
+}
+
+.md-typeset .book-original h3 {
+  margin: 1.7rem 0 .7rem;
+  padding-inline-start: .6rem;
+  border-inline-start: 3px solid var(--md-typeset-a-color);
+  font-size: 1.05rem;
+}
+
+.md-typeset .book-original h4 {
+  margin: 1.35rem 0 .6rem;
+  font-size: .92rem;
+}
+
+.md-typeset .book-original strong {
+  padding-inline: .03em;
+  color: var(--book-strong-color);
+  background-image: linear-gradient(transparent 62%, var(--book-emphasis-marker) 62%, var(--book-emphasis-marker) 94%, transparent 94%);
+  font-weight: 800;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.md-typeset .book-original .book-emphasis-block {
+  margin: 1.25rem 0 .45rem;
+  line-height: 1.65;
+}
+
+.md-typeset .book-original .book-emphasis-block > strong {
+  padding: 0;
+  color: var(--book-heading-color);
+  background-image: none;
+  font-size: 1.12em;
+}
+
+.md-typeset .book-original :is(h2, h3, h4, a) strong {
+  padding: 0;
+  color: inherit;
+  background-image: none;
+}
+
+@media (max-width: 44rem) {
+  .md-typeset .book-original h2 {
+    font-size: 1.1rem;
+  }
+
+  .md-typeset .book-original h3 {
+    margin-top: 1.45rem;
+    padding-inline-start: .5rem;
+    font-size: .98rem;
+  }
+}
+
+@media print {
+  .md-typeset .book-original :is(h2, h3, h4, strong),
+  .md-typeset .book-original .book-emphasis-block > strong {
+    color: inherit;
+    background-image: none;
+  }
+
+  .md-typeset .book-original :is(h2, h3) {
+    border-color: currentColor;
+  }
+}

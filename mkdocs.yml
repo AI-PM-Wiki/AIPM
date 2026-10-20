@@ -187,6 +187,7 @@ extra_javascript:
 extra_css:
   - '_static/css/panel-shared.css'
   - '_static/css/extra.css?v=43'
+  - '_static/css/book-typography.css'
   - '_static/css/mermaid-zoom.css?v=8'
   - '_static/css/book-figures.css'
   - '_static/css/book-footnotes.css'
