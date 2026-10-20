@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 产品经理是做什么的？毋庸置疑，是做产品的。再回过头来解读一下“产品”到底是什么，讲几个产品经理每天工作中都挂在嘴边的关键词。然后聊聊从各种维度怎么给产品分类。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 在第02章，大家了解了什么是产品，产品有哪几类，从这一章开始，我们一起进入“一个产品从无到有”的旅程，体会做产品都要经历哪些环节。做一个产品的第一步，要先有个idea（点子），即提出一个“产品概念”。从这一章到第07章的立项组队为止，是“想
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

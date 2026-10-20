@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 其实，截止2016年，@七印部落已经翻译了10本英文书，都聚焦在产品、创新、创业领域。而本书内核方法论就参考了其中的3本。对这几本书，我也写过一些杂谈或笔记，分享一下。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

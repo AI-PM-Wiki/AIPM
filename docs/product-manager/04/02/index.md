@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 对于需求采集与用户研究方法，《人人都是产品经理》里系统化地讲过不少具体操作、可能遇到的问题及其对策，其他相关资料也有很多，这里只介绍几个简单、好用的实践策略。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

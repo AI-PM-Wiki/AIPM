@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 2016年二季度，我以自有5本书（自序里面提到的那5本），加上朋友们的N本书为根基，配合自己的网络媒体矩阵（微信公众号、微博、知乎为主，统一ID：iamsujie），做了一个“读书会”的尝试。它重新定义了“读书会”这三个字，也可算是一次社群
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

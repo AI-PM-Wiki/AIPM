@@ -1,18 +1,17 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 俗话说，产品经理推动工程师实现功能有三宝：竞品已搞，老板想要，开发量小。如果不行，再上杀招，求求你了好不好。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社
-title: 6.[1] 一个功能的DNA
+title: 6.1 功能 DNA
 ---
 
 <div class="book-original" markdown="1">
 
 <a id="txt007_2"></a>
 
-## 6.<a id="footnote_quote_txt007_1"></a>[[1]](../04/index.md#footnote_content_txt007_1) 　一个功能的DNA
+## 6.1 功能 DNA
 
 俗话说，产品经理推动工程师实现功能有三宝：竞品已搞，老板想要，开发量小。如果不行，再上杀招，求求你了好不好。
 
@@ -23,7 +22,7 @@ title: 6.[1] 一个功能的DNA
 <figure markdown="1">
 
 <figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
-表6-1　一个功能的DNA1
+表6-1　一个功能的DNA<a id="footnote_quote_txt007_1"></a>[[1]](../04/index.md#footnote_content_txt007_1)
 </figcaption>
 
 <p markdown="span" style="margin:0">

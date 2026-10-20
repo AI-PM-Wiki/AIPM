@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 本章的延伸阅读，在已有的几本书里不多，大家可以看一下《启示录》的第三部分——产品（179.2.0 页），Marty对某些特色产品，如企业级产品、平台产品等都给出了自己的理解。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

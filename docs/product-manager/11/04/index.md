@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 本书快结束了，你的职业生涯还要继续，你总会碰到这个问题：如果有一天，不做产品经理（这个岗位）了，还能做什么？
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

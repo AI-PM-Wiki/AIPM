@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 一个产品经理在做产品三五年之后，不可避免地要碰到写规划这件事儿。在快速变化的互联网行业里，规划到底该怎么做才有实际意义呢？
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

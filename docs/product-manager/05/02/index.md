@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 产品经理们工作中经常说的“需求分析”一词，就是指从问题到方法（解决方案）的转化，或者说从用户需求到产品功能的转化。我的总结非常简单，就是一个大写的字母Y，我把它叫作“Y模型”，如图5-1所示。先看看Y模型中的一些概念，如果看过前面的章节，对
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

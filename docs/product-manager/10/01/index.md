@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 这一章比较综合，会把第02到09章涉及的内容串起来讲。首先提一个“商业模式画布”（如图10-1）的概念，它有九个要素，覆盖非常全面。理解透这一概念，也就想清楚了完整的商业闭环。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

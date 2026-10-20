@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 至此，已经讲完了一个产品的各个方面，最后再从产品生命周期的不同视角来做个总的回顾。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

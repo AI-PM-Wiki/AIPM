@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 前面几章介绍了如何把一个产品想清楚，然后一步步做出来。本章将进入下一大模块，谈谈如何将一个产品推出去。这个模块属于“大运营”的范畴，包括运营、销售、市场与品牌等话题。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

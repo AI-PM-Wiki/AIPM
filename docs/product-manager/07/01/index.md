@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 截止第06章，我们几乎已经想清楚了要做什么。第03到06章提到的关键步骤可以概括为图7-1，也可以把这个过程称作“创意设计”环节。图中特意放置了一个老式电话机，是为了再次提醒，这些步骤不是Step
   by Step顺序完成的，而是更像老式电话
 publication_date: '2017-05-01'

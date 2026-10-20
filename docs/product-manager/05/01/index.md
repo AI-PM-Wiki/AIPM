@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 前两章提出并筛选了产品概念，采集了需求，研究了用户，随着信息收集得越来越多，对各种“用户需求场景”也理解得越来越透彻。这一章要开始琢磨解决方案了。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

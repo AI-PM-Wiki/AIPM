@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 本书的最后一章，再回过头来说说人，聊聊个人成长的话题。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

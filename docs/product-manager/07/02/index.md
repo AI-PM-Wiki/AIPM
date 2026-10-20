@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 对于初级产品经理来说，这些事往往不用自己搞定，但随着能力的提升，这也成了份内的事。我们简单地把需要获取的资源分为两类，人和物。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

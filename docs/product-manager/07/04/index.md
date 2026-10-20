@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 本节说的研发生产阶段，是指立项到产品发布之间的过程。作为产品经理，在这个过程中要做些什么事情呢？图7-4是对《人人都是产品经理（纪念版）》里描述项目流程的图略做修改后的结果。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

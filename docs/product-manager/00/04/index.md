@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 任何产品都会有Bug，我与本书同样也有局限性，虽然在离开阿里之后尽力弥补，但还是要提以下几点。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

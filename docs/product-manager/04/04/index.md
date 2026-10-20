@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 本章的最后，来聊聊产品原则。制定产品原则的前提是一个产品做过需求采集且信息足够充分。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

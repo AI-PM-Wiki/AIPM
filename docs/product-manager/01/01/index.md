@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 这是我在知乎上获得最多赞的一个回答。没有字，只有一张网上找来的图，如图1-1[1] 。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

@@ -112,7 +112,7 @@ class BookFootnotesCase(unittest.TestCase):
         self.assertEqual(self.page.locator("#book-footnote-popover").count(), 0)
 
     def test_same_article_note_and_instant_navigation(self):
-        self.load("/product-manager/preface/")
+        self.load("/product-manager/00/")
         reference = self.reference("fow005_1")
         reference.click()
         self.assert_open(reference, "详情可参见12.3节。")

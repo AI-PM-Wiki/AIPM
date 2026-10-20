@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 本章的最后，一起综合分析几个行业。这其实很难，因为不深入研究几个月，很难看透任一个行业的皮毛。但研究一周的收获能超越90%的从业者，也确实是产品经理的必备技能之一。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社

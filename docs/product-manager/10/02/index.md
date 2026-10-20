@@ -1,7 +1,6 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-copyright: <a href="/product-manager/copyright/">原书版权声明</a>
 description: 在我们看来，这些产品（太阳能电动车、苹果的牛顿PDA、Segway电动车）充其量只能算是发明，称不上创新，因为它们没有找到合适的目标客户群。发明仅仅是创造出新技术、新产品，而创新应该是发明（无论新旧）与市场需求的结合，或者说创新是科学发明和
 publication_date: '2017-05-01'
 publisher: 电子工业出版社
