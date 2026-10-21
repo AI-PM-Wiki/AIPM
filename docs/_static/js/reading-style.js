@@ -113,7 +113,7 @@
   panel.innerHTML = `
     <div class="aipm-reading-style__window">
     <div class="aipm-reading-style__head">
-      <div><h2 id="aipm-reading-title">站点设置</h2><p>调整阅读习惯，变化即时呈现</p></div>
+      <h2 id="aipm-reading-title">站点设置</h2>
       <button type="button" class="aipm-reading-style__close" aria-label="关闭站点设置" title="关闭站点设置" autofocus>${icon("close")}</button>
     </div>
     <div class="aipm-reading-style__views" role="group" aria-label="设置与预览">
@@ -167,10 +167,6 @@
       <div id="aipm-settings-general" role="tabpanel" aria-labelledby="aipm-settings-general-tab" hidden>
         <div class="aipm-reading-style__row"><label for="aipm-settings-language">站点语言</label><div class="aipm-reading-style__select"><select id="aipm-settings-language"><option value="zh-CN">简体中文</option></select>${icon("chevron")}</div></div>
       </div>
-    </div>
-    <div class="aipm-reading-style__footer">
-      <span>${icon("check")}自动保存</span>
-      <span>应用于当前浏览器</span>
     </div>
     </div>
     <section class="aipm-reading-style__preview-pane" aria-label="效果预览">
