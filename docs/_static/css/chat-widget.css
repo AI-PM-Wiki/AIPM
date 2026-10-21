@@ -561,7 +561,8 @@ html.aipm-chat-mode--sheet .aipm-chat__local-status { flex: 0 0 100%; }
   flex-direction: column;
   align-items: flex-start;
 }
-html.aipm-chat-mode--sheet .aipm-chat__welcome {
+html.aipm-chat-mode--sheet .aipm-chat__empty,
+html.aipm-chat-mode--sheet .aipm-chat__disclaimer {
   display: none;
 }
 .aipm-chat__empty-icon {
@@ -668,26 +669,6 @@ html.aipm-chat-mode--sheet .aipm-chat__welcome {
 @media screen and (max-width: 47.9875em) and (max-height: 40em) {
   .aipm-chat__msgs {
     padding-bottom: .25rem;
-  }
-  .aipm-chat__empty {
-    gap: .5rem;
-    padding: .1rem .2rem;
-  }
-  .aipm-chat__suggest {
-    gap: .3rem;
-  }
-  .aipm-chat__suggest-btn {
-    min-height: 2.6rem;
-    padding: .3rem .7rem;
-  }
-  .aipm-chat__suggest-content {
-    gap: .1rem;
-  }
-  .aipm-chat__suggest-label {
-    font-size: .55rem;
-  }
-  .aipm-chat__suggest-question {
-    font-size: .7rem;
   }
 }
 
