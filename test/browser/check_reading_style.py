@@ -39,6 +39,11 @@ class ReadingStyleCase(unittest.TestCase):
     def open(self):
         self.page.get_by_role("button", name="站点设置", exact=True).click()
         self.page.get_by_role("dialog", name="站点设置", exact=True).wait_for(state="visible")
+        self.page.wait_for_function("""() => document.querySelector('.aipm-reading-style__window')
+          .getAnimations().every(animation => animation.playState !== 'running')""")
+
+    def wait_closed(self):
+        self.page.get_by_role("dialog", name="站点设置", exact=True).wait_for(state="hidden")
 
     def select(self, group, label):
         self.page.get_by_role("group", name=group, exact=True).get_by_text(label, exact=True).click()
@@ -75,7 +80,7 @@ class ReadingStyleCase(unittest.TestCase):
         self.assertEqual(self.styles()["size"], "22px")
         self.assertAlmostEqual(float(self.styles()["line"].removesuffix("px")), 46.2, places=1)
         self.assertIn("Songti SC", self.styles()["font"])
-        self.assertEqual(panel.locator("output").inner_text(), "22 px")
+        self.assertEqual(panel.locator("#aipm-reading-size-value").inner_text(), "22 px")
         self.assertEqual(self.page.locator(".md-header").evaluate("node => getComputedStyle(node).fontSize"), header_size)
         self.page.reload(wait_until="domcontentloaded")
         self.assertEqual(self.styles()["size"], "22px")
@@ -92,7 +97,8 @@ class ReadingStyleCase(unittest.TestCase):
         self.assertEqual(self.styles()["line"], "27px")
         saved = json.loads(self.page.evaluate('localStorage.getItem("aipm-reading-style")'))
         self.assertEqual(saved, {"size": 15, "spacing": "standard", "width": "standard", "font": "sans",
-                                 "heading": "structured", "emphasis": "marker", "color": "indigo"})
+                                 "heading": "structured", "emphasis": "marker", "color": "indigo",
+                                 "customColor": "#4051b5"})
 
     def test_width_and_cross_tab_preferences(self):
         self.load()
@@ -119,25 +125,32 @@ class ReadingStyleCase(unittest.TestCase):
         entry.press("Enter")
         self.assertEqual(entry.get_attribute("aria-expanded"), "true")
         self.page.keyboard.press("Escape")
+        self.wait_closed()
         self.assertTrue(entry.evaluate("node => node === document.activeElement"))
         self.assertEqual(entry.get_attribute("aria-expanded"), "false")
         entry.press("Space")
         self.page.get_by_role("button", name="关闭站点设置").click()
+        self.wait_closed()
         self.assertTrue(entry.evaluate("node => node === document.activeElement"))
         self.open()
-        entry.click()
-        self.assertEqual(entry.get_attribute("aria-expanded"), "false")
-        self.open()
+        self.assertTrue(self.page.locator("#aipm-reading-style").evaluate("node => node.matches(':modal')"))
+        for _ in range(20):
+            self.page.keyboard.press("Tab")
+            self.assertTrue(self.page.evaluate("document.querySelector('#aipm-reading-style').contains(document.activeElement)"))
         self.page.mouse.click(5, 250)
+        self.wait_closed()
         self.assertEqual(entry.get_attribute("aria-expanded"), "false")
         scheme = self.page.locator("body").get_attribute("data-md-color-scheme")
         self.open()
+        self.page.get_by_role("tab", name="外观", exact=True).click()
         self.page.get_by_role("button", name="暗色模式", exact=True).click()
         self.assertNotEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), scheme)
         self.assertEqual(entry.get_attribute("aria-expanded"), "true")
+        self.page.get_by_role("tab", name="排版", exact=True).click()
         self.page.get_by_role("slider", name="字号").focus()
         self.page.get_by_role("slider", name="字号").press("Home")
         self.page.keyboard.press("Escape")
+        self.wait_closed()
         self.page.locator('input[data-md-component="search-query"]').fill("产品")
         self.assertEqual(entry.get_attribute("aria-expanded"), "false")
         self.assertEqual(self.styles()["size"], "14px")
@@ -155,9 +168,9 @@ class ReadingStyleCase(unittest.TestCase):
                 panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
                 panel.wait_for(state="visible")
                 bounds = panel.bounding_box()
-                self.assertGreaterEqual(bounds["x"], 11)
-                self.assertLessEqual(bounds["x"] + bounds["width"], width - 11)
-                self.assertLessEqual(bounds["y"] + bounds["height"], height - 11)
+                self.assertEqual(bounds["x"], 0)
+                self.assertEqual(bounds["width"], width)
+                self.assertLessEqual(bounds["y"] + bounds["height"], height)
                 self.select("行距", "宽松")
                 self.select("正文宽度", "宽阔")
                 self.select("字体", "宋体")
@@ -179,7 +192,24 @@ class ReadingStyleCase(unittest.TestCase):
                 if width == 320:
                     panel.get_by_role("button", name="恢复默认").tap()
                     self.page.screenshot(path=str(WORK / "settings/mobile-dark.png"))
+                panel.get_by_role("button", name="效果预览", exact=True).tap()
+                preview = panel.locator(".aipm-reading-style__preview")
+                self.assertTrue(preview.is_visible())
+                self.assertFalse(panel.get_by_role("tab", name="排版", exact=True).is_visible())
+                self.assertLessEqual(preview.bounding_box()["width"], width)
+                self.assertEqual(preview.evaluate("node => node.scrollWidth <= node.clientWidth"), True)
+                self.assertGreater(preview.locator("p").count(), 10)
+                scroll = panel.locator(".aipm-reading-style__preview-scroll")
+                scroll.hover()
+                self.page.mouse.wheel(0, 500)
+                self.page.wait_for_function("document.querySelector('.aipm-reading-style__preview-scroll').scrollTop > 0")
+                if width == 390:
+                    scroll.evaluate("node => { node.scrollTop = 0; }")
+                    self.page.screenshot(path=str(WORK / "settings/mobile-preview.png"))
+                panel.get_by_role("button", name="设置", exact=True).tap()
+                self.assertTrue(panel.get_by_role("tab", name="排版", exact=True).is_visible())
                 panel.get_by_role("button", name="关闭站点设置").tap()
+                self.wait_closed()
                 self.assertEqual(self.page.locator('.aipm-reading-entry').get_attribute("aria-expanded"), "false")
                 self.page.emulate_media(media="print")
                 self.assertFalse(self.page.locator(".aipm-reading-entry").is_visible())
@@ -240,6 +270,7 @@ class ReadingStyleCase(unittest.TestCase):
         self.load()
         self.open()
         panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+        panel.get_by_role("tab", name="外观", exact=True).click()
         fulltext = panel.get_by_role("button", name="全文显示", exact=True)
         width = self.page.locator(".md-content").bounding_box()["width"]
         fulltext.click()
@@ -258,11 +289,91 @@ class ReadingStyleCase(unittest.TestCase):
         fulltext.click()
         self.page.reload(wait_until="domcontentloaded")
         self.open()
+        panel.get_by_role("tab", name="外观", exact=True).click()
         self.assertEqual(theme.get_attribute("aria-pressed"), "true")
         self.assertEqual(fulltext.get_attribute("aria-pressed"), "true")
         fulltext.click()
         self.assertTrue(self.page.locator(".md-sidebar--primary").is_visible())
         panel.get_by_role("button", name="关闭站点设置").click()
+        self.wait_closed()
         self.page.keyboard.press("b")
         self.open()
         self.assertEqual(fulltext.get_attribute("aria-pressed"), "true")
+
+    def test_centered_modal_article_preview_and_reduced_motion(self):
+        self.load()
+        self.page.evaluate("window.scrollTo(0, 300)")
+        scroll = self.page.evaluate("scrollY")
+        self.open()
+        panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+        window = panel.locator(".aipm-reading-style__window").bounding_box()
+        self.assertAlmostEqual(window["x"] + window["width"] / 2, 800, delta=1)
+        self.assertAlmostEqual(window["y"] + window["height"] / 2, 500, delta=1)
+        controls = panel.locator(".aipm-reading-style__settings").bounding_box()
+        preview = panel.locator(".aipm-reading-style__preview-pane").bounding_box()
+        self.assertAlmostEqual(controls["x"] + controls["width"], preview["x"], delta=1)
+        self.assertAlmostEqual(controls["y"], preview["y"], delta=1)
+        self.assertIn("blur", panel.evaluate("node => getComputedStyle(node, '::backdrop').backdropFilter"))
+        self.assertTrue(self.page.evaluate("getComputedStyle(document.documentElement).overflow === 'hidden'"))
+        article = panel.locator(".aipm-reading-style__preview")
+        self.assertEqual(article.locator("h1").inner_text(), self.page.locator(".md-content__inner > h1").inner_text())
+        self.assertEqual(article.locator("p").count(), self.page.locator(".md-content__inner p").count())
+        self.assertGreater(article.locator("img").count(), 0)
+        self.assertGreater(article.locator("strong").count(), 0)
+        self.assertEqual(article.locator("[id], a[href], button, [data-book-footnote]").count(), 0)
+        reset = panel.get_by_role("button", name="恢复默认")
+        self.assertEqual(reset.inner_text(), "")
+        self.assertTrue(reset.evaluate("node => node.parentElement.classList.contains('aipm-reading-style__toolbar')"))
+        self.select("字体", "宋体")
+        self.assertIn("Songti SC", article.evaluate("node => getComputedStyle(node).fontFamily"))
+        panel.screenshot(path=str(WORK / "settings/desktop-typography.png"))
+        panel.get_by_role("button", name="关闭站点设置").click()
+        self.wait_closed()
+        self.assertEqual(self.page.evaluate("scrollY"), scroll)
+        self.assertFalse(self.page.evaluate("document.documentElement.classList.contains('aipm-settings-open')"))
+        self.page.emulate_media(reduced_motion="reduce")
+        self.open()
+        self.assertEqual(panel.locator(".aipm-reading-style__window").evaluate("node => getComputedStyle(node).animationName"), "none")
+        self.page.keyboard.press("Escape")
+        self.wait_closed()
+
+    def test_custom_color_contrast_persistence_and_reset(self):
+        self.load()
+        self.open()
+        panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+        panel.get_by_role("tab", name="外观", exact=True).click()
+        self.select_style("标题样式", "主题色")
+        picker = panel.get_by_label("选择自选颜色", exact=True)
+        for dark in (False, True):
+            if dark:
+                panel.get_by_role("button", name="暗色模式", exact=True).click()
+            for color in ("#ffffff", "#000000", "#00ff00", "#d52e69"):
+                picker.fill(color)
+                self.assertTrue(panel.get_by_role("radio", name="自选颜色", exact=True).is_checked())
+                self.assertEqual(panel.locator("#aipm-settings-color-value").inner_text(), color.upper())
+                contrast = panel.locator(".aipm-reading-style__preview").evaluate("""node => {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = canvas.height = 1;
+                  const context = canvas.getContext('2d');
+                  const luminance = color => {
+                    context.fillStyle = color;
+                    context.fillRect(0, 0, 1, 1);
+                    const rgb = [...context.getImageData(0, 0, 1, 1).data].slice(0, 3).map(value => {
+                      value /= 255;
+                      return value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4;
+                    });
+                    return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
+                  };
+                  const foreground = luminance(getComputedStyle(node.querySelector('h3')).color);
+                  const background = luminance(getComputedStyle(node).backgroundColor);
+                  return (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05);
+                }""")
+                self.assertGreaterEqual(contrast, 4.5)
+        self.page.reload(wait_until="domcontentloaded")
+        self.open()
+        panel.get_by_role("tab", name="外观", exact=True).click()
+        self.assertEqual(picker.input_value(), "#d52e69")
+        self.assertTrue(panel.get_by_role("radio", name="自选颜色", exact=True).is_checked())
+        panel.get_by_role("button", name="恢复默认").click()
+        self.assertEqual(picker.input_value(), "#4051b5")
+        self.assertTrue(panel.get_by_role("radio", name="靛蓝", exact=True).is_checked())

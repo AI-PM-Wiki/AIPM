@@ -4,7 +4,7 @@
   const storageKey = "aipm-reading-style";
   const defaults = {
     size: 15, spacing: "standard", width: "standard", font: "sans",
-    heading: "structured", emphasis: "marker", color: "indigo",
+    heading: "structured", emphasis: "marker", color: "indigo", customColor: "#4051b5",
   };
   const lineHeights = { compact: 1.6, standard: 1.8, relaxed: 2.1 };
   const fonts = {
@@ -29,13 +29,19 @@
     chevron: '<path d="m8 10 4 4 4-4"/>',
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"${name === "settings" ? ' class="aipm-reading-style__gear"' : ""}>${icons[name]}</svg>`;
+  const colorValidator = document.createElement("input");
+  colorValidator.type = "color";
   const validate = (value) => {
+    colorValidator.value = value.customColor;
     if (!Number.isInteger(value.size) || value.size < 14 || value.size > 22 ||
         !Object.hasOwn(lineHeights, value.spacing) || !Object.hasOwn(fonts, value.font) ||
         !["compact", "standard", "wide"].includes(value.width) ||
         !["simple", "structured", "accent"].includes(value.heading) ||
         !["plain", "marker", "underline"].includes(value.emphasis) ||
-        !Object.hasOwn(colors, value.color)) throw new Error("Invalid reading style settings");
+        !(Object.hasOwn(colors, value.color) || value.color === "custom") ||
+        typeof value.customColor !== "string" || colorValidator.value !== value.customColor) {
+      throw new Error("Invalid reading style settings");
+    }
   };
   const read = (stored) => {
     if (stored === null) return { ...defaults };
@@ -55,7 +61,13 @@
     root.style.setProperty("--aipm-reading-scale", settings.size / defaults.size);
     root.style.setProperty("--aipm-reading-line-height", lineHeights[settings.spacing]);
     root.style.setProperty("--aipm-reading-font", fonts[settings.font]);
-    for (const name of ["light", "dark", "accent"]) root.style.setProperty(`--aipm-theme-${name}`, colors[settings.color][name]);
+    const palette = settings.color === "custom" ? {
+      light: `oklch(from ${settings.customColor} min(l, 0.5) c h)`,
+      dark: `oklch(from ${settings.customColor} max(l, 0.8) c h)`,
+      accent: settings.customColor,
+    } : colors[settings.color];
+    for (const name of ["light", "dark", "accent"]) root.style.setProperty(`--aipm-theme-${name}`, palette[name]);
+    root.dataset.readingColor = settings.color;
     root.dataset.readingWidth = settings.width;
     root.dataset.readingHeading = settings.heading;
     root.dataset.readingEmphasis = settings.emphasis;
@@ -70,27 +82,30 @@
   entry.setAttribute("aria-haspopup", "dialog");
   entry.setAttribute("aria-expanded", "false");
   entry.setAttribute("aria-controls", "aipm-reading-style");
-  entry.setAttribute("popovertarget", "aipm-reading-style");
   entry.innerHTML = icon("settings");
 
-  const panel = document.createElement("section");
+  const panel = document.createElement("dialog");
   panel.id = "aipm-reading-style";
   panel.className = "aipm-reading-style";
-  panel.popover = "auto";
-  panel.setAttribute("role", "dialog");
   panel.setAttribute("aria-labelledby", "aipm-reading-title");
   panel.innerHTML = `
+    <div class="aipm-reading-style__window">
     <div class="aipm-reading-style__head">
-      <h2 id="aipm-reading-title">站点设置</h2>
+      <div><h2 id="aipm-reading-title">站点设置</h2><p>调整阅读习惯，变化即时呈现</p></div>
       <button type="button" class="aipm-reading-style__close" aria-label="关闭站点设置" title="关闭站点设置" autofocus>${icon("close")}</button>
     </div>
-    <div class="aipm-reading-style__actions" role="group" aria-label="显示模式">
-      <button type="button" data-reading-action="theme" aria-pressed="false">${icon("moon")}<span>暗色模式</span></button>
-      <button type="button" data-reading-action="fulltext" aria-pressed="false">${icon("expand")}<span>全文显示</span></button>
+    <div class="aipm-reading-style__views" role="group" aria-label="设置与预览">
+      <button type="button" data-settings-view="settings" aria-pressed="true">设置</button>
+      <button type="button" data-settings-view="preview" aria-pressed="false">效果预览</button>
     </div>
+    <div class="aipm-reading-style__layout">
+    <div class="aipm-reading-style__settings">
+    <div class="aipm-reading-style__toolbar">
     <div class="aipm-reading-style__tabs" role="tablist" aria-label="设置分类">
       <button type="button" id="aipm-settings-typography-tab" role="tab" aria-selected="true" aria-controls="aipm-settings-typography" data-settings-tab="typography">排版</button>
       <button type="button" id="aipm-settings-appearance-tab" role="tab" aria-selected="false" aria-controls="aipm-settings-appearance" data-settings-tab="appearance" tabindex="-1">外观</button>
+    </div>
+    <button type="button" class="aipm-reading-style__reset" aria-label="恢复默认" title="恢复默认">${icon("reset")}</button>
     </div>
     <div class="aipm-reading-style__body">
       <div id="aipm-settings-typography" role="tabpanel" aria-labelledby="aipm-settings-typography-tab">
@@ -111,24 +126,35 @@
         </div></div>
       </div>
       <div id="aipm-settings-appearance" role="tabpanel" aria-labelledby="aipm-settings-appearance-tab" hidden>
+        <div class="aipm-reading-style__actions" role="group" aria-label="显示模式">
+          <button type="button" data-reading-action="theme" aria-pressed="false">${icon("moon")}<span>暗色模式</span></button>
+          <button type="button" data-reading-action="fulltext" aria-pressed="false">${icon("expand")}<span>全文显示</span></button>
+        </div>
         <div class="aipm-reading-style__palette" role="group" aria-label="主题色">
           <div><span>主题色</span><span class="aipm-reading-style__color-name"></span></div>
           <div class="aipm-reading-style__colors">
           ${Object.entries(colors).map(([value, color]) => `<label title="${color.label}"><input type="radio" name="color" value="${value}" aria-label="${color.label}"><span style="--settings-swatch:${color.light}">${icon("check")}</span></label>`).join("")}
+          <label title="自选颜色"><input type="radio" name="color" value="custom" aria-label="自选颜色"><span class="aipm-reading-style__custom-swatch">${icon("check")}</span></label>
           </div>
+          <label class="aipm-reading-style__custom-color" for="aipm-settings-custom-color"><span>自选颜色</span><output id="aipm-settings-color-value" for="aipm-settings-custom-color"></output><input id="aipm-settings-custom-color" name="customColor" type="color" aria-label="选择自选颜色"></label>
         </div>
         <div class="aipm-reading-style__row"><label for="aipm-settings-heading">标题样式</label><div class="aipm-reading-style__select"><select id="aipm-settings-heading" name="heading"><option value="simple">简洁</option><option value="structured">层次</option><option value="accent">主题色</option></select>${icon("chevron")}</div></div>
         <div class="aipm-reading-style__row"><label for="aipm-settings-emphasis">加粗样式</label><div class="aipm-reading-style__select"><select id="aipm-settings-emphasis" name="emphasis"><option value="plain">纯文字</option><option value="marker">淡色标记</option><option value="underline">下划线</option></select>${icon("chevron")}</div></div>
         <div class="aipm-reading-style__row"><label for="aipm-settings-language">站点语言</label><div class="aipm-reading-style__select"><select id="aipm-settings-language"><option value="zh-CN">简体中文</option></select>${icon("chevron")}</div></div>
       </div>
-      <div class="aipm-reading-style__preview md-typeset" aria-label="样式预览">
-        <span class="aipm-reading-style__preview-label">效果预览</span>
-        <div class="book-original"><h3>从问题出发</h3><p>清晰表达，让<strong>重要的想法</strong>更容易理解。</p></div>
-      </div>
     </div>
     <div class="aipm-reading-style__footer">
-      <button type="button" class="aipm-reading-style__reset">${icon("reset")}恢复默认</button>
       <span>${icon("check")}自动保存</span>
+      <span>应用于当前浏览器</span>
+    </div>
+    </div>
+    <section class="aipm-reading-style__preview-pane" aria-label="效果预览">
+      <div class="aipm-reading-style__preview-head"><span>效果预览</span><span>当前文章 · 即时更新</span></div>
+      <div class="aipm-reading-style__preview-scroll" tabindex="0" aria-label="预览文章">
+        <article class="aipm-reading-style__preview md-typeset"></article>
+      </div>
+    </section>
+    </div>
     </div>`;
   document.body.append(panel);
 
@@ -155,10 +181,13 @@
   };
   const sync = () => {
     panel.querySelector('[name="size"]').value = settings.size;
-    panel.querySelector("output").value = `${settings.size} px`;
+    panel.querySelector("#aipm-reading-size-value").value = `${settings.size} px`;
     for (const input of panel.querySelectorAll('[type="radio"]')) input.checked = input.value === settings[input.name];
     for (const select of panel.querySelectorAll("select[name]")) select.value = settings[select.name];
-    panel.querySelector(".aipm-reading-style__color-name").textContent = colors[settings.color].label;
+    panel.querySelector(".aipm-reading-style__color-name").textContent = settings.color === "custom" ? "自选" : colors[settings.color].label;
+    panel.querySelector('[name="customColor"]').value = settings.customColor;
+    panel.querySelector("#aipm-settings-color-value").value = settings.customColor.toUpperCase();
+    panel.querySelector(".aipm-reading-style__custom-swatch").style.setProperty("--settings-swatch", settings.customColor);
     syncDisplay();
   };
   const save = () => {
@@ -172,6 +201,7 @@
     const input = event.target;
     if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement) || !input.name) return;
     settings[input.name] = input.name === "size" ? input.valueAsNumber : input.value;
+    if (input.name === "customColor") settings.color = "custom";
     save();
   });
   panel.querySelector('[data-reading-action="theme"]').addEventListener("click", () => setScheme(document.body.dataset.mdColorScheme === "slate" ? "default" : "slate"));
@@ -186,12 +216,7 @@
     setScheme(matchMedia("(prefers-color-scheme: dark)").matches ? "slate" : "default");
     setSidebars({ NAVIGATION: true, TOC: true });
   });
-  panel.querySelector(".aipm-reading-style__close").addEventListener("click", () => {
-    panel.hidePopover();
-    entry.focus({ preventScroll: true });
-  });
-
-  const tabs = [...panel.querySelectorAll('[role="tab"]')];
+  const tabs = [...panel.querySelectorAll('[data-settings-tab]')];
   const selectTab = (tab) => {
     for (const item of tabs) {
       const selected = item === tab;
@@ -212,20 +237,79 @@
       tabs[index].focus();
     });
   }
-  const position = () => {
-    const anchor = entry.getBoundingClientRect();
-    const width = parseFloat(getComputedStyle(panel).width);
-    panel.style.top = `${anchor.bottom + 8}px`;
-    panel.style.left = `${Math.max(12, Math.min(anchor.right - width, innerWidth - width - 12))}px`;
-    panel.style.maxHeight = `${Math.max(0, innerHeight - anchor.bottom - 20)}px`;
+  const preview = panel.querySelector(".aipm-reading-style__preview");
+  const refreshPreview = () => {
+    const source = document.querySelector(".md-content__inner");
+    if (!source) throw new Error("Reading preview article is missing");
+    const article = source.cloneNode(true);
+    article.querySelectorAll("script, style, button, input, select, textarea, iframe, .headerlink, .md-source-file, .md-content__button, .footnote-backref").forEach((node) => node.remove());
+    for (const node of [article, ...article.querySelectorAll("*")]) {
+      for (const attribute of [...node.attributes]) {
+        if (attribute.name === "id" || attribute.name === "tabindex" || attribute.name === "autofocus" ||
+            attribute.name.startsWith("data-") || attribute.name.startsWith("aria-") || attribute.name.startsWith("on")) {
+          node.removeAttribute(attribute.name);
+        }
+      }
+    }
+    article.querySelectorAll("a").forEach((link) => link.removeAttribute("href"));
+    article.querySelectorAll("img, .mermaid").forEach((node) => node.setAttribute("data-mermaid-zoom-ready", ""));
+    article.querySelectorAll("details").forEach((details) => { details.open = true; });
+    preview.replaceChildren(...article.childNodes);
+    panel.querySelector(".aipm-reading-style__preview-scroll").scrollTop = 0;
   };
-  panel.addEventListener("beforetoggle", (event) => {
-    entry.setAttribute("aria-expanded", String(event.newState === "open"));
-    if (event.newState === "open") { position(); syncDisplay(); }
+  const views = [...panel.querySelectorAll("[data-settings-view]")];
+  const selectView = (view) => {
+    panel.dataset.view = view;
+    for (const button of views) button.setAttribute("aria-pressed", String(button.dataset.settingsView === view));
+  };
+  views.forEach((button) => button.addEventListener("click", () => selectView(button.dataset.settingsView)));
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  let closing = false;
+  const close = async (animate = true) => {
+    if (!panel.open || closing) return;
+    closing = true;
+    panel.dataset.closing = "true";
+    if (animate && !motion.matches) {
+      await panel.querySelector(".aipm-reading-style__window").animate([
+        { opacity: 1, transform: "translateY(0) scale(1)" },
+        { opacity: 0, transform: "translateY(10px) scale(.985)" },
+      ], { duration: 160, easing: "ease-in", fill: "forwards" }).finished;
+    }
+    panel.close();
+    root.classList.remove("aipm-settings-open");
+    entry.setAttribute("aria-expanded", "false");
+    panel.querySelector(".aipm-reading-style__window").getAnimations().forEach((animation) => animation.cancel());
+    delete panel.dataset.closing;
+    closing = false;
+    if (animate) entry.focus({ preventScroll: true });
+  };
+  entry.addEventListener("click", () => {
+    refreshPreview();
+    syncDisplay();
+    selectView("settings");
+    panel.showModal();
+    root.classList.add("aipm-settings-open");
+    entry.setAttribute("aria-expanded", "true");
   });
-  const close = () => { if (panel.matches(":popover-open")) panel.hidePopover(); };
-  document.addEventListener("focusin", (event) => {
-    if (!panel.contains(event.target) && !entry.contains(event.target)) close();
+  panel.querySelector(".aipm-reading-style__close").addEventListener("click", () => close());
+  panel.addEventListener("cancel", (event) => { event.preventDefault(); close(); });
+  panel.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab") return;
+    const controls = [...panel.querySelectorAll("button, input, select, [tabindex]")].filter((node) =>
+      node.tabIndex >= 0 && !node.disabled && node.getClientRects().length &&
+      (node.type !== "radio" || node.checked));
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first || !event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
+  });
+  let backdropPointer = false;
+  panel.addEventListener("pointerdown", (event) => { backdropPointer = event.target === panel; });
+  panel.addEventListener("click", (event) => {
+    if (backdropPointer && event.target === panel) close();
+    backdropPointer = false;
   });
   document.addEventListener("change", (event) => {
     if (event.target.matches('[data-md-toggle="search"], [data-md-toggle="drawer"]')) close();
@@ -234,7 +318,6 @@
     if (["b", "m", "t"].includes(event.key.toLowerCase())) syncDisplay();
   });
   new MutationObserver(syncDisplay).observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
-  window.addEventListener("resize", () => { if (panel.matches(":popover-open")) position(); });
   window.addEventListener("storage", (event) => {
     if (event.key === storageKey) { settings = read(event.newValue); apply(); sync(); }
     else if (event.key?.startsWith("TOGGLE_SIDEBAR_")) setSidebars(sidebarState());
@@ -244,7 +327,7 @@
     }
   });
   const attach = () => {
-    close();
+    close(false);
     const search = document.querySelector('.md-header__inner > label[for="__search"]');
     if (!search) return;
     search.before(entry);
