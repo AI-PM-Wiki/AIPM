@@ -113,10 +113,6 @@
   panel.innerHTML = `
     <div class="aipm-reading-style__window">
     <button type="button" class="aipm-reading-style__close" aria-label="关闭站点设置" title="关闭站点设置" autofocus>${icon("close")}</button>
-    <div class="aipm-reading-style__views" role="group" aria-label="设置与预览">
-      <button type="button" data-settings-view="settings" aria-pressed="true">设置</button>
-      <button type="button" data-settings-view="preview" aria-pressed="false">效果预览</button>
-    </div>
     <div class="aipm-reading-style__layout">
     <div class="aipm-reading-style__settings">
     <div class="aipm-reading-style__toolbar">
@@ -279,12 +275,6 @@
     preview.replaceChildren(...article.childNodes);
     panel.querySelector(".aipm-reading-style__preview-scroll").scrollTop = 0;
   };
-  const views = [...panel.querySelectorAll("[data-settings-view]")];
-  const selectView = (view) => {
-    panel.dataset.view = view;
-    for (const button of views) button.setAttribute("aria-pressed", String(button.dataset.settingsView === view));
-  };
-  views.forEach((button) => button.addEventListener("click", () => selectView(button.dataset.settingsView)));
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   let closing = false;
   const close = async (animate = true) => {
@@ -308,7 +298,6 @@
   entry.addEventListener("click", () => {
     refreshPreview();
     syncDisplay();
-    selectView("settings");
     panel.showModal();
     root.classList.add("aipm-settings-open");
     entry.setAttribute("aria-expanded", "true");
