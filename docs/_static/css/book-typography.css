@@ -1,20 +1,18 @@
 .md-typeset .book-original {
   --book-heading-color: #172033;
-  --book-strong-color: #26325d;
-  --book-heading-rule: #4051b52e;
-  --book-emphasis-marker: #526cfe24;
+  --book-strong-color: color-mix(in srgb, var(--book-heading-color) 75%, var(--md-typeset-a-color));
+  --book-heading-rule: color-mix(in srgb, var(--md-typeset-a-color) 20%, transparent);
+  --book-emphasis-marker: color-mix(in srgb, var(--md-typeset-a-color) 16%, transparent);
+  --book-heading-weight: 750;
 }
 
 [data-md-color-scheme="slate"] .md-typeset .book-original {
   --book-heading-color: #f4f6ff;
-  --book-strong-color: #e1e8ff;
-  --book-heading-rule: #a6b4ff40;
-  --book-emphasis-marker: #a6b4ff2e;
 }
 
 .md-typeset .book-original :is(h2, h3, h4) {
   color: var(--book-heading-color);
-  font-weight: 750;
+  font-weight: var(--book-heading-weight);
   line-height: 1.5;
 }
 
@@ -62,6 +60,45 @@
   padding: 0;
   color: inherit;
   background-image: none;
+  text-decoration: none;
+}
+
+[data-reading-heading="simple"] .md-typeset .book-original {
+  --book-heading-weight: 650;
+}
+
+[data-reading-heading="simple"] .md-typeset .book-original h2 {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+[data-reading-heading="simple"] .md-typeset .book-original h3 {
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+
+[data-reading-heading="accent"] .md-typeset .book-original :is(h2, h3, h4),
+[data-reading-heading="accent"] .md-typeset .book-original .book-emphasis-block > strong,
+[data-reading-heading="accent"] .md-content__inner.md-typeset > h1 {
+  color: var(--md-typeset-a-color);
+}
+
+[data-reading-emphasis="plain"] .md-typeset .book-original strong {
+  color: inherit;
+  background-image: none;
+}
+
+[data-reading-emphasis="underline"] .md-typeset .book-original strong {
+  background-image: none;
+  text-decoration: underline;
+  text-decoration-color: var(--md-typeset-a-color);
+  text-decoration-thickness: 2px;
+  text-underline-offset: .2em;
+}
+
+[data-reading-emphasis="underline"] .md-typeset .book-original :is(h2, h3, h4, a) strong,
+[data-reading-emphasis="underline"] .md-typeset .book-original .book-emphasis-block > strong {
+  text-decoration: none;
 }
 
 @media (max-width: 44rem) {
@@ -77,10 +114,11 @@
 }
 
 @media print {
-  .md-typeset .book-original :is(h2, h3, h4, strong),
-  .md-typeset .book-original .book-emphasis-block > strong {
+  :root .md-typeset .book-original :is(h2, h3, h4, strong),
+  :root .md-typeset .book-original .book-emphasis-block > strong {
     color: inherit;
     background-image: none;
+    text-decoration: none;
   }
 
   .md-typeset .book-original :is(h2, h3) {

@@ -147,7 +147,7 @@ plugins:
     separator: '[\\s\\-]'
 - toggle-sidebar:
     theme: material
-    toggle_button: all
+    toggle_button: none
 
 hooks:
   - hooks/on_env.py
