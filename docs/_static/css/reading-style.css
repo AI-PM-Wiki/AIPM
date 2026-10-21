@@ -15,7 +15,8 @@ body[data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
   --aipm-theme-color: var(--aipm-theme-dark, #b2bdff);
 }
 
-.md-header [data-md-component="palette"] {
+.md-header [data-md-component="palette"],
+.md-header .mkdocs-toggle-sidebar-button {
   display: none;
 }
 
