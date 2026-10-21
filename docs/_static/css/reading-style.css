@@ -371,7 +371,6 @@ html.aipm-settings-open { overflow: hidden; overflow-anchor: none; scrollbar-gut
 }
 
 .aipm-reading-style__preview > h1 { margin-top: 0; font-size: calc(1.75rem * var(--aipm-reading-scale, 1)); }
-[data-reading-heading="accent"] .aipm-reading-style__preview > h1 { color: var(--md-typeset-a-color); }
 [data-reading-width="compact"] .aipm-reading-style__preview { max-width: 460px; }
 [data-reading-width="standard"] .aipm-reading-style__preview { max-width: 620px; }
 .aipm-reading-style__preview a { pointer-events: none; cursor: default; }

@@ -392,6 +392,81 @@ class ReadingStyleCase(unittest.TestCase):
                     self.page.get_by_role("button", name="关闭站点设置").click()
                     self.wait_closed()
 
+    def test_main_site_heading_and_emphasis_settings(self):
+        self.page.goto(self.site.base + "/pm/requirements/", wait_until="domcontentloaded")
+        self.open()
+        panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+        panel.get_by_role("tab", name="外观", exact=True).click()
+        for label, border, weight in (("简洁", "0px", "650"), ("层次", "3px", "750")):
+            with self.subTest(heading=label):
+                self.select_style("标题样式", label)
+                for root in (".md-content__inner", ".aipm-reading-style__preview"):
+                    heading = self.page.locator(f"{root} h3").first
+                    self.assertEqual(heading.evaluate("node => getComputedStyle(node).borderInlineStartWidth"), border)
+                    self.assertEqual(heading.evaluate("node => getComputedStyle(node).fontWeight"), weight)
+        for label, decoration, marker in (("纯文字", "none", False), ("下划线", "underline", False),
+                                           ("淡色标记", "none", True)):
+            with self.subTest(emphasis=label):
+                self.select_style("加粗样式", label)
+                for root in (".md-content__inner", ".aipm-reading-style__preview"):
+                    emphasis = self.page.locator(f"{root} > p strong").first
+                    self.assertEqual(emphasis.evaluate("node => getComputedStyle(node).textDecorationLine"), decoration)
+                    self.assertEqual("linear-gradient" in emphasis.evaluate("node => getComputedStyle(node).backgroundImage"), marker)
+        self.select_style("标题样式", "主题色")
+        panel.get_by_role("radio", name="青绿", exact=True).check()
+        self.page.wait_for_function("""() =>
+          getComputedStyle(document.querySelector('.md-content__inner h3')).color ===
+          getComputedStyle(document.querySelector('.md-content__inner p a[href]')).color
+        """)
+        colors = self.page.evaluate("""() => ({
+          headings: [...document.querySelectorAll('.md-content__inner :is(h1, h2, h3, h4), .aipm-reading-style__preview :is(h1, h2, h3, h4)')]
+            .map(node => getComputedStyle(node).color),
+          accent: getComputedStyle(document.querySelector('.md-content__inner p a[href]')).color,
+        })""")
+        self.assertEqual(set(colors["headings"]), {colors["accent"]})
+        panel.get_by_role("button", name="关闭站点设置").click()
+        self.wait_closed()
+        self.page.reload(wait_until="domcontentloaded")
+        self.open()
+        panel.get_by_role("tab", name="外观", exact=True).click()
+        self.assertEqual(panel.get_by_role("combobox", name="标题样式", exact=True).input_value(), "accent")
+        self.assertEqual(panel.get_by_role("combobox", name="加粗样式", exact=True).input_value(), "marker")
+        self.assertIn("linear-gradient", self.page.locator(".md-content__inner > p strong").first.evaluate("node => getComputedStyle(node).backgroundImage"))
+
+    def test_main_site_mobile_reading_preferences(self):
+        self.page.set_viewport_size({"width": 390, "height": 844})
+        self.page.goto(self.site.base + "/pm/requirements/", wait_until="domcontentloaded")
+        self.open()
+        panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+        panel.get_by_role("tab", name="外观", exact=True).click()
+        self.select_style("标题样式", "简洁")
+        self.select_style("加粗样式", "下划线")
+        for dark in (False, True):
+            with self.subTest(dark=dark):
+                if dark:
+                    panel.get_by_role("button", name="暗色模式", exact=True).click()
+                for root in (".md-content__inner", ".aipm-reading-style__preview"):
+                    heading = self.page.locator(f"{root} h3").first
+                    self.assertEqual(heading.evaluate("node => getComputedStyle(node).borderInlineStartWidth"), "0px")
+                    self.assertEqual(heading.evaluate("node => getComputedStyle(node).paddingInlineStart"), "0px")
+                    self.assertEqual(heading.evaluate("node => getComputedStyle(node).fontWeight"), "650")
+                    emphasis = self.page.locator(f"{root} > p strong").first
+                    self.assertEqual(emphasis.evaluate("node => getComputedStyle(node).textDecorationLine"), "underline")
+        panel.get_by_role("tab", name="排版", exact=True).click()
+        panel.get_by_role("slider", name="字号").focus()
+        panel.get_by_role("slider", name="字号").press("End")
+        self.select("行距", "宽松")
+        self.select_style("字体", "思源宋体")
+        self.select("首行样式", "首行缩进")
+        for root in (".md-content__inner", ".aipm-reading-style__preview"):
+            paragraph = self.page.locator(f"{root} > p").first
+            self.assertEqual(paragraph.evaluate("node => getComputedStyle(node).fontSize"), "22px")
+            self.assertAlmostEqual(float(paragraph.evaluate("node => getComputedStyle(node).lineHeight").removesuffix("px")), 46.2, places=1)
+            self.assertEqual(paragraph.evaluate("node => getComputedStyle(node).textIndent"), "44px")
+            self.assertIn("Songti SC", paragraph.evaluate("node => getComputedStyle(node).fontFamily"))
+        self.assertLessEqual(self.page.evaluate("document.documentElement.scrollWidth"), 390)
+        self.assertTrue(panel.locator(".aipm-reading-style__preview").evaluate("node => node.scrollWidth <= node.clientWidth"))
+
     def test_custom_color_contrast_persistence_and_reset(self):
         self.load()
         self.open()
