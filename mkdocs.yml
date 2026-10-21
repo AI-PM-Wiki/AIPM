@@ -13,8 +13,8 @@ edit_uri: 'edit/main/docs/'
 # Contents
 nav:
 - 主站:
-  - 主站: index.md
   - 简介:
+    - 简介: index.md
     - 如何参与: intro/htc.md
     - 格式手册: intro/format.md
     - AI-PM 不是什么: intro/what-ai-pm-is-not.md
@@ -725,95 +725,96 @@ nav:
       - 工单与 IT 服务: vertical/enterprise/itsm.md
       - 主数据、集成与权限: vertical/enterprise/integration.md
 - 产品:
-  - 产品经理: product-manager/index.md
-  - 0 导读:
-    - 0 导读: product-manager/00/index.md
-    - 0.1 为什么会有这本书: product-manager/00/01/index.md
-    - 0.2 本书的产品定位: product-manager/00/02/index.md
-    - 0.3 本书内容与阅读方法: product-manager/00/03/index.md
-    - 0.4 我与本书的局限性: product-manager/00/04/index.md
-  - 1 产品经理:
-    - 1 产品经理: product-manager/01/index.md
-    - 1.1 从一个小故事谈起: product-manager/01/01/index.md
-    - 1.2 产品经理的前世今生: product-manager/01/02/index.md
-    - 1.3 思维方式与性格特点: product-manager/01/03/index.md
-    - 1.4 产品经理的日常: product-manager/01/04/index.md
-    - 1.5 延伸阅读与练习: product-manager/01/05/index.md
-  - 2 产品基础:
-    - 2 产品基础: product-manager/02/index.md
-    - 2.1 产品：解决某个问题的东西: product-manager/02/01/index.md
-    - 2.2 常见的产品分类维度: product-manager/02/02/index.md
-    - 2.3 延伸阅读与练习: product-manager/02/03/index.md
-  - 3 产品概念:
-    - 3 产品概念: product-manager/03/index.md
-    - 3.1 产品概念的提出: product-manager/03/01/index.md
-    - 3.2 概念提出的综合案例: product-manager/03/02/index.md
-    - 3.3 产品概念的筛选: product-manager/03/03/index.md
-    - 3.4 概念筛选的综合案例: product-manager/03/04/index.md
-    - 3.5 延伸阅读与练习: product-manager/03/05/index.md
-  - 4 用户需求:
-    - 4 用户需求: product-manager/04/index.md
-    - 4.1 需求采集方法的分类: product-manager/04/01/index.md
-    - 4.2 一些实用的采集方法: product-manager/04/02/index.md
-    - 4.3 用户、需求的再理解: product-manager/04/03/index.md
-    - 4.4 产品原则与初心: product-manager/04/04/index.md
-    - 4.5 延伸阅读与练习: product-manager/04/05/index.md
-  - 5 需求分析:
-    - 5 需求分析: product-manager/05/index.md
-    - 5.1 从问题到解决方案: product-manager/05/01/index.md
-    - 5.2 Y模型的基本概念: product-manager/05/02/index.md
-    - 5.3 实战中如何深入浅出: product-manager/05/03/index.md
-    - 5.4 一些综合案例: product-manager/05/04/index.md
-    - 5.5 Y模型的更多理解: product-manager/05/05/index.md
-    - 5.6 延伸阅读与练习: product-manager/05/06/index.md
-  - 6 功能设计:
-    - 6 功能设计: product-manager/06/index.md
-    - 6.1 功能 DNA: product-manager/06/01/index.md
-    - 6.2 功能打包，确定MVP: product-manager/06/02/index.md
-    - 6.3 把需求和功能管起来: product-manager/06/03/index.md
-    - 6.4 延伸阅读与练习: product-manager/06/04/index.md
-  - 7 研发执行:
-    - 7 研发执行: product-manager/07/index.md
-    - 7.1 从“想清楚”到“做出来”: product-manager/07/01/index.md
-    - 7.2 立项：搞定各种资源: product-manager/07/02/index.md
-    - 7.3 组队：聊聊初创团队: product-manager/07/03/index.md
-    - 7.4 研发生产时，我们做什么: product-manager/07/04/index.md
-    - 7.5 延伸阅读与练习: product-manager/07/05/index.md
-  - 8 规划迭代:
-    - 8 规划迭代: product-manager/08/index.md
-    - 8.1 好产品步步为营: product-manager/08/01/index.md
-    - 8.2 规划：只看最短和最长: product-manager/08/02/index.md
-    - 8.3 迭代：再理解敏捷: product-manager/08/03/index.md
-    - 8.4 天下武功，唯快不破: product-manager/08/04/index.md
-    - 8.5 与用户一起成长: product-manager/08/05/index.md
-    - 8.6 延伸阅读与练习: product-manager/08/06/index.md
-  - 9 产品运营:
-    - 9 产品运营: product-manager/09/index.md
-    - 9.1 产品与运营的关系: product-manager/09/01/index.md
-    - 9.2 运营工作的分类: product-manager/09/02/index.md
-    - 9.3 大运营的其他职责: product-manager/09/03/index.md
-    - 9.4 产品的生命周期: product-manager/09/04/index.md
-    - 9.5 延伸阅读与练习: product-manager/09/05/index.md
-  - 10 综合案例:
-    - 10 综合案例: product-manager/10/index.md
-    - 10.1 聊聊商业模式: product-manager/10/01/index.md
-    - 10.2 创新那点事儿: product-manager/10/02/index.md
-    - 10.3 行业案例分析: product-manager/10/03/index.md
-    - 10.4 延伸阅读与练习: product-manager/10/04/index.md
-  - 11 职业成长:
-    - 11 职业成长: product-manager/11/index.md
-    - 11.1 在人力资源部做产品经理: product-manager/11/01/index.md
-    - 11.2 产品经理的七层修炼: product-manager/11/02/index.md
-    - 11.3 十年后，再无产品经理: product-manager/11/03/index.md
-    - 11.4 归宿：无非广义创业: product-manager/11/04/index.md
-    - 11.5 从生活态度到社会推动力: product-manager/11/05/index.md
-    - 11.6 延伸阅读与练习: product-manager/11/06/index.md
-  - 12 延伸阅读:
-    - 12 延伸阅读: product-manager/12/index.md
-    - 12.1 国产产品图书盘点: product-manager/12/01/index.md
-    - 12.2 重新定义“读书会”: product-manager/12/02/index.md
-    - 12.3 七印部落翻译的书: product-manager/12/03/index.md
-    - 12.4 其他资源: product-manager/12/04/index.md
+  - 产品经理:
+    - 产品经理: product-manager/index.md
+    - 0 导读:
+      - 0 导读: product-manager/00/index.md
+      - 0.1 为什么会有这本书: product-manager/00/01/index.md
+      - 0.2 本书的产品定位: product-manager/00/02/index.md
+      - 0.3 本书内容与阅读方法: product-manager/00/03/index.md
+      - 0.4 我与本书的局限性: product-manager/00/04/index.md
+    - 1 产品经理:
+      - 1 产品经理: product-manager/01/index.md
+      - 1.1 从一个小故事谈起: product-manager/01/01/index.md
+      - 1.2 产品经理的前世今生: product-manager/01/02/index.md
+      - 1.3 思维方式与性格特点: product-manager/01/03/index.md
+      - 1.4 产品经理的日常: product-manager/01/04/index.md
+      - 1.5 延伸阅读与练习: product-manager/01/05/index.md
+    - 2 产品基础:
+      - 2 产品基础: product-manager/02/index.md
+      - 2.1 产品：解决某个问题的东西: product-manager/02/01/index.md
+      - 2.2 常见的产品分类维度: product-manager/02/02/index.md
+      - 2.3 延伸阅读与练习: product-manager/02/03/index.md
+    - 3 产品概念:
+      - 3 产品概念: product-manager/03/index.md
+      - 3.1 产品概念的提出: product-manager/03/01/index.md
+      - 3.2 概念提出的综合案例: product-manager/03/02/index.md
+      - 3.3 产品概念的筛选: product-manager/03/03/index.md
+      - 3.4 概念筛选的综合案例: product-manager/03/04/index.md
+      - 3.5 延伸阅读与练习: product-manager/03/05/index.md
+    - 4 用户需求:
+      - 4 用户需求: product-manager/04/index.md
+      - 4.1 需求采集方法的分类: product-manager/04/01/index.md
+      - 4.2 一些实用的采集方法: product-manager/04/02/index.md
+      - 4.3 用户、需求的再理解: product-manager/04/03/index.md
+      - 4.4 产品原则与初心: product-manager/04/04/index.md
+      - 4.5 延伸阅读与练习: product-manager/04/05/index.md
+    - 5 需求分析:
+      - 5 需求分析: product-manager/05/index.md
+      - 5.1 从问题到解决方案: product-manager/05/01/index.md
+      - 5.2 Y模型的基本概念: product-manager/05/02/index.md
+      - 5.3 实战中如何深入浅出: product-manager/05/03/index.md
+      - 5.4 一些综合案例: product-manager/05/04/index.md
+      - 5.5 Y模型的更多理解: product-manager/05/05/index.md
+      - 5.6 延伸阅读与练习: product-manager/05/06/index.md
+    - 6 功能设计:
+      - 6 功能设计: product-manager/06/index.md
+      - 6.1 功能 DNA: product-manager/06/01/index.md
+      - 6.2 功能打包，确定MVP: product-manager/06/02/index.md
+      - 6.3 把需求和功能管起来: product-manager/06/03/index.md
+      - 6.4 延伸阅读与练习: product-manager/06/04/index.md
+    - 7 研发执行:
+      - 7 研发执行: product-manager/07/index.md
+      - 7.1 从“想清楚”到“做出来”: product-manager/07/01/index.md
+      - 7.2 立项：搞定各种资源: product-manager/07/02/index.md
+      - 7.3 组队：聊聊初创团队: product-manager/07/03/index.md
+      - 7.4 研发生产时，我们做什么: product-manager/07/04/index.md
+      - 7.5 延伸阅读与练习: product-manager/07/05/index.md
+    - 8 规划迭代:
+      - 8 规划迭代: product-manager/08/index.md
+      - 8.1 好产品步步为营: product-manager/08/01/index.md
+      - 8.2 规划：只看最短和最长: product-manager/08/02/index.md
+      - 8.3 迭代：再理解敏捷: product-manager/08/03/index.md
+      - 8.4 天下武功，唯快不破: product-manager/08/04/index.md
+      - 8.5 与用户一起成长: product-manager/08/05/index.md
+      - 8.6 延伸阅读与练习: product-manager/08/06/index.md
+    - 9 产品运营:
+      - 9 产品运营: product-manager/09/index.md
+      - 9.1 产品与运营的关系: product-manager/09/01/index.md
+      - 9.2 运营工作的分类: product-manager/09/02/index.md
+      - 9.3 大运营的其他职责: product-manager/09/03/index.md
+      - 9.4 产品的生命周期: product-manager/09/04/index.md
+      - 9.5 延伸阅读与练习: product-manager/09/05/index.md
+    - 10 综合案例:
+      - 10 综合案例: product-manager/10/index.md
+      - 10.1 聊聊商业模式: product-manager/10/01/index.md
+      - 10.2 创新那点事儿: product-manager/10/02/index.md
+      - 10.3 行业案例分析: product-manager/10/03/index.md
+      - 10.4 延伸阅读与练习: product-manager/10/04/index.md
+    - 11 职业成长:
+      - 11 职业成长: product-manager/11/index.md
+      - 11.1 在人力资源部做产品经理: product-manager/11/01/index.md
+      - 11.2 产品经理的七层修炼: product-manager/11/02/index.md
+      - 11.3 十年后，再无产品经理: product-manager/11/03/index.md
+      - 11.4 归宿：无非广义创业: product-manager/11/04/index.md
+      - 11.5 从生活态度到社会推动力: product-manager/11/05/index.md
+      - 11.6 延伸阅读与练习: product-manager/11/06/index.md
+    - 12 延伸阅读:
+      - 12 延伸阅读: product-manager/12/index.md
+      - 12.1 国产产品图书盘点: product-manager/12/01/index.md
+      - 12.2 重新定义“读书会”: product-manager/12/02/index.md
+      - 12.3 七印部落翻译的书: product-manager/12/03/index.md
+      - 12.4 其他资源: product-manager/12/04/index.md
 - 科技:
   - 科技: sites/technology/index.md
 - 商业:
@@ -867,6 +868,7 @@ plugins:
 
 hooks:
   - hooks/on_env.py
+  - hooks/site_navigation.py
   - hooks/book_layout.py
   - hooks/book_footnotes.py
   - hooks/chat_agent.py

@@ -7,6 +7,12 @@ from playwright.sync_api import sync_playwright
 from harness import ROOT, WORK, StaticSite
 
 
+MAIN_TABS = [
+    "简介", "产品方法论", "工程与架构", "工商管理", "商业与财会", "AI 基础",
+    "AI 产品实战", "工具与平台", "学习资源", "求职专题", "垂直领域",
+]
+
+
 class SiteSwitcherCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -99,7 +105,7 @@ class SiteSwitcherCase(unittest.TestCase):
 
     def test_content_directory_current_state_and_history(self):
         for name, path, heading, destination in (
-            ("主站", "/", "关于本项目", "/ai/"),
+            ("主站", "/", "关于本项目", "/intro/htc/"),
             ("产品", "/product-manager/", "章节", "/product-manager/02/"),
             ("科技", "/sites/technology/", "筹备中", "/sites/technology/"),
             ("商业", "/sites/business/", "筹备中", "/sites/business/"),
@@ -123,6 +129,59 @@ class SiteSwitcherCase(unittest.TestCase):
         self.page.wait_for_url(self.site.base + "/sites/technology/")
         self.page.wait_for_function("document.querySelector('.aipm-site-switcher__trigger').getAttribute('aria-label') === '切换站点，当前为科技'")
         self.assertEqual(self.page.locator(".aipm-site-switcher__trigger").count(), 1)
+
+    def test_tabs_follow_space_and_highlight_current_category(self):
+        tabs = self.page.locator('[data-md-component="tabs"]')
+        self.assertTrue(tabs.is_visible())
+        self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], ["产品经理"])
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "产品经理")
+        self.trigger.click()
+        self.menu.get_by_role("link", name="主站", exact=True).click()
+        tabs.get_by_role("link", name="产品方法论", exact=True).wait_for()
+        self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], MAIN_TABS)
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "简介")
+        tabs.get_by_role("link", name="产品方法论", exact=True).click()
+        self.page.wait_for_url(self.site.base + "/pm/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "产品方法论")
+        sidebar = self.page.locator(".md-sidebar--primary")
+        sidebar.get_by_role("link", name="需求分析", exact=True).click()
+        self.page.wait_for_url(self.site.base + "/pm/requirements/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "产品方法论")
+        self.assertEqual(sidebar.locator('a[href*="/product-manager/"]').count(), 0)
+        self.page.reload(wait_until="domcontentloaded")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "产品方法论")
+        for name, title in (("产品", "产品经理"), ("科技", "科技"), ("商业", "商业")):
+            self.trigger.click()
+            self.menu.get_by_role("link", name=name, exact=False).click()
+            tabs.get_by_role("link", name=title, exact=True).wait_for()
+            self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], [title])
+            self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), title)
+        self.page.go_back(wait_until="domcontentloaded")
+        tabs.get_by_role("link", name="科技", exact=True).wait_for()
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "科技")
+        self.page.goto(self.site.base + "/404.html", wait_until="domcontentloaded")
+        self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], MAIN_TABS)
+
+    def test_mobile_current_space_categories_in_drawer(self):
+        self.page.set_viewport_size({"width": 390, "height": 844})
+        self.trigger.click()
+        self.menu.get_by_role("link", name="主站", exact=True).click()
+        self.page.wait_for_url(self.site.base + "/")
+        self.assertFalse(self.page.locator('[data-md-component="tabs"]').is_visible())
+        self.page.locator('.md-header label[for="__drawer"]').click()
+        sidebar = self.page.locator(".md-sidebar--primary")
+        self.assertEqual(sidebar.locator(".md-nav--primary > .md-nav__list > li").count(), len(MAIN_TABS))
+        sidebar.locator('nav[data-md-level="1"] > .md-nav__title').click()
+        ai = sidebar.locator('a[href$="/ai/"]').first
+        self.assertTrue(ai.is_visible())
+        ai.click()
+        self.page.wait_for_url(self.site.base + "/ai/")
+        self.page.locator('.md-header label[for="__drawer"]').click()
+        sidebar.locator('a[href$="/ai/rag/"]').click()
+        self.page.wait_for_url(self.site.base + "/ai/rag/")
+        self.assertFalse(self.page.locator("#__drawer").is_checked())
+        self.assertEqual(sidebar.locator('a[href*="/product-manager/"]').count(), 0)
+        self.assertEqual(self.page.evaluate("document.documentElement.scrollWidth"), 390)
 
     def test_mobile_theme_viewport_and_header_controls(self):
         for width, height, theme in ((390, 844, "light"), (320, 844, "dark"), (667, 375, "dark")):
