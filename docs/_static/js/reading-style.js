@@ -33,7 +33,7 @@
     reset: '<path d="M4 10a8 8 0 1 1 1.5 7M4 4v6h6"/>',
     chevron: '<path d="m8 10 4 4 4-4"/>',
   };
-  const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"${name === "settings" ? ' class="aipm-reading-style__gear"' : ""}>${icons[name]}</svg>`;
+  const icon = (name) => `<svg class="aipm-reading-style__icon${name === "settings" ? " aipm-reading-style__gear" : ""}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${icons[name]}</svg>`;
   const colorValidator = document.createElement("input");
   colorValidator.type = "color";
   const validate = (value) => {

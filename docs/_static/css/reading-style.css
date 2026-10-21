@@ -99,7 +99,7 @@ html.aipm-settings-open { overflow: hidden; overflow-anchor: none; scrollbar-gut
 
 [data-md-color-scheme="slate"] .aipm-reading-style__window { box-shadow: 0 32px 100px #0009; }
 
-.aipm-reading-style svg {
+:where(.aipm-reading-style) svg.aipm-reading-style__icon {
   flex: none;
   width: 18px;
   height: 18px;

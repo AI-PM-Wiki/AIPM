@@ -354,6 +354,44 @@ class ReadingStyleCase(unittest.TestCase):
         self.page.keyboard.press("Escape")
         self.wait_closed()
 
+    def test_homepage_svg_preview_preserves_article_rendering(self):
+        for width, height in ((1600, 1000), (390, 844)):
+            for theme in ("light", "dark"):
+                with self.subTest(width=width, theme=theme):
+                    self.page.set_viewport_size({"width": width, "height": height})
+                    self.page.emulate_media(color_scheme=theme)
+                    self.page.goto(self.site.base + "/", wait_until="domcontentloaded")
+                    self.open()
+                    panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+                    scheme = "slate" if theme == "dark" else "default"
+                    if self.page.locator("body").get_attribute("data-md-color-scheme") != scheme:
+                        panel.get_by_role("tab", name="外观", exact=True).click()
+                        panel.get_by_role("button", name="暗色模式", exact=True).click()
+                        panel.get_by_role("tab", name="排版", exact=True).click()
+                    self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), scheme)
+                    styles = self.page.evaluate("""() => {
+                      const properties = ['fill', 'stroke', 'strokeWidth', 'strokeLinecap',
+                        'strokeLinejoin', 'opacity', 'shapeRendering'];
+                      const inspect = selector => {
+                        const svg = document.querySelector(selector);
+                        return [svg, ...svg.querySelectorAll('*')].map(node => {
+                          const style = getComputedStyle(node);
+                          return Object.fromEntries(properties.map(property => [property, style[property]]));
+                        });
+                      };
+                      return {
+                        source: inspect('.md-content__inner .pm-wordmark > svg'),
+                        preview: inspect('.aipm-reading-style__preview .pm-wordmark > svg'),
+                      };
+                    }""")
+                    self.assertEqual(styles["source"], styles["preview"])
+                    icon = panel.locator(".aipm-reading-style__close > svg")
+                    self.assertEqual(icon.evaluate("node => getComputedStyle(node).fill"), "none")
+                    self.assertNotEqual(icon.evaluate("node => getComputedStyle(node).stroke"), "none")
+                    self.assertEqual(icon.evaluate("node => getComputedStyle(node).width"), "18px")
+                    self.page.get_by_role("button", name="关闭站点设置").click()
+                    self.wait_closed()
+
     def test_custom_color_contrast_persistence_and_reset(self):
         self.load()
         self.open()
