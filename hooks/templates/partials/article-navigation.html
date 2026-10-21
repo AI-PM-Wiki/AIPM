@@ -1,0 +1,26 @@
+{% if page and (page.previous_page or page.next_page) and "footer" not in page.meta.get("hide", []) %}
+  <nav class="aipm-article-nav" aria-label="文章导航">
+    {% if page.previous_page %}
+      <a class="aipm-article-nav__link aipm-article-nav__link--prev"
+         href="{{ page.previous_page.url | url | e }}" rel="prev"
+         aria-label="上一篇：{{ page.previous_page.title | e }}">
+        <span class="aipm-article-nav__label">
+          <span class="aipm-article-nav__icon" aria-hidden="true">{% include ".icons/material/arrow-left.svg" %}</span>
+          <span>上一篇</span>
+        </span>
+        <span class="aipm-article-nav__title">{{ page.previous_page.title | e }}</span>
+      </a>
+    {% endif %}
+    {% if page.next_page %}
+      <a class="aipm-article-nav__link aipm-article-nav__link--next"
+         href="{{ page.next_page.url | url | e }}" rel="next"
+         aria-label="下一篇：{{ page.next_page.title | e }}">
+        <span class="aipm-article-nav__label">
+          <span>下一篇</span>
+          <span class="aipm-article-nav__icon" aria-hidden="true">{% include ".icons/material/arrow-right.svg" %}</span>
+        </span>
+        <span class="aipm-article-nav__title">{{ page.next_page.title | e }}</span>
+      </a>
+    {% endif %}
+  </nav>
+{% endif %}
