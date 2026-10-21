@@ -561,8 +561,7 @@ html.aipm-chat-mode--sheet .aipm-chat__local-status { flex: 0 0 100%; }
   flex-direction: column;
   align-items: flex-start;
 }
-html.aipm-chat-mode--sheet .aipm-chat__empty,
-html.aipm-chat-mode--sheet .aipm-chat__disclaimer {
+html.aipm-chat-mode--sheet .aipm-chat__empty {
   display: none;
 }
 .aipm-chat__empty-icon {
