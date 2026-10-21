@@ -91,8 +91,7 @@
   panel.innerHTML = `
     <div class="aipm-reading-style__window">
     <div class="aipm-reading-style__head">
-      <div class="aipm-reading-style__identity"><span class="aipm-reading-style__mark">${icon("settings")}</span><div><h2 id="aipm-reading-title">站点设置</h2><p>排版、色彩与显示方式</p></div></div>
-      <span class="aipm-reading-style__saved">${icon("check")}自动保存</span>
+      <div><h2 id="aipm-reading-title">站点设置</h2><p>调整阅读习惯，变化即时呈现</p></div>
       <button type="button" class="aipm-reading-style__close" aria-label="关闭站点设置" title="关闭站点设置" autofocus>${icon("close")}</button>
     </div>
     <div class="aipm-reading-style__views" role="group" aria-label="设置与预览">
@@ -100,12 +99,6 @@
       <button type="button" data-settings-view="preview" aria-pressed="false">效果预览</button>
     </div>
     <div class="aipm-reading-style__layout">
-    <section class="aipm-reading-style__preview-pane" aria-label="效果预览">
-      <div class="aipm-reading-style__preview-head"><span>效果预览</span><span>当前文章 · 即时更新</span></div>
-      <div class="aipm-reading-style__preview-scroll" tabindex="0" aria-label="预览文章">
-        <article class="aipm-reading-style__preview md-typeset"></article>
-      </div>
-    </section>
     <div class="aipm-reading-style__settings">
     <div class="aipm-reading-style__toolbar">
     <div class="aipm-reading-style__tabs" role="tablist" aria-label="设置分类">
@@ -116,10 +109,10 @@
     </div>
     <div class="aipm-reading-style__body">
       <div id="aipm-settings-typography" role="tabpanel" aria-labelledby="aipm-settings-typography-tab">
-        <div class="aipm-reading-style__row aipm-reading-style__size"><label for="aipm-reading-size">字号</label><input id="aipm-reading-size" name="size" type="range" min="14" max="22" step="1"><output for="aipm-reading-size" id="aipm-reading-size-value"></output><div class="aipm-reading-style__size-scale" aria-hidden="true"><span>14</span><span>22</span></div></div>
+        <div class="aipm-reading-style__row aipm-reading-style__size"><label for="aipm-reading-size">字号</label><input id="aipm-reading-size" name="size" type="range" min="14" max="22" step="1"><output for="aipm-reading-size" id="aipm-reading-size-value"></output></div>
         <div class="aipm-reading-style__row" role="group" aria-label="字体"><span>字体</span><div class="aipm-reading-style__options">
-          <label><input type="radio" name="font" value="sans"><span class="aipm-reading-style__font-option"><i aria-hidden="true">Aa</i><span>黑体</span></span></label>
-          <label><input type="radio" name="font" value="serif"><span class="aipm-reading-style__font-option aipm-reading-style__serif"><i aria-hidden="true">Aa</i><span>宋体</span></span></label>
+          <label><input type="radio" name="font" value="sans"><span>黑体</span></label>
+          <label><input type="radio" name="font" value="serif"><span class="aipm-reading-style__serif">宋体</span></label>
         </div></div>
         <div class="aipm-reading-style__row" role="group" aria-label="行距"><span>行距</span><div class="aipm-reading-style__options">
           <label><input type="radio" name="spacing" value="compact"><span>紧凑</span></label>
@@ -134,8 +127,8 @@
       </div>
       <div id="aipm-settings-appearance" role="tabpanel" aria-labelledby="aipm-settings-appearance-tab" hidden>
         <div class="aipm-reading-style__actions" role="group" aria-label="显示模式">
-          <button type="button" data-reading-action="theme" aria-pressed="false">${icon("moon")}<span>暗色模式</span><span class="aipm-reading-style__switch" aria-hidden="true"></span></button>
-          <button type="button" data-reading-action="fulltext" aria-pressed="false">${icon("expand")}<span>全文显示</span><span class="aipm-reading-style__switch" aria-hidden="true"></span></button>
+          <button type="button" data-reading-action="theme" aria-pressed="false">${icon("moon")}<span>暗色模式</span></button>
+          <button type="button" data-reading-action="fulltext" aria-pressed="false">${icon("expand")}<span>全文显示</span></button>
         </div>
         <div class="aipm-reading-style__palette" role="group" aria-label="主题色">
           <div><span>主题色</span><span class="aipm-reading-style__color-name"></span></div>
@@ -150,7 +143,17 @@
         <div class="aipm-reading-style__row"><label for="aipm-settings-language">站点语言</label><div class="aipm-reading-style__select"><select id="aipm-settings-language"><option value="zh-CN">简体中文</option></select>${icon("chevron")}</div></div>
       </div>
     </div>
+    <div class="aipm-reading-style__footer">
+      <span>${icon("check")}自动保存</span>
+      <span>应用于当前浏览器</span>
     </div>
+    </div>
+    <section class="aipm-reading-style__preview-pane" aria-label="效果预览">
+      <div class="aipm-reading-style__preview-head"><span>效果预览</span><span>当前文章 · 即时更新</span></div>
+      <div class="aipm-reading-style__preview-scroll" tabindex="0" aria-label="预览文章">
+        <article class="aipm-reading-style__preview md-typeset"></article>
+      </div>
+    </section>
     </div>
     </div>`;
   document.body.append(panel);
@@ -178,7 +181,6 @@
   };
   const sync = () => {
     panel.querySelector('[name="size"]').value = settings.size;
-    panel.querySelector('[name="size"]').style.setProperty("--settings-size-fill", `${(settings.size - 14) / 8 * 100}%`);
     panel.querySelector("#aipm-reading-size-value").value = `${settings.size} px`;
     for (const input of panel.querySelectorAll('[type="radio"]')) input.checked = input.value === settings[input.name];
     for (const select of panel.querySelectorAll("select[name]")) select.value = settings[select.name];
@@ -252,9 +254,6 @@
     article.querySelectorAll("a").forEach((link) => link.removeAttribute("href"));
     article.querySelectorAll("img, .mermaid").forEach((node) => node.setAttribute("data-mermaid-zoom-ready", ""));
     article.querySelectorAll("details").forEach((details) => { details.open = true; });
-    const title = article.querySelector(":scope > h1");
-    const sectionTitle = article.querySelector(".book-original h2");
-    if (title && sectionTitle && title.textContent.replace(/\s+/g, "") === sectionTitle.textContent.replace(/\s+/g, "")) sectionTitle.remove();
     preview.replaceChildren(...article.childNodes);
     panel.querySelector(".aipm-reading-style__preview-scroll").scrollTop = 0;
   };
