@@ -262,8 +262,6 @@ html.aipm-settings-open { overflow: hidden; scrollbar-gutter: stable; }
   font-weight: 600;
 }
 
-.aipm-reading-style__serif { font-family: "Songti SC", SimSun, serif; }
-
 .aipm-reading-style__size input {
   flex: 1;
   width: 0;
@@ -317,11 +315,23 @@ html.aipm-settings-open { overflow: hidden; scrollbar-gutter: stable; }
 .aipm-reading-style__colors input:checked + span svg { visibility: visible; }
 
 .aipm-reading-style__colors .aipm-reading-style__custom-swatch { border: 1px solid var(--settings-line); background: conic-gradient(#e75d76, #e9b85a, #65bd9c, #689ae7, #b180db, #e75d76); }
-.aipm-reading-style__colors input:checked + .aipm-reading-style__custom-swatch { background: var(--aipm-theme-color); }
-.aipm-reading-style__custom-color { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 8px 10px 8px 12px; border: 1px solid var(--settings-line); border-radius: 10px; font-size: 12px; cursor: pointer; }
-.aipm-reading-style__custom-color output { margin-inline-start: auto; color: var(--md-default-fg-color--light); font-size: 11px; font-variant-numeric: tabular-nums; }
-.aipm-reading-style__custom-color input { width: 30px; height: 30px; padding: 2px; border: 1px solid var(--settings-line); border-radius: 7px; background: var(--md-default-bg-color); cursor: pointer; }
-.aipm-reading-style__custom-color:focus-within { border-color: var(--md-typeset-a-color); box-shadow: inset 0 0 0 1px var(--md-typeset-a-color); }
+.aipm-reading-style__custom-color input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.aipm-reading-style__custom-color [data-selected="true"] + span {
+  background: var(--aipm-theme-color);
+  box-shadow: inset 0 0 0 2px #ffffff70;
+}
+.aipm-reading-style__custom-color [data-selected="true"] + span svg { visibility: visible; }
+.aipm-reading-style__custom-color input:focus-visible + span { box-shadow: inset 0 0 0 2px var(--md-typeset-a-color); }
 
 .aipm-reading-style__select {
   position: relative;
@@ -450,6 +460,10 @@ html.aipm-settings-open { overflow: hidden; scrollbar-gutter: stable; }
 }
 
 @media screen {
+  :is(.md-content__inner.md-typeset, .aipm-reading-style__preview) > p:not(.book-emphasis-block):not(:has(img, svg, video)),
+  :is(.md-content__inner.md-typeset, .aipm-reading-style__preview) .book-original > p:not(.book-emphasis-block):not(:has(img, svg, video)) {
+    text-indent: var(--aipm-reading-indent, 0);
+  }
   .md-content__inner.md-typeset {
     font-family: var(--aipm-reading-font, var(--md-text-font-family));
     font-size: var(--aipm-reading-size, 15px);

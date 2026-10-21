@@ -4,12 +4,17 @@
   const storageKey = "aipm-reading-style";
   const defaults = {
     size: 15, spacing: "standard", width: "standard", font: "sans",
-    heading: "structured", emphasis: "marker", color: "indigo", customColor: "#4051b5",
+    heading: "structured", emphasis: "marker", color: "indigo", customColor: "#4051b5", indent: "none",
   };
   const lineHeights = { compact: 1.6, standard: 1.8, relaxed: 2.1 };
   const fonts = {
-    sans: "var(--md-text-font-family)",
-    serif: '"Noto Serif SC", "Songti SC", SimSun, serif',
+    sans: { label: "默认黑体", family: "var(--md-text-font-family)" },
+    noto: { label: "思源黑体", family: '"Noto Sans SC", sans-serif', source: "Noto Sans SC:wght@400..800" },
+    serif: { label: "思源宋体", family: '"Noto Serif SC", "Songti SC", SimSun, serif', source: "Noto Serif SC:wght@400..800" },
+    xiaowei: { label: "站酷小薇", family: '"ZCOOL XiaoWei", serif', source: "ZCOOL XiaoWei" },
+    kuaile: { label: "站酷快乐", family: '"ZCOOL KuaiLe", sans-serif', source: "ZCOOL KuaiLe" },
+    mashan: { label: "马善政楷书", family: '"Ma Shan Zheng", serif', source: "Ma Shan Zheng" },
+    longcang: { label: "龙藏行书", family: '"Long Cang", cursive', source: "Long Cang" },
   };
   const colors = {
     indigo: { label: "靛蓝", light: "#4051b5", dark: "#b2bdff", accent: "#526cfe" },
@@ -36,6 +41,7 @@
     if (!Number.isInteger(value.size) || value.size < 14 || value.size > 22 ||
         !Object.hasOwn(lineHeights, value.spacing) || !Object.hasOwn(fonts, value.font) ||
         !["compact", "standard", "wide"].includes(value.width) ||
+        !["none", "first"].includes(value.indent) ||
         !["simple", "structured", "accent"].includes(value.heading) ||
         !["plain", "marker", "underline"].includes(value.emphasis) ||
         !(Object.hasOwn(colors, value.color) || value.color === "custom") ||
@@ -56,11 +62,27 @@
   };
   let settings = read(localStorage.getItem(storageKey));
   const root = document.documentElement;
+  const loadFont = () => {
+    const font = fonts[settings.font];
+    if (!font.source || document.querySelector(`link[data-reading-font="${settings.font}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.dataset.readingFont = settings.font;
+    const url = new URL("https://fonts.googleapis.com/css2");
+    url.searchParams.set("family", font.source);
+    url.searchParams.set("display", "swap");
+    link.href = url.href;
+    link.addEventListener("load", () => { link.dataset.loaded = "true"; }, { once: true });
+    link.addEventListener("error", () => { throw new Error(`Reading font stylesheet failed: ${font.label}`); }, { once: true });
+    document.head.append(link);
+  };
   const apply = () => {
+    loadFont();
     root.style.setProperty("--aipm-reading-size", `${settings.size}px`);
     root.style.setProperty("--aipm-reading-scale", settings.size / defaults.size);
     root.style.setProperty("--aipm-reading-line-height", lineHeights[settings.spacing]);
-    root.style.setProperty("--aipm-reading-font", fonts[settings.font]);
+    root.style.setProperty("--aipm-reading-font", fonts[settings.font].family);
+    root.style.setProperty("--aipm-reading-indent", settings.indent === "first" ? "2em" : "0");
     const palette = settings.color === "custom" ? {
       light: `oklch(from ${settings.customColor} min(l, 0.5) c h)`,
       dark: `oklch(from ${settings.customColor} max(l, 0.8) c h)`,
@@ -104,16 +126,14 @@
     <div class="aipm-reading-style__tabs" role="tablist" aria-label="设置分类">
       <button type="button" id="aipm-settings-typography-tab" role="tab" aria-selected="true" aria-controls="aipm-settings-typography" data-settings-tab="typography">排版</button>
       <button type="button" id="aipm-settings-appearance-tab" role="tab" aria-selected="false" aria-controls="aipm-settings-appearance" data-settings-tab="appearance" tabindex="-1">外观</button>
+      <button type="button" id="aipm-settings-general-tab" role="tab" aria-selected="false" aria-controls="aipm-settings-general" data-settings-tab="general" tabindex="-1">通用</button>
     </div>
     <button type="button" class="aipm-reading-style__reset" aria-label="恢复默认" title="恢复默认">${icon("reset")}</button>
     </div>
     <div class="aipm-reading-style__body">
       <div id="aipm-settings-typography" role="tabpanel" aria-labelledby="aipm-settings-typography-tab">
         <div class="aipm-reading-style__row aipm-reading-style__size"><label for="aipm-reading-size">字号</label><input id="aipm-reading-size" name="size" type="range" min="14" max="22" step="1"><output for="aipm-reading-size" id="aipm-reading-size-value"></output></div>
-        <div class="aipm-reading-style__row" role="group" aria-label="字体"><span>字体</span><div class="aipm-reading-style__options">
-          <label><input type="radio" name="font" value="sans"><span>黑体</span></label>
-          <label><input type="radio" name="font" value="serif"><span class="aipm-reading-style__serif">宋体</span></label>
-        </div></div>
+        <div class="aipm-reading-style__row"><label for="aipm-settings-font">字体</label><div class="aipm-reading-style__select"><select id="aipm-settings-font" name="font">${Object.entries(fonts).map(([value, font]) => `<option value="${value}">${font.label}</option>`).join("")}</select>${icon("chevron")}</div></div>
         <div class="aipm-reading-style__row" role="group" aria-label="行距"><span>行距</span><div class="aipm-reading-style__options">
           <label><input type="radio" name="spacing" value="compact"><span>紧凑</span></label>
           <label><input type="radio" name="spacing" value="standard"><span>标准</span></label>
@@ -123,6 +143,10 @@
           <label><input type="radio" name="width" value="compact"><span>紧凑</span></label>
           <label><input type="radio" name="width" value="standard"><span>标准</span></label>
           <label><input type="radio" name="width" value="wide"><span>宽阔</span></label>
+        </div></div>
+        <div class="aipm-reading-style__row" role="group" aria-label="首行样式"><span>首行样式</span><div class="aipm-reading-style__options">
+          <label><input type="radio" name="indent" value="none"><span>首行顶格</span></label>
+          <label><input type="radio" name="indent" value="first"><span>首行缩进</span></label>
         </div></div>
       </div>
       <div id="aipm-settings-appearance" role="tabpanel" aria-labelledby="aipm-settings-appearance-tab" hidden>
@@ -134,12 +158,13 @@
           <div><span>主题色</span><span class="aipm-reading-style__color-name"></span></div>
           <div class="aipm-reading-style__colors">
           ${Object.entries(colors).map(([value, color]) => `<label title="${color.label}"><input type="radio" name="color" value="${value}" aria-label="${color.label}"><span style="--settings-swatch:${color.light}">${icon("check")}</span></label>`).join("")}
-          <label title="自选颜色"><input type="radio" name="color" value="custom" aria-label="自选颜色"><span class="aipm-reading-style__custom-swatch">${icon("check")}</span></label>
+          <label title="自选颜色" class="aipm-reading-style__custom-color"><input id="aipm-settings-custom-color" name="customColor" type="color" aria-label="自选颜色"><span class="aipm-reading-style__custom-swatch">${icon("check")}</span></label>
           </div>
-          <label class="aipm-reading-style__custom-color" for="aipm-settings-custom-color"><span>自选颜色</span><output id="aipm-settings-color-value" for="aipm-settings-custom-color"></output><input id="aipm-settings-custom-color" name="customColor" type="color" aria-label="选择自选颜色"></label>
         </div>
         <div class="aipm-reading-style__row"><label for="aipm-settings-heading">标题样式</label><div class="aipm-reading-style__select"><select id="aipm-settings-heading" name="heading"><option value="simple">简洁</option><option value="structured">层次</option><option value="accent">主题色</option></select>${icon("chevron")}</div></div>
         <div class="aipm-reading-style__row"><label for="aipm-settings-emphasis">加粗样式</label><div class="aipm-reading-style__select"><select id="aipm-settings-emphasis" name="emphasis"><option value="plain">纯文字</option><option value="marker">淡色标记</option><option value="underline">下划线</option></select>${icon("chevron")}</div></div>
+      </div>
+      <div id="aipm-settings-general" role="tabpanel" aria-labelledby="aipm-settings-general-tab" hidden>
         <div class="aipm-reading-style__row"><label for="aipm-settings-language">站点语言</label><div class="aipm-reading-style__select"><select id="aipm-settings-language"><option value="zh-CN">简体中文</option></select>${icon("chevron")}</div></div>
       </div>
     </div>
@@ -186,7 +211,7 @@
     for (const select of panel.querySelectorAll("select[name]")) select.value = settings[select.name];
     panel.querySelector(".aipm-reading-style__color-name").textContent = settings.color === "custom" ? "自选" : colors[settings.color].label;
     panel.querySelector('[name="customColor"]').value = settings.customColor;
-    panel.querySelector("#aipm-settings-color-value").value = settings.customColor.toUpperCase();
+    panel.querySelector('[name="customColor"]').dataset.selected = String(settings.color === "custom");
     panel.querySelector(".aipm-reading-style__custom-swatch").style.setProperty("--settings-swatch", settings.customColor);
     syncDisplay();
   };
@@ -202,6 +227,10 @@
     if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement) || !input.name) return;
     settings[input.name] = input.name === "size" ? input.valueAsNumber : input.value;
     if (input.name === "customColor") settings.color = "custom";
+    save();
+  });
+  panel.querySelector('[name="customColor"]').addEventListener("click", () => {
+    settings.color = "custom";
     save();
   });
   panel.querySelector('[data-reading-action="theme"]').addEventListener("click", () => setScheme(document.body.dataset.mdColorScheme === "slate" ? "default" : "slate"));

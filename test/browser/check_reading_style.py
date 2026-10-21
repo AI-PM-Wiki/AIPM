@@ -75,7 +75,7 @@ class ReadingStyleCase(unittest.TestCase):
         slider.focus()
         slider.press("End")
         self.select("行距", "宽松")
-        self.select("字体", "宋体")
+        self.select_style("字体", "思源宋体")
         self.select("正文宽度", "宽阔")
         self.assertEqual(self.styles()["size"], "22px")
         self.assertAlmostEqual(float(self.styles()["line"].removesuffix("px")), 46.2, places=1)
@@ -98,7 +98,7 @@ class ReadingStyleCase(unittest.TestCase):
         saved = json.loads(self.page.evaluate('localStorage.getItem("aipm-reading-style")'))
         self.assertEqual(saved, {"size": 15, "spacing": "standard", "width": "standard", "font": "sans",
                                  "heading": "structured", "emphasis": "marker", "color": "indigo",
-                                 "customColor": "#4051b5"})
+                                 "customColor": "#4051b5", "indent": "none"})
 
     def test_width_and_cross_tab_preferences(self):
         self.load()
@@ -173,7 +173,7 @@ class ReadingStyleCase(unittest.TestCase):
                 self.assertLessEqual(bounds["y"] + bounds["height"], height)
                 self.select("行距", "宽松")
                 self.select("正文宽度", "宽阔")
-                self.select("字体", "宋体")
+                self.select_style("字体", "思源宋体")
                 panel.get_by_role("slider", name="字号").focus()
                 panel.get_by_role("slider", name="字号").press("End")
                 self.assertEqual(self.styles()["size"], "22px")
@@ -182,10 +182,11 @@ class ReadingStyleCase(unittest.TestCase):
                 panel.get_by_role("button", name="恢复默认").tap()
                 self.assertEqual(self.styles()["size"], "15px")
                 self.assertEqual(self.page.evaluate("document.documentElement.scrollWidth"), width)
-                panel.get_by_role("tab", name="外观", exact=True).tap()
+                panel.get_by_role("tab", name="通用", exact=True).tap()
                 language = panel.get_by_role("combobox", name="站点语言")
                 language.select_option("zh-CN")
                 self.assertEqual(language.locator("option").all_text_contents(), ["简体中文"])
+                panel.get_by_role("tab", name="外观", exact=True).tap()
                 self.select_style("标题样式", "主题色")
                 self.select_style("加粗样式", "下划线")
                 self.assertEqual(self.page.evaluate("document.documentElement.scrollWidth"), width)
@@ -324,7 +325,7 @@ class ReadingStyleCase(unittest.TestCase):
         reset = panel.get_by_role("button", name="恢复默认")
         self.assertEqual(reset.inner_text(), "")
         self.assertTrue(reset.evaluate("node => node.parentElement.classList.contains('aipm-reading-style__toolbar')"))
-        self.select("字体", "宋体")
+        self.select_style("字体", "思源宋体")
         self.assertIn("Songti SC", article.evaluate("node => getComputedStyle(node).fontFamily"))
         panel.screenshot(path=str(WORK / "settings/desktop-typography.png"))
         panel.get_by_role("button", name="关闭站点设置").click()
@@ -343,14 +344,22 @@ class ReadingStyleCase(unittest.TestCase):
         panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
         panel.get_by_role("tab", name="外观", exact=True).click()
         self.select_style("标题样式", "主题色")
-        picker = panel.get_by_label("选择自选颜色", exact=True)
+        picker = panel.get_by_label("自选颜色", exact=True)
+        self.assertEqual(picker.get_attribute("type"), "color")
+        self.assertEqual(panel.locator(".aipm-reading-style__custom-color output").count(), 0)
+        self.assertTrue(picker.evaluate("""node => {
+          const input = node.getBoundingClientRect();
+          const swatch = node.nextElementSibling.getBoundingClientRect();
+          return input.x <= swatch.x && input.y <= swatch.y &&
+            input.right >= swatch.right && input.bottom >= swatch.bottom;
+        }"""))
         for dark in (False, True):
             if dark:
                 panel.get_by_role("button", name="暗色模式", exact=True).click()
             for color in ("#ffffff", "#000000", "#00ff00", "#d52e69"):
                 picker.fill(color)
-                self.assertTrue(panel.get_by_role("radio", name="自选颜色", exact=True).is_checked())
-                self.assertEqual(panel.locator("#aipm-settings-color-value").inner_text(), color.upper())
+                self.assertEqual(picker.get_attribute("data-selected"), "true")
+                self.assertEqual(picker.input_value(), color)
                 contrast = panel.locator(".aipm-reading-style__preview").evaluate("""node => {
                   const canvas = document.createElement('canvas');
                   canvas.width = canvas.height = 1;
@@ -373,7 +382,68 @@ class ReadingStyleCase(unittest.TestCase):
         self.open()
         panel.get_by_role("tab", name="外观", exact=True).click()
         self.assertEqual(picker.input_value(), "#d52e69")
-        self.assertTrue(panel.get_by_role("radio", name="自选颜色", exact=True).is_checked())
+        self.assertEqual(picker.get_attribute("data-selected"), "true")
         panel.get_by_role("button", name="恢复默认").click()
         self.assertEqual(picker.input_value(), "#4051b5")
         self.assertTrue(panel.get_by_role("radio", name="靛蓝", exact=True).is_checked())
+        self.assertEqual(picker.get_attribute("data-selected"), "false")
+
+    def test_paragraph_indent_preview_persistence_and_general_tab(self):
+        self.load()
+        self.open()
+        panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+        paragraph = self.page.locator(".md-content__inner .book-original > p").filter(has_text="产品经理是做什么的").first
+        preview = panel.locator(".book-original > p").filter(has_text="产品经理是做什么的").first
+        self.assertEqual(paragraph.evaluate("node => getComputedStyle(node).textIndent"), "0px")
+        self.select("首行样式", "首行缩进")
+        for node in (paragraph, preview):
+            self.assertEqual(node.evaluate("node => getComputedStyle(node).textIndent"), "30px")
+        figure = self.page.locator(".md-content__inner figure p").first
+        self.assertEqual(figure.evaluate("node => getComputedStyle(node).textIndent"), "0px")
+        panel.get_by_role("slider", name="字号").focus()
+        panel.get_by_role("slider", name="字号").press("End")
+        self.assertEqual(paragraph.evaluate("node => getComputedStyle(node).textIndent"), "44px")
+        self.page.reload(wait_until="domcontentloaded")
+        self.open()
+        self.assertTrue(panel.get_by_role("radio", name="首行缩进", exact=True).is_checked())
+        self.assertEqual(paragraph.evaluate("node => getComputedStyle(node).textIndent"), "44px")
+        self.select("首行样式", "首行顶格")
+        self.assertEqual(paragraph.evaluate("node => getComputedStyle(node).textIndent"), "0px")
+        typography = panel.get_by_role("tab", name="排版", exact=True)
+        typography.focus()
+        typography.press("End")
+        self.assertEqual(panel.get_by_role("tab", name="通用", exact=True).get_attribute("aria-selected"), "true")
+        language = panel.get_by_role("combobox", name="站点语言", exact=True)
+        self.assertTrue(language.is_visible())
+        self.assertEqual(language.locator("option").all_text_contents(), ["简体中文"])
+        self.assertEqual(language.evaluate("node => node.closest('[role=tabpanel]').id"), "aipm-settings-general")
+        panel.get_by_role("tab", name="通用", exact=True).press("ArrowRight")
+        self.assertEqual(typography.get_attribute("aria-selected"), "true")
+        panel.get_by_role("button", name="恢复默认").click()
+        self.assertTrue(panel.get_by_role("radio", name="首行顶格", exact=True).is_checked())
+
+    def test_font_library_loads_selected_typefaces(self):
+        self.load()
+        self.assertEqual(self.page.locator("link[data-reading-font]").count(), 0)
+        self.open()
+        selector = self.page.get_by_role("combobox", name="字体", exact=True)
+        self.assertEqual(selector.locator("option").all_text_contents(),
+                         ["默认黑体", "思源黑体", "思源宋体", "站酷小薇", "站酷快乐", "马善政楷书", "龙藏行书"])
+        for value, family in (("noto", "Noto Sans SC"), ("serif", "Noto Serif SC"),
+                              ("xiaowei", "ZCOOL XiaoWei"), ("kuaile", "ZCOOL KuaiLe"),
+                              ("mashan", "Ma Shan Zheng"), ("longcang", "Long Cang")):
+            with self.subTest(font=family):
+                selector.select_option(value)
+                self.page.wait_for_function("value => document.querySelector(`link[data-reading-font='${value}']`)?.dataset.loaded === 'true'", arg=value)
+                loaded = self.page.evaluate("""async family => {
+                  const faces = await document.fonts.load(`16px "${family}"`, '产品经理阅读样式');
+                  return faces.length > 0 && faces.every(face => face.status === 'loaded');
+                }""", family)
+                self.assertTrue(loaded)
+                self.assertIn(family, self.styles()["font"])
+                self.assertIn(family, self.page.locator(".aipm-reading-style__preview").evaluate("node => getComputedStyle(node).fontFamily"))
+        self.page.reload(wait_until="domcontentloaded")
+        self.open()
+        self.assertEqual(selector.input_value(), "longcang")
+        self.page.get_by_role("button", name="恢复默认").click()
+        self.assertEqual(selector.input_value(), "sans")
