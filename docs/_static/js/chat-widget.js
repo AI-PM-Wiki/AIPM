@@ -655,9 +655,15 @@
      面板高度与消息区显隐,测量就与停靠点状态完全解耦了。 */
   let peekH = SHEET_PEEK_MIN;
   let measuringPeek = false;
+  const hasSheetAnimation = () => panel.getAnimations().some(animation =>
+    animation.playState === "running" &&
+    (animation.transitionProperty === "height" || animation.transitionProperty === "transform")
+  );
   const refreshPeek = () => {
     /* els 在初始化早期(首次 applyMetrics)还没建好,先退回保底值 */
     if (mode !== "sheet" || !els.grip || !els.head || !els.composer) { peekH = SHEET_PEEK_MIN; return; }
+    if (panel.classList.contains("is-dragging") || panel.classList.contains("is-snapping")) return;
+    if (hasSheetAnimation()) return;
     if (measuringPeek) return;        // 量具自身引起的尺寸变化不再回头重测(免 ResizeObserver 回环)
     measuringPeek = true;
     panel.classList.add("is-peek-measure");
@@ -684,14 +690,19 @@
     };
   };
 
+  let appliedMetrics = "";
   const applyMetrics = () => {
     refreshPeek();
     const m = metrics();
+    const sbw = scrollbarWidth();
+    const key = `${m.peek}/${m.half}/${m.expanded}/${sbw}`;
+    if (key === appliedMetrics) return;
+    appliedMetrics = key;
     const st = document.documentElement.style;
     st.setProperty("--aipm-chat-sheet-peek", m.peek + "px");
     st.setProperty("--aipm-chat-sheet-half", m.half + "px");
     st.setProperty("--aipm-chat-sheet-expanded", m.expanded + "px");
-    st.setProperty("--aipm-chat-sbw", scrollbarWidth() + "px");
+    st.setProperty("--aipm-chat-sbw", sbw + "px");
   };
 
   const computeMode = () =>
@@ -745,15 +756,25 @@
   };
 
   /* 吸附动画期间打标:消息区上缘渐隐,免得半截文字被硬切(见 CSS .is-snapping) */
-  let snapTimer = 0;
+  let snapFrame = 0;
+  const finishSnapping = () => {
+    snapFrame = 0;
+    if (hasSheetAnimation()) {
+      snapFrame = requestAnimationFrame(finishSnapping);
+      return;
+    }
+    panel.classList.remove("is-snapping");
+    if (mode === "sheet") applyMetrics();
+  };
   const markSnapping = () => {
-    clearTimeout(snapTimer);
+    cancelAnimationFrame(snapFrame);
     panel.classList.add("is-snapping");
-    snapTimer = setTimeout(() => panel.classList.remove("is-snapping"), SNAP_MS + 90);
+    snapFrame = requestAnimationFrame(finishSnapping);
   };
 
   const setSnap = (next, afterDrag) => {
     if (ORDER.indexOf(next) === -1) return;
+    const changed = next !== snap;
     snap = next;
     panel.setAttribute("data-snap", next);
     syncChrome();
@@ -765,6 +786,7 @@
       });
     } else {
       clearDragHeight();
+      if (changed && mode === "sheet") markSnapping();
     }
     track("assistant_panel_mode_change", env());
   };
@@ -830,7 +852,7 @@
     openedAt = here();
     openedAtMs = Date.now();
     clearDragHeight();
-    clearTimeout(snapTimer);
+    cancelAnimationFrame(snapFrame);
     panel.classList.remove("is-compact", "is-snapping", "is-peek-measure");
     if (mode === "sheet") snap = "peek";              // 首次打开默认页面优先态
     applyMetrics();
@@ -893,7 +915,11 @@
       onCompactChange: (compact) => panel.classList.toggle("is-compact", compact),
       /* 遮罩跟着手指走:与批注面板同一套(值也取自共享件的 SCRIM_AT / snapLerp),
          两个面板占同一块屏幕区域、互相 claim,表现必须一致。 */
-      onDragStart: () => els.scrim.classList.add("is-dragging"),
+      onDragStart: () => {
+        cancelAnimationFrame(snapFrame);
+        panel.classList.remove("is-snapping");
+        els.scrim.classList.add("is-dragging");
+      },
       onDragEnd: () => els.scrim.classList.remove("is-dragging"),
       onDragHeight: (h, m) => {
         els.scrim.style.opacity = String(
@@ -1562,9 +1588,17 @@
     syncKeyboard();
     autosize();                                     // 视口/断点变了,输入条换行状态可能变
   };
+  panel.addEventListener("transitionend", (event) => {
+    if (mode !== "sheet" || event.target !== panel) return;
+    if (event.propertyName === "height" || event.propertyName === "transform") applyMetrics();
+  });
   /* 输入条高度会随多行输入 / 附件 chips 变化,peek 高度要跟着重算 */
   if (window.ResizeObserver) {
-    new ResizeObserver(() => { if (mode === "sheet") applyMetrics(); }).observe(els.composer);
+    new ResizeObserver(() => {
+      if (mode !== "sheet") return;
+      if (panel.classList.contains("is-dragging") || panel.classList.contains("is-snapping")) return;
+      applyMetrics();
+    }).observe(els.composer);
   }
   window.addEventListener("resize", onViewportChange, { passive: true });
   window.addEventListener("orientationchange", onViewportChange, { passive: true });

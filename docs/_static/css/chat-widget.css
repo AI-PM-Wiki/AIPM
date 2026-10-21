@@ -561,6 +561,9 @@ html.aipm-chat-mode--sheet .aipm-chat__local-status { flex: 0 0 100%; }
   flex-direction: column;
   align-items: flex-start;
 }
+html.aipm-chat-mode--sheet .aipm-chat__welcome {
+  display: none;
+}
 .aipm-chat__empty-icon {
   display: flex;
   align-items: center;
@@ -669,32 +672,6 @@ html.aipm-chat-mode--sheet .aipm-chat__local-status { flex: 0 0 100%; }
   .aipm-chat__empty {
     gap: .5rem;
     padding: .1rem .2rem;
-  }
-  .aipm-chat__welcome {
-    display: grid;
-    grid-template-columns: 2rem 1fr;
-    column-gap: .6rem;
-    align-items: center;
-  }
-  .aipm-chat__empty-icon {
-    grid-row: 1 / 3;
-    width: 2rem;
-    height: 2rem;
-    margin: 0;
-  }
-  .aipm-chat__empty-label {
-    margin-bottom: .15rem;
-    font-size: .6rem;
-    line-height: 1.4;
-  }
-  .aipm-chat__empty-title {
-    font-size: 1rem;
-  }
-  .aipm-chat__empty-text {
-    grid-column: 1 / -1;
-    margin-top: .25rem;
-    font-size: .65rem;
-    line-height: 1.6;
   }
   .aipm-chat__suggest {
     gap: .3rem;
