@@ -43,6 +43,9 @@ class ReadingStyleCase(unittest.TestCase):
     def select(self, group, label):
         self.page.get_by_role("group", name=group, exact=True).get_by_text(label, exact=True).click()
 
+    def select_style(self, name, label):
+        self.page.get_by_role("combobox", name=name, exact=True).select_option(label=label)
+
     def styles(self):
         return self.page.locator(".md-content__inner").evaluate("""node => {
           const style = getComputedStyle(node);
@@ -170,8 +173,8 @@ class ReadingStyleCase(unittest.TestCase):
                 language = panel.get_by_role("combobox", name="站点语言")
                 language.select_option("zh-CN")
                 self.assertEqual(language.locator("option").all_text_contents(), ["简体中文"])
-                self.select("标题样式", "主题色")
-                self.select("加粗样式", "下划线")
+                self.select_style("标题样式", "主题色")
+                self.select_style("加粗样式", "下划线")
                 self.assertEqual(self.page.evaluate("document.documentElement.scrollWidth"), width)
                 if width == 320:
                     panel.get_by_role("button", name="恢复默认").tap()
@@ -191,17 +194,17 @@ class ReadingStyleCase(unittest.TestCase):
         self.assertEqual(panel.get_by_role("tab", name="外观", exact=True).get_attribute("aria-selected"), "true")
         heading = self.page.locator(".md-content__inner .book-original h3").first
         emphasis = self.page.locator(".md-content__inner .book-original p strong").first
-        self.select("标题样式", "简洁")
+        self.select_style("标题样式", "简洁")
         self.assertEqual(heading.evaluate("node => getComputedStyle(node).borderInlineStartWidth"), "0px")
-        self.select("标题样式", "层次")
+        self.select_style("标题样式", "层次")
         self.assertEqual(heading.evaluate("node => getComputedStyle(node).borderInlineStartWidth"), "3px")
-        self.select("加粗样式", "纯文字")
+        self.select_style("加粗样式", "纯文字")
         self.assertEqual(emphasis.evaluate("node => getComputedStyle(node).backgroundImage"), "none")
-        self.select("加粗样式", "下划线")
+        self.select_style("加粗样式", "下划线")
         self.assertEqual(emphasis.evaluate("node => getComputedStyle(node).textDecorationLine"), "underline")
-        self.select("加粗样式", "淡色标记")
+        self.select_style("加粗样式", "淡色标记")
         self.assertIn("linear-gradient", emphasis.evaluate("node => getComputedStyle(node).backgroundImage"))
-        self.select("标题样式", "主题色")
+        self.select_style("标题样式", "主题色")
         for dark in (False, True):
             if dark:
                 panel.get_by_role("button", name="暗色模式", exact=True).click()
@@ -224,14 +227,14 @@ class ReadingStyleCase(unittest.TestCase):
         panel.get_by_role("button", name="恢复默认").click()
         panel.screenshot(path=str(WORK / "settings/desktop-appearance.png"))
         panel.get_by_role("group", name="主题色", exact=True).locator('label[title="青绿"]').click()
-        self.select("标题样式", "简洁")
-        self.select("加粗样式", "下划线")
+        self.select_style("标题样式", "简洁")
+        self.select_style("加粗样式", "下划线")
         self.page.reload(wait_until="domcontentloaded")
         self.open()
         panel.get_by_role("tab", name="外观", exact=True).click()
         self.assertTrue(panel.get_by_role("radio", name="青绿", exact=True).is_checked())
-        self.assertTrue(panel.get_by_role("group", name="标题样式", exact=True).get_by_role("radio", name="简洁", exact=True).is_checked())
-        self.assertTrue(panel.get_by_role("group", name="加粗样式", exact=True).get_by_role("radio", name="下划线", exact=True).is_checked())
+        self.assertEqual(panel.get_by_role("combobox", name="标题样式", exact=True).input_value(), "simple")
+        self.assertEqual(panel.get_by_role("combobox", name="加粗样式", exact=True).input_value(), "underline")
 
     def test_display_buttons_restore_sidebars_and_persist_theme(self):
         self.load()

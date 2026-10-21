@@ -26,6 +26,7 @@
     expand: '<path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/>',
     check: '<path d="m5 12 4 4L19 6"/>',
     reset: '<path d="M4 10a8 8 0 1 1 1.5 7M4 4v6h6"/>',
+    chevron: '<path d="m8 10 4 4 4-4"/>',
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"${name === "settings" ? ' class="aipm-reading-style__gear"' : ""}>${icons[name]}</svg>`;
   const validate = (value) => {
@@ -80,55 +81,49 @@
   panel.setAttribute("aria-labelledby", "aipm-reading-title");
   panel.innerHTML = `
     <div class="aipm-reading-style__head">
-      <span class="aipm-reading-style__badge">${icon("settings")}</span>
-      <div><h2 id="aipm-reading-title">站点设置</h2><p>阅读与外观</p></div>
+      <h2 id="aipm-reading-title">站点设置</h2>
       <button type="button" class="aipm-reading-style__close" aria-label="关闭站点设置" title="关闭站点设置" autofocus>${icon("close")}</button>
     </div>
+    <div class="aipm-reading-style__actions" role="group" aria-label="显示模式">
+      <button type="button" data-reading-action="theme" aria-pressed="false">${icon("moon")}<span>暗色模式</span></button>
+      <button type="button" data-reading-action="fulltext" aria-pressed="false">${icon("expand")}<span>全文显示</span></button>
+    </div>
+    <div class="aipm-reading-style__tabs" role="tablist" aria-label="设置分类">
+      <button type="button" id="aipm-settings-typography-tab" role="tab" aria-selected="true" aria-controls="aipm-settings-typography" data-settings-tab="typography">排版</button>
+      <button type="button" id="aipm-settings-appearance-tab" role="tab" aria-selected="false" aria-controls="aipm-settings-appearance" data-settings-tab="appearance" tabindex="-1">外观</button>
+    </div>
     <div class="aipm-reading-style__body">
-      <div class="aipm-reading-style__actions" role="group" aria-label="显示模式">
-        <button type="button" data-reading-action="theme" aria-pressed="false">${icon("moon")}<span>暗色模式</span></button>
-        <button type="button" data-reading-action="fulltext" aria-pressed="false">${icon("expand")}<span>全文显示</span></button>
-      </div>
-      <div class="aipm-reading-style__tabs" role="tablist" aria-label="设置分类">
-        <button type="button" id="aipm-settings-typography-tab" role="tab" aria-selected="true" aria-controls="aipm-settings-typography" data-settings-tab="typography">排版</button>
-        <button type="button" id="aipm-settings-appearance-tab" role="tab" aria-selected="false" aria-controls="aipm-settings-appearance" data-settings-tab="appearance" tabindex="-1">外观</button>
-      </div>
-      <div class="aipm-reading-style__preview md-typeset" aria-label="样式预览">
-        <div class="book-original"><h3>从问题出发</h3><p>清晰的表达，让<strong>重要的想法</strong>更容易理解。</p></div>
-      </div>
       <div id="aipm-settings-typography" role="tabpanel" aria-labelledby="aipm-settings-typography-tab">
-        <div class="aipm-reading-style__size-label"><label for="aipm-reading-size">字号</label><output for="aipm-reading-size" id="aipm-reading-size-value"></output></div>
-        <div class="aipm-reading-style__slider"><span aria-hidden="true">A</span><input id="aipm-reading-size" name="size" type="range" min="14" max="22" step="1"><span aria-hidden="true">A</span></div>
-        <fieldset><legend>字体</legend><div class="aipm-reading-style__options">
+        <div class="aipm-reading-style__row aipm-reading-style__size"><label for="aipm-reading-size">字号</label><input id="aipm-reading-size" name="size" type="range" min="14" max="22" step="1"><output for="aipm-reading-size" id="aipm-reading-size-value"></output></div>
+        <div class="aipm-reading-style__row" role="group" aria-label="字体"><span>字体</span><div class="aipm-reading-style__options">
           <label><input type="radio" name="font" value="sans"><span>黑体</span></label>
           <label><input type="radio" name="font" value="serif"><span class="aipm-reading-style__serif">宋体</span></label>
-        </div></fieldset>
-        <fieldset><legend>行距</legend><div class="aipm-reading-style__options">
+        </div></div>
+        <div class="aipm-reading-style__row" role="group" aria-label="行距"><span>行距</span><div class="aipm-reading-style__options">
           <label><input type="radio" name="spacing" value="compact"><span>紧凑</span></label>
           <label><input type="radio" name="spacing" value="standard"><span>标准</span></label>
           <label><input type="radio" name="spacing" value="relaxed"><span>宽松</span></label>
-        </div></fieldset>
-        <fieldset><legend>正文宽度</legend><div class="aipm-reading-style__options">
+        </div></div>
+        <div class="aipm-reading-style__row" role="group" aria-label="正文宽度"><span>正文宽度</span><div class="aipm-reading-style__options">
           <label><input type="radio" name="width" value="compact"><span>紧凑</span></label>
           <label><input type="radio" name="width" value="standard"><span>标准</span></label>
           <label><input type="radio" name="width" value="wide"><span>宽阔</span></label>
-        </div></fieldset>
+        </div></div>
       </div>
       <div id="aipm-settings-appearance" role="tabpanel" aria-labelledby="aipm-settings-appearance-tab" hidden>
-        <fieldset><legend>主题色</legend><div class="aipm-reading-style__colors">
+        <div class="aipm-reading-style__palette" role="group" aria-label="主题色">
+          <div><span>主题色</span><span class="aipm-reading-style__color-name"></span></div>
+          <div class="aipm-reading-style__colors">
           ${Object.entries(colors).map(([value, color]) => `<label title="${color.label}"><input type="radio" name="color" value="${value}" aria-label="${color.label}"><span style="--settings-swatch:${color.light}">${icon("check")}</span></label>`).join("")}
-        </div></fieldset>
-        <fieldset><legend>标题样式</legend><div class="aipm-reading-style__options">
-          <label><input type="radio" name="heading" value="simple"><span>简洁</span></label>
-          <label><input type="radio" name="heading" value="structured"><span>层次</span></label>
-          <label><input type="radio" name="heading" value="accent"><span>主题色</span></label>
-        </div></fieldset>
-        <fieldset><legend>加粗样式</legend><div class="aipm-reading-style__options">
-          <label><input type="radio" name="emphasis" value="plain"><span>纯文字</span></label>
-          <label><input type="radio" name="emphasis" value="marker"><span>淡色标记</span></label>
-          <label><input type="radio" name="emphasis" value="underline"><span>下划线</span></label>
-        </div></fieldset>
-        <div class="aipm-reading-style__language"><label for="aipm-settings-language">站点语言</label><select id="aipm-settings-language"><option value="zh-CN">简体中文</option></select></div>
+          </div>
+        </div>
+        <div class="aipm-reading-style__row"><label for="aipm-settings-heading">标题样式</label><div class="aipm-reading-style__select"><select id="aipm-settings-heading" name="heading"><option value="simple">简洁</option><option value="structured">层次</option><option value="accent">主题色</option></select>${icon("chevron")}</div></div>
+        <div class="aipm-reading-style__row"><label for="aipm-settings-emphasis">加粗样式</label><div class="aipm-reading-style__select"><select id="aipm-settings-emphasis" name="emphasis"><option value="plain">纯文字</option><option value="marker">淡色标记</option><option value="underline">下划线</option></select>${icon("chevron")}</div></div>
+        <div class="aipm-reading-style__row"><label for="aipm-settings-language">站点语言</label><div class="aipm-reading-style__select"><select id="aipm-settings-language"><option value="zh-CN">简体中文</option></select>${icon("chevron")}</div></div>
+      </div>
+      <div class="aipm-reading-style__preview md-typeset" aria-label="样式预览">
+        <span class="aipm-reading-style__preview-label">效果预览</span>
+        <div class="book-original"><h3>从问题出发</h3><p>清晰表达，让<strong>重要的想法</strong>更容易理解。</p></div>
       </div>
     </div>
     <div class="aipm-reading-style__footer">
@@ -162,6 +157,8 @@
     panel.querySelector('[name="size"]').value = settings.size;
     panel.querySelector("output").value = `${settings.size} px`;
     for (const input of panel.querySelectorAll('[type="radio"]')) input.checked = input.value === settings[input.name];
+    for (const select of panel.querySelectorAll("select[name]")) select.value = settings[select.name];
+    panel.querySelector(".aipm-reading-style__color-name").textContent = colors[settings.color].label;
     syncDisplay();
   };
   const save = () => {
@@ -173,7 +170,7 @@
   sync();
   panel.addEventListener("input", (event) => {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
+    if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement) || !input.name) return;
     settings[input.name] = input.name === "size" ? input.valueAsNumber : input.value;
     save();
   });
