@@ -1,0 +1,208 @@
+.md-header .md-header__button.aipm-reading-entry {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: .3rem;
+  cursor: pointer;
+}
+
+.aipm-reading-entry[aria-expanded="true"] {
+  color: var(--md-typeset-a-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.aipm-reading-style {
+  position: fixed;
+  inset: auto;
+  width: min(18rem, calc(100vw - 24px));
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--pm-line);
+  border-radius: .65rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: var(--md-shadow-z2);
+  font-family: var(--md-text-font-family);
+  font-size: .75rem;
+  line-height: 1.5;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.aipm-reading-style__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem .65rem .5rem .9rem;
+  border-bottom: 1px solid var(--pm-line);
+}
+
+.aipm-reading-style__head h2 {
+  margin: 0;
+  font-size: .8rem;
+  font-weight: 650;
+}
+
+.aipm-reading-style button {
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.aipm-reading-style__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: .3rem;
+}
+
+.aipm-reading-style__close svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+
+.aipm-reading-style__body {
+  padding: .8rem .9rem .6rem;
+}
+
+.aipm-reading-style__size-label,
+.aipm-reading-style__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.aipm-reading-style output,
+.aipm-reading-style__footer {
+  color: var(--md-default-fg-color--light);
+  font-size: .65rem;
+}
+
+.aipm-reading-style input[type="range"] {
+  display: block;
+  width: 100%;
+  height: 2.2rem;
+  margin: .1rem 0 .4rem;
+  accent-color: var(--md-typeset-a-color);
+  cursor: pointer;
+}
+
+.aipm-reading-style fieldset {
+  min-width: 0;
+  margin: .65rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.aipm-reading-style legend {
+  padding: 0;
+  margin-bottom: .4rem;
+}
+
+.aipm-reading-style__options {
+  display: flex;
+  gap: .25rem;
+  padding: .2rem;
+  border-radius: .4rem;
+  background: var(--md-code-bg-color);
+}
+
+.aipm-reading-style__options label {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.aipm-reading-style__options input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.aipm-reading-style__options span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
+  border: 1px solid transparent;
+  border-radius: .3rem;
+  font-size: .7rem;
+}
+
+.aipm-reading-style__options input:checked + span {
+  border-color: var(--pm-line);
+  color: var(--md-typeset-a-color);
+  background: var(--md-default-bg-color);
+  font-weight: 650;
+}
+
+.aipm-reading-style__options label:hover span,
+.aipm-reading-style button:hover {
+  color: var(--md-typeset-a-color);
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.aipm-reading-entry:focus-visible,
+.aipm-reading-style button:focus-visible,
+.aipm-reading-style input[type="range"]:focus-visible,
+.aipm-reading-style__options input:focus-visible + span {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+.aipm-reading-style__footer {
+  margin-top: .8rem;
+  padding-top: .4rem;
+  border-top: 1px solid var(--pm-line);
+}
+
+.aipm-reading-style__reset {
+  min-height: 2.2rem;
+  padding: .3rem .4rem;
+  border-radius: .3rem;
+}
+
+@media screen {
+  .md-content__inner.md-typeset {
+    font-family: var(--aipm-reading-font, var(--md-text-font-family));
+    font-size: var(--aipm-reading-size, 15px);
+    line-height: var(--aipm-reading-line-height, 1.8);
+  }
+
+  .md-content__inner.md-typeset > h1 {
+    font-size: calc(1.75rem * var(--aipm-reading-scale, 1));
+  }
+
+  [data-reading-width="compact"] .md-main__inner.md-grid {
+    max-width: 52rem;
+  }
+
+  [data-reading-width="wide"] .md-main__inner.md-grid {
+    max-width: 76rem;
+  }
+}
+
+@media screen and (max-width: 59.984375em) {
+  [data-md-toggle="search"]:checked ~ .md-header .aipm-reading-entry {
+    display: none;
+  }
+}
+
+@media print {
+  .md-content__inner {
+    --aipm-reading-scale: 1;
+  }
+
+  .aipm-reading-entry,
+  .aipm-reading-style {
+    display: none;
+  }
+}
