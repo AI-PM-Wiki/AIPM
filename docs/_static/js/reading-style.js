@@ -109,13 +109,10 @@
   const panel = document.createElement("dialog");
   panel.id = "aipm-reading-style";
   panel.className = "aipm-reading-style";
-  panel.setAttribute("aria-labelledby", "aipm-reading-title");
+  panel.setAttribute("aria-label", "站点设置");
   panel.innerHTML = `
     <div class="aipm-reading-style__window">
-    <div class="aipm-reading-style__head">
-      <h2 id="aipm-reading-title">站点设置</h2>
-      <button type="button" class="aipm-reading-style__close" aria-label="关闭站点设置" title="关闭站点设置" autofocus>${icon("close")}</button>
-    </div>
+    <button type="button" class="aipm-reading-style__close" aria-label="关闭站点设置" title="关闭站点设置" autofocus>${icon("close")}</button>
     <div class="aipm-reading-style__views" role="group" aria-label="设置与预览">
       <button type="button" data-settings-view="settings" aria-pressed="true">设置</button>
       <button type="button" data-settings-view="preview" aria-pressed="false">效果预览</button>
@@ -170,7 +167,7 @@
     </div>
     </div>
     <section class="aipm-reading-style__preview-pane" aria-label="效果预览">
-      <div class="aipm-reading-style__preview-head"><span>效果预览</span><span>当前文章 · 即时更新</span></div>
+      <div class="aipm-reading-style__preview-head"><span>效果预览</span></div>
       <div class="aipm-reading-style__preview-scroll" tabindex="0" aria-label="预览文章">
         <article class="aipm-reading-style__preview md-typeset"></article>
       </div>
