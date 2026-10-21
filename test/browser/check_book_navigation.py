@@ -31,7 +31,7 @@ class BookNavigationCase(unittest.TestCase):
         cls.site.close()
 
     def test_chapters_front_matter_and_retained_links(self):
-        self.assertEqual(len(list((ROOT / "docs").rglob("*.md"))), 76)
+        self.assertEqual(len(list((ROOT / "docs/product-manager").rglob("*.md"))), 76)
         for name in ("introduction", "preface", "contents", "copyright", "reader-services", "reviews", "back-cover"):
             self.assertFalse((ROOT / "docs/product-manager" / f"{name}.md").exists())
             self.assertFalse((ROOT / "site/product-manager" / name).exists())
@@ -76,7 +76,7 @@ class BookNavigationCase(unittest.TestCase):
         page = context.new_page()
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
-        page.goto(self.site.base + "/", wait_until="domcontentloaded")
+        page.goto(self.site.base + "/product-manager/", wait_until="domcontentloaded")
         page.locator('.md-sidebar--primary a[href$="/product-manager/01/"]').click()
         page.wait_for_url("**/product-manager/01/")
         page.locator(".book-original img").wait_for()
@@ -103,7 +103,7 @@ class BookNavigationCase(unittest.TestCase):
                 context = self.browser.new_context(viewport={"width": width, "height": 844}, is_mobile=True, has_touch=True)
                 self.addCleanup(context.close)
                 page = context.new_page()
-                page.goto(self.site.base + "/", wait_until="domcontentloaded")
+                page.goto(self.site.base + "/product-manager/", wait_until="domcontentloaded")
                 page.locator('.md-header label[for="__drawer"]').tap()
                 page.locator('.md-sidebar--primary a[href$="/product-manager/02/"]').tap()
                 page.wait_for_url("**/product-manager/02/")

@@ -1,6 +1,6 @@
 # Project Information
 site_name: AI-PM
-site_description: 产品经理专题，按《人人都是产品经理2.0——写给泛产品经理》的原书章节组织正文与图片
+site_description: AI-PM 知识库，包含主站、产品、科技与商业内容
 site_author: AI-PM Wiki Team
 site_url: https://aipm.ac/
 strict: true
@@ -12,8 +12,720 @@ edit_uri: 'edit/main/docs/'
 
 # Contents
 nav:
-- 产品经理:
-  - 产品经理: index.md
+- 主站:
+  - 主站: index.md
+  - 简介:
+    - 如何参与: intro/htc.md
+    - 格式手册: intro/format.md
+    - AI-PM 不是什么: intro/what-ai-pm-is-not.md
+    - F.A.Q.: intro/faq.md
+    - 产品经理黑话速查: intro/glossary.md
+    - 自学路线: intro/self-study-roadmap.md
+    - 产品经理岗位类别: intro/product-manager-types.md
+  - 产品方法论:
+    - 产品方法论简介: pm/index.md
+    - 思维模型:
+      - 思维模型总览: intro/thinking-models/index.md
+      - MoSCoW：需求优先级分类: intro/thinking-models/moscow.md
+      - 第一性原理: intro/thinking-models/first-principles.md
+      - 5W2H1R：从任务澄清到结果复盘: intro/thinking-models/5w2h1r.md
+      - PRC：问题—根因—对策: intro/thinking-models/prc.md
+      - GROW：教练式目标推进: intro/thinking-models/grow.md
+    - AI 产品经理能力模型: intro/capability.md
+    - 产品战略与竞争: pm/strategy.md
+    - 产品生命周期: pm/product-lifecycle.md
+    - 需求分析: pm/requirements.md
+    - 用户研究: pm/user-research.md
+    - 数据分析入门: pm/data-analysis.md
+    - 产品设计与原型:
+      - 产品设计与原型总览: pm/design.md
+      - 设计哲学与设计思维: pm/design-philosophy.md
+      - 视觉设计基础: pm/design-visual.md
+      - 交互设计基础: pm/design-interaction.md
+      - 设计系统与规范: pm/design-systems.md
+      - 原型与设计交付: pm/design-prototyping.md
+      - 设计评审与可用性度量: pm/design-evaluation.md
+      - 设计师黑话速查: pm/design-jargon.md
+    - AI 产品 PRD: pm/prd.md
+    - 项目管理与迭代: pm/project-management.md
+    - AI 产品开发生命周期（CC/CD）: pm/ai-lifecycle.md
+    - 商业化与增长: pm/monetization.md
+  - 工程与架构:
+    - 工程与架构简介: tech/index.md
+    - 开发流程与节奏: tech/dev-flow.md
+    - 部署与环境: tech/deployment.md
+    - AI-Native 研发流程: tech/ai-native-sdlc.md
+    - 系统架构基础: tech/architecture.md
+    - 工程架构术语:
+      - 工程架构术语总览: tech/architecture-terminology.md
+      - 前端渲染技术与黑话: tech/frontend-rendering.md
+      - 后端与服务端术语: tech/backend-services.md
+      - 身份认证与权限: tech/identity-access.md
+      - 数据库与数据存储术语: tech/databases.md
+      - 缓存技术与黑话: tech/caching.md
+      - 消息队列与异步系统: tech/message-queues.md
+      - 第三方服务与外部依赖: tech/third-party-services.md
+      - 可观测性: tech/observability.md
+  - 工商管理:
+    - 工商管理简介: management/index.md
+    - 管理基础与方法:
+      - 管理研究方法: management/01-management-research/index.md
+      - 管理统计: management/02-management-statistics/index.md
+      - 管理决策: management/03-management-decision/index.md
+    - 组织与沟通:
+      - 组织行为学: management/04-organizational-behavior/index.md
+      - 管理沟通: management/05-management-communication/index.md
+    - 市场与消费者:
+      - 市场营销学: management/06-marketing/index.md
+      - 消费者行为: management/07-consumer-behavior/index.md
+      - 消费者信息处理与决策: management/08-consumer-information-decision/index.md
+      - 消费者神经科学: management/09-consumer-neuroscience/index.md
+    - 战略、创新与创业:
+      - 战略管理: management/10-strategy/index.md
+      - 创新管理: management/11-innovation/index.md
+      - 商业模式设计与创新: management/12-business-model/index.md
+      - 创业管理: management/13-entrepreneurship/index.md
+    - 设计、项目与运营:
+      - 设计思维: management/14-design-thinking/index.md
+      - 项目管理: management/15-project-management/index.md
+      - 应用运筹学Ⅰ: management/16-operations-research/index.md
+      - IT 工程伦理和项目管理: management/17-engineering-ethics/index.md
+    - 财务管理:
+      - 财务管理: management/18-financial-management/index.md
+  - 商业与财会:
+    - 商业与财会简介: business/index.md
+    - 金融学:
+      - 金融学: business/01-finance/index.md
+      - 金融学课程导论: business/01-finance/00-intro.md
+      - 货币的起源与形态: business/01-finance/01-origins-and-forms-of-money.md
+      - 货币的职能: business/01-finance/02-functions-of-money.md
+      - 货币制度: business/01-finance/03-monetary-systems.md
+      - 货币的层次划分与人民币制度: business/01-finance/04-monetary-aggregates-and-rmb-system.md
+      - 信用与信用形式: business/01-finance/05-credit-and-credit-forms.md
+      - 消费信用与金融风险: business/01-finance/06-consumer-credit-and-financial-risk.md
+      - 信用工具：票据: business/01-finance/07-credit-instruments-bills.md
+      - 信用工具：债券与股票: business/01-finance/08-credit-instruments-bonds-and-stocks.md
+      - 利息与利息率: business/01-finance/09-interest-and-interest-rates.md
+      - 金融机构体系: business/01-finance/10-financial-institution-system.md
+      - 商业银行: business/01-finance/11-commercial-banks.md
+      - 金融市场: business/01-finance/12-financial-markets.md
+      - 证券投资与市场构成: business/01-finance/13-securities-investment-and-market-structure.md
+      - 货币政策: business/01-finance/14-monetary-policy.md
+    - 会计学:
+      - 会计学: business/02-accounting/index.md
+      - 会计学课程导论: business/02-accounting/00-intro.md
+      - 会计确认与计量基础: business/02-accounting/01-accounting-recognition-and-measurement.md
+      - 会计要素与复式记账: business/02-accounting/02-accounting-elements-and-double-entry.md
+      - 会计循环: business/02-accounting/03-accounting-cycle.md
+      - 货币资金与交易性金融资产: business/02-accounting/04-cash-and-trading-financial-assets.md
+      - 应收款项与坏账: business/02-accounting/05-receivables-and-bad-debts.md
+      - 存货: business/02-accounting/06-inventory.md
+      - 固定资产: business/02-accounting/07-fixed-assets.md
+      - 负债与所有者权益: business/02-accounting/08-liabilities-and-equity.md
+      - 收入、费用与利润: business/02-accounting/09-revenue-expenses-and-profit.md
+    - 中级微观经济学:
+      - 中级微观经济学: business/03-intermediate-microeconomics/index.md
+      - 中级微观经济学课程导论: business/03-intermediate-microeconomics/00-intro.md
+      - 预算约束与消费者偏好: business/03-intermediate-microeconomics/01-budget-constraints-and-preferences.md
+      - 效用函数与消费者最优选择: business/03-intermediate-microeconomics/02-utility-functions-and-optimal-choice.md
+      - 需求变动与显示偏好: business/03-intermediate-microeconomics/03-demand-and-revealed-preference.md
+      - 斯勒茨基方程与禀赋模型: business/03-intermediate-microeconomics/04-slutsky-equation-and-endowment-model.md
+      - 跨期选择与消费者福利: business/03-intermediate-microeconomics/05-intertemporal-choice-and-consumer-welfare.md
+      - 市场需求与弹性: business/03-intermediate-microeconomics/06-market-demand-and-elasticity.md
+      - 生产者理论: business/03-intermediate-microeconomics/07-producer-theory.md
+      - 完全竞争市场: business/03-intermediate-microeconomics/08-perfectly-competitive-markets.md
+      - 垄断与价格歧视: business/03-intermediate-microeconomics/09-monopoly-and-price-discrimination.md
+      - 寡头与垄断竞争: business/03-intermediate-microeconomics/10-oligopoly-and-monopolistic-competition.md
+      - 一般均衡与福利: business/03-intermediate-microeconomics/11-general-equilibrium-and-welfare.md
+    - 宏观经济学:
+      - 宏观经济学: business/04-macroeconomics/index.md
+      - 宏观经济学课程导论: business/04-macroeconomics/00-intro.md
+      - 国民收入核算与基本指标: business/04-macroeconomics/01-national-income-accounting.md
+      - 收入-支出模型: business/04-macroeconomics/02-income-expenditure-model.md
+      - IS-LM 模型: business/04-macroeconomics/03-is-lm-model.md
+      - AD-AS 模型: business/04-macroeconomics/04-ad-as-model.md
+      - 失业与奥肯定律: business/04-macroeconomics/05-unemployment-and-okun-law.md
+      - 通货膨胀与菲利普斯曲线: business/04-macroeconomics/06-inflation-and-phillips-curve.md
+      - 开放经济与蒙代尔-弗莱明模型: business/04-macroeconomics/07-open-economy-and-mundell-fleming.md
+      - 宏观经济政策: business/04-macroeconomics/08-macroeconomic-policy.md
+      - 经济增长: business/04-macroeconomics/09-economic-growth.md
+    - 公司金融:
+      - 公司金融: business/05-corporate-finance/index.md
+      - 公司金融课程导论: business/05-corporate-finance/00-intro.md
+      - 公司治理: business/05-corporate-finance/01-corporate-governance.md
+      - 财务报表分析与财务模型: business/05-corporate-finance/02-financial-statement-analysis-and-modeling.md
+      - 货币时间价值: business/05-corporate-finance/03-time-value-of-money.md
+      - 项目评估方法: business/05-corporate-finance/04-project-evaluation-methods.md
+      - 投资决策与自由现金流: business/05-corporate-finance/05-investment-decisions-and-free-cash-flow.md
+      - 风险分析与实物期权: business/05-corporate-finance/06-risk-analysis-and-real-options.md
+      - 债券估值: business/05-corporate-finance/07-bond-valuation.md
+      - 股票估值: business/05-corporate-finance/08-stock-valuation.md
+      - 风险、收益与资本资产定价: business/05-corporate-finance/09-risk-return-and-capm.md
+      - 资本成本与长期融资: business/05-corporate-finance/10-cost-of-capital-and-long-term-financing.md
+      - 资本结构: business/05-corporate-finance/11-capital-structure.md
+      - 股利政策: business/05-corporate-finance/12-dividend-policy.md
+    - 商业银行经营与管理:
+      - 商业银行经营与管理: business/06-commercial-banking/index.md
+      - 商业银行经营与管理课程导论: business/06-commercial-banking/00-intro.md
+      - 商业银行的地位与类型: business/06-commercial-banking/01-role-and-types-of-commercial-banks.md
+      - 商业银行的组织结构与经营原则: business/06-commercial-banking/02-organization-and-operating-principles.md
+      - 资本金与巴塞尔协议: business/06-commercial-banking/03-capital-and-basel-accords.md
+      - 商业银行负债业务: business/06-commercial-banking/04-liability-operations.md
+      - 商业银行资产业务与贷款管理: business/06-commercial-banking/05-asset-operations-and-loan-management.md
+      - 商业银行信用分析与担保: business/06-commercial-banking/06-credit-analysis-and-guarantees.md
+      - 商业银行中间业务与表外业务: business/06-commercial-banking/07-intermediary-and-off-balance-sheet-business.md
+      - 商业银行国际业务与离岸金融: business/06-commercial-banking/08-international-and-offshore-finance.md
+      - 商业银行资产负债管理: business/06-commercial-banking/09-asset-liability-management.md
+    - 政治经济学:
+      - 政治经济学: business/07-political-economy/index.md
+      - 政治经济学课程导论: business/07-political-economy/00-intro.md
+      - 前资本主义经济制度: business/07-political-economy/01-pre-capitalist-economic-systems.md
+      - 垄断资本主义与金融资本: business/07-political-economy/02-monopoly-capitalism-and-finance-capital.md
+      - 剩余价值理论: business/07-political-economy/03-surplus-value-theory.md
+      - 中国经济的历史兴衰: business/07-political-economy/04-rise-and-fall-of-chinese-economy.md
+      - 重工业优先发展战略: business/07-political-economy/05-heavy-industry-first-strategy.md
+      - 改革开放与乡村工业化: business/07-political-economy/06-reform-and-opening-and-rural-industrialization.md
+      - 经济转轨与国有企业: business/07-political-economy/07-economic-transition-and-soes.md
+      - 人力资本与共同富裕: business/07-political-economy/08-human-capital-and-common-prosperity.md
+      - 经济全球化与中国对外开放: business/07-political-economy/09-globalization-and-china-opening-up.md
+    - 计量经济学:
+      - 计量经济学: business/08-econometrics/index.md
+      - 计量经济学课程导论: business/08-econometrics/00-intro.md
+      - 简单线性回归: business/08-econometrics/01-simple-linear-regression.md
+      - 多元线性回归: business/08-econometrics/02-multiple-linear-regression.md
+      - 虚拟变量与非线性回归: business/08-econometrics/03-dummy-variables-and-nonlinear-regression.md
+      - 多重共线性与异方差: business/08-econometrics/04-multicollinearity-and-heteroskedasticity.md
+      - 内生性与工具变量: business/08-econometrics/05-endogeneity-and-instrumental-variables.md
+      - 模型设定偏误: business/08-econometrics/06-model-specification-bias.md
+      - 时间序列平稳性: business/08-econometrics/07-time-series-stationarity.md
+      - Stata 与 EViews 操作入门: business/08-econometrics/08-stata-and-eviews-intro.md
+      - 因果推断与实验: business/08-econometrics/09-causal-inference-and-experiments.md
+    - 国际金融学:
+      - 国际金融学: business/09-international-finance/index.md
+      - 国际金融学课程导论: business/09-international-finance/00-intro.md
+      - 国际收支与国际收支平衡表: business/09-international-finance/01-balance-of-payments.md
+      - 国际收支调节理论: business/09-international-finance/02-balance-of-payments-adjustment-theories.md
+      - 外汇与汇率: business/09-international-finance/03-foreign-exchange-and-exchange-rates.md
+      - 外汇市场与外汇交易: business/09-international-finance/04-fx-markets-and-trading.md
+      - 汇率决定理论: business/09-international-finance/05-exchange-rate-determination.md
+      - 国际储备与汇率制度: business/09-international-finance/06-international-reserves-and-exchange-rate-regimes.md
+      - 开放经济下的宏观经济政策协调: business/09-international-finance/07-open-economy-policy-coordination.md
+      - 国际金融市场与国际资本流动: business/09-international-finance/08-international-financial-markets-and-capital-flows.md
+      - 国际货币体系: business/09-international-finance/09-international-monetary-system.md
+      - 国际金融机构与国际金融创新: business/09-international-finance/10-international-financial-institutions-and-innovation.md
+    - 证券投资学:
+      - 证券投资学: business/10-securities-investment/index.md
+      - 证券投资学课程导论: business/10-securities-investment/00-intro.md
+      - 投资基础: business/10-securities-investment/01-investment-basics.md
+      - 证券投资工具: business/10-securities-investment/02-securities-investment-instruments.md
+      - 证券发行与上市制度: business/10-securities-investment/03-securities-issuance-and-listing.md
+      - 资产组合理论: business/10-securities-investment/04-portfolio-theory.md
+      - 债券估值与久期: business/10-securities-investment/05-bond-valuation-and-duration.md
+      - 股票估值: business/10-securities-investment/06-stock-valuation.md
+      - 宏观经济分析: business/10-securities-investment/07-macroeconomic-analysis.md
+      - 行业与公司分析: business/10-securities-investment/08-industry-and-company-analysis.md
+      - 技术分析: business/10-securities-investment/09-technical-analysis.md
+      - 投资策略与行为金融: business/10-securities-investment/10-investment-strategies-and-behavioral-finance.md
+    - 中级财务会计学:
+      - 中级财务会计学: business/11-intermediate-financial-accounting/index.md
+      - 中级财务会计学课程导论: business/11-intermediate-financial-accounting/00-intro.md
+      - 存货: business/11-intermediate-financial-accounting/01-inventory.md
+      - 应收款项: business/11-intermediate-financial-accounting/02-receivables.md
+      - 金融工具：债务工具: business/11-intermediate-financial-accounting/03-financial-instruments-debt.md
+      - 金融工具：权益工具与交易性金融资产: business/11-intermediate-financial-accounting/04-financial-instruments-equity-and-trading.md
+      - 长期股权投资: business/11-intermediate-financial-accounting/05-long-term-equity-investments.md
+      - 固定资产: business/11-intermediate-financial-accounting/06-fixed-assets.md
+      - 无形资产与投资性房地产: business/11-intermediate-financial-accounting/07-intangibles-and-investment-property.md
+      - 流动负债: business/11-intermediate-financial-accounting/08-current-liabilities.md
+      - 非流动负债: business/11-intermediate-financial-accounting/09-non-current-liabilities.md
+      - 或有事项与预计负债: business/11-intermediate-financial-accounting/10-contingencies-and-provisions.md
+      - 所有者权益: business/11-intermediate-financial-accounting/11-owners-equity.md
+      - 收入确认与所得税会计: business/11-intermediate-financial-accounting/12-revenue-recognition-and-income-tax.md
+      - 财务报表: business/11-intermediate-financial-accounting/13-financial-statements.md
+    - 中级宏观经济学:
+      - 中级宏观经济学: business/12-intermediate-macroeconomics/index.md
+      - 中级宏观经济学课程导论: business/12-intermediate-macroeconomics/00-intro.md
+      - 代表性行为人模型: business/12-intermediate-macroeconomics/01-representative-agent-model.md
+      - 两期动态模型与欧拉方程: business/12-intermediate-macroeconomics/02-two-period-model-and-euler-equation.md
+      - 动态规划: business/12-intermediate-macroeconomics/03-dynamic-programming.md
+      - 无限期动态模型: business/12-intermediate-macroeconomics/04-infinite-horizon-dynamic-models.md
+      - 真实经济周期模型: business/12-intermediate-macroeconomics/05-real-business-cycle-model.md
+      - 代际交叠模型: business/12-intermediate-macroeconomics/06-overlapping-generations-model.md
+      - Diamond-Dybvig 银行模型: business/12-intermediate-macroeconomics/07-diamond-dybvig-bank-model.md
+      - 数学方法专题: business/12-intermediate-macroeconomics/08-mathematical-methods.md
+    - 随机过程:
+      - 随机过程: business/13-stochastic-processes/index.md
+      - 随机过程课程导论: business/13-stochastic-processes/00-intro.md
+      - Poisson 过程: business/13-stochastic-processes/01-poisson-process.md
+      - 马尔可夫链: business/13-stochastic-processes/02-markov-chains.md
+      - 分支过程: business/13-stochastic-processes/03-branching-processes.md
+      - 平稳过程与遍历性: business/13-stochastic-processes/04-stationary-processes-and-ergodicity.md
+      - 布朗运动: business/13-stochastic-processes/05-brownian-motion.md
+      - MCMC 与随机模拟: business/13-stochastic-processes/06-mcmc-and-stochastic-simulation.md
+    - 金融计量模型:
+      - 金融计量模型: business/14-financial-econometrics/index.md
+      - 金融计量模型课程导论: business/14-financial-econometrics/00-intro.md
+      - 平稳性与 ARMA 模型: business/14-financial-econometrics/01-stationarity-and-arma-models.md
+      - ARMA 模型识别、估计与检验: business/14-financial-econometrics/02-arma-identification-estimation-and-testing.md
+      - ARMA 模型预测: business/14-financial-econometrics/03-arma-forecasting.md
+      - 波动率建模：ARCH 与 GARCH: business/14-financial-econometrics/04-volatility-modeling-arch-and-garch.md
+      - 趋势、单位根与 ARIMA: business/14-financial-econometrics/05-trends-unit-roots-and-arima.md
+      - 向量自回归模型: business/14-financial-econometrics/06-vector-autoregression.md
+      - 协整与误差修正模型: business/14-financial-econometrics/07-cointegration-and-error-correction.md
+    - 量化投资:
+      - 量化投资: business/15-quantitative-investing/index.md
+      - 量化投资课程导论: business/15-quantitative-investing/00-intro.md
+      - 因子投资理论基础: business/15-quantitative-investing/01-factor-investing-foundations.md
+      - 多因子模型与因子收益度量: business/15-quantitative-investing/02-multi-factor-models-and-factor-returns.md
+      - 多因子选股实践: business/15-quantitative-investing/03-multi-factor-stock-selection.md
+      - 风险模型: business/15-quantitative-investing/04-risk-models.md
+      - 另类数据与事件驱动: business/15-quantitative-investing/05-alternative-data-and-event-driven.md
+      - 大模型在量化投资中的应用: business/15-quantitative-investing/06-llms-in-quantitative-investing.md
+    - 金融学论文写作:
+      - 金融学论文写作: business/16-finance-writing/index.md
+      - 金融学论文写作课程导论: business/16-finance-writing/00-intro.md
+      - 选题与文献综述: business/16-finance-writing/01-topic-selection-and-literature-review.md
+      - 找基本事实: business/16-finance-writing/02-finding-basic-facts.md
+      - 写理论机制: business/16-finance-writing/03-writing-theoretical-mechanisms.md
+      - 实证方法：面板数据与 Stata: business/16-finance-writing/04-empirical-methods-panel-data-and-stata.md
+      - 稳健性检验与内生性: business/16-finance-writing/05-robustness-checks-and-endogeneity.md
+      - 论文结构与格式规范: business/16-finance-writing/06-paper-structure-and-format.md
+      - 数字金融研究专题: business/16-finance-writing/07-digital-finance-research.md
+      - 宏观金融研究专题: business/16-finance-writing/08-macro-finance-research.md
+    - 固定收益证券分析和模型:
+      - 固定收益证券分析和模型: business/17-fixed-income/index.md
+      - 固定收益证券课程导论: business/17-fixed-income/00-intro.md
+      - 贴现因子、利率与期限结构: business/17-fixed-income/01-discount-factors-and-term-structure.md
+      - 利率风险管理：久期与免疫: business/17-fixed-income/02-duration-and-immunization.md
+      - 利率风险管理：凸性: business/17-fixed-income/03-convexity.md
+      - 远期与利率互换: business/17-fixed-income/04-forward-rates-and-interest-rate-swaps.md
+      - 利率期货与期权: business/17-fixed-income/05-interest-rate-futures-and-options.md
+      - 二叉树框架与风险中性定价: business/17-fixed-income/06-binomial-tree-and-risk-neutral-pricing.md
+      - 利率树模型：Ho-Lee 与 BDT: business/17-fixed-income/07-rate-tree-models-ho-lee-and-bdt.md
+      - 连续时间利率模型与中国市场: business/17-fixed-income/08-continuous-time-rate-models-and-china.md
+    - 金融工程学:
+      - 金融工程学: business/18-financial-engineering/index.md
+      - 金融工程学课程导论: business/18-financial-engineering/00-intro.md
+      - 衍生品基础与市场结构: business/18-financial-engineering/01-derivatives-basics-and-market-structure.md
+      - 远期与期货: business/18-financial-engineering/02-forwards-and-futures.md
+      - 互换: business/18-financial-engineering/03-swaps.md
+      - 期权的回报与价格分析: business/18-financial-engineering/04-option-payoffs-and-pricing.md
+      - 期权定价：布莱克-舒尔斯-默顿模型: business/18-financial-engineering/05-black-scholes-merton-model.md
+      - 期权定价数值方法: business/18-financial-engineering/06-option-pricing-numerical-methods.md
+      - 期权交易策略: business/18-financial-engineering/07-option-trading-strategies.md
+      - 奇异期权与结构性产品: business/18-financial-engineering/08-exotic-options-and-structured-products.md
+    - 前沿金融实务专题:
+      - 前沿金融实务专题: business/19-frontier-finance-practice/index.md
+      - 前沿金融实务专题课程导论: business/19-frontier-finance-practice/00-intro.md
+      - 公募基金行业的改革与发展: business/19-frontier-finance-practice/01-mutual-fund-industry-reform.md
+      - 券商业务全景: business/19-frontier-finance-practice/02-securities-firm-business-overview.md
+      - 交易所与交易机制: business/19-frontier-finance-practice/03-exchanges-and-trading-mechanisms.md
+      - 一级市场股权投资: business/19-frontier-finance-practice/04-primary-market-equity-investing.md
+      - 投资银行业务流程: business/19-frontier-finance-practice/05-investment-banking-process.md
+      - 北京证券交易所业务: business/19-frontier-finance-practice/06-beijing-stock-exchange.md
+      - 大宗商品期货实务: business/19-frontier-finance-practice/07-commodity-futures-practice.md
+      - 公募基金投资方法: business/19-frontier-finance-practice/08-mutual-fund-investing.md
+      - 投资入门与职业发展: business/19-frontier-finance-practice/09-investment-career-guide.md
+  - AI 基础:
+    - AI 基础简介: ai/index.md
+    - AI 黑话与定理:
+      - AI 黑话速查: ai/jargon.md
+      - AI 定理与经验定律: ai/theorems.md
+    - 机器学习与深度学习:
+      - 机器学习基础: ai/ml-basics.md
+      - 深度学习基础: ai/dl-basics.md
+      - 深度学习工程实践: ai/deep-learning-practice.md
+      - Transformer 架构: ai/transformer.md
+    - 大模型:
+      - 大模型基础: ai/llm-basics.md
+      - 模型训练与对齐: ai/llm-training.md
+      - 模型推理与部署: ai/llm-inference.md
+      - 模型能力与边界: ai/capabilities.md
+      - 开源与闭源模型生态: ai/model-ecosystem.md
+    - 多模态:
+      - 多模态理解: ai/multimodal.md
+      - 图像生成: ai/image-generation.md
+      - 视频生成: ai/video-generation.md
+      - 语音与音频: ai/audio.md
+    - 提示词工程:
+      - 提示词工程: ai/prompting.md
+      - 高级提示词技巧: ai/prompt-advanced.md
+      - 提示词安全: ai/prompt-security.md
+    - RAG 与知识检索:
+      - RAG 基础: ai/rag.md
+      - 检索技术: ai/rag-retrieval.md
+      - 高级 RAG: ai/rag-advanced.md
+    - Agent:
+      - Agent 与工作流: ai/agent.md
+      - 工具调用与 MCP: ai/agent-tools.md
+      - Agent 架构与多智能体: ai/agent-architecture.md
+    - 评估、安全与架构:
+      - 评估与评测: ai/evaluation.md
+      - AI 安全与对齐: ai/ai-safety.md
+      - AI 系统架构: ai/architecture.md
+    - AI 前沿:
+      - AI 经典论文: ai/classic-papers.md
+      - 大模型前沿论文: ai/llm-frontier-papers.md
+      - 架构与序列:
+        - 架构组件与训练稳定性: ai/llm-frontier-architecture.md
+        - 注意力与 KV Cache: ai/llm-frontier-attention.md
+        - 稀疏与局部注意力: ai/llm-frontier-sparse-attention.md
+        - 线性注意力与状态空间: ai/llm-frontier-sequence-models.md
+        - 混合专家模型: ai/llm-frontier-moe.md
+        - 世界模型与具身智能: ai/world-models-embodied.md
+      - 推理与训练:
+        - 推理时扩展: ai/llm-reasoning-scaling.md
+        - RLVR 与 GRPO: ai/llm-rlvr-grpo.md
+        - 推理系统与量化: ai/llm-inference-systems-quantization.md
+      - Agent 与多模态:
+        - Agent 与 Computer Use: ai/agent-computer-use-frontier.md
+        - 多模态前沿论文: ai/multimodal-frontier-papers.md
+      - 记忆与替代范式:
+        - 外部记忆与模型编辑: ai/llm-memory-model-editing.md
+        - Diffusion Language Model: ai/diffusion-language-models.md
+        - Tokenizer-free 模型: ai/tokenizer-free-models.md
+      - 可信前沿:
+        - 可解释性与安全前沿: ai/interpretability-safety-frontier.md
+  - AI 产品实战:
+    - 实战简介: practice/index.md
+    - 对话助手类产品:
+      - 对话助手: practice/chatbot.md
+      - 智能语音产品: practice/voice-product.md
+      - 客服自动化: practice/support-bot.md
+      - AI 搜索: practice/ai-search.md
+    - 知识库问答类产品:
+      - 知识库问答: practice/kb-qa.md
+      - RAG 产品化实战: practice/rag-practice.md
+    - Agent 产品类:
+      - Agent 产品设计: practice/agent-product.md
+      - Agent 工具与 MCP 产品化: practice/agent-tools.md
+      - 多 Agent 与人机协作: practice/multi-agent.md
+    - 嵌入与自动化类产品:
+      - Copilot 产品: practice/copilot.md
+      - 工作流自动化: practice/workflow.md
+      - AI 编程工具: practice/ai-coding-tools.md
+    - 安全与合规类:
+      - 出海与合规: practice/compliance.md
+      - 内容安全与护栏: practice/content-safety.md
+      - 数据隐私与用户控制: practice/data-privacy.md
+    - 案例分析:
+      - 案例分析简介: practice/case-analysis/index.md
+      - ChatGPT 拆解: practice/case-analysis/chatgpt.md
+      - Claude 拆解: practice/case-analysis/claude.md
+      - 豆包拆解: practice/case-analysis/doubao.md
+      - Notion AI 拆解: practice/case-analysis/notion-ai.md
+      - Cursor 拆解: practice/case-analysis/cursor.md
+  - 工具与平台:
+    - 工具简介: tools/index.md
+    - AI 工具:
+      - AI 平台汇总: tools/ai-platforms.md
+      - LLM API 与供应商: tools/llm-api.md
+      - LLM 成本测算: tools/llm-cost.md
+      - 开源框架: tools/frameworks.md
+      - 提示词与评测工具: tools/prompt-tools.md
+      - 数据与标注: tools/data.md
+    - 效率工具: tools/misc.md
+    - 原型与设计工具: tools/design-tools.md
+    - 产品经理工作台工具: tools/pm-workbench.md
+  - 学习资源:
+    - 学习资源简介: case/index.md
+    - 信息源:
+      - 资源清单: case/resources.md
+      - 信息源索引: case/info-sources.md
+    - 读书笔记:
+      - 读书笔记索引: case/books/index.md
+      - 俞军产品方法论: case/books/yujun-product-methodology.md
+      - 人人都是产品经理 2.0: case/books/pm-2-0.md
+      - 启示录（INSPIRED）: case/books/inspired.md
+      - 精益创业（The Lean Startup）: case/books/lean-startup.md
+    - 播客:
+      - 播客笔记索引: case/podcasts/index.md
+      - 我不是真有面试天赋：手握 15 个 Offer 的求职面试复盘: case/podcasts/interview-methods-15-offers.md
+      - Anthropic 技术产品经理：为什么最优秀的产品领导者正在为 2028 年布局: case/podcasts/anthropic-pm-2028.md
+      - Twitter 前产品增长总监：不要为了招产品经理而招产品经理: case/podcasts/whatnot-cpo-regret-pm.md
+      - 产品小白升级攻略:
+        - 系列简介: case/podcasts/product-xiaobai-upgrade-guide/index.md
+        - 1. 你为什么想做产品经理？: case/podcasts/product-xiaobai-upgrade-guide/01-why-become-product-manager.md
+        - 2. 产品经理的工作流程？: case/podcasts/product-xiaobai-upgrade-guide/02-product-manager-workflow.md
+        - 3. ToB/ToC 的产品经理有什么区别？: case/podcasts/product-xiaobai-upgrade-guide/03-tob-vs-toc-product-manager.md
+        - 4. 需求的优先级如何排布？: case/podcasts/product-xiaobai-upgrade-guide/04-requirement-prioritization.md
+        - 5. 当研发不认可你怎么办？: case/podcasts/product-xiaobai-upgrade-guide/05-when-engineering-disagrees.md
+        - 6. 如果功能上线效果不符合预期怎么办？: case/podcasts/product-xiaobai-upgrade-guide/06-when-feature-underperforms.md
+        - 7. 推荐一款你喜欢的 App: case/podcasts/product-xiaobai-upgrade-guide/07-recommend-an-app.md
+        - 8. 在过去的经历中遇到最大的困难？: case/podcasts/product-xiaobai-upgrade-guide/08-biggest-difficulty.md
+        - 9. 你有什么问题想要问我？: case/podcasts/product-xiaobai-upgrade-guide/09-questions-for-interviewer.md
+        - 10. 策略产品通用基本功：链路与漏斗: case/podcasts/product-xiaobai-upgrade-guide/10-strategy-funnel.md
+        - 11. 如何做好策略产品：大爱: case/podcasts/product-xiaobai-upgrade-guide/11-strategy-product-collaboration.md
+        - 12. 搜广推：不同策略相似逻辑: case/podcasts/product-xiaobai-upgrade-guide/12-search-recommendation-advertising.md
+        - 番外 1：新闻 × 产品经理: case/podcasts/product-xiaobai-upgrade-guide/13-extra-news-product.md
+    - 策略产品经理:
+      - 策略产品经理: case/strategy-pm/index.md
+      - 概念基础:
+        - 概念基础: case/strategy-pm/01-concepts/index.md
+        - 策略是什么: case/strategy-pm/01-concepts/01-what-is-strategy.md
+        - 策略四要素: case/strategy-pm/01-concepts/02-four-elements.md
+        - 策略如何诞生: case/strategy-pm/01-concepts/03-how-strategy-emerges.md
+        - 策略产品经理的工作循环: case/strategy-pm/01-concepts/04-workflow.md
+      - 发现问题:
+        - 发现问题: case/strategy-pm/02-discovering-problems/index.md
+        - 发现问题的四条途径: case/strategy-pm/02-discovering-problems/01-four-channels.md
+        - 用户反馈处理: case/strategy-pm/02-discovering-problems/02-user-feedback.md
+        - 效果监控与策略监控: case/strategy-pm/02-discovering-problems/03-monitoring.md
+        - 理想态: case/strategy-pm/02-discovering-problems/04-ideal-state.md
+        - 阶段性调研: case/strategy-pm/02-discovering-problems/05-periodic-research.md
+        - 抽样分析: case/strategy-pm/02-discovering-problems/06-sampling.md
+        - 优先级与项目计划: case/strategy-pm/02-discovering-problems/07-prioritization.md
+      - 需求与验证:
+        - 需求与验证: case/strategy-pm/03-spec-and-validation/index.md
+        - 简单策略需求文档: case/strategy-pm/03-spec-and-validation/01-simple-prd.md
+        - 复杂策略需求文档: case/strategy-pm/03-spec-and-validation/02-complex-prd.md
+        - 开发评估: case/strategy-pm/03-spec-and-validation/03-dev-evaluation.md
+        - Diff 评估: case/strategy-pm/03-spec-and-validation/04-diff-evaluation.md
+        - 效果回归: case/strategy-pm/03-spec-and-validation/05-effect-review.md
+        - 策略通用方法论: case/strategy-pm/03-spec-and-validation/06-methodology.md
+      - 应用总览:
+        - 应用总览: case/strategy-pm/04-application-map/index.md
+        - 四大业务方向: case/strategy-pm/04-application-map/01-four-directions.md
+      - 功能导向核心业务:
+        - 功能导向核心业务: case/strategy-pm/05-function-oriented/index.md
+        - 功能导向型策略框架: case/strategy-pm/05-function-oriented/01-framework.md
+        - 搜索策略: case/strategy-pm/05-function-oriented/02-search.md
+        - 推荐策略: case/strategy-pm/05-function-oriented/03-recommendation.md
+        - 目的地与路线策略: case/strategy-pm/05-function-oriented/04-destination-and-route.md
+      - 业务导向核心业务:
+        - 业务导向核心业务: case/strategy-pm/06-business-oriented/index.md
+        - 业务导向型策略框架: case/strategy-pm/06-business-oriented/01-framework.md
+        - 定价策略: case/strategy-pm/06-business-oriented/02-pricing.md
+        - 出行匹配策略: case/strategy-pm/06-business-oriented/03-ride-matching.md
+      - 增长、风控与数据:
+        - 增长、风控与数据: case/strategy-pm/07-growth-risk-data/index.md
+        - 增长策略: case/strategy-pm/07-growth-risk-data/01-growth.md
+        - 风控策略: case/strategy-pm/07-growth-risk-data/02-risk-control.md
+        - 数据策略: case/strategy-pm/07-growth-risk-data/03-data.md
+  - 求职专题:
+    - 求职专题简介: job/index.md
+    - 公司架构与岗位:
+      - 常见大厂与架构:
+        - 大厂与架构简介: job/companies/index.md
+        - 字节跳动: job/companies/bytedance.md
+        - 阿里巴巴: job/companies/alibaba.md
+        - 腾讯: job/companies/tencent.md
+        - 百度: job/companies/baidu.md
+        - 美团: job/companies/meituan.md
+        - 华为: job/companies/huawei.md
+        - 大模型创业公司: job/companies/ai-startups.md
+      - 产品经理岗位类别:
+        - 产品经理岗位类别简介: job/product-manager-types/index.md
+        - AI 产品经理方向: job/product-manager-types/ai-product-manager.md
+        - 互联网产品经理方向: job/product-manager-types/internet-product-manager.md
+        - 选择方向与阅读 JD: job/product-manager-types/selection-and-jd.md
+      - 产品经理协作团队与岗位:
+        - 协作团队与岗位简介: job/positions/index.md
+        - AI 产品经理: job/positions/ai-pm.md
+        - 大模型应用工程师: job/positions/llm-app-engineer.md
+        - 算法工程师: job/positions/algorithm-engineer.md
+        - 提示词工程师: job/positions/prompt-engineer.md
+        - 数据、评测与训练类岗位: job/positions/data-ai-trainer.md
+        - 设计师: job/positions/designer.md
+        - 研发工程师: job/positions/rd-engineer.md
+        - 测试工程师: job/positions/test-engineer.md
+        - 硬件相关岗位: job/positions/hardware-pm.md
+        - AI 训练相关岗位: job/positions/ai-trainer.md
+        - AI Infra 相关岗位: job/positions/ai-infra.md
+        - FDE（前沿部署工程师）: job/positions/fde.md
+        - 高管岗位与公司管理黑话: job/positions/cxo-roles.md
+        - 行政岗位与 JD 解读: job/positions/administrative-roles.md
+    - 求职实操:
+      - 求职黑话合集: job/jargon.md
+      - 内推机制: job/referral.md
+      - 简历与作品集: job/resume-portfolio.md
+      - 字节跳动 2027 校招空宣：AI 产品岗位与求职准备: job/bytedance-2027-campus-talk.md
+      - JD 拆解:
+        - JD 拆解索引: job/jd-breakdowns/index.md
+        - 「校招」字节跳动｜开发者 AI 产品经理: job/jd-breakdowns/bytedance-developer-ai-pm.md
+        - 「社招」MiniMax｜AI Agent 产品经理: job/jd-breakdowns/minimax-ai-agent-pm.md
+        - 「实习」百度｜策略产品实习生: job/jd-breakdowns/baidu-strategy-product-intern.md
+        - 「校招」字节跳动｜产品经理 - 业务中台: job/jd-breakdowns/bytedance-business-platform-pm.md
+        - 「校招」腾讯｜地图 AI 产品经理培训生: job/jd-breakdowns/tencent-map-ai-pm-trainee.md
+      - 面经:
+        - 面经简介: job/interviews/index.md
+        - AI 产品经理面试指南: job/interviews/interview-guide.md
+        - 面试流程全览: job/interviews/interview-process.md
+        - 群面与无领导小组: job/interviews/group-interview.md
+        - 校招面经: job/interviews/campus-interviews.md
+        - 社招面经: job/interviews/social-interviews.md
+        - 面试复盘方法论: job/interviews/review-methodology.md
+        - 谈薪与 Offer 选择: job/interviews/offer-negotiation.md
+    - 入职之后:
+      - 入职之后简介: job/after-entry/index.md
+      - 绩效管理与考核: job/positions/performance-management.md
+      - 晋升与职业发展: job/after-entry/promotion.md
+      - 转行与职业转换: job/after-entry/career-transition.md
+      - 裁员与劳动权益: job/layoff-and-labor.md
+    - 真实感悟:
+      - 真实感悟简介: job/insights/index.md
+      - 入行感悟: job/insights/newcomers.md
+      - 职业发展感悟: job/insights/career.md
+      - 踩坑教训: job/insights/lessons.md
+      - 心态感悟: job/insights/mindset.md
+  - 垂直领域:
+    - 垂直领域简介: vertical/index.md
+    - 网络安全:
+      - 网络安全: vertical/cybersecurity/index.md
+      - 密码、身份与架构:
+        - 密码、身份与架构: vertical/cybersecurity/foundations/index.md
+        - 威胁与攻击面: vertical/cybersecurity/foundations/threats-and-attack-surface.md
+        - 身份认证与访问控制: vertical/cybersecurity/foundations/identity-and-access.md
+        - 密码学与密钥管理: vertical/cybersecurity/foundations/cryptography-and-keys.md
+        - 安全架构与零信任: vertical/cybersecurity/foundations/architecture-and-zero-trust.md
+      - 安全运营:
+        - 安全运营: vertical/cybersecurity/operations/index.md
+        - 漏洞管理: vertical/cybersecurity/operations/vulnerability-management.md
+        - 检测与响应: vertical/cybersecurity/operations/detection-and-response.md
+        - 安全运营中心: vertical/cybersecurity/operations/soc.md
+        - 威胁情报: vertical/cybersecurity/operations/threat-intelligence.md
+      - 数据与系统安全:
+        - 数据与系统安全: vertical/cybersecurity/data-app-cloud/index.md
+        - 数据安全: vertical/cybersecurity/data-app-cloud/data-security.md
+        - 应用安全: vertical/cybersecurity/data-app-cloud/application-security.md
+        - 云与供应链安全: vertical/cybersecurity/data-app-cloud/cloud-and-supply-chain.md
+        - 终端与网络安全: vertical/cybersecurity/data-app-cloud/endpoint-and-network.md
+      - 治理与合规:
+        - 治理与合规: vertical/cybersecurity/governance/index.md
+        - 等保与关基: vertical/cybersecurity/governance/mlps-and-cii.md
+        - 隐私与个人信息保护: vertical/cybersecurity/governance/privacy.md
+        - 安全产品与市场: vertical/cybersecurity/governance/security-products.md
+    - 金融:
+      - 金融: vertical/finance/index.md
+      - 银行业:
+        - 银行业: vertical/finance/banking/index.md
+        - 零售银行: vertical/finance/banking/retail-banking.md
+        - 对公与交易银行: vertical/finance/banking/corporate-banking.md
+        - 信贷与风控: vertical/finance/banking/credit-and-risk.md
+      - 资本市场:
+        - 资本市场: vertical/finance/capital-markets/index.md
+        - 证券经纪与财富管理: vertical/finance/capital-markets/brokerage-and-wealth.md
+        - 投行与一级市场: vertical/finance/capital-markets/ib-and-primary.md
+        - 资产管理: vertical/finance/capital-markets/asset-management.md
+        - 交易与市场结构: vertical/finance/capital-markets/trading-and-market-structure.md
+      - 保险业:
+        - 保险业: vertical/finance/insurance/index.md
+        - 寿险与健康险: vertical/finance/insurance/life-and-health.md
+        - 财产险: vertical/finance/insurance/property-casualty.md
+        - 再保险与精算: vertical/finance/insurance/reinsurance-and-actuarial.md
+      - 支付清算与金融监管:
+        - 支付清算与金融监管: vertical/finance/infrastructure-regulation/index.md
+        - 支付与清算: vertical/finance/infrastructure-regulation/payments-and-clearing.md
+        - 征信与反欺诈: vertical/finance/infrastructure-regulation/credit-reporting-and-fraud.md
+        - 反洗钱与合规: vertical/finance/infrastructure-regulation/aml-and-compliance.md
+        - 监管科技与开放银行: vertical/finance/infrastructure-regulation/regtech-and-open-banking.md
+    - 法律:
+      - 法律: vertical/law/index.md
+      - 部门法:
+        - 部门法: vertical/law/legal-system/index.md
+        - 宪法与行政法: vertical/law/legal-system/constitutional-and-admin.md
+        - 民商法: vertical/law/legal-system/civil-and-commercial.md
+        - 刑法: vertical/law/legal-system/criminal.md
+        - 国际法与比较法: vertical/law/legal-system/international-and-comparative.md
+      - 法律实务:
+        - 法律实务: vertical/law/practice/index.md
+        - 合同与尽调: vertical/law/practice/contracts-and-dd.md
+        - 诉讼与仲裁: vertical/law/practice/litigation-and-arbitration.md
+        - 知识产权: vertical/law/practice/intellectual-property.md
+        - 劳动与合规: vertical/law/practice/labor-and-compliance.md
+      - 法律科技:
+        - 法律科技: vertical/law/legaltech/index.md
+        - 法律检索与知识库: vertical/law/legaltech/legal-search.md
+        - 合同审查: vertical/law/legaltech/contract-review.md
+        - 电子取证: vertical/law/legaltech/e-discovery.md
+        - 智慧司法: vertical/law/legaltech/smart-justice.md
+    - 教育:
+      - 教育: vertical/education/index.md
+      - 教育阶段:
+        - 教育阶段: vertical/education/stages/index.md
+        - 基础教育: vertical/education/stages/k12.md
+        - 高等教育: vertical/education/stages/higher-education.md
+        - 职业教育: vertical/education/stages/vocational.md
+        - 企业培训与终身学习: vertical/education/stages/corporate-and-lifelong.md
+      - 课程、教学与评价:
+        - 课程、教学与评价: vertical/education/teaching-assessment/index.md
+        - 课程与教学内容: vertical/education/teaching-assessment/curriculum.md
+        - 教学设计: vertical/education/teaching-assessment/instructional-design.md
+        - 测评与考试: vertical/education/teaching-assessment/assessment.md
+        - 学习分析: vertical/education/teaching-assessment/learning-analytics.md
+      - 教育技术:
+        - 教育技术: vertical/education/edtech/index.md
+        - 自适应学习: vertical/education/edtech/adaptive-learning.md
+        - 智能辅导: vertical/education/edtech/intelligent-tutoring.md
+        - 教育管理与教务: vertical/education/edtech/admin-and-sis.md
+        - 学术诚信: vertical/education/edtech/academic-integrity.md
+    - 地球科学:
+      - 地球科学: vertical/earth-science/index.md
+      - 大气科学:
+        - 大气科学: vertical/earth-science/atmosphere-climate/index.md
+        - 天气预报: vertical/earth-science/atmosphere-climate/weather-forecast.md
+        - 气候系统: vertical/earth-science/atmosphere-climate/climate-system.md
+        - 空气质量: vertical/earth-science/atmosphere-climate/air-quality.md
+      - 固体地球科学:
+        - 固体地球科学: vertical/earth-science/solid-earth/index.md
+        - 地质与矿产: vertical/earth-science/solid-earth/geology-and-minerals.md
+        - 地震与地球物理: vertical/earth-science/solid-earth/seismology.md
+        - 灾害风险: vertical/earth-science/solid-earth/disaster-risk.md
+      - 水文与海洋科学:
+        - 水文与海洋科学: vertical/earth-science/hydrosphere-ocean/index.md
+        - 水文与水资源: vertical/earth-science/hydrosphere-ocean/hydrology.md
+        - 海洋学: vertical/earth-science/hydrosphere-ocean/oceanography.md
+      - 地球信息科学:
+        - 地球信息科学: vertical/earth-science/geospatial/index.md
+        - 遥感: vertical/earth-science/geospatial/remote-sensing.md
+        - GIS 与测绘: vertical/earth-science/geospatial/gis-and-surveying.md
+        - 地球观测产品: vertical/earth-science/geospatial/earth-observation-products.md
+      - 空间数据库:
+        - 空间数据库: vertical/earth-science/spatial-database/index.md
+        - 概论: vertical/earth-science/spatial-database/01-overview.md
+        - 关系模型与关系代数: vertical/earth-science/spatial-database/02-relational-model.md
+        - SQL: vertical/earth-science/spatial-database/03-sql.md
+        - 几何对象与 PostGIS: vertical/earth-science/spatial-database/04-geometry-and-postgis.md
+        - 空间扩展 E/R: vertical/earth-science/spatial-database/05-spatial-er.md
+        - 关系设计理论: vertical/earth-science/spatial-database/06-normalization.md
+        - 空间存储与索引: vertical/earth-science/spatial-database/07-storage-and-index.md
+        - 空间查询处理: vertical/earth-science/spatial-database/08-query-processing.md
+        - 空间网络: vertical/earth-science/spatial-database/09-spatial-network.md
+        - 安全与完整性: vertical/earth-science/spatial-database/10-security-and-integrity.md
+        - 服务器编程: vertical/earth-science/spatial-database/11-server-programming.md
+        - 事务处理: vertical/earth-science/spatial-database/12-transactions.md
+        - OLAP: vertical/earth-science/spatial-database/13-olap.md
+        - 要点检查: vertical/earth-science/spatial-database/14-review.md
+        - 实践路径: vertical/earth-science/spatial-database/15-practice.md
+    - 医疗健康:
+      - 医疗健康: vertical/healthcare/index.md
+      - 临床医学:
+        - 临床医学: vertical/healthcare/clinical/index.md
+        - 诊疗路径与临床决策: vertical/healthcare/clinical/clinical-pathways.md
+        - 医学影像: vertical/healthcare/clinical/medical-imaging.md
+        - 检验与病理: vertical/healthcare/clinical/lab-and-pathology.md
+      - 药学与医疗器械:
+        - 药学与医疗器械: vertical/healthcare/pharma-device/index.md
+        - 药物研发: vertical/healthcare/pharma-device/drug-discovery.md
+        - 器械与数字疗法: vertical/healthcare/pharma-device/devices-and-dtx.md
+      - 卫生事业管理:
+        - 卫生事业管理: vertical/healthcare/operations/index.md
+        - 医院信息化: vertical/healthcare/operations/hospital-it.md
+        - 医保与支付: vertical/healthcare/operations/insurance-and-payment.md
+        - 公共卫生: vertical/healthcare/operations/public-health.md
+      - 卫生信息与监管:
+        - 卫生信息与监管: vertical/healthcare/data-compliance/index.md
+        - 医疗数据与互操作: vertical/healthcare/data-compliance/health-data.md
+        - 药械监管与合规: vertical/healthcare/data-compliance/regulatory.md
+    - 企业服务:
+      - 企业服务: vertical/enterprise/index.md
+      - CRM 与客户运营: vertical/enterprise/crm.md
+      - ERP 与资源计划: vertical/enterprise/erp.md
+      - HCM 与人力资源: vertical/enterprise/hcm.md
+      - 工单与 IT 服务: vertical/enterprise/itsm.md
+      - 主数据、集成与权限: vertical/enterprise/integration.md
+- 产品:
+  - 产品经理: product-manager/index.md
   - 0 导读:
     - 0 导读: product-manager/00/index.md
     - 0.1 为什么会有这本书: product-manager/00/01/index.md
@@ -102,6 +814,10 @@ nav:
     - 12.2 重新定义“读书会”: product-manager/12/02/index.md
     - 12.3 七印部落翻译的书: product-manager/12/03/index.md
     - 12.4 其他资源: product-manager/12/04/index.md
+- 科技:
+  - 科技: sites/technology/index.md
+- 商业:
+  - 商业: sites/business/index.md
 
 # Theme
 theme:
@@ -165,7 +881,7 @@ extra:
   annotation:
     enabled: true
     version: 46
-  seo_home_title: 'AI-PM · 产品经理'
+  seo_home_title: 'AI-PM · 知识库'
   og_image: 'social-card.png'
   seo_verification:
     google: ''
@@ -176,6 +892,7 @@ extra_javascript:
   - '_static/js/mathjax.js?v=2'
   - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
   - '_static/js/header-line.js?v=1'
+  - '_static/js/site-switcher.js'
   - '_static/js/reading-style.js'
   - '_static/js/umami.js?v=1'
   - '_static/js/mermaid-zoom.js?v=6'
@@ -190,6 +907,7 @@ extra_css:
   - '_static/css/extra.css?v=43'
   - '_static/css/book-typography.css'
   - '_static/css/reading-style.css'
+  - '_static/css/site-switcher.css'
   - '_static/css/mermaid-zoom.css?v=8'
   - '_static/css/book-figures.css'
   - '_static/css/book-footnotes.css'

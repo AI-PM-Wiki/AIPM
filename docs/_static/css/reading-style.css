@@ -19,7 +19,7 @@ body[data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
   --pm-accent: var(--aipm-theme-color);
 }
 
-html.aipm-settings-open { overflow: hidden; scrollbar-gutter: stable; }
+html.aipm-settings-open { overflow: hidden; overflow-anchor: none; scrollbar-gutter: stable; }
 
 .md-header [data-md-component="palette"],
 .md-header .mkdocs-toggle-sidebar-button {
