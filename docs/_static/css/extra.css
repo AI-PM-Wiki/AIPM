@@ -552,11 +552,6 @@
   overflow-wrap: anywhere;
 }
 
-@media screen and (max-width: 37.5em) {
-  .md-typeset .aipm-article-nav { grid-template-columns: minmax(0, 1fr); }
-  .md-typeset .aipm-article-nav__link--next { grid-column: 1; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .md-typeset .aipm-article-nav__link { transition: none; }
 }

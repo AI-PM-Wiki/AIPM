@@ -105,12 +105,9 @@ class ArticleNavigationCase(unittest.TestCase):
                 self.assertGreaterEqual(first["height"], 48)
                 self.assertTrue(previous.locator(".aipm-article-nav__title").is_visible())
                 self.assertTrue(following.locator(".aipm-article-nav__title").is_visible())
-                if width < 600:
-                    self.assertGreaterEqual(second["y"], first["y"] + first["height"])
-                    self.assertAlmostEqual(first["width"], second["width"], delta=1)
-                else:
-                    self.assertAlmostEqual(first["y"], second["y"], delta=1)
-                    self.assertGreaterEqual(second["x"], first["x"] + first["width"])
+                self.assertAlmostEqual(first["y"], second["y"], delta=1)
+                self.assertAlmostEqual(first["width"], second["width"], delta=1)
+                self.assertGreaterEqual(second["x"], first["x"] + first["width"])
                 previous.focus()
                 page.keyboard.press("Tab")
                 self.assertTrue(following.evaluate("node => node === document.activeElement"))
