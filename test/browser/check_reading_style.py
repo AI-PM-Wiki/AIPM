@@ -155,6 +155,26 @@ class ReadingStyleCase(unittest.TestCase):
         self.assertEqual(entry.get_attribute("aria-expanded"), "false")
         self.assertEqual(self.styles()["size"], "14px")
 
+    def test_settings_keyboard_preserves_background_panels(self):
+        self.load()
+        entry = self.page.get_by_role("button", name="站点设置", exact=True)
+        for name, selector in (("询问助手", "#aipm-chat"), ("打开批注面板", "#aipm-annotations")):
+            with self.subTest(panel=name):
+                self.page.get_by_role("button", name=name, exact=True).click()
+                background = self.page.locator(selector)
+                self.assertEqual(background.get_attribute("aria-hidden"), "false")
+                self.open()
+                self.page.get_by_role("button", name="关闭站点设置", exact=True).focus()
+                self.page.keyboard.press("Shift+Tab")
+                self.assertTrue(self.page.locator("#aipm-reading-style").evaluate(
+                    "node => node.contains(document.activeElement)"))
+                self.page.keyboard.press("Escape")
+                self.wait_closed()
+                self.assertEqual(background.get_attribute("aria-hidden"), "false")
+                self.assertTrue(entry.evaluate("node => node === document.activeElement"))
+                self.page.keyboard.press("Escape")
+                self.assertEqual(background.get_attribute("aria-hidden"), "true")
+
     def test_mobile_themes_small_height_and_print(self):
         for width, height, theme in ((390, 844, "light"), (320, 844, "dark"), (667, 375, "dark")):
             with self.subTest(width=width, theme=theme):

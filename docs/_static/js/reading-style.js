@@ -314,6 +314,7 @@
   panel.querySelector(".aipm-reading-style__close").addEventListener("click", () => close());
   panel.addEventListener("cancel", (event) => { event.preventDefault(); close(); });
   panel.addEventListener("keydown", (event) => {
+    event.stopPropagation();
     if (event.key !== "Tab") return;
     const controls = [...panel.querySelectorAll("button, input, select, [tabindex]")].filter((node) =>
       node.tabIndex >= 0 && !node.disabled && node.getClientRects().length &&
