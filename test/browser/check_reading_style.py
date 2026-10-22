@@ -143,7 +143,7 @@ class ReadingStyleCase(unittest.TestCase):
         scheme = self.page.locator("body").get_attribute("data-md-color-scheme")
         self.open()
         self.page.get_by_role("tab", name="外观", exact=True).click()
-        self.page.get_by_role("button", name="暗色模式", exact=True).click()
+        self.select_style("外观", "浅色" if scheme == "slate" else "深色")
         self.assertNotEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), scheme)
         self.assertEqual(entry.get_attribute("aria-expanded"), "true")
         self.page.get_by_role("tab", name="排版", exact=True).click()
@@ -253,8 +253,7 @@ class ReadingStyleCase(unittest.TestCase):
         self.assertIn("linear-gradient", emphasis.evaluate("node => getComputedStyle(node).backgroundImage"))
         self.select_style("标题样式", "主题色")
         for dark in (False, True):
-            if dark:
-                panel.get_by_role("button", name="暗色模式", exact=True).click()
+            self.select_style("外观", "深色" if dark else "浅色")
             previous = set()
             for label in ("靛蓝", "海蓝", "青绿", "琥珀", "玫红", "紫罗兰"):
                 panel.get_by_role("group", name="主题色", exact=True).locator(f'label[title="{label}"]').click()
@@ -283,39 +282,57 @@ class ReadingStyleCase(unittest.TestCase):
         self.assertEqual(panel.get_by_role("combobox", name="标题样式", exact=True).input_value(), "simple")
         self.assertEqual(panel.get_by_role("combobox", name="加粗样式", exact=True).input_value(), "underline")
 
-    def test_display_buttons_restore_sidebars_and_persist_theme(self):
+    def test_appearance_modes_follow_browser_and_persist(self):
+        self.page.emulate_media(color_scheme="light")
         self.load()
         self.open()
         panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
         panel.get_by_role("tab", name="外观", exact=True).click()
-        fulltext = panel.get_by_role("button", name="全文显示", exact=True)
-        width = self.page.locator(".md-content").bounding_box()["width"]
-        fulltext.click()
-        self.assertEqual(fulltext.get_attribute("aria-pressed"), "true")
-        self.assertFalse(self.page.locator(".md-sidebar--primary").is_visible())
-        self.assertFalse(self.page.locator(".md-sidebar--secondary").is_visible())
-        self.assertGreater(self.page.locator(".md-content").bounding_box()["width"], width)
-        fulltext.click()
-        self.assertEqual(fulltext.get_attribute("aria-pressed"), "false")
-        self.assertTrue(self.page.locator(".md-sidebar--primary").is_visible())
-        self.assertTrue(self.page.locator(".md-sidebar--secondary").is_visible())
-        theme = panel.get_by_role("button", name="暗色模式", exact=True)
-        theme.click()
-        self.assertEqual(theme.get_attribute("aria-pressed"), "true")
+        appearance = panel.get_by_role("combobox", name="外观", exact=True)
+        self.assertEqual(appearance.locator("option").all_text_contents(), ["跟随浏览器", "深色", "浅色"])
+        self.assertEqual(panel.locator("#aipm-settings-appearance > div").evaluate_all("""nodes => nodes.map(node =>
+          node.getAttribute('aria-label') || node.querySelector('label').textContent)"""),
+          ["主题色", "外观", "标题样式", "加粗样式"])
+        self.assertEqual(panel.get_by_role("button", name="全文显示", exact=True).count(), 0)
+        self.select_style("外观", "深色")
         self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), "slate")
-        fulltext.click()
+        self.page.emulate_media(color_scheme="dark")
+        self.page.emulate_media(color_scheme="light")
+        self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), "slate")
         self.page.reload(wait_until="domcontentloaded")
         self.open()
         panel.get_by_role("tab", name="外观", exact=True).click()
-        self.assertEqual(theme.get_attribute("aria-pressed"), "true")
-        self.assertEqual(fulltext.get_attribute("aria-pressed"), "true")
-        fulltext.click()
-        self.assertTrue(self.page.locator(".md-sidebar--primary").is_visible())
-        panel.get_by_role("button", name="关闭站点设置").click()
-        self.wait_closed()
-        self.page.keyboard.press("b")
+        self.assertEqual(appearance.input_value(), "dark")
+        self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), "slate")
+        self.select_style("外观", "浅色")
+        self.page.emulate_media(color_scheme="dark")
+        self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), "default")
+        self.select_style("外观", "跟随浏览器")
+        self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), "slate")
+        self.page.emulate_media(color_scheme="light")
+        self.page.wait_for_function("document.body.dataset.mdColorScheme === 'default'")
+        self.page.emulate_media(color_scheme="dark")
+        self.page.wait_for_function("document.body.dataset.mdColorScheme === 'slate'")
+        self.page.reload(wait_until="domcontentloaded")
         self.open()
-        self.assertEqual(fulltext.get_attribute("aria-pressed"), "true")
+        panel.get_by_role("tab", name="外观", exact=True).click()
+        self.assertEqual(appearance.input_value(), "auto")
+        self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), "slate")
+        self.select_style("外观", "浅色")
+        panel.get_by_role("button", name="恢复默认").click()
+        self.assertEqual(appearance.input_value(), "auto")
+        self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), "slate")
+        second = self.context.new_page()
+        second.goto(self.page.url, wait_until="domcontentloaded")
+        second.get_by_role("button", name="站点设置", exact=True).click()
+        second.get_by_role("tab", name="外观", exact=True).click()
+        self.select_style("外观", "深色")
+        second.wait_for_function("document.querySelector('#aipm-settings-scheme').value === 'dark'")
+        self.assertEqual(second.locator("body").get_attribute("data-md-color-scheme"), "slate")
+        second.get_by_role("combobox", name="外观", exact=True).select_option("auto")
+        self.page.wait_for_function("document.querySelector('#aipm-settings-scheme').value === 'auto'")
+        self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), "slate")
+        self.assertEqual(second.locator("body").get_attribute("data-md-color-scheme"), "default")
 
     def test_centered_modal_article_preview_and_reduced_motion(self):
         self.load()
@@ -366,7 +383,7 @@ class ReadingStyleCase(unittest.TestCase):
                     scheme = "slate" if theme == "dark" else "default"
                     if self.page.locator("body").get_attribute("data-md-color-scheme") != scheme:
                         panel.get_by_role("tab", name="外观", exact=True).click()
-                        panel.get_by_role("button", name="暗色模式", exact=True).click()
+                        self.select_style("外观", "深色" if theme == "dark" else "浅色")
                         panel.get_by_role("tab", name="排版", exact=True).click()
                     self.assertEqual(self.page.locator("body").get_attribute("data-md-color-scheme"), scheme)
                     styles = self.page.evaluate("""() => {
@@ -443,8 +460,7 @@ class ReadingStyleCase(unittest.TestCase):
         self.select_style("加粗样式", "下划线")
         for dark in (False, True):
             with self.subTest(dark=dark):
-                if dark:
-                    panel.get_by_role("button", name="暗色模式", exact=True).click()
+                self.select_style("外观", "深色" if dark else "浅色")
                 for root in (".md-content__inner", ".aipm-reading-style__preview"):
                     heading = self.page.locator(f"{root} h3").first
                     self.assertEqual(heading.evaluate("node => getComputedStyle(node).borderInlineStartWidth"), "0px")
@@ -483,8 +499,7 @@ class ReadingStyleCase(unittest.TestCase):
             input.right >= swatch.right && input.bottom >= swatch.bottom;
         }"""))
         for dark in (False, True):
-            if dark:
-                panel.get_by_role("button", name="暗色模式", exact=True).click()
+            self.select_style("外观", "深色" if dark else "浅色")
             for color in ("#ffffff", "#000000", "#00ff00", "#d52e69"):
                 picker.fill(color)
                 self.assertEqual(picker.get_attribute("data-selected"), "true")

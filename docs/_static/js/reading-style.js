@@ -7,6 +7,11 @@
     heading: "structured", emphasis: "marker", color: "indigo", customColor: "#4051b5", indent: "none",
   };
   const lineHeights = { compact: 1.6, standard: 1.8, relaxed: 2.1 };
+  const schemes = {
+    auto: "(prefers-color-scheme)",
+    dark: "(prefers-color-scheme: dark)",
+    light: "(prefers-color-scheme: light)",
+  };
   const fonts = {
     sans: { label: "默认黑体", family: "var(--md-text-font-family)" },
     noto: { label: "思源黑体", family: '"Noto Sans SC", sans-serif', source: "Noto Sans SC:wght@400..800" },
@@ -27,8 +32,6 @@
   const icons = {
     settings: '<path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4m-2 12c-.25 0-.46-.18-.5-.42l-.37-2.65a8 8 0 0 1-1.69-.99l-2.49 1.01c-.22.08-.49 0-.61-.22l-2-3.46a.493.493 0 0 1 .12-.64l2.11-1.66L4.5 12l.07-1-2.11-1.63a.493.493 0 0 1-.12-.64l2-3.46c.12-.22.39-.31.61-.22l2.49 1a8 8 0 0 1 1.69-.98l.37-2.65c.04-.24.25-.42.5-.42h4c.25 0 .46.18.5.42l.37 2.65a8 8 0 0 1 1.69.98l2.49-1c.22-.09.49 0 .61.22l2 3.46c.13.22.07.49-.12.64L19.43 11l.07 1-.07 1 2.11 1.63c.19.15.25.42.12.64l-2 3.46c-.12.22-.39.31-.61.22l-2.49-1a8 8 0 0 1-1.69.98l-.37 2.65c-.04.24-.25.42-.5.42zm1.25-18-.37 2.61a5.42 5.42 0 0 0-3.03 1.78L5.44 7.35l-.75 1.3L6.8 10.2a5.55 5.55 0 0 0 0 3.6l-2.12 1.56.75 1.3 2.43-1.04a5.42 5.42 0 0 0 3.01 1.76l.37 2.62h1.52l.37-2.61a5.42 5.42 0 0 0 3.01-1.77l2.43 1.04.75-1.3-2.12-1.55a5.55 5.55 0 0 0 0-3.61l2.11-1.55-.75-1.3-2.41 1.04a5.42 5.42 0 0 0-3.03-1.77L12.75 4z"/>',
     close: '<path d="m6 6 12 12M6 18 18 6"/>',
-    moon: '<path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/>',
-    expand: '<path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/>',
     check: '<path d="m5 12 4 4L19 6"/>',
     reset: '<path d="M4 10a8 8 0 1 1 1.5 7M4 4v6h6"/>',
     chevron: '<path d="m8 10 4 4 4-4"/>',
@@ -143,10 +146,6 @@
         </div></div>
       </div>
       <div id="aipm-settings-appearance" role="tabpanel" aria-labelledby="aipm-settings-appearance-tab" hidden>
-        <div class="aipm-reading-style__actions" role="group" aria-label="显示模式">
-          <button type="button" data-reading-action="theme" aria-pressed="false">${icon("moon")}<span>暗色模式</span></button>
-          <button type="button" data-reading-action="fulltext" aria-pressed="false">${icon("expand")}<span>全文显示</span></button>
-        </div>
         <div class="aipm-reading-style__palette" role="group" aria-label="主题色">
           <div><span>主题色</span><span class="aipm-reading-style__color-name"></span></div>
           <div class="aipm-reading-style__colors">
@@ -154,6 +153,7 @@
           <label title="自选颜色" class="aipm-reading-style__custom-color"><input id="aipm-settings-custom-color" name="customColor" type="color" aria-label="自选颜色"><span class="aipm-reading-style__custom-swatch">${icon("check")}</span></label>
           </div>
         </div>
+        <div class="aipm-reading-style__row"><label for="aipm-settings-scheme">外观</label><div class="aipm-reading-style__select"><select id="aipm-settings-scheme"><option value="auto">跟随浏览器</option><option value="dark">深色</option><option value="light">浅色</option></select>${icon("chevron")}</div></div>
         <div class="aipm-reading-style__row"><label for="aipm-settings-heading">标题样式</label><div class="aipm-reading-style__select"><select id="aipm-settings-heading" name="heading"><option value="simple">简洁</option><option value="structured">层次</option><option value="accent">主题色</option></select>${icon("chevron")}</div></div>
         <div class="aipm-reading-style__row"><label for="aipm-settings-emphasis">加粗样式</label><div class="aipm-reading-style__select"><select id="aipm-settings-emphasis" name="emphasis"><option value="plain">纯文字</option><option value="marker">淡色标记</option><option value="underline">下划线</option></select>${icon("chevron")}</div></div>
       </div>
@@ -172,26 +172,19 @@
     </div>`;
   document.body.append(panel);
 
-  const sidebarState = () => Object.fromEntries(["NAVIGATION", "TOC"].map((name) => {
-    const value = localStorage.getItem(`TOGGLE_SIDEBAR_${name}`);
-    return [name, value === null || value === "1"];
-  }));
-  let previousSidebars = { NAVIGATION: true, TOC: true };
-  const syncDisplay = () => {
-    panel.querySelector('[data-reading-action="theme"]').setAttribute("aria-pressed", String(document.body.dataset.mdColorScheme === "slate"));
-    const state = sidebarState();
-    panel.querySelector('[data-reading-action="fulltext"]').setAttribute("aria-pressed", String(!state.NAVIGATION && !state.TOC));
+  const schemeForMedia = (media) => {
+    const scheme = Object.keys(schemes).find((name) => schemes[name] === media);
+    if (!scheme) throw new Error("Site color palette media is invalid");
+    return scheme;
+  };
+  const syncScheme = () => {
+    panel.querySelector("#aipm-settings-scheme").value = schemeForMedia(document.body.dataset.mdColorMedia);
   };
   const setScheme = (scheme) => {
-    const input = document.querySelector(`[data-md-component="palette"] input[data-md-color-scheme="${scheme}"]`);
+    const input = document.querySelector(`[data-md-component="palette"] input[data-md-color-media="${schemes[scheme]}"]`);
     if (!input) throw new Error("Site color palette is missing");
     input.click();
-    syncDisplay();
-  };
-  const setSidebars = (state) => {
-    if (!window.MkdocsToggleSidebarPlugin) throw new Error("Sidebar controls are missing");
-    window.MkdocsToggleSidebarPlugin.setAllVisibility(state.NAVIGATION, state.TOC);
-    syncDisplay();
+    syncScheme();
   };
   const sync = () => {
     panel.querySelector('[name="size"]').value = settings.size;
@@ -202,7 +195,7 @@
     panel.querySelector('[name="customColor"]').value = settings.customColor;
     panel.querySelector('[name="customColor"]').dataset.selected = String(settings.color === "custom");
     panel.querySelector(".aipm-reading-style__custom-swatch").style.setProperty("--settings-swatch", settings.customColor);
-    syncDisplay();
+    syncScheme();
   };
   const save = () => {
     validate(settings);
@@ -222,17 +215,11 @@
     settings.color = "custom";
     save();
   });
-  panel.querySelector('[data-reading-action="theme"]').addEventListener("click", () => setScheme(document.body.dataset.mdColorScheme === "slate" ? "default" : "slate"));
-  panel.querySelector('[data-reading-action="fulltext"]').addEventListener("click", () => {
-    const state = sidebarState();
-    if (!state.NAVIGATION && !state.TOC) setSidebars(previousSidebars);
-    else { previousSidebars = state; setSidebars({ NAVIGATION: false, TOC: false }); }
-  });
+  panel.querySelector("#aipm-settings-scheme").addEventListener("change", (event) => setScheme(event.target.value));
   panel.querySelector(".aipm-reading-style__reset").addEventListener("click", () => {
     settings = { ...defaults };
     save();
-    setScheme(matchMedia("(prefers-color-scheme: dark)").matches ? "slate" : "default");
-    setSidebars({ NAVIGATION: true, TOC: true });
+    setScheme("auto");
   });
   const tabs = [...panel.querySelectorAll('[data-settings-tab]')];
   const selectTab = (tab) => {
@@ -297,7 +284,7 @@
   };
   entry.addEventListener("click", () => {
     refreshPreview();
-    syncDisplay();
+    syncScheme();
     panel.showModal();
     root.classList.add("aipm-settings-open");
     entry.setAttribute("aria-expanded", "true");
@@ -325,16 +312,12 @@
   document.addEventListener("change", (event) => {
     if (event.target.matches('[data-md-toggle="search"], [data-md-toggle="drawer"]')) close();
   });
-  document.addEventListener("keyup", (event) => {
-    if (["b", "m", "t"].includes(event.key.toLowerCase())) syncDisplay();
-  });
-  new MutationObserver(syncDisplay).observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
+  new MutationObserver(syncScheme).observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme", "data-md-color-media"] });
   window.addEventListener("storage", (event) => {
     if (event.key === storageKey) { settings = read(event.newValue); apply(); sync(); }
-    else if (event.key?.startsWith("TOGGLE_SIDEBAR_")) setSidebars(sidebarState());
     else if (event.key?.endsWith(".__palette") && event.newValue !== null) {
-      const scheme = JSON.parse(event.newValue).color.scheme;
-      if (scheme !== document.body.dataset.mdColorScheme) setScheme(scheme);
+      const media = JSON.parse(event.newValue).color.media;
+      if (media !== document.body.dataset.mdColorMedia) setScheme(schemeForMedia(media));
     }
   });
   const attach = () => {
@@ -342,7 +325,7 @@
     const search = document.querySelector('.md-header__inner > label[for="__search"]');
     if (!search) return;
     search.before(entry);
-    syncDisplay();
+    syncScheme();
   };
   attach();
   if (typeof document$ !== "undefined") document$.subscribe(attach);

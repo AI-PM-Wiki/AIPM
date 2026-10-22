@@ -842,6 +842,10 @@ theme:
       toggle:
         icon: material/weather-night
         name: Switch to light mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: 跟随浏览器
   favicon: 'favicon.svg'
   logo: 'favicon.svg'
   icon:
