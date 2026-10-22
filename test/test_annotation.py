@@ -248,14 +248,9 @@ class TestJudgeDegradation(unittest.TestCase):
             self.assertTrue((self.server_dir / name).exists(), f"缺少 {name}")
 
     def test_suggestions_carry_a_source_label(self):
-        """建议条标注来源,回退可解释。
-
-        来源写的是**模型 id**(jev-1.13.0 / deepseek-flash…),不写死 provider 名 ——
-        兜底那一路是可配的 Anthropic 兼容端点,印死名字会跟真实模型自相矛盾。
-        """
+        """建议通知显示服务端返回的模型名称。"""
         self.assertIn('if (source === "jev") return "Jev"', self.js)
         self.assertIn('if (source === "llm") return "备用模型"', self.js)
-        self.assertIn("payload.fallbackFrom", self.js)
 
     def test_unavailable_degrades_without_breaking_annotations(self):
         """智能高亮不可用时显示提示，临时故障使用冷却时间。"""
@@ -426,26 +421,20 @@ class TestHeadIconClick(unittest.TestCase):
         self.assertIn("var hint = modeSwitchHint();", _block(self.js, "function syncMode()"))
 
 
-class TestSmartHighlightIsOnByDefault(unittest.TestCase):
-    """issue #102:进一个页面就自动判一次,写下的批注署名是生成它的模型型号。
-
-    两条容易悄悄回退的约定:
-    - 自动判分一页只跑一次,跑过就记一笔 —— 用户删掉、或者整批关掉之后,不能被
-      「默认开启」加回来;
-    - 自动那条不动界面、失败不出声,拿到的建议直接写成「仅本机」高亮。
-    """
+class TestAutomaticSmartHighlight(unittest.TestCase):
+    """自动智能批注由站点设置控制，每个页面的自动批注保留用户选择。"""
 
     @classmethod
     def setUpClass(cls):
         cls.js = ANNO_JS.read_text(encoding="utf-8")
         cls.store = STORE_JS.read_text(encoding="utf-8")
 
-    def test_a_new_page_is_judged_without_being_asked(self):
+    def test_enabled_automatic_highlight_runs_on_page_change(self):
         self.assertIn("autoSmart();", _block(self.js, "function onPageChange("))
         auto = _block(self.js, "function autoSmart()")
         self.assertIn("smartHighlight({ auto: true })", auto)
         # 页内已有这一页的结果就直接复用,不再问服务端
-        self.assertIn("if (suggestCache[page]) return;", auto)
+        self.assertIn("applySmart(withLiveBlocks(suggestCache[page]));", auto)
 
     def test_the_automatic_pass_happens_once_per_page(self):
         auto = _block(self.js, "function autoSmart()")
@@ -486,7 +475,7 @@ class TestSmartHighlightIsOnByDefault(unittest.TestCase):
 
     def test_the_automatic_pass_lands_what_it_found(self):
         block = _block(self.js, "function smartHighlight(")
-        self.assertIn("if (auto) applySmart(res.body);", block)
+        self.assertIn('if (document.documentElement.dataset.autoSmart === "on") applySmart(res.body);', block)
 
     def test_a_stale_answer_lands_on_no_page(self):
         """判分要几秒,回来时人可能已经在别的页面上 —— 块 id 是位置序号,
@@ -763,11 +752,7 @@ class TestSmartHighlightBlockSources(unittest.TestCase):
 
 
 class TestSmartbarNoticeScope(unittest.TestCase):
-    """建议条这一行的三条验收意见(2026-09-22)。
-
-    用户看到的原话:通知显示不全(「智能高亮 · 来源 Claude (由 Jev 回退) deep」)、
-    「10 段未判定又是什么鬼」、通知不随页面切换。三条都钉在这里,免得改回去也能跑。
-    """
+    """智能批注通知的模型名称、判定状态和页面范围。"""
 
     @classmethod
     def setUpClass(cls):
@@ -775,11 +760,7 @@ class TestSmartbarNoticeScope(unittest.TestCase):
         cls.css = ANNO_CSS.read_text(encoding="utf-8")
 
     def test_source_line_uses_the_model_id(self):
-        """「来源」一律说服务端回的模型 id。
-
-        写死 provider 名会撒谎:兜底那一路是可配的 Anthropic 兼容端点,线上指到
-        DeepSeek 时条子上却印着「来源 Claude」,后面还跟着 deepseek-flash。
-        """
+        """通知使用服务端返回的模型名称。"""
         self.assertIn("function judgeLabel(payload)", self.js)
         block = _block(self.js, "function judgeLabel(payload)")
         self.assertIn("payload.model", block)
@@ -834,15 +815,6 @@ class TestSmartbarNoticeScope(unittest.TestCase):
         self.assertIn(
             "smartbarDismissed = null;", _block(self.js, "function renderSuggestions(payload, page, opts)")
         )
-
-    def test_fallback_parenthetical_wraps_as_one_piece(self):
-        """「(Jev 不可用)」整体换行,不能断在「不可」和「用」之间。"""
-        why = _block(self.css, ".aipm-anno__smart-why {")
-        self.assertIn("white-space: nowrap", why)
-        render = _block(self.js, "function renderSuggestions(payload, page, opts)")
-        self.assertIn('why.className = "aipm-anno__smart-why";', render)
-        self.assertIn("createTextNode", render, "逐段 append 文本节点")
-        self.assertNotIn("innerHTML =", render, "不拼 HTML 字符串")
 
     def test_cached_result_rebinds_block_ranges(self):
         """缓存里的 Range 指向上一份 DOM:按块 id 重绑,绑不上的块宁可丢掉。"""
@@ -900,12 +872,12 @@ class TestUiReviewRound(unittest.TestCase):
         self.assertIn('el.querySelector("mark.aipm-anno-mark")', block)
 
     def test_smart_highlight_is_a_two_state_toggle(self):
-        """建议不再逐条罗列,只有「全部高亮 / 全部关闭」两态。"""
+        """通知提供启用与撤销操作。"""
         self.assertNotIn("aipm-anno__smart-list", self.js)
         self.assertNotIn("aipm-anno__smart-item", self.css)
         block = _block(self.js, "function renderSuggestions(payload")
-        self.assertIn("全部高亮(", block)
-        self.assertIn("全部关闭(", block)
+        self.assertIn("启用(", block)
+        self.assertIn("撤销(", block)
         self.assertIn("smartAnnos()", block)
 
     def test_smart_batch_lands_as_local_only(self):
@@ -1035,7 +1007,7 @@ class TestUiRoundThree(unittest.TestCase):
 
     def test_the_regeneration_leaves_the_list_alone(self):
         """判的是正文,面板里当前是「批注」还是「评论」与它无关 —— 回执(智能高亮条
-        与那两颗「全部高亮 / 全部关闭」)长在面板里、不跟着列表换。所以判分这一条路
+        与「启用 / 撤销」操作)长在面板里、不跟着列表换。所以判分这一条路
         不切列表:站长在评论那一份里点页头那颗图标,判完之后人还在评论里。"""
         block = _block(self.js, "function smartHighlight(")
         self.assertNotIn("panelMode", _strip_comments(block))

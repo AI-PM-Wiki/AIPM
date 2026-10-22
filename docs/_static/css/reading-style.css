@@ -190,6 +190,10 @@ html.aipm-settings-open { overflow: hidden; overflow-anchor: none; scrollbar-gut
   background: var(--settings-control);
 }
 
+#aipm-settings-general .aipm-reading-style__options {
+  flex-shrink: 1;
+}
+
 .aipm-reading-style__options label,
 .aipm-reading-style__colors label {
   position: relative;

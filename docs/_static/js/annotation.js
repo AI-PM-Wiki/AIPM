@@ -2408,6 +2408,7 @@
     meta.className = "aipm-anno__meta";
     var v = visLabel(anno);
     var who = anno.author && anno.author.login ? anno.author.login : "匿名";
+    if (anno.origin === "smart") who = who.replace(/deepseek/gi, "ds");
     meta.textContent = who + " · " + v.text;
     meta.setAttribute("data-vis", v.cls);
     top.appendChild(meta);
@@ -4368,8 +4369,9 @@
           autoSmart();
           return;
         }
-        if (auto) applySmart(res.body);
-        else renderSuggestions(res.body, page, { refreshed: refresh });
+        if (auto) {
+          if (document.documentElement.dataset.autoSmart === "on") applySmart(res.body);
+        } else renderSuggestions(res.body, page, { refreshed: refresh });
       })
       /* 排队等着的那一笔重新生成在**这一笔收尾之后**才发:两笔串起来,旧那一份结果
          先落地、新的后落地 —— 并着发才会有旧结论盖在新的上面。失败也照样放行:
@@ -4391,27 +4393,18 @@
     smartHighlight({ refresh: true });
   }
 
-  /**
-   * 进一个页面就自动判一次(issue #102)。
-   *
-   * 页内没有这一页的结果时,让服务端判一遍 —— 它那份同页缓存命中就直接复用,没有
-   * 就生成并缓存下来，返回的建议保存为「仅本机」高亮。
-   *
-   * 四道闸,任一命中就不跑:
-   *   - 这一页的自动判分已经用过了(store.smartDone:判成过,或者用户把这一页整批
-   *     关掉过、删光过),往后归用户自己决定;
-   *   - 本次会话里已经判过(结果就在 suggestCache 里);
-   *   - 有请求在飞:一次判分要几秒,连着换页会同时点着好几笔;
-   *   - 还在冷却期里(服务端限流、预算用完)。
-   */
+  /** 根据站点设置自动获取当前页面的建议，保留已经处理过的页面状态。 */
   function autoSmart() {
+    if (document.documentElement.dataset.autoSmart !== "on") return;
     if (smartInFlight !== null) return;
     if (Date.now() < cooldownUntil) return;
     var page = pagePath();
     if (store.smartDone(page)) return;
-    if (suggestCache[page]) return;
-    /* 这一页已经有智能高亮(用户手动点过,或者默认开启之前留下的):记下自动判分
-       已经用过,不再判一遍、也不再写一遍 —— 他删掉那些高亮之后也不该被加回来。 */
+    if (suggestCache[page]) {
+      applySmart(withLiveBlocks(suggestCache[page]));
+      return;
+    }
+    /* 已有智能批注的页面保留用户选择，并记录自动处理状态。 */
     if (smartAnnos().length > 0) {
       store.markSmartDone(page);
       return;
@@ -4451,16 +4444,9 @@
     return "规则";
   }
 
-  /**
-   * 条子上那半句「来源」。
-   *
-   * 一律以服务端回的**模型 id** 为准(jev-1.13.0 / deepseek-flash …):写死
-   * provider 名字会撒谎 —— 兜底那一路是个可配的 Anthropic 兼容端点,线上指到
-   * DeepSeek 时,条子上却印着「来源 Claude」,后面还跟着一个 deepseek-flash,
-   * 自相矛盾(用户验收意见里那张图)。只有拿不到模型 id 时才退回 provider 名。
-   */
+  /** 显示服务端返回的模型名称，DeepSeek 缩写为 ds。 */
   function judgeLabel(payload) {
-    return payload.model ? String(payload.model) : sourceLabel(payload.judge);
+    return payload.model ? String(payload.model).replace(/deepseek/gi, "ds") : sourceLabel(payload.judge);
   }
 
   /**
@@ -4555,11 +4541,7 @@
     return REASON_TEXT[code] || "服务暂时不可用";
   }
 
-  /**
-   * 智能高亮条只有两态:还能落 → 「全部高亮(N)」,已经落过 → 「全部关闭(N)」。
-   * 建议不在这里逐条罗列(用户验收意见:一条条列出来太吵),落库后它们就是
-   * 面板列表里普通的「仅本机」条目,和手写的批注一样可以编辑、改色、上传。
-   */
+  /** 通知提供「启用」与「撤销」操作，批注保存在「仅本机」列表。 */
   function renderSuggestions(payload, page, opts) {
     payload = withLiveBlocks(payload);
     var refreshed = !!(opts && opts.refreshed);
@@ -4571,18 +4553,7 @@
 
     var head = document.createElement("div");
     head.className = "aipm-anno__smart-head";
-    /* 逐段 append 而不是拼一个字符串:括号里那截要能**整体换行**(见 CSS 的
-       .aipm-anno__smart-why),整句写成一串文本时,窄面板下会断在「不可」和「用」
-       之间。文本节点一律用 createTextNode / textContent 拼,不拼 HTML 字符串。 */
     head.appendChild(document.createTextNode("智能高亮 · " + judgeLabel(payload)));
-    // 回退现在只在主选真失败时发生(超时/限流/HTTP/形状),所以这句是陈述事实的
-    if (payload.fallbackFrom) {
-      var why = document.createElement("span");
-      why.className = "aipm-anno__smart-why";
-      why.textContent = "(" + sourceLabel(payload.fallbackFrom) + " 不可用)";
-      head.appendChild(document.createTextNode(" "));
-      head.appendChild(why);
-    }
     if (payload.cached) head.appendChild(document.createTextNode(" 缓存"));
     head.title = head.textContent;
     els.smartbar.appendChild(head);
@@ -4594,12 +4565,12 @@
     btn.className = "aipm-anno__smart-toggle";
 
     if (applied.length > 0) {
-      btn.textContent = "全部关闭(" + applied.length + ")";
+      btn.textContent = "撤销(" + applied.length + ")";
       btn.addEventListener("click", function () {
         revertSmart(payload);
       });
     } else if (fresh.length > 0) {
-      btn.textContent = "全部高亮(" + fresh.length + ")";
+      btn.textContent = "启用(" + fresh.length + ")";
       btn.addEventListener("click", function () {
         applySmart(payload);
       });
@@ -4703,8 +4674,7 @@
     smartAnnos().forEach(function (a) {
       store.localRemove(a.page, a.id);
     });
-    /* 关掉是用户对这一页的答复:记下来,下次进这一页不再自动判、不再自动写。
-       不记的话「全部关闭」换页回来就被「默认开启」推翻了。 */
+    /* 记录当前页面的撤销操作，后续访问保持用户选择。 */
     store.markSmartDone(pagePath());
     refreshLocal();
     renderSuggestions(payload);
@@ -5016,7 +4986,7 @@
     }
   }
 
-  /** 智能批注读取建议；管理员可以重新生成本页建议。 */
+  /** 手动获取当前页面的建议；管理员可以重新生成当前页面的建议。 */
   function smartAnnotationAction() {
     if (auth && auth.isAdmin && auth.isAdmin()) {
       smartHighlight({ refresh: true });
@@ -5283,14 +5253,7 @@
   /* ================================================================
      换页 / 视口 / 启动
      ================================================================ */
-  /**
-   * 换页时把建议条/通知对齐到新页。
-   *
-   * instant 导航换的是内容容器,面板和条子都留在原地 —— 不管它,新页面上会继续
-   * 挂着上一页的回执(「全部高亮(12)」说的其实是上一页)。这里:新页有缓存就把
-   * 自己那条结果摆出来(块 Range 由 renderSuggestions 重绑到当前 DOM),没有就
-   * 收起;用户自己关掉的条子(点过叉)不再自作主张弹回来。
-   */
+  /** 页面导航时显示当前页面的缓存通知，并保留用户关闭通知的状态。 */
   function syncSmartbar() {
     var page = pagePath();
     if (smartbarPage === page && !els.smartbar.hidden) return;
@@ -5314,9 +5277,10 @@
        打开。面板只是列表的容器,不是高亮的前置条件 —— 之前只在 open 时加载,
        结果是刷新后页面上光秃秃的,别人的公开批注要等用户先点开面板才浮现。 */
     ensureAnnotationsLoaded();
-    /* 智能高亮默认开着:这一页没判过就自动判一次,建议当场写成「仅本机」高亮。 */
     autoSmart();
   }
+
+  window.addEventListener("aipm:auto-smart-change", autoSmart);
 
   if (typeof document$ !== "undefined" && document$.subscribe) {
     document$.subscribe(onPageChange);

@@ -98,7 +98,37 @@ class ReadingStyleCase(unittest.TestCase):
         saved = json.loads(self.page.evaluate('localStorage.getItem("aipm-reading-style")'))
         self.assertEqual(saved, {"size": 15, "spacing": "standard", "width": "standard", "font": "sans",
                                  "heading": "structured", "emphasis": "marker", "color": "indigo",
-                                 "customColor": "#4051b5", "indent": "none"})
+                                 "customColor": "#4051b5", "indent": "none", "autoSmart": "off"})
+
+    def test_automatic_annotation_preferences_persist_and_sync(self):
+        self.load()
+        self.open()
+        panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+        panel.get_by_role("tab", name="通用", exact=True).click()
+        group = panel.get_by_role("group", name="自动智能批注", exact=True)
+        self.assertTrue(group.get_by_role("radio", name="关闭", exact=True).is_checked())
+        self.select("自动智能批注", "开启")
+        saved = json.loads(self.page.evaluate('localStorage.getItem("aipm-reading-style")'))
+        self.assertEqual(saved["autoSmart"], "on")
+        self.page.reload(wait_until="domcontentloaded")
+        self.open()
+        panel.get_by_role("tab", name="通用", exact=True).click()
+        self.assertTrue(group.get_by_role("radio", name="开启", exact=True).is_checked())
+        second = self.context.new_page()
+        second.goto(self.page.url, wait_until="domcontentloaded")
+        second.wait_for_function('document.documentElement.dataset.autoSmart === "on"')
+        self.select("自动智能批注", "关闭")
+        second.wait_for_function('document.documentElement.dataset.autoSmart === "off"')
+        self.select("自动智能批注", "开启")
+        panel.get_by_role("button", name="恢复默认").click()
+        self.assertTrue(group.get_by_role("radio", name="关闭", exact=True).is_checked())
+        second.wait_for_function('document.documentElement.dataset.autoSmart === "off"')
+        for width in (320, 390):
+            self.page.set_viewport_size({"width": width, "height": 844})
+            row = group.bounding_box()
+            choices = group.locator(".aipm-reading-style__options").bounding_box()
+            self.assertGreaterEqual(choices["x"], row["x"])
+            self.assertLessEqual(choices["x"] + choices["width"], row["x"] + row["width"])
 
     def test_width_and_cross_tab_preferences(self):
         self.load()
