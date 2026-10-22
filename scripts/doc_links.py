@@ -1,4 +1,4 @@
-"""Scan docs/*.md for in-repo Markdown/HTML links and heading anchors.
+"""Scan docs/*.md for in-repo links, heading anchors, and HTML ids.
 
 External http(s)/mailto/tel links are skipped (same policy as CI htmltest).
 Heading ids use MkDocs' slugify (pymdownx.slugs.slugify case=lower) plus
@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from bs4 import BeautifulSoup
 from markdown.extensions.toc import unique
 from pymdownx.slugs import slugify
 
@@ -46,6 +47,11 @@ def heading_slugs(text: str) -> set[str]:
         title = HEADING_CODE_RE.sub(r"\1", title)
         unique(_slugify(title, "-"), ids)
     return ids
+
+
+def anchor_ids(text: str) -> set[str]:
+    html = BeautifulSoup(_visible_markdown(text), "html.parser")
+    return heading_slugs(text) | {node["id"] for node in html.find_all(id=True)}
 
 
 def extract_hrefs(text: str) -> list[str]:
@@ -113,7 +119,7 @@ def check_href(source: Path, href: str, slug_cache: dict[Path, set[str]]) -> str
     if not fragment:
         return None
     slugs = slug_cache.setdefault(
-        target, heading_slugs(target.read_text(encoding="utf-8"))
+        target, anchor_ids(target.read_text(encoding="utf-8"))
     )
     if fragment not in slugs:
         rel = source.relative_to(REPO_ROOT)

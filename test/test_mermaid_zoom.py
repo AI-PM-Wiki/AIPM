@@ -26,7 +26,7 @@ class TestMermaidZoomAssets(unittest.TestCase):
         self.assertIn("_static/css/mermaid-zoom.css?v=8", config_scripts)
 
     def test_viewer_waits_for_rendered_mermaid_dom(self):
-        self.assertIn('querySelectorAll(".mermaid")', self.javascript)
+        self.assertIn('querySelectorAll(".mermaid, .book-original img")', self.javascript)
         self.assertIn('querySelector("svg")', self.javascript)
         self.assertIn("MutationObserver", self.javascript)
         self.assertIn("requestAnimationFrame", self.javascript)

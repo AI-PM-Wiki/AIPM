@@ -7,6 +7,7 @@ from pathlib import Path
 
 from scripts.doc_links import (
     DOCS_DIR,
+    anchor_ids,
     check_href,
     collect_problems,
     extract_hrefs,
@@ -43,6 +44,14 @@ class TestExtractAndResolve(unittest.TestCase):
         slugs = heading_slugs((DOCS_DIR / "intro" / "capability.md").read_text())
         self.assertIn("②-ai-系统与工程理解", slugs)
         self.assertNotIn("软件工程素养", slugs)
+
+    def test_html_ids_and_heading_anchors_are_available(self):
+        text = (
+            '## Example\n<figure id="figure-2-1"><img src="image.png"></figure>\n'
+            '<a id="note-1"></a>\n```html\n<div id="code-example"></div>\n```\n'
+            '`<span id="inline-example"></span>`\n'
+        )
+        self.assertEqual(anchor_ids(text), {"example", "figure-2-1", "note-1"})
 
     def test_missing_file_and_missing_heading_are_errors(self):
         source = DOCS_DIR / "pm" / "project-management.md"

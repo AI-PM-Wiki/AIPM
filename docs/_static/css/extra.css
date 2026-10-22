@@ -485,6 +485,102 @@
   color: var(--md-accent-fg-color);
 }
 
+/* 文章翻页 */
+.md-typeset .aipm-article-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .8rem;
+  margin: 2.5rem 0 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--pm-line);
+}
+
+.md-typeset .aipm-article-nav__link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .8rem;
+  min-width: 0;
+  min-height: 4.8rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--pm-line);
+  border-radius: 10px;
+  color: var(--pm-ink);
+  background: var(--md-default-bg-color);
+  text-align: right;
+  text-decoration: none;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.md-typeset .aipm-article-nav__link--next {
+  grid-column: 2;
+  grid-template-columns: minmax(0, 1fr) auto;
+  text-align: left;
+}
+
+.md-typeset .aipm-article-nav__link:only-child {
+  grid-column: 1 / -1;
+}
+
+.md-typeset .aipm-article-nav__link:hover {
+  border-color: var(--md-typeset-a-color);
+  color: var(--md-typeset-a-color);
+}
+
+.md-typeset .aipm-article-nav__link:focus-visible {
+  outline: 2px solid var(--md-typeset-a-color);
+  outline-offset: 3px;
+}
+
+.aipm-article-nav__text {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  min-width: 0;
+}
+
+.aipm-article-nav__label {
+  color: var(--pm-muted);
+  font-size: .6rem;
+  line-height: 1.5;
+}
+
+.aipm-article-nav__icon,
+.aipm-article-nav__icon svg {
+  display: inline-flex;
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: currentColor;
+}
+
+.aipm-article-nav__title {
+  font-size: .8rem;
+  font-weight: 600;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 44rem) {
+  .md-typeset .aipm-article-nav__link {
+    gap: .5rem;
+    padding: .75rem .65rem;
+  }
+
+  .aipm-article-nav__icon,
+  .aipm-article-nav__icon svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .aipm-article-nav__link { transition: none; }
+}
+
+@media print {
+  .md-typeset .aipm-article-nav { display: none; }
+}
+
 /* 5.6 回顶按钮(内置 .md-top) */
 .md-top {
   background-color: #ffffff;
