@@ -340,7 +340,10 @@ class ThemeHintOnTheRealSiteCase(unittest.TestCase):
         browser = Browser(self.pw, self.site.base, service_workers="block")
         self.addCleanup(browser.close)
         browser.page.route("**/unpkg.com/**", lambda route: route.abort())
-        browser.goto(HINT_PAGE)
+        with browser.page.expect_event(
+            "pageerror", predicate=lambda error: INVALID_SCRIPT_RE.match(error.message) is not None
+        ):
+            browser.page.goto(self.site.base + HINT_PAGE, wait_until="domcontentloaded")
         browser.page.wait_for_timeout(2500)
 
         self.assertTrue(browser.page_errors, "主题没有抛那句提示 —— 前提不成立")

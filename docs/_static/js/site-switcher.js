@@ -1,0 +1,83 @@
+(() => {
+  "use strict";
+
+  const title = document.querySelector('[data-md-component="header-title"]');
+  const name = title.querySelector(".md-header__topic:first-child .md-ellipsis");
+  const home = document.querySelector('[data-md-component="logo"]').href;
+  const sites = [
+    { name: "主站", path: "" },
+    { name: "产品", path: "product-manager/" },
+    { name: "科技", path: "sites/technology/", placeholder: true },
+    { name: "商业", path: "sites/business/", placeholder: true },
+  ];
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "aipm-site-switcher__trigger";
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.setAttribute("aria-controls", "aipm-site-switcher");
+  trigger.setAttribute("popovertarget", "aipm-site-switcher");
+  trigger.innerHTML = '<span class="aipm-site-switcher__current"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
+  trigger.prepend(name);
+  title.classList.add("aipm-site-title");
+  title.prepend(trigger);
+
+  const menu = document.createElement("nav");
+  menu.id = "aipm-site-switcher";
+  menu.className = "aipm-site-switcher";
+  menu.setAttribute("popover", "auto");
+  menu.setAttribute("aria-label", "站点列表");
+  menu.innerHTML = `
+    <ul>
+      ${sites.map((site) => `<li><a href="${new URL(site.path, home).href}"><span>${site.name}</span><span class="aipm-site-switcher__indicator">${site.placeholder ? '<span class="aipm-site-switcher__status">筹备中</span>' : ""}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span></a></li>`).join("")}
+    </ul>`;
+  document.body.append(menu);
+
+  const position = () => {
+    const bounds = trigger.getBoundingClientRect();
+    menu.style.left = `${Math.max(12, Math.min(bounds.left, innerWidth - menu.offsetWidth - 12))}px`;
+    menu.style.top = `${bounds.bottom + 8}px`;
+  };
+  menu.addEventListener("beforetoggle", (event) => {
+    trigger.setAttribute("aria-expanded", String(event.newState === "open"));
+  });
+  menu.addEventListener("toggle", (event) => {
+    if (event.newState === "open") position();
+  });
+  const links = [...menu.querySelectorAll("a")];
+  const sync = () => {
+    const current = sites.findIndex((site) => site.path && location.href.startsWith(new URL(site.path, home).href));
+    const index = current === -1 ? 0 : current;
+    for (const [position, link] of links.entries()) {
+      if (position === index) link.setAttribute("aria-current", "true");
+      else link.removeAttribute("aria-current");
+    }
+    trigger.querySelector(".aipm-site-switcher__current").textContent = sites[index].name;
+    trigger.setAttribute("aria-label", `切换站点，当前为${sites[index].name}`);
+  };
+  trigger.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    event.preventDefault();
+    menu.showPopover();
+    links[event.key === "ArrowDown" ? 0 : links.length - 1].focus();
+  });
+  menu.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const index = event.key === "Home" ? 0 : event.key === "End" ? links.length - 1 :
+      (links.indexOf(document.activeElement) + (event.key === "ArrowDown" ? 1 : -1) + links.length) % links.length;
+    links[index].focus();
+  });
+  menu.addEventListener("click", (event) => {
+    if (event.target.closest("a")) menu.hidePopover();
+  });
+  window.addEventListener("resize", () => {
+    if (menu.matches(":popover-open")) position();
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target.matches('[data-md-toggle="search"], [data-md-toggle="drawer"]')) menu.hidePopover();
+  });
+  window.document$.subscribe(() => {
+    sync();
+    menu.hidePopover();
+  });
+})();
