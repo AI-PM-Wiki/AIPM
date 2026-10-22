@@ -4,7 +4,7 @@
   const storageKey = "aipm-reading-style";
   const defaults = {
     size: 15, spacing: "standard", width: "standard", font: "sans",
-    heading: "structured", emphasis: "marker", color: "indigo", customColor: "#4051b5", indent: "none",
+    heading: "structured", emphasis: "marker", color: "indigo", customColor: "#4051b5", indent: "none", autoSmart: "off",
   };
   const lineHeights = { compact: 1.6, standard: 1.8, relaxed: 2.1 };
   const schemes = {
@@ -45,6 +45,7 @@
         !Object.hasOwn(lineHeights, value.spacing) || !Object.hasOwn(fonts, value.font) ||
         !["compact", "standard", "wide"].includes(value.width) ||
         !["none", "first"].includes(value.indent) ||
+        !["off", "on"].includes(value.autoSmart) ||
         !["simple", "structured", "accent"].includes(value.heading) ||
         !["plain", "marker", "underline"].includes(value.emphasis) ||
         !(Object.hasOwn(colors, value.color) || value.color === "custom") ||
@@ -96,6 +97,10 @@
     root.dataset.readingWidth = settings.width;
     root.dataset.readingHeading = settings.heading;
     root.dataset.readingEmphasis = settings.emphasis;
+    if (root.dataset.autoSmart !== settings.autoSmart) {
+      root.dataset.autoSmart = settings.autoSmart;
+      window.dispatchEvent(new Event("aipm:auto-smart-change"));
+    }
   };
   apply();
 
@@ -159,6 +164,10 @@
       </div>
       <div id="aipm-settings-general" role="tabpanel" aria-labelledby="aipm-settings-general-tab" hidden>
         <div class="aipm-reading-style__row"><label for="aipm-settings-language">站点语言</label><div class="aipm-reading-style__select"><select id="aipm-settings-language"><option value="zh-CN">简体中文</option></select>${icon("chevron")}</div></div>
+        <div class="aipm-reading-style__row" role="group" aria-label="自动智能批注"><span>自动智能批注</span><div class="aipm-reading-style__options">
+          <label><input type="radio" name="autoSmart" value="off"><span>关闭</span></label>
+          <label><input type="radio" name="autoSmart" value="on"><span>开启</span></label>
+        </div></div>
       </div>
     </div>
     </div>
