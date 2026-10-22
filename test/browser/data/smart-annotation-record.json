@@ -1,0 +1,27 @@
+{
+  "id": "bd317c22-88c9-4ac9-a3d1-dda9b754b4b2",
+  "page": "/product-manager/02/01/",
+  "visibility": "local",
+  "color": "green",
+  "body": "",
+  "origin": "smart",
+  "author": { "githubId": 0, "login": "ds-flash" },
+  "target": {
+    "selectors": [
+      {
+        "type": "TextQuoteSelector",
+        "exact": "我们对它们的共性下一个定义——解决某个问题的东西。这个定义听上去像是一句废话，但它其实抛出了三个关键词，分别是“某个”、“问题”和“东西”。"
+      },
+      {
+        "type": "RangeSelector",
+        "startXpath": "./div[1]/p[4]",
+        "startOffset": 0,
+        "endXpath": "./div[1]/p[4]",
+        "endOffset": 1
+      }
+    ]
+  },
+  "replies": [],
+  "createdAt": "2026-10-22T09:41:03.724Z",
+  "updatedAt": "2026-10-22T09:41:03.724Z"
+}
