@@ -1,7 +1,7 @@
 ---
 author: 苏杰
 book: 人人都是产品经理2.0——写给泛产品经理
-description: 回到真实场景，一个产品或一个产品概念，到底是怎么想到的？很多情况下，它其实来自于生活中的一些不爽、不满意、想吐槽，所以“吐槽是一种生产力”。街边打不着车有了滴滴、快的；天太热懒得出门吃饭有了各种外卖订餐平台；老板通知个事情总有员工说没看到，
+description: 结合智能长命锁与淘宝首页案例，说明如何从生活问题和业务场景中提出产品概念，识别核心用户、刚性需求与竞争优势，并介绍多边用户、新人与专家等分类方式，帮助读者练习界定目标用户和产品机会。
 publication_date: '2017-05-01'
 publisher: 电子工业出版社
 title: 3.2 概念提出的综合案例
@@ -70,7 +70,7 @@ title: 3.2 概念提出的综合案例
 </p>
 
 <figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
-图3.4　2003年淘宝最初的首页
+图3-4　2003 年淘宝最初的首页
 </figcaption>
 
 </figure>
@@ -82,7 +82,7 @@ title: 3.2 概念提出的综合案例
 </p>
 
 <figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
-图3.5　2016年的淘宝首页
+图3-5　2016 年的淘宝首页
 </figcaption>
 
 </figure>
