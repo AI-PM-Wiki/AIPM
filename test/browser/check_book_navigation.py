@@ -97,6 +97,15 @@ class BookNavigationCase(unittest.TestCase):
         page.wait_for_url("**/product-manager/01/01/")
         self.assertEqual(errors, [])
 
+    def test_main_site_metadata_is_preserved(self):
+        document = BeautifulSoup((ROOT / "site/pm/requirements/index.html").read_text(), "html.parser")
+        credits = document.select_one(".page-copyright")
+        self.assertIsNotNone(credits)
+        self.assertIsNotNone(credits.select_one(".page_edit_url"))
+        self.assertIn("CC BY-SA 4.0", credits.get_text())
+        self.assertIn("SATA", credits.get_text())
+        self.assertIsNotNone(document.select_one(".md-copyright__highlight"))
+
     def test_mobile_chapter_navigation(self):
         for width in (390, 320):
             with self.subTest(width=width):

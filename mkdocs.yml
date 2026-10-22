@@ -10,6 +10,8 @@ repo_name: 'AI-PM-Wiki/AIPM'
 repo_url: 'https://github.com/AI-PM-Wiki/AIPM'
 edit_uri: 'edit/main/docs/'
 
+copyright: 'Copyright &copy; 2026 AI-PM Wiki Team'
+
 # Contents
 nav:
 - 主站:
@@ -865,7 +867,7 @@ theme:
 plugins:
 - search:
     lang: zh
-    separator: '[\\s\\-]'
+    separator: '[\s\-]'
 - toggle-sidebar:
     theme: material
     toggle_button: none
@@ -880,6 +882,7 @@ hooks:
   - hooks/annotation_integrity.py
 
 extra:
+  copyright: '<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">CC BY-SA 4.0</a> 和 <a href="https://github.com/zTrix/sata-license">SATA</a>'
   manifest: 'manifest.webmanifest'
   chat_agent:
     enabled: true

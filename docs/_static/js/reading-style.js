@@ -243,7 +243,17 @@
     });
   }
   const preview = panel.querySelector(".aipm-reading-style__preview");
+  const previewDiagrams = [];
+  const restoreDiagrams = () => {
+    for (const { host, placeholder, inert, zoomReady } of previewDiagrams) {
+      placeholder.replaceWith(host);
+      host.inert = inert;
+      if (!zoomReady) host.removeAttribute("data-mermaid-zoom-ready");
+    }
+    previewDiagrams.length = 0;
+  };
   const refreshPreview = () => {
+    restoreDiagrams();
     const source = document.querySelector(".md-content__inner");
     if (!source) throw new Error("Reading preview article is missing");
     const article = source.cloneNode(true);
@@ -257,6 +267,17 @@
       }
     }
     article.querySelectorAll("a").forEach((link) => link.removeAttribute("href"));
+    const diagrams = [...source.querySelectorAll("div.mermaid")];
+    const copies = [...article.querySelectorAll("div.mermaid")];
+    diagrams.forEach((host, index) => {
+      const placeholder = document.createElement("div");
+      placeholder.style.height = host.getBoundingClientRect().height + "px";
+      previewDiagrams.push({ host, placeholder, inert: host.inert,
+        zoomReady: host.hasAttribute("data-mermaid-zoom-ready") });
+      host.replaceWith(placeholder);
+      host.inert = true;
+      copies[index].replaceWith(host);
+    });
     article.querySelectorAll("img, .mermaid").forEach((node) => node.setAttribute("data-mermaid-zoom-ready", ""));
     article.querySelectorAll("details").forEach((details) => { details.open = true; });
     preview.replaceChildren(...article.childNodes);
@@ -275,6 +296,7 @@
       ], { duration: 160, easing: "ease-in", fill: "forwards" }).finished;
     }
     panel.close();
+    restoreDiagrams();
     root.classList.remove("aipm-settings-open");
     entry.setAttribute("aria-expanded", "false");
     panel.querySelector(".aipm-reading-style__window").getAnimations().forEach((animation) => animation.cancel());

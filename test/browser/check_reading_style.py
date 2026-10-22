@@ -409,6 +409,46 @@ class ReadingStyleCase(unittest.TestCase):
                     self.page.get_by_role("button", name="关闭站点设置").click()
                     self.wait_closed()
 
+    def test_mermaid_preview_preserves_rendered_diagrams(self):
+        self.page.goto(self.site.base + "/pm/", wait_until="domcontentloaded")
+        self.page.wait_for_function("""() => {
+          const diagrams = [...document.querySelectorAll('.md-content__inner div.mermaid')];
+          return diagrams.length > 0 && diagrams.every(node =>
+            node.hasAttribute('data-mermaid-zoom-ready') && node.getBoundingClientRect().height > 0);
+        }""")
+        self.page.evaluate("""() => {
+          window.readingPreviewDiagrams = [...document.querySelectorAll('.md-content__inner div.mermaid')]
+            .map(host => ({host, parent: host.parentElement, inert: host.inert}));
+        }""")
+        for width in (1440, 390):
+            for theme in ("浅色", "深色"):
+                with self.subTest(width=width, theme=theme):
+                    self.page.set_viewport_size({"width": width, "height": 900})
+                    self.open()
+                    panel = self.page.get_by_role("dialog", name="站点设置", exact=True)
+                    panel.get_by_role("tab", name="外观", exact=True).click()
+                    self.select_style("外观", theme)
+                    self.assertTrue(self.page.evaluate("""() => window.readingPreviewDiagrams.every(({host}) =>
+                      document.querySelector('.aipm-reading-style__preview').contains(host) && host.inert &&
+                      host.getBoundingClientRect().height > 0)"""))
+                    self.assertEqual(panel.locator(".aipm-reading-style__preview button").count(), 0)
+                    self.assertTrue(panel.locator(".aipm-reading-style__preview").evaluate("node => node.scrollWidth <= node.clientWidth"))
+                    panel.get_by_role("button", name="关闭站点设置").click()
+                    self.wait_closed()
+                    self.assertEqual(self.page.evaluate("""() => window.readingPreviewDiagrams.map(({host, parent, inert}) => ({
+                      parentMatches: host.parentElement === parent,
+                      parent: host.parentElement?.className,
+                      originalParent: parent.className,
+                      inertMatches: host.inert === inert,
+                      inArticle: document.querySelector('.md-content__inner').contains(host),
+                      visible: host.getBoundingClientRect().height > 0,
+                    })).filter(state => !state.parentMatches || !state.inertMatches || !state.inArticle || !state.visible)"""), [])
+                    self.page.locator(".md-content__inner .mermaid-zoom__figure").first.hover()
+                    self.page.get_by_role("button", name="打开 Mermaid 大图", exact=True).first.click(timeout=5000)
+                    self.page.locator("#aipm-mermaid-dialog").wait_for(state="visible")
+                    self.page.locator('#aipm-mermaid-dialog button[data-mermaid-action="close"]').click()
+                    self.page.locator("#aipm-mermaid-dialog").wait_for(state="hidden")
+
     def test_main_site_heading_and_emphasis_settings(self):
         self.page.goto(self.site.base + "/pm/requirements/", wait_until="domcontentloaded")
         self.open()

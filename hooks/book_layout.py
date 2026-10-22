@@ -19,7 +19,9 @@ def on_page_content(html, **kwargs):
     return str(document)
 
 
-def on_post_page(output, **kwargs):
+def on_post_page(output, page, **kwargs):
+    if not page.file.src_uri.startswith("product-manager/"):
+        return output
     document = BeautifulSoup(output, "html.parser")
     credits = document.select_one(".page-copyright")
     if credits is not None:
@@ -27,4 +29,7 @@ def on_post_page(output, **kwargs):
         if separator is not None and separator.name == "hr":
             separator.decompose()
         credits.decompose()
+    copyright = document.select_one(".md-copyright__highlight")
+    if copyright is not None:
+        copyright.decompose()
     return str(document)
