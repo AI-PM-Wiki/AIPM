@@ -30,7 +30,9 @@ class SearchCase(unittest.TestCase):
         self.assertEqual(tokens["english"], ["business", "strategy"])
         self.assertEqual(tokens["chinese"], ["需求", "分析"])
         page.goto(self.site.base + "/pm/", wait_until="domcontentloaded")
-        page.locator('input[data-md-component="search-query"]').fill("需求 分析")
+        query = page.locator('input[data-md-component="search-query"]')
+        query.fill("需求 分析")
+        query.press("Enter")
         result = page.locator('.md-search-result a[href*="/pm/requirements/"]').first
         result.wait_for(state="visible")
         self.assertIn("需求", result.inner_text())
