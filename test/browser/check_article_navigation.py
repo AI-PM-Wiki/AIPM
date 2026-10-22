@@ -48,6 +48,19 @@ class ArticleNavigationCase(unittest.TestCase):
         page.wait_for_function("window.document$")
         return page
 
+    def assert_separated_arrow(self, link):
+        arrow = link.locator(".aipm-article-nav__icon").bounding_box()
+        text = link.locator(".aipm-article-nav__text").bounding_box()
+        button = link.bounding_box()
+        self.assertAlmostEqual(arrow["y"] + arrow["height"] / 2,
+                               button["y"] + button["height"] / 2, delta=1)
+        if link.get_attribute("rel") == "prev":
+            self.assertLess(arrow["x"] + arrow["width"], text["x"])
+            self.assertEqual(link.evaluate("node => getComputedStyle(node).textAlign"), "right")
+        else:
+            self.assertLess(text["x"] + text["width"], arrow["x"])
+            self.assertEqual(link.evaluate("node => getComputedStyle(node).textAlign"), "left")
+
     def test_all_articles_follow_the_current_space(self):
         config = self.config
         nav = get_navigation(get_files(config), config)
@@ -108,6 +121,8 @@ class ArticleNavigationCase(unittest.TestCase):
                 self.assertAlmostEqual(first["y"], second["y"], delta=1)
                 self.assertAlmostEqual(first["width"], second["width"], delta=1)
                 self.assertGreaterEqual(second["x"], first["x"] + first["width"])
+                self.assert_separated_arrow(previous)
+                self.assert_separated_arrow(following)
                 previous.focus()
                 page.keyboard.press("Tab")
                 self.assertTrue(following.evaluate("node => node === document.activeElement"))
@@ -116,3 +131,18 @@ class ArticleNavigationCase(unittest.TestCase):
                 self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), width)
                 page.emulate_media(media="print")
                 self.assertFalse(navigation.is_visible())
+
+    def test_single_link_fills_the_navigation_row(self):
+        for path, direction in (("/product-manager/", "next"), ("/product-manager/12/04/", "prev")):
+            for width, scheme in ((1440, "light"), (1440, "dark"), (390, "light"), (320, "dark")):
+                with self.subTest(path=path, width=width, scheme=scheme):
+                    page = self.open_page(path, width, scheme)
+                    navigation = page.get_by_role("navigation", name="文章导航", exact=True)
+                    self.assertEqual(navigation.locator("a").count(), 1)
+                    link = navigation.locator(f'a[rel="{direction}"]')
+                    link.scroll_into_view_if_needed()
+                    row, button = navigation.bounding_box(), link.bounding_box()
+                    self.assertAlmostEqual(button["x"], row["x"], delta=1)
+                    self.assertAlmostEqual(button["width"], row["width"], delta=1)
+                    self.assert_separated_arrow(link)
+                    self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), width)
