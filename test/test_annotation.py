@@ -357,12 +357,13 @@ class TestHeadIconClick(unittest.TestCase):
         待办,等手上那一笔收尾再发,连点几下合并成一次。"""
         block = _block(self.js, "function smartHighlight(")
         self.assertIn('if (!refresh || smartInFlight !== "auto") return;', block)
-        self.assertIn("pendingRefresh = pagePath();", block)
+        self.assertIn("pendingRefresh = { page: pagePath(), revision: smartRevision };", block)
         self.assertIn(".then(drainPendingRefresh);", block)
         queue = _block(self.js, "function drainPendingRefresh()")
         self.assertIn("smartHighlight({ refresh: true });", queue)
         # 排的是哪一页就冲哪一页发:等的过程里翻页,那一笔不再替他花出去
-        self.assertIn("if (pagePath() !== page) return;", queue)
+        self.assertIn("pagePath() !== pending.page", queue)
+        self.assertIn("smartRevision !== pending.revision", queue)
 
     def test_smart_annotation_does_not_double_spend(self):
         """重新生成通过进行中的请求状态防止重复调用。"""
@@ -439,7 +440,7 @@ class TestAutomaticSmartHighlight(unittest.TestCase):
     def test_the_automatic_pass_happens_once_per_page(self):
         auto = _block(self.js, "function autoSmart()")
         self.assertIn("store.smartDone(page)", auto)
-        self.assertIn("store.markSmartDone(page)", _block(self.js, "function applySmart(payload)"))
+        self.assertIn("store.markSmartDone(page)", _block(self.js, "function applySmart("))
         self.assertIn(
             "store.markSmartDone(pagePath())", _block(self.js, "function revertSmart(payload)")
         )
@@ -466,7 +467,7 @@ class TestAutomaticSmartHighlight(unittest.TestCase):
         """点 ✨ 才动界面、才把失败念出来;自动那条是后台动作。"""
         block = _block(self.js, "function smartHighlight(")
         self.assertIn("var auto = !!(opts && opts.auto);", block)
-        self.assertIn("var say = auto ? function () {} : setSmartbar;", block)
+        self.assertIn("if (!auto && pagePath() === page && smartRevision === revision && smartVisible())", block)
         # 面板切模式、叫出面板、撤选区都只对点击成立
         ui = block[block.index("if (!auto) {") : block.index("if (smartInFlight !== null) {")]
         self.assertIn("revealPanel();", ui)
@@ -475,7 +476,7 @@ class TestAutomaticSmartHighlight(unittest.TestCase):
 
     def test_the_automatic_pass_lands_what_it_found(self):
         block = _block(self.js, "function smartHighlight(")
-        self.assertIn('if (document.documentElement.dataset.autoSmart === "on") applySmart(res.body);', block)
+        self.assertIn('if (smartVisible()) applySmart(withLiveBlocks(res.body), { refreshed: refresh });', block)
 
     def test_a_stale_answer_lands_on_no_page(self):
         """判分要几秒,回来时人可能已经在别的页面上 —— 块 id 是位置序号,
@@ -492,7 +493,7 @@ class TestAutomaticSmartHighlight(unittest.TestCase):
 
     def test_the_smart_annotations_are_signed_with_the_model_id(self):
         """署名写生成它的那个模型型号,不写「本机」。"""
-        block = _block(self.js, "function applySmart(payload)")
+        block = _block(self.js, "function applySmart(")
         self.assertIn("var who = judgeLabel(payload);", block)
         self.assertNotIn("本机", block)
         self.assertNotIn("auth.user()", block)
@@ -882,14 +883,14 @@ class TestUiReviewRound(unittest.TestCase):
 
     def test_smart_batch_lands_as_local_only(self):
         """智能高亮落库只落到「仅本机」,且带 origin 标记以便整批撤销。"""
-        block = _block(self.js, "function applySmart(payload)")
+        block = _block(self.js, "function applySmart(")
         self.assertIn('origin: "smart"', block)
         self.assertIn('visibility: "local"', block)
         self.assertNotIn("/api/annotations", block)
 
     def test_duplicate_落库_is_blocked_at_apply_time(self):
         """点第二次不能重复落 —— 靠落库前重新核对块上有没有 mark。"""
-        block = _block(self.js, "function applySmart(payload)")
+        block = _block(self.js, "function applySmart(")
         self.assertIn("blockMarked(block)", block)
 
     def test_panel_head_keeps_only_account_and_close(self):

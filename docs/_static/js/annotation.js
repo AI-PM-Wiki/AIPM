@@ -930,11 +930,22 @@
   var busy = false;
   var cache = {};
   var loadRevision = 0;
+  /* 手动显示仅用于当前访问，导航与设置变更时清除。 */
+  var manualSmartPage = null;
+  var smartRevision = 0;
 
   function pagePath() {
     var p = location.pathname;
     if (p.length > 1 && p.charAt(p.length - 1) !== "/") p += "/";
     return p;
+  }
+
+  function smartVisible() {
+    return document.documentElement.dataset.autoSmart === "on" || manualSmartPage === pagePath();
+  }
+
+  function annotationVisible(anno) {
+    return anno.origin !== "smart" || smartVisible();
   }
 
   /* 页面标题:送智能高亮判分时当页面的名字用。主页的页首 h1 是 AI-PM-WIKI
@@ -1070,7 +1081,7 @@
     clearMarks();
     resolved = {};
     orphans = [];
-    var all = publicList.concat(privateList).concat(localList);
+    var all = publicList.concat(privateList).concat(localList).filter(annotationVisible);
     for (var i = 0; i < all.length; i++) {
       var anno = all[i];
       if (anno.visibility === "local" && store.serverIdOf(anno.id)) {
@@ -1434,7 +1445,7 @@
        几栏的内容,正文那边换一根根节点上的 class。 */
     syncGroupVisibility();
 
-    var all = publicList.concat(privateList).concat(localList);
+    var all = publicList.concat(privateList).concat(localList).filter(annotationVisible);
     var items = all.filter(inMode);
     els.count.textContent = items.length ? String(items.length) : "";
     els.count.hidden = items.length === 0;
@@ -1464,7 +1475,7 @@
       // 未定位的那些下面单独成组,别在这里再列一遍(否则同一条批注出现两次,
       // 一条带着「未定位」角标、一条没有)。先滤再判空 —— 只按 g.list.length
       // 判断的话,某个分组若整组都是未定位的,会留下一个空标题挂在那儿。
-      var visible = g.list.filter(function (anno) {
+      var visible = g.list.filter(annotationVisible).filter(function (anno) {
         return !orphanIds[anno.id];
       }).filter(inMode);
       visible.sort(panelMode === "comments" ? commentComparator(commentSort) : byPosition);
@@ -4257,7 +4268,7 @@
     if (smartInFlight !== null) {
       /* 自动判分期间的管理员重新生成请求合并为一次，等待当前请求结束。 */
       if (!refresh || smartInFlight !== "auto") return;
-      pendingRefresh = pagePath();
+      pendingRefresh = { page: pagePath(), revision: smartRevision };
       setSmartbar("正在重新生成…(等这一页当前的判分跑完)", "busy");
       return;
     }
@@ -4271,9 +4282,9 @@
       return;
     }
     var page = pagePath();
+    var revision = smartRevision;
     if (!refresh && suggestCache[page]) {
-      /* 自动那条不在这里摆结果:这一页的缓存结果归 syncSmartbar 管(换页回来也走它)。 */
-      if (!auto) renderSuggestions(suggestCache[page]);
+      if (!auto) applySmart(withLiveBlocks(suggestCache[page]));
       return;
     }
     /* 判分始终发送本页全部可判定内容，所有请求来源使用相同内容。
@@ -4320,7 +4331,11 @@
       .then(function (res) {
         setSmartBusy(null);
         /* 自动判分在后台执行；站长手动重新生成时显示请求结果。 */
-        var say = auto ? function () {} : setSmartbar;
+        var say = function (text, kind) {
+          if (!auto && pagePath() === page && smartRevision === revision && smartVisible()) {
+            setSmartbar(text, kind);
+          }
+        };
         /* 服务端那两道路闸(未登录 / 不是站长)。界面上这颗笔只对站长可点,所以走到
            这里通常意味着会话在这中间过期了 —— 如实说一句,别把 403 念成「失败」。 */
         if (res.status === 401 || res.status === 403) {
@@ -4369,9 +4384,7 @@
           autoSmart();
           return;
         }
-        if (auto) {
-          if (document.documentElement.dataset.autoSmart === "on") applySmart(res.body);
-        } else renderSuggestions(res.body, page, { refreshed: refresh });
+        if (smartVisible()) applySmart(withLiveBlocks(res.body), { refreshed: refresh });
       })
       /* 排队等着的那一笔重新生成在**这一笔收尾之后**才发:两笔串起来,旧那一份结果
          先落地、新的后落地 —— 并着发才会有旧结论盖在新的上面。失败也照样放行:
@@ -4386,10 +4399,10 @@
    * 不是他此刻点的,替他花掉一次判分是错的;新页自己那条自动判分照常跑。
    */
   function drainPendingRefresh() {
-    var page = pendingRefresh;
+    var pending = pendingRefresh;
     pendingRefresh = null;
-    if (page === null) return;
-    if (pagePath() !== page) return;
+    if (pending === null) return;
+    if (pagePath() !== pending.page || smartRevision !== pending.revision || !smartVisible()) return;
     smartHighlight({ refresh: true });
   }
 
@@ -4630,7 +4643,8 @@
    * 署名写**判分用的那个模型型号**(服务端回的 model id,jev-1.13.0 / deepseek-flash…):
    * 这些批注说的是模型的判断,署名要指出是哪一次判断给的。
    */
-  function applySmart(payload) {
+  function applySmart(payload, opts) {
+    if (!smartVisible()) return;
     var byId = {};
     (payload.blocks || []).forEach(function (b) {
       byId[b.id] = b;
@@ -4666,7 +4680,7 @@
        自动那条不再插手。 */
     store.markSmartDone(page);
     refreshLocal();
-    renderSuggestions(payload);
+    renderSuggestions(payload, page, opts);
   }
 
   /** 全关:把本页由智能高亮落下的批注全部撤掉。手写的批注不受影响。 */
@@ -4986,8 +5000,11 @@
     }
   }
 
-  /** 手动获取当前页面的建议；管理员可以重新生成当前页面的建议。 */
+  /** 手动显示当前页面的智能批注；管理员同时重新生成建议。 */
   function smartAnnotationAction() {
+    manualSmartPage = pagePath();
+    refreshLocal();
+    syncSmartbar();
     if (auth && auth.isAdmin && auth.isAdmin()) {
       smartHighlight({ refresh: true });
       return;
@@ -5253,8 +5270,12 @@
   /* ================================================================
      换页 / 视口 / 启动
      ================================================================ */
-  /** 页面导航时显示当前页面的缓存通知，并保留用户关闭通知的状态。 */
+  /** 按当前访问的智能批注显示状态同步通知。 */
   function syncSmartbar() {
+    if (!smartVisible()) {
+      setSmartbar("", "");
+      return;
+    }
     var page = pagePath();
     if (smartbarPage === page && !els.smartbar.hidden) return;
     /* 这一页上用户亲手关过:收着,别弹回来。换到没关过的页面则照常处理 ——
@@ -5269,6 +5290,9 @@
   }
 
   function onPageChange() {
+    manualSmartPage = null;
+    smartRevision++;
+    pendingRefresh = null;
     mountEntry();
     hideToolbar();
     syncSmartbar();
@@ -5280,7 +5304,18 @@
     autoSmart();
   }
 
-  window.addEventListener("aipm:auto-smart-change", autoSmart);
+  window.addEventListener("aipm:auto-smart-change", function () {
+    manualSmartPage = null;
+    smartRevision++;
+    pendingRefresh = null;
+    refreshLocal();
+    syncSmartbar();
+    autoSmart();
+  });
+
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) onPageChange();
+  });
 
   if (typeof document$ !== "undefined" && document$.subscribe) {
     document$.subscribe(onPageChange);
