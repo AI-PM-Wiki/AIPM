@@ -147,9 +147,37 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,4.5C7,4.5 2.73,7.61 1,12c1.73,4.39 6,7.5 11,7.5s9.27,-3.11 11,-7.5c-1.73,-4.39 -6,-7.5 -11,-7.5zM12,17c-2.76,0 -5,-2.24 -5,-5s2.24,-5 5,-5 5,2.24 5,5 -2.24,5 -5,5zM12,9c-1.66,0 -3,1.34 -3,3s1.34,3 3,3 3,-1.34 3,-3 -1.34,-3 -3,-3z"/></svg>',
     eyeOff:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,7c2.76,0 5,2.24 5,5 0,0.65 -0.13,1.26 -0.36,1.83l2.92,2.92c1.51,-1.26 2.7,-2.89 3.43,-4.75 -1.73,-4.39 -6,-7.5 -11,-7.5 -1.4,0 -2.74,0.25 -3.98,0.7l2.16,2.16C10.74,7.13 11.35,7 12,7zM2,4.27l2.28,2.28 0.46,0.46C3.08,8.3 1.78,10.02 1,12c1.73,4.39 6,7.5 11,7.5 1.55,0 3.03,-0.3 4.38,-0.84l0.42,0.42L19.73,22 21,20.73 3.27,3 2,4.27zM7.53,9.8l1.55,1.55c-0.05,0.21 -0.08,0.43 -0.08,0.65 0,1.66 1.34,3 3,3 0.22,0 0.44,-0.03 0.65,-0.08l1.55,1.55c-0.67,0.33 -1.41,0.53 -2.2,0.53 -2.76,0 -5,-2.24 -5,-5 0,-0.79 0.2,-1.53 0.53,-2.2zM11.84,9.02l3.15,3.15 0.02,-0.16c0,-1.66 -1.34,-3 -3,-3l-0.17,0.01z"/></svg>',
+    globe:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.9 17.39c-.26-.8-1.01-1.39-1.9-1.39h-1v-3a1 1 0 0 0-1-1H8v-2h2a1 1 0 0 0 1-1V7h2a2 2 0 0 0 2-2v-.41a7.984 7.984 0 0 1 2.9 12.8M11 19.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.22.21-1.79L9 15v1a2 2 0 0 0 2 2m1-16A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg>',
+    lock:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a2 2 0 0 0 2-2 2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2zm-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3"/></svg>',
+    device:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v10H4m16 2a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4c-1.11 0-2 .89-2 2v10a2 2 0 0 0 2 2H0v2h24v-2z"/></svg>',
     login:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,2C6.48,2 2,6.48 2,12c0,4.42 2.87,8.17 6.84,9.5 0.5,0.09 0.68,-0.22 0.68,-0.48 0,-0.24 -0.01,-0.87 -0.01,-1.71 -2.78,0.6 -3.37,-1.34 -3.37,-1.34 -0.45,-1.16 -1.11,-1.47 -1.11,-1.47 -0.91,-0.62 0.07,-0.61 0.07,-0.61 1,0.07 1.53,1.03 1.53,1.03 0.89,1.53 2.34,1.09 2.91,0.83 0.09,-0.65 0.35,-1.09 0.63,-1.34 -2.22,-0.25 -4.56,-1.11 -4.56,-4.94 0,-1.09 0.39,-1.99 1.03,-2.69 -0.1,-0.25 -0.45,-1.27 0.1,-2.65 0,0 0.84,-0.27 2.75,1.03 0.8,-0.22 1.65,-0.33 2.5,-0.34 0.85,0 1.7,0.12 2.5,0.34 1.91,-1.3 2.75,-1.03 2.75,-1.03 0.55,1.38 0.2,2.4 0.1,2.65 0.64,0.7 1.03,1.6 1.03,2.69 0,3.84 -2.34,4.69 -4.57,4.94 0.36,0.31 0.68,0.92 0.68,1.85 0,1.34 -0.01,2.42 -0.01,2.75 0,0.27 0.18,0.58 0.69,0.48C19.13,20.17 22,16.42 22,12c0,-5.52 -4.48,-10 -10,-10z"/></svg>'
   };
+
+  /* 可见范围三选一。编辑卡的菜单与卡片名字旁的菜单共用这一份;说明只放在悬停提示里,
+     菜单本身只留图标与名称。 */
+  var VIS_OPTIONS = [
+    { id: "public", label: "公开", hint: "所有访客可见", icon: ICON.globe },
+    { id: "private", label: "私有", hint: "只有你自己可见", icon: ICON.lock },
+    { id: "local", label: "仅本机", hint: "只保存在这台设备上", icon: ICON.device }
+  ];
+
+  function visOptionOf(id) {
+    for (var i = 0; i < VIS_OPTIONS.length; i++) if (VIS_OPTIONS[i].id === id) return VIS_OPTIONS[i];
+    throw new Error("unknown visibility: " + id);
+  }
+
+  function visOptionsHtml() {
+    return VIS_OPTIONS.map(function (v) {
+      return (
+        '<button type="button" role="option" data-vis="' + v.id + '" title="' + v.hint + '">' +
+        v.icon + "<span>" + v.label + "</span>" + ICON.check + "</button>"
+      );
+    }).join("");
+  }
 
   /* ================================================================
      锚定:三类 selector 的生成、应用与三级回退
@@ -948,6 +976,11 @@
     return anno.origin !== "smart" || smartVisible();
   }
 
+  /** 面板列表里出现的条目:改为公开或私有之后的本机记录由服务端那份代表。 */
+  function listed(anno) {
+    return annotationVisible(anno) && !isShadow(anno);
+  }
+
   /* 页面标题:送智能高亮判分时当页面的名字用。主页的页首 h1 是 AI-PM-WIKI
      字标(整块 SVG,没有文字节点),取不到文字就回落到 document.title,
      否则会把空标题丢给模型。 */
@@ -957,11 +990,13 @@
     return text || (document.title || "").trim();
   }
 
-  /* 未登录一律只能落本机(服务端那两条路都要 token);登录后按用户在悬浮窗里选的那个
-     走,「仅本机」仍然可选 —— 登录了也想把某些东西留在自己机器上是合理诉求。 */
+  /* 新建时:未登录只能保存在本机(服务端那两条路都要 token);登录后按用户在菜单里选的
+     那个走,「仅本机」仍然可选 —— 登录了也想把某些东西留在自己机器上是合理诉求。
+     编辑时:从这条批注原来的可见范围开始,只在用户改了菜单时才变。 */
   function defaultVisibility() {
     var pending = uncertainDraft();
     if (pending) return pending.visibility;
+    if (editorDraft && editorDraft.kind === "edit") return editorDraft.visibility;
     if (!auth || !auth.isLoggedIn()) return "local";
     if (activeVis === "private") return "private";
     if (activeVis === "local") return "local";
@@ -1057,8 +1092,8 @@
       var mine =
         results[1] && results[1].ok && results[1].body ? results[1].body.annotations || [] : [];
       /* scope=mine 回的是**本人全部**(公开 + 私有),公开的那些已经在 publicList 里了;
-         直接 concat 会让登录用户看到自己的每条公开批注各出现两次(一次还挂着
-         「登录同账号可见」的错误标签)。这里只留私有的,去重靠这一道。 */
+         直接 concat 会让登录用户看到自己的每条公开批注各出现两次(一次还挂在
+         「私有」分栏里)。这里只留私有的,去重靠这一道。 */
       privateList = mine.filter(function (a) {
         return a && a.visibility === "private";
       });
@@ -1084,8 +1119,8 @@
     var all = publicList.concat(privateList).concat(localList).filter(annotationVisible);
     for (var i = 0; i < all.length; i++) {
       var anno = all[i];
-      if (anno.visibility === "local" && store.serverIdOf(anno.id)) {
-        /* 已上传为公开/私有:本机那份不再重复渲染,由服务端那份负责。
+      if (isShadow(anno)) {
+        /* 已改为公开/私有:本机那份不再重复渲染,由服务端那份负责。
            这里必须 continue —— 只是留个空 if 的话,本机那条会继续往下走去锚定,
            而那段文字已经被服务端那份占住了,于是它既画不出高亮、又被打成
            「未在正文中定位」,列表里凭空多出一条没位置的条目。 */
@@ -1125,10 +1160,21 @@
     return anno.visibility === "local";
   }
 
+  /** 已改为公开或私有的本机记录。服务端那份负责显示,本机这份只保留两者的对应关系。 */
+  function isShadow(anno) {
+    return isLocal(anno) && !!store.serverIdOf(anno.id);
+  }
+
+  function shadowOf(serverId) {
+    for (var i = 0; i < localList.length; i++) {
+      if (store.serverIdOf(localList[i].id) === serverId) return localList[i];
+    }
+    return null;
+  }
+
   function visLabel(anno) {
-    if (anno.visibility === "public") return { text: "公开", cls: "is-public" };
-    if (anno.visibility === "private") return { text: "登录同账号可见", cls: "is-private" };
-    return { text: "仅本机", cls: "is-local" };
+    var v = visOptionOf(anno.visibility);
+    return { text: v.label, cls: "is-" + v.id };
   }
 
   function escapeText(s) {
@@ -1160,9 +1206,7 @@
   }
 
   function groupTitle(key) {
-    if (key === "public") return "公开";
-    if (key === "private") return "私有(仅自己)";
-    return "仅本机";
+    return visOptionOf(key).label;
   }
 
   function prefKey(prefix, key) {
@@ -1445,7 +1489,7 @@
        几栏的内容,正文那边换一根根节点上的 class。 */
     syncGroupVisibility();
 
-    var all = publicList.concat(privateList).concat(localList).filter(annotationVisible);
+    var all = publicList.concat(privateList).concat(localList).filter(listed);
     var items = all.filter(inMode);
     els.count.textContent = items.length ? String(items.length) : "";
     els.count.hidden = items.length === 0;
@@ -1475,7 +1519,7 @@
       // 未定位的那些下面单独成组,别在这里再列一遍(否则同一条批注出现两次,
       // 一条带着「未定位」角标、一条没有)。先滤再判空 —— 只按 g.list.length
       // 判断的话,某个分组若整组都是未定位的,会留下一个空标题挂在那儿。
-      var visible = g.list.filter(annotationVisible).filter(function (anno) {
+      var visible = g.list.filter(listed).filter(function (anno) {
         return !orphanIds[anno.id];
       }).filter(inMode);
       visible.sort(panelMode === "comments" ? commentComparator(commentSort) : byPosition);
@@ -1601,15 +1645,16 @@
     }
   }
 
-  /* ---- 卡片上的小浮层:点左上角圆点改「外观」----
+  /* ---- 卡片上的小浮层:左上角圆点改「外观」,名字旁的可见范围改「给谁看」----
      画法与颜色是同一件事的两面(怎么画、用什么色),所以合在一个浮层里,而不是
-     在卡片上再排一排按钮 —— 卡片顶栏已经很挤了。 */
+     在卡片上再排一排按钮 —— 卡片顶栏已经很挤了。同一时刻只开一个浮层。 */
 
   var openPop = null;
 
   function closePop() {
     if (openPop !== null) {
       if (openPop.node.parentNode) openPop.node.parentNode.removeChild(openPop.node);
+      if (openPop.trigger) openPop.trigger.setAttribute("aria-expanded", "false");
       openPop = null;
     }
   }
@@ -1662,6 +1707,61 @@
     });
     wrapEl.appendChild(pop);
     openPop = { wrap: wrapEl, node: pop };
+  }
+
+  /** 可见范围菜单的键盘操作:方向键与 Home / End 移动焦点,Escape 收起。 */
+  function menuKeys(e, list, close) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+      return;
+    }
+    var options = Array.from(list.querySelectorAll("button:not(:disabled)"));
+    if (!options.length || !["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
+    e.preventDefault();
+    var index = options.indexOf(document.activeElement);
+    if (e.key === "Home") index = 0;
+    else if (e.key === "End") index = options.length - 1;
+    else index = (index + (e.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+    options[index].focus();
+  }
+
+  /** 卡片名字旁的可见范围菜单:三选一,选中即生效(见 changeVisibility)。 */
+  function toggleVisPop(wrapEl, trigger, anno) {
+    var same = openPop !== null && openPop.wrap === wrapEl;
+    closePop();
+    if (same) return;
+    var pop = document.createElement("div");
+    pop.className = "aipm-anno__vispop";
+    pop.setAttribute("role", "listbox");
+    pop.setAttribute("aria-label", "可见范围");
+    pop.innerHTML = visOptionsHtml();
+    var current = null;
+    pop.querySelectorAll("button[data-vis]").forEach(function (b) {
+      var on = b.getAttribute("data-vis") === anno.visibility;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", String(on));
+      if (on) current = b;
+    });
+    var dismiss = function () {
+      closePop();
+      trigger.focus();
+    };
+    pop.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-vis]");
+      if (!b) return;
+      e.stopPropagation();
+      dismiss();
+      changeVisibility(anno, b.getAttribute("data-vis"));
+    });
+    pop.addEventListener("keydown", function (e) {
+      menuKeys(e, pop, dismiss);
+    });
+    wrapEl.appendChild(pop);
+    trigger.setAttribute("aria-expanded", "true");
+    openPop = { wrap: wrapEl, node: pop, trigger: trigger };
+    current.focus();
   }
 
   /* ---------------------------------------------------------------
@@ -1853,17 +1953,17 @@
     var head = document.createElement("div");
     head.className = "aipm-anno__reply-head";
 
-    var av = avatarOf(reply.author);
+    var author = displayAuthor(reply.author);
+    var av = avatarOf(author);
     av.classList.add("is-sm");
     head.appendChild(av);
 
-    var login = loginOf(reply.author);
-    var name = displayNameOf(reply.author);
-    var who = document.createElement("b");
-    who.className = "aipm-anno__reply-who";
+    var login = loginOf(author);
+    var name = displayNameOf(author);
+    var who = authorNode(author, "b", "aipm-anno__reply-who");
     who.textContent = name;
-    who.title = "@" + login;
-    /* 显示名与 handle 相同时不必说两遍 —— 那就只剩一遍。handle 挂在同一个 <b>
+    if (!who.title) who.title = "@" + login;
+    /* 显示名与 handle 相同时不必说两遍 —— 那就只剩一遍。handle 挂在同一个元素
        里(而不是另起一格):名字这一格是这一行唯一有弹性的,挤不下时两个一起
        省略,而不是把后面的时间与按钮顶出面板。 */
     if (name !== login) {
@@ -2212,30 +2312,18 @@
   }
 
   /**
-   * 卡片底部的操作链:点赞 / 上传 / 重新锚定。批注卡与评论卡共用 ——
-   * 「上传」对两者都成立(仅本机那条本来就能转成公开),「重新锚定」只有批注有
-   * (isOrphan 对评论恒为假)。一条操作都没有时返回空节点,调用方据此不挂这一行。
+   * 卡片底部的操作链:点赞 / 重新锚定。批注卡与评论卡共用 ——
+   * 「重新锚定」只有批注有(isOrphan 对评论恒为假)。一条操作都没有时返回空节点,
+   * 调用方据此不挂这一行。可见范围在名字旁边改(见 visChip)。
    *
-   * 「回复」不在这行 —— 它搬去了卡片右上角,与「编辑 / 删除」站在一起(见
-   * cardReplyButton):那是它本来该在的地方。
+   * 「回复」不在这行 —— 它在卡片右上角,与「编辑 / 删除」站在一起(见
+   * cardReplyButton)。
    */
   function itemActions(anno, isOrphan) {
     var acts = document.createElement("div");
     acts.className = "aipm-anno__item-actions";
     /* 点赞:本机批注没有服务端可言,不显示。 */
     if (!isLocal(anno)) acts.appendChild(likeButton(anno));
-    if (isLocal(anno) && !store.serverIdOf(anno.id) && auth && auth.isLoggedIn()) {
-      acts.appendChild(
-        actionButton("上传为公开", "upload-public", function () {
-          uploadLocal(anno, "public");
-        })
-      );
-      acts.appendChild(
-        actionButton("上传为私有", "upload-private", function () {
-          uploadLocal(anno, "private");
-        })
-      );
-    }
     if (isOrphan) {
       acts.appendChild(
         actionButton("重新锚定", "reanchor", function () {
@@ -2251,8 +2339,7 @@
    *
    * 仅本机的批注上这颗按钮**按不动**,悬停里说明理由 —— 它的承诺是「只在那台
    * 设备上」,而语境会随提问发到问答后端、再进入模型上下文。按钮留着比整颗消失
-   * 更容易理解:旁边那两颗「上传为公开 / 上传为私有」正好是「想让它出去」的那条路,
-   * 走完那条路,这颗星就亮起来了。
+   * 更容易理解:名字旁边的可见范围改成公开或私有,这颗星就亮起来了。
    */
   function askButton(anno) {
     if (!isLocal(anno)) {
@@ -2262,7 +2349,7 @@
     }
     var b = ibtn(ICON.ask, "问助手", "ask-local");
     b.disabled = true;
-    b.title = "仅本机的批注不会离开这台设备;想跟助手讨论它,先上传为公开或私有。";
+    b.title = "仅本机的批注不会离开这台设备;改为公开或私有后可以问助手。";
     return b;
   }
 
@@ -2323,6 +2410,16 @@
     return frag;
   }
 
+  /** 卡片顶栏右端那一排图标(问助手 / 回复 / 编辑 / 删除),紧挨着排,宽度留给名字。 */
+  function headTools(anno) {
+    var tools = document.createElement("span");
+    tools.className = "aipm-anno__headtools";
+    tools.appendChild(askButton(anno));
+    tools.appendChild(cardReplyButton(anno));
+    tools.appendChild(cardTools(anno));
+    return tools;
+  }
+
   /**
    * 评论卡。**不复用批注卡的骨架** —— 评论不锚正文,那张卡的顶栏(色点、引文、
    * 可见范围、角标)在这里全是空的,正文也没有高亮可画。评论要的是另一套:
@@ -2338,21 +2435,12 @@
     var wrap = document.createElement("article");
     wrap.className = "aipm-anno__comment" + (isLocal(anno) ? " rr-block" : "");
     wrap.setAttribute("data-anno-id", anno.id);
-    /* 不留 data-vis:这一条在哪个分栏里,分栏标题已经写着 —— 卡片上再标一遍是
-       同一句话说两次。自己发的留一条左边线,那才是卡片自己要说的。 */
+    /* 自己发的留一条左边线,那是卡片自己要说的。 */
     wrap.setAttribute("data-mine", canEdit(anno) ? "true" : "false");
 
-    var head = commentHead(anno.author, anno.createdAt);
-    head.appendChild(spacerNode());
-    if (isLocal(anno) && store.serverIdOf(anno.id)) {
-      var up = document.createElement("span");
-      up.className = "aipm-anno__badge is-quiet";
-      up.textContent = "已上传";
-      head.appendChild(up);
-    }
-    head.appendChild(askButton(anno));
-    head.appendChild(cardReplyButton(anno));
-    head.appendChild(cardTools(anno));
+    var head = commentHead(displayAuthor(anno.author), anno.createdAt);
+    head.querySelector(".aipm-anno__cline").appendChild(visChip(anno));
+    head.appendChild(headTools(anno));
     wrap.appendChild(head);
 
     var bodyText = escapeText(anno.body);
@@ -2415,43 +2503,23 @@
     dotWrap.appendChild(dot);
     top.appendChild(dotWrap);
 
-    var meta = document.createElement("span");
-    meta.className = "aipm-anno__meta";
-    var v = visLabel(anno);
-    var who = anno.author && anno.author.login ? anno.author.login : "匿名";
-    if (anno.origin === "smart") who = who.replace(/deepseek/gi, "ds");
-    meta.textContent = who + " · " + v.text;
-    meta.setAttribute("data-vis", v.cls);
-    top.appendChild(meta);
+    var author = displayAuthor(anno.author);
+    top.appendChild(anno.origin === "smart" ? smartAvatar() : avatarOf(author));
+    var who = nameOf(author, "aipm-anno__iname");
+    if (anno.origin === "smart") who.textContent = who.textContent.replace(/deepseek/gi, "ds");
+    top.appendChild(who);
+    top.appendChild(visChip(anno));
 
-    var spacer = document.createElement("span");
-    spacer.className = "aipm-anno__spacer";
-    top.appendChild(spacer);
-
-    /* 没有正文的批注(智能高亮落下的那些)不再拿一句占位文案充正文,改成一个
-       角标 —— 卡片因此矮一截,列表也清爽。 */
+    /* 没有正文的批注(多为智能高亮生成)只显示引文,卡片因此更矮。 */
     var bodyText = escapeText(anno.body);
-    if (!bodyText) {
-      var only = document.createElement("span");
-      only.className = "aipm-anno__badge is-quiet";
-      only.textContent = "仅高亮";
-      top.appendChild(only);
-    }
+    var tools = headTools(anno);
     if (isOrphan) {
       var ob = document.createElement("span");
       ob.className = "aipm-anno__badge";
       ob.textContent = "未定位";
-      top.appendChild(ob);
+      tools.insertBefore(ob, tools.firstChild);
     }
-    if (isLocal(anno) && store.serverIdOf(anno.id)) {
-      var up = document.createElement("span");
-      up.className = "aipm-anno__badge is-quiet";
-      up.textContent = "已上传";
-      top.appendChild(up);
-    }
-    top.appendChild(askButton(anno));
-    top.appendChild(cardReplyButton(anno));
-    top.appendChild(cardTools(anno));
+    top.appendChild(tools);
     wrap.appendChild(top);
 
     var quoteText = quoteOf(anno);
@@ -2633,9 +2701,12 @@
     b.classList.toggle("is-on", liked);
     b.title = liked ? "取消点赞" : "点赞";
     b.innerHTML = liked ? ICON.heart : ICON.heartOutline;
-    var num = document.createElement("span");
-    num.textContent = String(anno.likeCount || 0);
-    b.appendChild(num);
+    /* 没人点过赞时只留一颗心,「0」不提供任何信息。 */
+    if (anno.likeCount > 0) {
+      var num = document.createElement("span");
+      num.textContent = String(anno.likeCount);
+      b.appendChild(num);
+    }
     b.addEventListener("click", function (e) {
       e.stopPropagation();
       toggleLike(anno);
@@ -2854,7 +2925,6 @@
     els.draft = nodes.card || null;
     els.draftDot = nodes.dot || null;
     els.draftMeta = nodes.meta || null;
-    els.draftVisBadge = nodes.visBadge || null;
     els.quote = nodes.quote || null;
     els.swatches = nodes.swatches || null;
     els.visbtn = nodes.visbtn || null;
@@ -2869,7 +2939,7 @@
   /* 只清节点指针,不清 editorDraft —— 列表每重建一次就调一遍,状态得留着。 */
   function unmountEditor() {
     els.composer = els.draft = els.draftDot = els.draftMeta = null;
-    els.quote = els.swatches = els.visbtn = els.vislist = els.draftVisBadge = null;
+    els.quote = els.swatches = els.visbtn = els.vislist = null;
     els.input = els.hint = els.cancel = els.save = null;
   }
 
@@ -2945,6 +3015,35 @@
     return (author && author.login) || "匿名";
   }
 
+  var GITHUB_LOGIN = /^[A-Za-z0-9-]{1,39}$/;
+
+  /** GitHub 主页地址。本机记录与智能高亮的作者没有 GitHub 账号,返回 null。 */
+  function profileUrl(author) {
+    if (!author || !(author.githubId > 0) || !GITHUB_LOGIN.test(author.login || "")) return null;
+    return "https://github.com/" + author.login;
+  }
+
+  /** 头像或名字的外壳:作者有 GitHub 账号时是在新标签页打开主页的链接。 */
+  function authorNode(author, tag, className) {
+    var url = profileUrl(author);
+    var node = document.createElement(url ? "a" : tag);
+    node.className = className;
+    if (url) {
+      node.href = url;
+      node.target = "_blank";
+      node.rel = "noopener noreferrer";
+      node.title = loginOf(author) + " 的 GitHub 主页";
+    }
+    return node;
+  }
+
+  /** 作者名。有 GitHub 账号时点击进入主页。 */
+  function nameOf(author, className) {
+    var name = authorNode(author, "b", className);
+    name.textContent = loginOf(author);
+    return name;
+  }
+
   /**
    * 显示名。GitHub 的 name 是可选的,没填就退回 handle —— 回复列表里挂一串
    * 空白比挂 handle 糟得多。handle 仍然由调用方另给一份(见 replyHead):
@@ -3013,11 +3112,12 @@
     return absTime(iso).slice(0, 10);
   }
 
-  /** 作者头像。服务端不保证给 avatarUrl,退回首字母圆片;头像挂了也退回去。 */
+  /** 作者头像。服务端不保证给 avatarUrl,退回首字母圆片;头像挂了也退回去。
+      没有账号的「本机」作者画一台电脑;有 GitHub 账号的作者,点头像进入主页。 */
   function avatarOf(author) {
     var login = loginOf(author);
-    var wrap = document.createElement("span");
-    wrap.className = "aipm-anno__cavatar";
+    var wrap = authorNode(author, "span", "aipm-anno__cavatar");
+    if (wrap.title) wrap.setAttribute("aria-label", wrap.title);
     var fallback = function () {
       wrap.textContent = initialOf(login);
       wrap.classList.add("is-letter");
@@ -3034,15 +3134,34 @@
         fallback();
       });
       wrap.appendChild(img);
+    } else if (login === "本机" && !profileUrl(author)) {
+      wrap.classList.add("is-icon");
+      wrap.innerHTML = ICON.device;
     } else {
       fallback();
     }
     return wrap;
   }
 
+  /** 智能高亮的作者名是模型名,头像用助手那颗星。 */
+  function smartAvatar() {
+    var wrap = document.createElement("span");
+    wrap.className = "aipm-anno__cavatar is-icon is-smart";
+    wrap.innerHTML = ICON.spark;
+    return wrap;
+  }
+
+  /** 本机记录的作者只有登录名;当前登录的正是这个人时,用账号信息补上头像与主页。 */
+  function displayAuthor(author) {
+    var me = auth.isLoggedIn() ? auth.user() : null;
+    if (me && author && !(author.githubId > 0) && author.login === me.login) return me;
+    return author;
+  }
+
   /**
    * 评论顶栏:头像 + 用户名 + 发布时间。`iso` 为空 = 还没有时间可言(正在写),
    * 那时只出头像和用户名 —— 草稿的时间戳是假的,不如不给。
+   * 名字那一行留给调用方追加可见范围(见 visChip)。
    */
   function commentHead(author, iso) {
     var head = document.createElement("div");
@@ -3050,10 +3169,10 @@
     head.appendChild(avatarOf(author));
     var who = document.createElement("span");
     who.className = "aipm-anno__cwho";
-    var name = document.createElement("b");
-    name.className = "aipm-anno__cname";
-    name.textContent = loginOf(author);
-    who.appendChild(name);
+    var line = document.createElement("span");
+    line.className = "aipm-anno__cline";
+    line.appendChild(nameOf(author, "aipm-anno__cname"));
+    who.appendChild(line);
     if (iso) {
       var t = document.createElement("time");
       t.className = "aipm-anno__ctime";
@@ -3064,6 +3183,38 @@
     }
     head.appendChild(who);
     return head;
+  }
+
+  /** 名字旁的可见范围。自己能改的那条是一颗按钮,点开三选一;别人的那条只是标签。 */
+  function visChip(anno) {
+    var v = visOptionOf(anno.visibility);
+    if (!canEdit(anno)) {
+      var tag = document.createElement("span");
+      tag.className = "aipm-anno__vischip is-" + v.id;
+      tag.title = v.hint;
+      tag.textContent = v.label;
+      return tag;
+    }
+    var wrap = document.createElement("span");
+    wrap.className = "aipm-anno__viswrap";
+    var chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "aipm-anno__vischip is-" + v.id;
+    chip.setAttribute("data-action", "visibility");
+    chip.setAttribute("aria-haspopup", "listbox");
+    chip.setAttribute("aria-expanded", "false");
+    chip.setAttribute("aria-label", "可见范围：" + v.label);
+    chip.title = "更改可见范围";
+    var label = document.createElement("span");
+    label.textContent = v.label;
+    chip.appendChild(label);
+    chip.insertAdjacentHTML("beforeend", ICON.caret);
+    chip.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggleVisPop(wrap, chip, anno);
+    });
+    wrap.appendChild(chip);
+    return wrap;
   }
 
   /**
@@ -3084,13 +3235,9 @@
     form.appendChild(card);
 
     var head = commentHead(meAuthor(), null);
-    /* 名字那一行只写名字。「这条会落到哪儿」用右上角的角标说 —— 并进名字里的话,
-       未登录时会读成「本机 · 仅本机」:两句话各说各的,凑在一起像口吃。 */
+    /* 名字那一行只写名字,可见范围由底部那颗菜单按钮说明。 */
     var meta = head.querySelector(".aipm-anno__cname");
     head.appendChild(spacerNode());
-    var visBadge = document.createElement("span");
-    visBadge.className = "aipm-anno__badge is-quiet";
-    head.appendChild(visBadge);
     var badge = document.createElement("span");
     badge.className = "aipm-anno__badge";
     badge.textContent = opts.kind === "edit" ? "编辑中" : "新评论";
@@ -3133,7 +3280,7 @@
     card.appendChild(actions);
 
     return {
-      form: form, card: card, dot: null, meta: meta, visBadge: visBadge, quote: null,
+      form: form, card: card, dot: null, meta: meta, quote: null,
       input: input, hint: hint, actions: actions,
       swatches: null, cancel: cancel, save: save,
       visbtn: vis.btn, vislist: vis.list
@@ -3151,17 +3298,13 @@
     btn.setAttribute("aria-expanded", "false");
     btn.setAttribute("aria-label", "可见范围");
     btn.title = "可见范围";
-    btn.innerHTML = '<span class="aipm-anno__vislabel"></span>' + ICON.caret;
+    btn.innerHTML = '<span class="aipm-anno__visicon"></span><span class="aipm-anno__vislabel"></span>' + ICON.caret;
     root.appendChild(btn);
     var list = document.createElement("div");
     list.className = "aipm-anno__vislist";
     list.setAttribute("role", "listbox");
     list.hidden = true;
-    // 纯静态文案,不走 innerHTML 拼接任何外部数据
-    list.innerHTML =
-      '<button type="button" role="option" data-vis="public">公开<span>任何访客不登录也能读到</span></button>' +
-      '<button type="button" role="option" data-vis="private">私有<span>只有你自己登录后能看到</span></button>' +
-      '<button type="button" role="option" data-vis="local">仅本机<span>只存在这台设备上</span></button>';
+    list.innerHTML = visOptionsHtml();
     root.appendChild(list);
     return { root: root, btn: btn, list: list };
   }
@@ -3211,8 +3354,8 @@
     });
     dotWrap.appendChild(dot);
     top.appendChild(dotWrap);
-    var meta = document.createElement("span");
-    meta.className = "aipm-anno__meta";
+    top.appendChild(avatarOf(meAuthor()));
+    var meta = nameOf(meAuthor(), "aipm-anno__iname");
     top.appendChild(meta);
     var spacer = document.createElement("span");
     spacer.className = "aipm-anno__spacer";
@@ -3319,32 +3462,22 @@
       var b = e.target.closest("button[data-vis]");
       if (!b) return;
       var vis = b.getAttribute("data-vis");
+      /* 先记下这次选择,登录往返的草稿才带得上它。 */
+      if (editorDraft.kind === "edit") editorDraft.visibility = vis;
+      else activeVis = vis;
+      closeVisMenu(nodes);
       if ((vis === "public" || vis === "private") && !(auth && auth.isLoggedIn())) {
-        closeVisMenu(nodes);
         if (auth) auth.loginForDraft(draftForLogin());
         return;
       }
-      activeVis = vis;
-      closeVisMenu(nodes);
       syncComposer();
       nodes.visbtn.focus();
     });
     nodes.vislist.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
+      menuKeys(e, nodes.vislist, function () {
         closeVisMenu(nodes);
         nodes.visbtn.focus();
-        return;
-      }
-      var options = Array.from(nodes.vislist.querySelectorAll("button:not(:disabled)"));
-      if (!options.length || !["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
-      e.preventDefault();
-      var index = options.indexOf(document.activeElement);
-      if (e.key === "Home") index = 0;
-      else if (e.key === "End") index = options.length - 1;
-      else index = (index + (e.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
-      options[index].focus();
+      });
     });
   }
 
@@ -3537,9 +3670,11 @@
     var kind = opts.kind;
     var annoId = opts.annoId || null;
     var body = opts.body || "";
+    var visibility = null;
     if (kind === "edit") {
       var target = annoById(annoId);
       body = target ? target.body || "" : "";
+      visibility = target ? target.visibility : "local";
       activeColor = (target && target.color) || activeColor;
       activeStyle = target ? styleOf(target) : activeStyle;
     }
@@ -3557,6 +3692,7 @@
       parentId: opts.parentId || null,
       quote: opts.quote || "",
       body: body,
+      visibility: visibility,
       placeholder: opts.placeholder || "",
       page: opts.page === true,
       draftId: DRAFT_ID
@@ -3604,21 +3740,17 @@
     var vis = defaultVisibility();
     var label = visLabel({ visibility: vis });
     if (els.visbtn) {
+      els.visbtn.querySelector(".aipm-anno__visicon").innerHTML = visOptionOf(vis).icon;
       els.visbtn.querySelector(".aipm-anno__vislabel").textContent = label.text;
       els.visbtn.setAttribute("aria-label", "可见范围：" + label.text);
+      VIS_OPTIONS.forEach(function (v) {
+        els.visbtn.classList.toggle("is-" + v.id, v.id === vis);
+      });
     }
     if (vis === "local") els.composer.classList.add("rr-block");
     var loggedIn = auth ? auth.isLoggedIn() : false;
     var me = loggedIn && auth.user() ? auth.user().login : "";
-    /* 可见范围落在哪儿:批注草稿卡并进名字那一行(「名字 · 公开」),评论编辑卡
-       没有那行位置,改用右上角的角标 —— 名字那一行就只剩名字。 */
-    if (els.draftVisBadge) {
-      els.draftMeta.textContent = me || "本机";
-      els.draftVisBadge.textContent = label.text;
-    } else {
-      els.draftMeta.textContent = (me || "本机") + " · " + label.text;
-    }
-    els.draftMeta.setAttribute("data-vis", label.cls);
+    els.draftMeta.textContent = me || "本机";
     var opts = els.vislist.querySelectorAll("button[data-vis]");
     var pending = uncertainDraft();
     if (els.visbtn) els.visbtn.disabled = !!pending;
@@ -3777,24 +3909,24 @@
         closeEditor();
         return;
       }
-      /* 本机批注改成公开/私有,意思就是「连这次编辑一起上传」。先落这次编辑,
+      var vis = defaultVisibility();
+      var patch = { body: body, color: activeColor, style: activeStyle };
+      /* 本机批注改成公开/私有,意思就是「连这次编辑一起上传」。先写入这次编辑,
          再走已有的上传通路 —— 直接上传会把刚改的内容丢掉。 */
-      if (isLocal(target) && defaultVisibility() !== "local") {
-        store.localUpdate(target.page, target.id, {
-          body: body,
-          color: activeColor,
-          style: activeStyle
-        });
-        var updated = annoById(target.id);
+      if (isLocal(target) && vis !== "local") {
+        var updated = store.localUpdate(target.page, target.id, patch);
         closeEditor();
-        uploadLocal(updated || target, defaultVisibility());
+        uploadLocal(updated, vis);
         return;
       }
-      var patch = { body: body, color: activeColor, style: activeStyle };
-      /* 服务端批注可以直接改可见性(公开 ↔ 私有)。 */
-      if (!isLocal(target) && defaultVisibility() !== target.visibility) {
-        patch.visibility = defaultVisibility();
+      /* 服务端批注改为仅本机:连这次编辑一起写进本机记录,再删除服务端那份。 */
+      if (!isLocal(target) && vis === "local") {
+        closeEditor();
+        moveToLocal(Object.assign({}, target, patch));
+        return;
       }
+      /* 服务端批注可以直接改可见性(公开 ↔ 私有)。 */
+      if (!isLocal(target) && vis !== target.visibility) patch.visibility = vis;
       setBusy(true);
       patchAnnotation(target, patch).then(function (ok) {
         setBusy(false);
@@ -4100,6 +4232,9 @@
       .request("/api/annotations/" + encodeURIComponent(anno.id), { method: "DELETE", token: token })
       .then(function (res) {
         if (res.ok || res.status === 404) {
+          /* 从本机上传来的那条:本机留着的对应记录一起删掉。 */
+          var shadow = shadowOf(anno.id);
+          if (shadow) store.localRemove(shadow.page, shadow.id);
           invalidate();
           return ensureAnnotationsLoaded();
         }
@@ -4165,6 +4300,81 @@
         store.localUpdate(anno.page, anno.id, { uploadedAt: new Date().toISOString() });
         invalidate();
         return ensureAnnotationsLoaded();
+      });
+  }
+
+  /**
+   * 卡片上改可见范围。本机改为公开或私有走上传;服务端的两档之间直接修改;
+   * 服务端改为仅本机见 moveToLocal。公开与私有都要记名,未登录先去登录。
+   */
+  function changeVisibility(anno, vis) {
+    if (vis === anno.visibility) return;
+    if (!auth.isLoggedIn()) {
+      auth.login(location.href);
+      return;
+    }
+    if (isLocal(anno)) uploadLocal(anno, vis);
+    else if (vis === "local") moveToLocal(anno);
+    else patchAnnotation(anno, { visibility: vis });
+  }
+
+  /**
+   * 服务端批注改为仅本机:先在本机写好记录,再删除服务端那份。写好的本机记录在删除
+   * 成功前仍与服务端那份对应(isShadow),所以页面上不会同时出现两条;删除失败时撤回
+   * 刚写的记录。这条批注当初从本机上传而来时,沿用原来那条本机记录,本机留下的回复
+   * 与服务端的回复合在一起。
+   */
+  function moveToLocal(anno) {
+    var token = auth.token();
+    var shadow = shadowOf(anno.id);
+    var replies = (anno.replies || []).slice();
+    if (shadow) {
+      (shadow.replies || []).forEach(function (r) {
+        if (!replies.some(function (x) { return x.id === r.id; })) replies.push(r);
+      });
+      replies.sort(function (a, b) {
+        return tsMs(a.createdAt) - tsMs(b.createdAt);
+      });
+    }
+    var record = {
+      body: anno.body || "",
+      color: anno.color || store.DEFAULT_COLOR,
+      style: styleOf(anno),
+      target: anno.target,
+      replies: replies
+    };
+    var localId = shadow ? shadow.id : store.uid();
+    try {
+      if (shadow) {
+        store.localUpdate(shadow.page, shadow.id, record);
+      } else {
+        store.localAdd(Object.assign({
+          id: localId,
+          page: anno.page,
+          visibility: "local",
+          author: { githubId: 0, login: loginOf(anno.author) },
+          createdAt: anno.createdAt,
+          updatedAt: new Date().toISOString()
+        }, record));
+        store.rememberServerId(localId, anno.id);
+      }
+    } catch (err) {
+      setHint(err.message);
+      return;
+    }
+    setBusy(true);
+    store
+      .request("/api/annotations/" + encodeURIComponent(anno.id), { method: "DELETE", token: token })
+      .then(function (res) {
+        setBusy(false);
+        if (res.ok || res.status === 404) {
+          store.forgetServerId(localId);
+          invalidate();
+          return ensureAnnotationsLoaded();
+        }
+        if (!shadow) store.localRemove(anno.page, localId);
+        if (res.status === 401) auth.forget();
+        setHint(serverFailText("改为仅本机失败", res));
       });
   }
 
@@ -4768,14 +4978,14 @@
     });
   });
 
-  /* 点在别处:收起可见范围菜单与改色浮层。这两个都是附在卡片上的小浮层,
+  /* 点在别处:收起可见范围菜单与卡片上的浮层。这些都是附在卡片上的小浮层,
      没有自己的遮罩,靠这一处统一收。 */
   document.addEventListener("mousedown", function (e) {
     if (!e.target || !e.target.closest) return;
     if (els.vislist && !els.vislist.hidden && !e.target.closest(".aipm-anno__vismenu")) {
       closeVisMenu();
     }
-    if (openPop !== null && !e.target.closest(".aipm-anno__dotwrap")) closePop();
+    if (openPop !== null && !openPop.wrap.contains(e.target)) closePop();
   });
 
   /**
@@ -4797,6 +5007,7 @@
         : pendingSelection !== null
           ? { selectors: pendingSelection.selectors, quote: pendingSelection.range.toString() }
           : null;
+    var editing = editorDraft && editorDraft.kind === "edit";
     return {
       source: "manual-v1",
       site: location.origin,
@@ -4810,7 +5021,9 @@
       color: activeColor,
       style: activeStyle,
       body: els.input ? els.input.value : "",
-      visibility: activeVis === "private" ? "private" : "public",
+      /* 编辑中的那条原样带上用户选的可见范围(含仅本机);新建的草稿登录回来是要发往
+         服务端的,只在公开与私有之间取。 */
+      visibility: editing ? editorDraft.visibility : activeVis === "private" ? "private" : "public",
       /* 正在编辑/回复哪一条:登录回来后要接着编那一条,不能当成新建 ——
          当成新建的话,草稿里没有选区,用户回来只会撞上「先在正文里选中一段话」。 */
       resumeKind: editorDraft ? editorDraft.kind : "create",
@@ -4966,13 +5179,15 @@
         return;
       }
     }
+    var resumeKind = resume === null ? "create" : draft.resumeKind || "edit";
     editorDraft = {
-      kind: resume === null ? "create" : draft.resumeKind || "edit",
+      kind: resumeKind,
       annoId: resume === null ? null : resume.id,
       parentId: null,
       placeholder: "",
       quote: draft.quote || "",
       body: draft.body || "",
+      visibility: resumeKind === "edit" ? draft.visibility : null,
       requestId: draft.requestId,
       page: draft.scope === "page",
       draftId: DRAFT_ID
@@ -4982,7 +5197,7 @@
       : null;
     activeColor = draft.color || activeColor;
     activeStyle = store.ANNO_STYLES.indexOf(draft.style) >= 0 ? draft.style : activeStyle;
-    activeVis = draft.visibility || null;
+    if (resumeKind !== "edit") activeVis = draft.visibility || null;
     render();
     if (els.input) els.input.focus();
     if (draft.identity === null) {

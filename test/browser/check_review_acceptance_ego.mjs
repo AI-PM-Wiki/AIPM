@@ -196,7 +196,8 @@ export async function checkReviewAcceptance({ directory, phase, taskSpace, space
       if (await page.evaluate(() => document.querySelector('.aipm-anno__title-label').textContent !== '批注')) {
         await page.press('.aipm-anno__title', 'Enter');
       }
-      await page.press(`[data-anno-id="${local.id}"] [data-action="upload-private"]`, 'Enter');
+      await page.press(`[data-anno-id="${local.id}"] [data-action="visibility"]`, 'Enter');
+      await page.press(`[data-anno-id="${local.id}"] .aipm-anno__vispop [data-vis="private"]`, 'Enter');
       await page.waitForFunction(id => Boolean(window.__aipmAnnoStore.serverIdOf(id)), local.id);
       const remoteId = await page.evaluate(id => window.__aipmAnnoStore.serverIdOf(id), local.id);
       await marked(remoteId);

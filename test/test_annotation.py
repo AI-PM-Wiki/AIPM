@@ -507,8 +507,14 @@ class TestThreeVisibilities(unittest.TestCase):
         cls.auth = AUTH_JS.read_text(encoding="utf-8")
 
     def test_all_three_paths_are_offered(self):
-        for vis in ("public", "private", "local"):
-            self.assertIn(f'data-vis="{vis}"', self.js)
+        options = self.js[self.js.index("var VIS_OPTIONS = ["):self.js.index("function visOptionOf(")]
+        for vis, label in (("public", "公开"), ("private", "私有"), ("local", "仅本机")):
+            self.assertIn(f'{{ id: "{vis}", label: "{label}"', options)
+        self.assertIn("data-vis=\"' + v.id + '\"", _block(self.js, "function visOptionsHtml("))
+
+    def test_unknown_visibility_fails_fast(self):
+        block = _block(self.js, "function visOptionOf(")
+        self.assertIn('throw new Error("unknown visibility: " + id);', block)
 
     def test_public_and_private_go_to_the_server(self):
         block = _block(self.js, "function submitAnnotation(")
@@ -546,6 +552,16 @@ class TestThreeVisibilities(unittest.TestCase):
         self.assertIn("saveDraft", self.store)
         self.assertIn("loginForDraft", self.auth)
         self.assertIn("maybeRestoreDraft", self.js)
+
+    def test_an_edit_keeps_its_own_visibility_through_login(self):
+        """编辑中的那条登录回来仍是用户选的那一档,仅本机不会被换成公开。"""
+        draft = _block(self.js, "function draftForLogin()")
+        self.assertIn('visibility: editing ? editorDraft.visibility : activeVis === "private" ? "private" : "public",', draft)
+        restore = _block(self.js, "function maybeRestoreDraft()")
+        self.assertIn('visibility: resumeKind === "edit" ? draft.visibility : null,', restore)
+        self.assertIn('if (resumeKind !== "edit") activeVis = draft.visibility || null;', restore)
+        self.assertIn('if (editorDraft && editorDraft.kind === "edit") return editorDraft.visibility;',
+                      _block(self.js, "function defaultVisibility()"))
 
     def test_token_never_stays_in_the_url(self):
         """一次性 code 换到 token 后立刻 replaceState 抹掉参数。"""
@@ -644,9 +660,14 @@ class TestSharedPanelContracts(unittest.TestCase):
 
     def test_uploaded_local_copy_is_not_reanchored(self):
         """本地那条上传后不再重复渲染高亮(服务端那份负责),也不该变成孤儿。"""
+        self.assertIn("store.serverIdOf(anno.id)", _block(self.js, "function isShadow("))
         block = _block(self.js, "function applyAll(")
-        self.assertIn("store.serverIdOf(anno.id)", block)
+        self.assertIn("if (isShadow(anno))", block)
         self.assertIn("continue;", block)
+
+    def test_uploaded_local_copy_is_not_listed(self):
+        """面板里只列服务端那份:本机那份留着,改回仅本机时原样复用。"""
+        self.assertIn("!isShadow(anno)", _block(self.js, "function listed("))
 
     def test_fab_stays_reachable_while_annotation_panel_is_open(self):
         """批注面板开着时 FAB「询问助手」是切回 AI 面板的入口,不能被面板盖住。"""
@@ -913,18 +934,22 @@ class TestUiReviewRound(unittest.TestCase):
         self.assertIn("els.draft.setAttribute(\"data-color\"", block)
 
     def test_visibility_picker_is_a_menu_right_of_save(self):
-        """三态收进保存键右侧那颗箭头里(分体按钮);未登录点公开/私有走登录引导。"""
+        """三选一的可见范围菜单在保存键右侧;未登录选公开/私有走登录引导。"""
         card = _block(self.js, "function buildEditor(")
         self.assertLess(card.index("aipm-anno__save"), card.index("buildVisPicker()"))
         picker = _block(self.js, "function buildVisPicker(")
         self.assertIn("aipm-anno__vismenu", picker)
-        for vis in ("public", "private", "local"):
-            self.assertIn(f'data-vis="{vis}"', picker)
-        # 右半颗只有箭头,当前范围由草稿卡的 meta 行说明
+        self.assertIn("list.innerHTML = visOptionsHtml();", picker)
+        # 按钮上是当前范围的图标与名称,再加一颗箭头
+        self.assertIn("aipm-anno__visicon", picker)
+        self.assertIn("aipm-anno__vislabel", picker)
         self.assertIn("ICON.caret", picker)
         handler = _block(self.js, 'els.vislist.addEventListener("click"')
         self.assertIn("loginForDraft(", handler)
         self.assertIn('vis === "public" || vis === "private"', handler)
+        # 选择先记下来,登录往返带回的草稿才是用户选的那一档
+        self.assertLess(handler.index("activeVis = vis"), handler.index("loginForDraft("))
+        self.assertLess(handler.index("editorDraft.visibility = vis"), handler.index("loginForDraft("))
 
     def test_the_logged_out_explainer_is_gone(self):
         """用户点名删掉的那行提示不许回来。"""
@@ -1036,15 +1061,14 @@ class TestUiRoundThree(unittest.TestCase):
     # ---- 卡片:四个操作各归其位 ----
 
     def test_card_actions_are_positioned_not_listed(self):
-        """改色在左上角圆点、编辑与删除在右上角 —— 都是按钮,不是底部那排文字链。
-        铅笔与叉抽进了 cardTools(),由批注卡与评论卡共用。"""
+        """改色在左上角圆点,编辑与删除在顶栏右端的 headTools() 里,批注卡与评论卡共用。"""
         item = _block(self.js, "function renderItem(anno, isOrphan)")
         self.assertIn("aipm-anno__dotwrap", item)
         self.assertIn('dot.type = "button"', item)
-        self.assertIn("cardTools(anno)", item)
+        self.assertIn("headTools(anno)", item)
+        self.assertIn("cardTools(anno)", _block(self.js, "function headTools("))
         tools = _block(self.js, "function cardTools(")
-        # 断言的是「两颗带 data-action 的图标按钮」这件事,不锁具体的类名 ——
-        # 类名从 item-edit/item-close 换成共用的 ibtn 时,这条契约没变。
+        # 断言的是「两颗带 data-action 的图标按钮」,不锁具体的类名
         self.assertIn('"edit"', tools)
         self.assertIn('"delete"', tools)
         self.assertIn("ICON.edit", tools)
@@ -1054,6 +1078,15 @@ class TestUiRoundThree(unittest.TestCase):
             self.assertNotIn(gone, item)
             self.assertNotIn(gone, tools)
 
+    def test_head_tools_sit_tight_at_the_right_end(self):
+        """右端那排图标挨在一起,把顶栏宽度让给名字与可见范围。"""
+        head = _block(self.js, "function headTools(")
+        order = [head.index(call) for call in ("askButton(anno)", "cardReplyButton(anno)", "cardTools(anno)")]
+        self.assertEqual(order, sorted(order))
+        rule = _block(self.css, ".aipm-anno__headtools {")
+        self.assertIn("margin-inline-start: auto;", rule)
+        self.assertIn("flex: none;", rule)
+
     def test_recolour_goes_through_the_dot_popover(self):
         self.assertIn("function togglePop(", self.js)
         pop = _block(self.js, "function togglePop(")
@@ -1062,9 +1095,9 @@ class TestUiRoundThree(unittest.TestCase):
         self.assertIn("apply({ color: color })", pop)
         self.assertIn("closePop()", _block(self.js, "function render()"))
 
-    def test_highlight_only_cards_use_a_badge(self):
+    def test_body_less_cards_show_only_the_quote(self):
         item = _block(self.js, "function renderItem(anno, isOrphan)")
-        self.assertIn('"仅高亮"', item)
+        self.assertIn("if (bodyText) {", item)
         self.assertNotIn("(只有高亮,没有文字)", self.js)
 
     # ---- 内联编辑卡 ----
@@ -1603,23 +1636,18 @@ class TestUiRoundFive(unittest.TestCase):
         # 批注那条路原样保留
         self.assertIn("写点什么(可留空,只做高亮)…", _block(self.js, "function buildEditor("))
 
-    def test_comment_editor_shows_the_range_as_a_badge(self):
-        """「这条会落到哪儿」在评论编辑卡上是右上角的角标,不是并进名字那一行 ——
-        并进去的话未登录时会读成「本机 · 仅本机」,两句各说各的。"""
-        fn = _block(self.js, "function buildCommentEditor(")
-        self.assertIn("visBadge", fn)
-        self.assertIn("head.appendChild(visBadge)", fn)
+    def test_editor_shows_the_range_on_the_menu_button(self):
+        """编辑卡的名字一行只写名字;可见范围写在保存键旁那颗菜单按钮上,只出现一次。"""
         sync = _block(self.js, "function syncComposer()")
-        self.assertIn("if (els.draftVisBadge) {", sync)
         self.assertIn('els.draftMeta.textContent = me || "本机";', sync)
-        # 批注草稿卡那条路原样保留:它没有角标位置,可见范围并进名字里
-        self.assertIn('(me || "本机") + " · " + label.text', sync)
+        self.assertIn('.querySelector(".aipm-anno__vislabel").textContent = label.text;', sync)
+        self.assertIn('.querySelector(".aipm-anno__visicon").innerHTML = visOptionOf(vis).icon;', sync)
 
-    def test_comment_card_carries_no_redundant_visibility_flag(self):
-        """这一条在哪个分栏里,分栏标题已经写着;卡片上再标一遍是同一句话说两次。"""
+    def test_comment_card_shows_its_range_next_to_the_name(self):
+        """评论卡与批注卡一样,可见范围跟在名字后面;自己的那条点开就能改。"""
         item = _block(self.js, "function renderCommentItem(anno)")
+        self.assertIn('head.querySelector(".aipm-anno__cline").appendChild(visChip(anno));', item)
         self.assertNotIn('setAttribute("data-vis"', item)
-        self.assertIn('setAttribute("data-mine"', item)
         self.assertNotIn(".aipm-anno__comment[data-vis", self.css)
 
     def test_comment_body_cannot_be_empty(self):
@@ -1648,15 +1676,17 @@ class TestUiRoundFive(unittest.TestCase):
     # ---- 共用件 ----
 
     def test_shared_pieces_are_shared(self):
-        """回复区与底部操作链两边长得一样,不该各抄一份 —— 抄一份就会各自漂移。"""
+        """回复区、顶栏右端那排图标与底部操作链两边长得一样,不该各抄一份 —— 抄一份就会各自漂移。"""
         item = _block(self.js, "function renderItem(anno, isOrphan)")
         comment = _block(self.js, "function renderCommentItem(anno)")
-        for shared in ("repliesBox(anno", "cardTools(anno)", "itemActions(anno,"):
+        for shared in ("repliesBox(anno", "headTools(anno)", "itemActions(anno,", "visChip(anno)"):
             self.assertIn(shared, item)
             self.assertIn(shared.split("(")[0], comment)
         self.assertEqual(self.js.count("function repliesBox("), 1)
         self.assertEqual(self.js.count("function itemActions("), 1)
         self.assertEqual(self.js.count("function cardTools("), 1)
+        self.assertEqual(self.js.count("function headTools("), 1)
+        self.assertEqual(self.js.count("function visChip("), 1)
 
     def test_both_cards_share_one_reply_hierarchy(self):
         """回复那套层级只有**一份**实现,批注卡与评论卡都从它出来 —— 「收起回复」、
@@ -1759,7 +1789,8 @@ class TestReplyShowsItsAuthor(unittest.TestCase):
         cls.head = _block(cls.js, "function replyHead(anno, reply)")
 
     def test_a_reply_carries_an_avatar(self):
-        self.assertIn("avatarOf(reply.author)", self.head)
+        self.assertIn("var author = displayAuthor(reply.author);", self.head)
+        self.assertIn("avatarOf(author)", self.head)
         # 回复是缩进一层的二级内容,头像比评论卡顶栏那颗小一档
         self.assertIn('av.classList.add("is-sm")', self.head)
         self.assertIn("width: 1.15rem", _block(self.css, ".aipm-anno__cavatar.is-sm {"))
@@ -1767,15 +1798,15 @@ class TestReplyShowsItsAuthor(unittest.TestCase):
     def test_a_reply_shows_the_display_name_and_the_handle(self):
         """GitHub 的 name 是可以不填的,所以显示名要退回 handle;handle 则另给
         一份,只在两个名字不一样的时候出现(一样时说两遍是口吃)。"""
-        self.assertIn("displayNameOf(reply.author)", self.head)
-        self.assertIn("loginOf(reply.author)", self.head)
+        self.assertIn("displayNameOf(author)", self.head)
+        self.assertIn("loginOf(author)", self.head)
         self.assertIn("aipm-anno__reply-handle", self.head)
         self.assertIn("if (name !== login)", self.head)
         fn = _block(self.js, "function displayNameOf(author)")
         self.assertIn("|| loginOf(author)", fn)
         # handle 与显示名同格:名字是这一行唯一有弹性的,挤不下时两个一起省略
         self.assertIn('who.appendChild(handle)', self.head)
-        self.assertIn("text-overflow: ellipsis", _block(self.css, ".aipm-anno__reply-who {"))
+        self.assertIn("text-overflow: ellipsis", _block(self.css, "\n.aipm-anno__reply-who {"))
 
     def test_the_floor_owner_wears_a_badge(self):
         """「这条是楼主的」。几十层的高楼里作者本人的一句话比别人的重,而这个
@@ -2352,23 +2383,19 @@ class TestReplyAndDeleteAreIcons(unittest.TestCase):
     # ---- 回复按钮的位置 ----
 
     def test_the_reply_button_stands_with_the_other_card_tools(self):
-        """回勾箭头从卡片底部那行搬到了右上角,跟铅笔垃圾桶站在一起 —— 与每条回复
-        右端那颗同一个位置逻辑:谁的回话按钮就贴在谁那一行的右端。底部那行不再有
-        图标按钮,它只剩点赞与「上传 / 重新锚定」那几条文字链。"""
+        """回勾箭头在卡片右上角,跟铅笔垃圾桶站在一起 —— 与每条回复右端那颗同一个
+        位置逻辑:谁的回话按钮就贴在谁那一行的右端。底部那行没有图标按钮,只有点赞
+        与「重新锚定」。"""
         acts = _block(self.js, "function itemActions(anno, isOrphan)")
         self.assertNotIn("ICON.reply", acts)
         head = _block(self.js, "function cardReplyButton(anno)")
         self.assertIn("iconButton(ICON.reply", head)
         self.assertNotIn('actionButton("回复"', head)
         for card in ("function renderItem(anno, isOrphan)", "function renderCommentItem(anno)"):
-            block = _block(self.js, card)
-            self.assertIn("cardReplyButton(anno)", block)
-            self.assertIn("cardTools(anno)", block)
-            # 回勾箭头在编辑 / 删除之前:垃圾桶在最右,与每条回复那一行一致
-            self.assertLess(
-                block.index("cardReplyButton(anno)"), block.index("cardTools(anno)")
-            )
-        # 搬走之后那条「底部这行给正文色」的规则没有对象了,别留下
+            self.assertIn("headTools(anno)", _block(self.js, card))
+        tools = _block(self.js, "function headTools(")
+        # 回勾箭头在编辑 / 删除之前:垃圾桶在最右,与每条回复那一行一致
+        self.assertLess(tools.index("cardReplyButton(anno)"), tools.index("cardTools(anno)"))
         self.assertNotIn(".aipm-anno__item-actions .aipm-anno__ibtn", self.css)
 
     def test_every_card_keeps_a_way_to_reply(self):
