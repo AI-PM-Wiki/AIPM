@@ -69,6 +69,7 @@ export async function checkEditorUi({ directory, taskSpace, spaceId, phase = 'af
         await page.keyboard.press('Enter');
         await page.waitForFunction(body=>window.__aipmAnnoStore.localList(location.pathname).some(item=>item.body===body),COMMENT,{timeout:5000});
         assert.equal(await page.evaluate(()=>window.__aipmAnnoStore.localList(location.pathname).length),1);
+        await page.click('.aipm-anno__comment .aipm-anno__headtools > button[data-action="options"]');
         await page.click('.aipm-anno__comment button[data-action="reply"]');
         await page.waitForSelector('form[data-editor="reply"] textarea',{state:'visible'});
         await page.fill('form[data-editor="reply"] textarea',REPLY);
@@ -79,6 +80,7 @@ export async function checkEditorUi({ directory, taskSpace, spaceId, phase = 'af
         assert.equal(reply.blocked,true);
         await page.click('form[data-editor="reply"] button[type="submit"]');
         await page.waitForFunction(body=>window.__aipmAnnoStore.localList(location.pathname).some(item=>item.replies?.some(reply=>reply.body===body)),REPLY,{timeout:5000});
+        await page.click('.aipm-anno__comment .aipm-anno__headtools > button[data-action="options"]');
         await page.click('.aipm-anno__comment button[data-action="edit"]');
         await page.fill('form[data-editor="comment"] textarea',COMMENT+'已完成编辑。');
         await page.click('form[data-editor="comment"] button[type="submit"]');

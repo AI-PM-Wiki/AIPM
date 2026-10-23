@@ -301,6 +301,7 @@ export async function checkConfirmationUi({ directory, sourceDirectory, taskSpac
         await startEditorInputTrace(page);
         await page.click('.aipm-chat__close');
         await page.click('loc=css:mark.aipm-anno-mark');
+        await page.click('.aipm-anno__item .aipm-anno__headtools > button[data-action="options"]');
         await page.click('.aipm-anno__item button[data-action="edit"]');
         await page.waitForSelector('form[data-editor="edit"] textarea', { state: 'visible' });
         const layout = await waitForEditorLayout(page);

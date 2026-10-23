@@ -1134,12 +1134,11 @@ class TestUiRoundThree(unittest.TestCase):
         restore = _block(self.js, "function maybeRestoreDraft()")
         self.assertIn("draft.resumeId", restore)
 
-    def test_reply_editor_nests_under_its_parent(self):
-        item = _block(self.js, "function renderItem(anno, isOrphan)")
-        self.assertIn("repliesBox(anno", item)
-        box = _block(self.js, "function repliesBox(anno, opts)")
-        self.assertIn('editorDraft.kind === "reply"', box)
-        self.assertIn("aipm-anno__replies", box)
+    def test_reply_editor_belongs_to_its_card(self):
+        editor = _block(self.js, "function appendReplyEditor(card, anno)")
+        self.assertIn('editorDraft.kind !== "reply"', editor)
+        self.assertIn("editorDraft.annoId !== anno.id", editor)
+        self.assertIn("materializeEditor()", editor)
 
     # ---- 账号 ----
 
@@ -1476,9 +1475,7 @@ class TestUiRoundFour(unittest.TestCase):
     def test_reply_to_a_reply_carries_parent_id(self):
         start = _block(self.js, "function startReply(anno, reply)")
         self.assertIn("parentId: reply ? reply.id : null", start)
-        box = _block(self.js, "function repliesBox(anno, opts)")
-        self.assertIn("replyParent === r.id", box)
-        self.assertIn("data-depth", box)
+        self.assertIn('placeholder: "回复 " + who + "…"', start)
 
     def test_replies_go_through_the_reply_endpoint(self):
         """回复**不能**走 PATCH 的整数组 replies —— 那条是「仅作者」的,
@@ -1747,28 +1744,14 @@ class TestReplyThreadFollowsItsParent(unittest.TestCase):
         # 平铺那条老路(照数组顺序 forEach,深度事后另算)整个撤掉
         self.assertNotIn("depthOf(", box)
 
-    def test_editor_sits_inside_the_floor_it_answers(self):
-        """回某一条回复时,输入框落在那条下面、它已有的回复之前 —— 写的时候看见的
-        位置就是发出去之后的位置(新回复成为它的第一条子回复)。"""
-        box = self.box
-        self.assertIn("if (replyingHere && replyParent === r.id) {", box)
-        self.assertIn("appendEditor(Math.min(depth + 1, MAX_DEPTH));", box)
-        self.assertLess(
-            box.index("appendEditor(Math.min(depth + 1, MAX_DEPTH))"),
-            box.index("paintReply(kids[i], depth + 1, budget)"),
-        )
-        # 回整条批注(不是某条回复)→ 排在整棵树后面
-        self.assertIn("if (replyingHere && replyParent === null) appendEditor(0);", box)
+    def test_editor_is_last_in_both_card_layouts(self):
+        for signature in ("function renderItem(anno, isOrphan)", "function renderCommentItem(anno)"):
+            card = _block(self.js, signature)
+            self.assertLess(card.index("wrap.appendChild(acts)"), card.index("appendReplyEditor(wrap, anno)"))
+            self.assertEqual(card.count("appendReplyEditor(wrap, anno)"), 1)
 
-    def test_reply_box_carries_the_depth_it_will_join(self):
-        """回复框跟着它将要成为的那一层缩进 —— 写的时候看见的层次,就是发出去之后
-        的层次。档位与 .aipm-anno__reply 的缩进一致(只封一档),两者算的是同一个值:
-        --aipm-anno-thread-inset(一条回复的正文离卡片左沿有多远)。"""
-        self.assertIn('form.setAttribute("data-depth"', self.box)
-        self.assertEqual(
-            _decl(_block(self.css, ".aipm-anno__replybox[data-depth] {"), "margin-left"),
-            _decl(_block(self.css, ".aipm-anno__reply[data-depth] {"), "margin-left"),
-        )
+    def test_reply_box_uses_the_card_width(self):
+        self.assertEqual(_decl(_block(self.css, ".aipm-anno__replybox {"), "margin"), ".75rem 0 .1rem")
         self.assertIn(
             "--aipm-anno-thread-inset: calc(.5rem + 2px)",
             _block(self.css, ".aipm-anno__replies {"),
@@ -2263,20 +2246,16 @@ class TestTheThreadBarBelongsToEachReply(unittest.TestCase):
         self.assertEqual(_decl(_block(self.css, ".aipm-anno__reply {"), "margin"), ".3rem 0")
 
     def test_the_rows_without_a_bar_line_up_with_the_ones_that_have_it(self):
-        """回复区里那几行不是回复的东西(「共 N 条回复」、「展开更多回复」、回复框)
-        没有灰条可挂,靠同一个值补齐灰条那份宽度 —— 否则它们会比回复正文更靠左,
-        整段回复的左沿就长短不一了。"""
+        """回复计数与展开控件保持正文对齐。"""
         self.assertEqual(
             _decl(_block(self.css, ".aipm-anno__replies {"), "--aipm-anno-thread-inset"),
             "calc(.5rem + 2px)",
         )
         rule = _block(
             self.css,
-            ".aipm-anno__replies-count,\n.aipm-anno__replies-more,\n.aipm-anno__replybox {",
+            ".aipm-anno__replies-count,\n.aipm-anno__replies-more {",
         )
         self.assertEqual(_decl(rule, "margin-left"), "var(--aipm-anno-thread-inset)")
-        # 这条挂在回复区那一节的末尾:三条规则各自的 margin 简写都在它前面,
-        # 否则会被那些简写里的 margin-left: 0 盖掉
         self.assertLess(self.css.index(rule), self.css.index(".aipm-anno__input--reply {"))
 
 
@@ -2322,13 +2301,13 @@ class TestReplyAndDeleteAreIcons(unittest.TestCase):
 
     # ---- 回复:名字一行,操作固定在右端 ----
 
-    def test_reply_tools_are_icons_not_words(self):
+    def test_reply_tools_use_the_shared_action_menu(self):
         head = _block(self.js, "function replyHead(anno, reply)")
         self.assertIn("aipm-anno__reply-tools", head)
+        self.assertIn("actionMenu(", head)
         self.assertIn("ICON.reply", head)
         self.assertIn("ICON.trash", head)
-        for gone in ('"回复"', '"删除"', 'replyTool("回复"', 'replyTool("删除"'):
-            self.assertNotIn(gone, head)
+        self.assertIn('confirmDelete(del, "回复"', head)
 
     def test_every_reply_gets_a_head_line_of_its_own(self):
         """回复排成「头一行 + 正文」。操作按钮挂在这条回复自己的头一行右端,每条
@@ -2362,24 +2341,22 @@ class TestReplyAndDeleteAreIcons(unittest.TestCase):
         self.assertIn("ICON.trash", tools)
         self.assertNotIn("ICON.close", tools)
 
-    def test_delete_arms_first_and_fires_on_the_second_click(self):
-        fn = _block(self.js, "function armDelete(")
-        self.assertIn('classList.add("is-armed")', fn)
+    def test_delete_requires_the_panel_confirmation_dialog(self):
+        fn = _block(self.js, "function openDeleteConfirmation(")
+        self.assertIn('document.createElement("dialog")', fn)
+        self.assertIn("dialog.showModal()", fn)
+        self.assertIn('dialog.setAttribute("role", "alertdialog")', fn)
         self.assertIn("onConfirm()", fn)
-        self.assertIn("ARMED_MS", fn)
-        # 点在别处 = 改主意了;点在自己身上 = 第二次点击,不能当成「别处」
-        self.assertIn('document.addEventListener("click", onDoc, true)', fn)
-        self.assertIn("if (!btn.contains(e.target)) disarm()", fn)
-        # 上了膛的样子得一直亮着,否则看不出这颗按钮已经换了意思
-        self.assertIn("var(--aipm-anno-pink)", _block(self.css, ".aipm-anno__ibtn.is-armed,"))
+        self.assertIn("panel.getBoundingClientRect()", fn)
+        self.assertIn("backdrop-filter: blur(4px)", _block(self.css, ".aipm-anno__delete-overlay {"))
 
-    def test_both_deletes_go_through_the_same_armed_helper(self):
-        """卡片右上角那颗与回复右端那颗走同一条路 —— 两处各写一遍必然会漂。"""
+    def test_both_deletes_use_the_shared_confirmation(self):
+        """批注、评论与回复使用相同的删除确认入口。"""
         tools = _block(self.js, "function cardTools(")
-        self.assertIn("armDelete(del,", tools)
+        self.assertIn("confirmDelete(del,", tools)
         self.assertIn("removeAnnotation(anno)", tools)
         head = _block(self.js, "function replyHead(anno, reply)")
-        self.assertIn("armDelete(del,", head)
+        self.assertIn("confirmDelete(del,", head)
         self.assertIn("removeReply(anno, reply)", head)
 
     # ---- 回复按钮的位置 ----
@@ -2621,9 +2598,13 @@ class TestHidingAColumnDoesNotResizeTheList(unittest.TestCase):
         self.assertNotIn("both-edges", rule)
 
     def test_the_list_is_the_only_scrolling_box_in_the_panel(self):
-        """修的是面板里唯一的滚动容器。再长出第二个,就另开一处同样的跳变 ——
-        这条断言是提醒,不是禁令:真要加,得照着上面那条一起给槽位。"""
-        rule = _strip_comments(self.css)
+        """列表保持独立滚动,顶层菜单在空间不足时允许滚动选项。"""
+        menu = _block(self.css, ".aipm-anno__toolmenu {")
+        self.assertIn("position: fixed", menu)
+        self.assertIn("overflow-y: auto", menu)
+        dialog = _block(self.css, ".aipm-anno__delete-card {")
+        self.assertIn("overflow-y: auto", dialog)
+        rule = _strip_comments(self.css.replace(menu, "").replace(dialog, ""))
         scrollables = re.findall(r"(?:^|[;{\s])overflow(?:-y)?:\s*(?:auto|scroll)", rule)
         self.assertEqual(len(scrollables), 1)
 

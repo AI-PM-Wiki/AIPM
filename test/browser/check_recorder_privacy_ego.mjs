@@ -232,6 +232,7 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
   }
   async function edit(kind, body) {
     const card = kind === 'annotation' ? '.aipm-anno__item' : '.aipm-anno__comment';
+    await page.click(`loc=css:${card} .aipm-anno__headtools > button[data-action="options"]`);
     await page.click(`loc=css:${card} button[data-action="edit"]`);
     await page.waitForSelector('loc=css:form[data-editor="edit"] textarea, form[data-editor="comment"] textarea', { state: 'visible' });
     await capture(`${kind}_editor`, 2);
@@ -255,10 +256,11 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
   assert.equal(await page.evaluate(() => document.querySelector('mark.aipm-anno-mark').getAttribute('aria-label')), `批注:${PRIVATE}ANNOTATION_EDITED`);
   await confirm('page', `${PRIVATE}COMMENT`, 1);
   await page.click('loc=css:.aipm-anno__title');
-  await page.waitForSelector('loc=css:.aipm-anno__comment button[data-action="edit"]', { state: 'visible' });
+  await page.waitForSelector('loc=css:.aipm-anno__comment .aipm-anno__headtools > button[data-action="options"]', { state: 'visible' });
   await page.waitForFunction(body => document.querySelector('.aipm-anno__comment')?.textContent.includes(body), `${PRIVATE}COMMENT`, { timeout: 5000 });
   await capture('comment_created', 2);
   await edit('comment', `${PRIVATE}COMMENT_EDITED`);
+  await page.click('.aipm-anno__comment .aipm-anno__headtools > button[data-action="options"]');
   await page.click('.aipm-anno__comment button[data-action="reply"]');
   await page.waitForSelector('form[data-editor="reply"] textarea', { state: 'visible' });
   await page.fill('form[data-editor="reply"] textarea', `${PRIVATE}REPLY`);
@@ -303,8 +305,9 @@ export async function checkRecorderPrivacy({ directory, taskSpace, spaceId }) {
   assert.equal(await page.evaluate(() => window.__aipmAnnoAuth.isLoggedIn()), true);
   await page.click('mark.aipm-anno-mark');
   await page.click('.aipm-anno__title');
-  await page.waitForSelector('.aipm-anno__comment button[data-action="edit"]', { state: 'visible' });
+  await page.waitForSelector('.aipm-anno__comment .aipm-anno__headtools > button[data-action="options"]', { state: 'visible' });
   await capture('authenticated_restore', 2);
+  await page.click('.aipm-anno__comment .aipm-anno__headtools > button[data-action="options"]');
   await page.click('.aipm-anno__comment button[data-action="edit"]');
   await page.waitForSelector('form[data-editor="comment"] textarea', { state: 'visible' });
   await capture('existing_local_editor', 2);

@@ -133,6 +133,8 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10,9V5l-7,7 7,7v-4.1c5,0 8.5,1.6 11,5.1 -1,-5 -4,-10 -11,-11z"/></svg>',
     caret:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7,10l5,5 5,-5z"/></svg>',
+    more:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
     /* 标题按钮尾巴上那对反向箭头:点一下换到另一份列表(批注 ↔ 评论)。
        用方向对立的两个箭头,而不是下拉的三角 —— 它不是菜单,是开关。 */
     swap:
@@ -809,6 +811,7 @@
     var changed = next !== mode;
     mode = next;
     if (changed && open && mode === "sheet") snap = "peek";
+    if (mode === "sheet" && deleteConfirmation) snap = "expanded";
     if (mode === "sheet") panel.setAttribute("data-snap", snap);
     else panel.removeAttribute("data-snap");
     applyMetrics();
@@ -847,6 +850,7 @@
 
   function closePanel() {
     if (!open) return;
+    closeDeleteConfirmation(false);
     open = false;
     /* 先撤跟手写下那层 inline opacity 再 syncChrome:否则它会压过 data-level,
        遮罩要顶到 clearDragHeight 那一拍才跳变,而不是跟着面板一起淡出。 */
@@ -855,6 +859,7 @@
     syncChrome();
     hideToolbar();
     closeVisMenu();
+    closePop();
     els.acct.hidden = true;
     entry.focus();
     void openedAt;
@@ -1491,6 +1496,7 @@
   }
 
   function render() {
+    closeDeleteConfirmation(false);
     /* 列表整体重建,上一轮物化出来的编辑卡已经随之消失 —— 先把 els 里那组
        指针清掉,免得后面读到已经脱开的节点。 */
     unmountEditor();
@@ -1663,6 +1669,7 @@
 
   function closePop() {
     if (openPop !== null) {
+      if (openPop.cleanup) openPop.cleanup();
       if (openPop.node.parentNode) openPop.node.parentNode.removeChild(openPop.node);
       if (openPop.trigger) openPop.trigger.setAttribute("aria-expanded", "false");
       openPop = null;
@@ -2004,24 +2011,27 @@
     }
     head.appendChild(spacerNode());
 
-    var tools = document.createElement("span");
-    tools.className = "aipm-anno__reply-tools";
-    if (canReply(anno)) {
-      tools.appendChild(
-        iconButton(ICON.reply, "回复这条", "reply", function () {
-          startReply(anno, reply);
-        })
-      );
+    if (canReply(anno) || canDeleteReply(anno, reply)) {
+      head.appendChild(actionMenu("aipm-anno__reply-tools", "回复选项", function () {
+        var tools = document.createDocumentFragment();
+        if (canReply(anno)) {
+          tools.appendChild(
+            iconButton(ICON.reply, "回复这条", "reply", function () {
+              startReply(anno, reply);
+            })
+          );
+        }
+        if (canDeleteReply(anno, reply)) {
+          var del = ibtn(ICON.trash, "删除这条回复", "delete-reply");
+          del.classList.add("is-danger");
+          confirmDelete(del, "回复", function () {
+            removeReply(anno, reply);
+          });
+          tools.appendChild(del);
+        }
+        return tools;
+      }));
     }
-    if (canDeleteReply(anno, reply)) {
-      var del = ibtn(ICON.trash, "删除这条回复", "delete-reply");
-      del.classList.add("is-danger");
-      armDelete(del, "删除这条回复", function () {
-        removeReply(anno, reply);
-      });
-      tools.appendChild(del);
-    }
-    if (tools.childNodes.length > 0) head.appendChild(tools);
     return head;
   }
 
@@ -2061,8 +2071,7 @@
     b.type = "button";
     b.className = className;
     b.textContent = label;
-    /* 档位由调用方算好 —— 只有它知道这一层最多缩到哪儿(见 repliesBox 的
-       MAX_DEPTH)。这儿只负责落到属性上,与回复 / 回复框共用同一组缩进规则。 */
+    /* 缩进由调用方按 repliesBox 的 MAX_DEPTH 计算。 */
     if (depth > 0) b.setAttribute("data-depth", String(depth));
     b.addEventListener("click", onClick);
     return b;
@@ -2070,7 +2079,7 @@
 
   /**
    * 回复区。批注卡与评论卡共用 —— 「回复」这件事两边长得一样,没理由两套。
-   * 返回 null = 这条既没有回复、也不在回复中,调用方据此决定要不要挂这一块。
+   * 没有回复时返回 null。
    *
    * 卡片级开合由两个开关决定:
    *   `opts.cardFold` = 这张卡**能**把整块回复区收起来(两张卡都传);
@@ -2094,7 +2103,7 @@
     var card = cardFold ? replyViewOf(anno.id) : null;
     var cardFolded =
       cardFold && (card.folded === undefined ? !!(opts && opts.folded) : card.folded === true);
-    /* 正在这里回复时不许折:输入框得有个落脚的地方。 */
+    /* 回复期间保持对话展开。 */
     if (cardFolded && !replyingHere) {
       var wrap = document.createElement("div");
       wrap.className = "aipm-anno__replies-foldwrap";
@@ -2106,7 +2115,7 @@
       );
       return wrap;
     }
-    if (replies.length > 0 || replyingHere) {
+    if (replies.length > 0) {
       var box = document.createElement("div");
       box.className = "aipm-anno__replies";
       var byId = {};
@@ -2167,17 +2176,6 @@
         box.appendChild(count);
       }
 
-      var placedEditor = false;
-      var appendEditor = function (depth) {
-        var form = materializeEditor();
-        placedEditor = true;
-        if (form === null) return;
-        /* 回复框跟着它将要成为的那一层缩进:写的时候看见的层次,就是发出去之后的
-           层次。回整条批注时缩进为 0,不带这个属性。 */
-        if (depth > 0) form.setAttribute("data-depth", String(Math.min(depth, MAX_DEPTH)));
-        box.appendChild(form);
-      };
-
       /* budget = 这个楼层还剩几行可铺(见 REPLY_ROWS_MAX)。返回这一趟真正铺了几行
          —— 含它自己,楼层末尾拿它跟 plannedRows 一比就知道被截掉了多少。 */
       var paintReply = function (r, depth, budget) {
@@ -2203,12 +2201,6 @@
         line.appendChild(replyBody(anno, r, over || null));
 
         box.appendChild(line);
-        /* 回这一条 → 输入框就落在这条下面、它已有的回复之前:新回复本来就是它的
-           第一条子回复,写的时候看见的位置就是发出去之后的位置。 */
-        if (replyingHere && replyParent === r.id) {
-          appendEditor(Math.min(depth + 1, MAX_DEPTH));
-        }
-
         /* 这一层自己收自己的(三态见 limitOf)。它与楼层那道总行数上限是两回事
            —— 前者说不清「还有几条」的时候,后者兜底。
 
@@ -2290,12 +2282,6 @@
         }
       });
 
-      /* 回的是这条批注自己(不是某一条回复)→ 输入框排在整棵树后面。 */
-      if (replyingHere && replyParent === null) appendEditor(0);
-      /* 要回的那条回复在别处被删了:输入框仍旧要看得见,不然这段字写进了一块没有
-         出口的空白里。落回末尾 —— 提交时服务端会说这条回复不存在。 */
-      if (replyingHere && !placedEditor) appendEditor(0);
-
       /* 顶层回复翻页。放在最后 —— 它是整段回复的下一页,不是某一个楼层的。 */
       var restFloors = floors.length - shownFloors.length;
       if (restFloors > 0) {
@@ -2319,6 +2305,12 @@
       return box;
     }
     return null;
+  }
+
+  function appendReplyEditor(card, anno) {
+    if (!editorDraft || editorDraft.kind !== "reply" || editorDraft.annoId !== anno.id) return;
+    var form = materializeEditor();
+    if (form) card.appendChild(form);
   }
 
   /**
@@ -2362,15 +2354,7 @@
     return b;
   }
 
-  /**
-   * 卡片右上角的「回复」:一支回勾箭头。与每条回复右端那颗同一张脸、同一个位置
-   * 逻辑 —— 谁的回话按钮就贴在谁那一行的右端,回复贴在每条回复的头上,卡片贴在
-   * 卡片自己头上。它原先单独落在底部那条操作链里(整张卡的左下角):离它要回的
-   * 那句话最远,也和每条回复上那颗错开了一整行。
-   *
-   * 与 cardTools 分开而不是并进去,是因为可编辑与可回复是两回事:未登录看别人的
-   * 批注时,铅笔垃圾桶都不在,这颗回勾箭头还在(见下面的 else 分支)。
-   */
+  /** 回复菜单项根据当前会话提供回复或登录入口。 */
   function cardReplyButton(anno) {
     var frag = document.createDocumentFragment();
     if (canReply(anno)) {
@@ -2390,12 +2374,7 @@
     return frag;
   }
 
-  /**
-   * 卡片右上角那两颗:铅笔 = 编辑,垃圾桶 = 删除(左边还有一颗回勾箭头,见
-   * cardReplyButton)。批注卡与评论卡共用 —— 四个操作各归其位:改色在批注卡
-   * 左上角的圆点(评论没有色可改),回复 / 编辑 / 删除都在右上角这一排。
-   * 编辑就地展开:点它,那张卡本身变成编辑态,不是另起一张。
-   */
+  /** 作者的编辑与删除菜单项。编辑直接打开当前卡片的编辑器。 */
   function cardTools(anno) {
     var frag = document.createDocumentFragment();
     if (!canEdit(anno)) return frag;
@@ -2407,26 +2386,111 @@
       })
     );
 
-    /* 删除用垃圾桶,不用叉。叉是「关掉/算了」的意思,写在卡片右上角,点的人
-       多半以为那张卡只是收起来 —— 而它一按就真没了,服务端那条直接就删。垃圾桶
-       没有第二种读法,也正好与左边那支铅笔配成一对(编辑 / 删除)。 */
     var del = ibtn(ICON.trash, "删除这条" + what, "delete");
     del.classList.add("is-danger");
-    armDelete(del, "删除这条" + what, function () {
+    confirmDelete(del, what, function () {
       removeAnnotation(anno);
     });
     frag.appendChild(del);
     return frag;
   }
 
-  /** 卡片顶栏右端那一排图标(问助手 / 回复 / 编辑 / 删除),紧挨着排,宽度留给名字。 */
+  /** 批注与评论共用右侧操作菜单。 */
   function headTools(anno) {
-    var tools = document.createElement("span");
-    tools.className = "aipm-anno__headtools";
-    tools.appendChild(askButton(anno));
-    tools.appendChild(cardReplyButton(anno));
-    tools.appendChild(cardTools(anno));
-    return tools;
+    return actionMenu("aipm-anno__headtools", isPageComment(anno) ? "评论选项" : "批注选项", function () {
+      var tools = document.createDocumentFragment();
+      tools.appendChild(askButton(anno));
+      tools.appendChild(cardReplyButton(anno));
+      tools.appendChild(cardTools(anno));
+      return tools;
+    });
+  }
+
+  function actionMenu(className, label, build) {
+    var wrap = document.createElement("span");
+    wrap.className = className;
+    var trigger = ibtn(ICON.more, label, "options");
+    trigger.setAttribute("aria-haspopup", "menu");
+    trigger.setAttribute("aria-expanded", "false");
+    wrap.appendChild(trigger);
+
+    function show(last) {
+      var same = openPop !== null && openPop.wrap === wrap;
+      closePop();
+      if (same) {
+        trigger.focus({ preventScroll: true });
+        return;
+      }
+      var menu = document.createElement("div");
+      menu.className = "aipm-anno__toolmenu";
+      menu.setAttribute("popover", "manual");
+      menu.setAttribute("role", "menu");
+      menu.setAttribute("aria-label", label);
+      menu.appendChild(build());
+      menu.querySelectorAll("button").forEach(function (b) {
+        b.setAttribute("role", "menuitem");
+        b.tabIndex = -1;
+        var text = document.createElement("span");
+        text.className = "aipm-anno__tool-label";
+        text.textContent = b.getAttribute("aria-label");
+        b.appendChild(text);
+      });
+      var dismiss = function () {
+        if (openPop === null || openPop.node !== menu) return;
+        closePop();
+        if (trigger.isConnected) trigger.focus({ preventScroll: true });
+      };
+      var position = function () {
+        var anchor = trigger.getBoundingClientRect();
+        var bounds = panel.getBoundingClientRect();
+        var edge = 8;
+        var top = Math.max(edge, bounds.top + edge);
+        var bottom = Math.min(window.innerHeight, bounds.bottom) - edge;
+        menu.style.maxHeight = Math.max(0, bottom - top) + "px";
+        var rect = menu.getBoundingClientRect();
+        var below = anchor.bottom + 4;
+        var y = below + rect.height <= bottom ? below : anchor.top - rect.height - 4;
+        menu.style.top = Math.max(top, Math.min(y, bottom - rect.height)) + "px";
+        menu.style.left = Math.max(edge, Math.min(anchor.right - rect.width, window.innerWidth - rect.width - edge)) + "px";
+      };
+      menu.addEventListener("keydown", function (e) {
+        menuKeys(e, menu, dismiss);
+      });
+      menu.addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (b && !b.disabled && !b.classList.contains("is-danger")) dismiss();
+      }, true);
+      wrap.addEventListener("focusout", onFocusOut);
+      function onFocusOut(e) {
+        if (!wrap.contains(e.relatedTarget)) closePop();
+      }
+      function onScroll(e) {
+        if (!menu.contains(e.target)) dismiss();
+      }
+      wrap.appendChild(menu);
+      trigger.setAttribute("aria-expanded", "true");
+      openPop = { wrap: wrap, node: menu, trigger: trigger, cleanup: function () {
+        wrap.removeEventListener("focusout", onFocusOut);
+        document.removeEventListener("scroll", onScroll, true);
+        window.removeEventListener("resize", dismiss);
+      } };
+      menu.showPopover();
+      position();
+      var options = menu.querySelectorAll("button:not(:disabled)");
+      options[last ? options.length - 1 : 0].focus({ preventScroll: true });
+      document.addEventListener("scroll", onScroll, true);
+      window.addEventListener("resize", dismiss);
+    }
+    trigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      show(false);
+    });
+    trigger.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      show(e.key === "ArrowUp");
+    });
+    return wrap;
   }
 
   /**
@@ -2465,6 +2529,7 @@
 
     var acts = itemActions(anno, false);
     if (acts.childNodes.length > 0) wrap.appendChild(acts);
+    appendReplyEditor(wrap, anno);
     return wrap;
   }
 
@@ -2559,6 +2624,7 @@
 
     var acts = itemActions(anno, isOrphan);
     if (acts.childNodes.length > 0) wrap.appendChild(acts);
+    appendReplyEditor(wrap, anno);
     return wrap;
   }
 
@@ -2633,12 +2699,9 @@
     return canEdit(anno);
   }
 
-  /* ---- 图标按钮 ----
-     回复、编辑、删除这几个动作在所有评论系统里都长着同一张脸(回勾箭头 / 铅笔 /
-     垃圾桶),写字反而把一行按钮撑成一行文字。所以它们只出图标:名字挂在 title
-     与 aria-label 上 —— 那是这颗按钮唯一的可读副本,两个都得写。 */
+  /* ---- 菜单入口与菜单项共用的基础按钮 ---- */
 
-  /** 图标按钮的壳:只造按钮,不接行为(删除要两段式,见 armDelete)。 */
+  /** 创建带名称的图标按钮,由调用方连接操作。 */
   function ibtn(icon, label, action) {
     var b = document.createElement("button");
     b.type = "button";
@@ -2660,42 +2723,99 @@
     return b;
   }
 
-  /* 删除的二次确认。
-     它以前是右上角那颗叉,现在是一颗不带字的垃圾桶 —— 图标按钮比文字链好点错,
-     而删掉的东西回不来(服务端那条是直接 DELETE)。所以第一次点只是「上膛」:
-     按钮转成警示色、title 改成「再点一次…」;再点一次才真删,点别处或者 4 秒
-     没动静就自动放下。不上模态框:为一次删除打断整个面板不值当。 */
-  var ARMED_MS = 4000;
+  var deleteConfirmation = null;
 
-  function armDelete(btn, label, onConfirm) {
-    var timer = 0;
-    function disarm() {
-      if (timer) {
-        clearTimeout(timer);
-        timer = 0;
+  function closeDeleteConfirmation(restoreFocus) {
+    if (!deleteConfirmation) return;
+    var current = deleteConfirmation;
+    deleteConfirmation = null;
+    current.observer.disconnect();
+    window.removeEventListener("resize", current.position);
+    current.dialog.close();
+    current.dialog.remove();
+    var target = restoreFocus && current.trigger.isConnected ? current.trigger : panel;
+    if (open) target.focus({ preventScroll: true });
+  }
+
+  /** 删除确认框随批注面板定位,由原生 dialog 管理模态状态与焦点。 */
+  function openDeleteConfirmation(kind, onConfirm) {
+    var trigger = openPop && openPop.trigger ? openPop.trigger : panel;
+    closePop();
+    closeDeleteConfirmation(false);
+    if (mode === "sheet" && snap === "peek") setSnap("expanded");
+
+    var dialog = document.createElement("dialog");
+    dialog.className = "aipm-anno__delete-overlay";
+    dialog.setAttribute("role", "alertdialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "aipm-anno-delete-title");
+    dialog.setAttribute("aria-describedby", "aipm-anno-delete-description");
+    dialog.innerHTML =
+      '<section class="aipm-anno__delete-card">' +
+      '<header class="aipm-anno__delete-head">' +
+      '<h2 id="aipm-anno-delete-title"></h2>' +
+      '<button type="button" class="aipm-anno__ibtn" data-action="cancel-delete" aria-label="关闭删除确认" title="关闭">' + ICON.close + '</button>' +
+      '</header>' +
+      '<p id="aipm-anno-delete-description"></p>' +
+      '<div class="aipm-anno__delete-actions">' +
+      '<button type="button" class="aipm-anno__delete-cancel" data-action="cancel-delete" autofocus>取消</button>' +
+      '<button type="button" class="aipm-anno__delete-confirm" data-action="confirm-delete"></button>' +
+      '</div></section>';
+    dialog.querySelector("h2").textContent = "删除" + kind;
+    dialog.querySelector("p").textContent = "确定要删除这条" + kind + "吗？删除后将无法恢复。";
+    dialog.querySelector('[data-action="confirm-delete"]').textContent = "删除" + kind;
+    dialog.querySelectorAll('[data-action="cancel-delete"]').forEach(function (button) {
+      button.addEventListener("click", function () { closeDeleteConfirmation(true); });
+    });
+    dialog.querySelector('[data-action="confirm-delete"]').addEventListener("click", function () {
+      closeDeleteConfirmation(false);
+      onConfirm();
+    });
+    dialog.addEventListener("cancel", function (e) {
+      e.preventDefault();
+      closeDeleteConfirmation(true);
+    });
+    dialog.addEventListener("keydown", function (e) {
+      e.stopPropagation();
+      if (e.key !== "Tab") return;
+      var buttons = dialog.querySelectorAll("button:not(:disabled)");
+      var first = buttons[0];
+      var last = buttons[buttons.length - 1];
+      var active = document.activeElement;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
       }
-      btn.classList.remove("is-armed");
-      btn.title = label;
-      btn.setAttribute("aria-label", label);
-      document.removeEventListener("click", onDoc, true);
-    }
-    /* 捕获阶段监听:点面板里任何别的地方都算「我改主意了」。点在按钮自己身上
-       不算 —— 那正是第二次点击。 */
-    function onDoc(e) {
-      if (!btn.contains(e.target)) disarm();
-    }
+    });
+    dialog.addEventListener("click", function (e) {
+      if (e.target === dialog) closeDeleteConfirmation(true);
+    });
+    var position = function () {
+      var rect = panel.getBoundingClientRect();
+      var left = Math.max(0, rect.left);
+      var top = Math.max(0, rect.top);
+      dialog.style.left = left + "px";
+      dialog.style.top = top + "px";
+      dialog.style.width = Math.max(0, Math.min(window.innerWidth, rect.right) - left) + "px";
+      dialog.style.height = Math.max(0, Math.min(window.innerHeight, rect.bottom) - top) + "px";
+    };
+    var observer = new ResizeObserver(position);
+    deleteConfirmation = { dialog: dialog, trigger: trigger, observer: observer, position: position };
+    panel.appendChild(dialog);
+    position();
+    dialog.showModal();
+    observer.observe(panel);
+    window.addEventListener("resize", position);
+    dialog.querySelector(".aipm-anno__delete-cancel").focus({ preventScroll: true });
+  }
+
+  function confirmDelete(btn, kind, onConfirm) {
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
-      if (btn.classList.contains("is-armed")) {
-        disarm();
-        onConfirm();
-        return;
-      }
-      btn.classList.add("is-armed");
-      btn.title = "再点一次" + label;
-      btn.setAttribute("aria-label", "再点一次" + label);
-      document.addEventListener("click", onDoc, true);
-      timer = setTimeout(disarm, ARMED_MS);
+      openDeleteConfirmation(kind, onConfirm);
     });
     return btn;
   }
@@ -2977,6 +3097,10 @@
     input.rows = 2;
     input.setAttribute("aria-label", "回复正文");
     input.placeholder = opts.placeholder || "写下回复…";
+    input.value = opts.body || "";
+    input.addEventListener("input", function () {
+      opts.body = input.value;
+    });
     form.appendChild(input);
 
     var hint = document.createElement("div");
