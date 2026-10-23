@@ -36,6 +36,7 @@ export async function checkReplyPlacement({ directory, taskSpace, spaceId }) {
       const editor = root.querySelector('form[data-editor="reply"]');
       const bounds = editor.getBoundingClientRect();
       const input = editor.querySelector('textarea');
+      const style = getComputedStyle(editor);
       const before = [...root.children].filter(node => node !== editor);
       return {
         count: document.querySelectorAll('form[data-editor="reply"]').length,
@@ -46,6 +47,13 @@ export async function checkReplyPlacement({ directory, taskSpace, spaceId }) {
         belowContent: before.every(node => node.getBoundingClientRect().bottom <= bounds.top + 1),
         inputLeft: input.getBoundingClientRect().left, inputRight: input.getBoundingClientRect().right,
         left: bounds.left, right: bounds.right, width: bounds.width, viewport: innerWidth,
+        background: style.backgroundColor, cardBackground: getComputedStyle(root).backgroundColor,
+        radius: parseFloat(style.borderRadius), padding: parseFloat(style.paddingLeft),
+        inputBackground: getComputedStyle(input).backgroundColor,
+        buttons: [...editor.querySelectorAll('button')].map(button => {
+          const rect = button.getBoundingClientRect();
+          return { height: rect.height, contained: rect.left >= bounds.left && rect.right <= bounds.right };
+        }),
       };
     }, card);
     assert.equal(state.count, 1);
@@ -57,6 +65,10 @@ export async function checkReplyPlacement({ directory, taskSpace, spaceId }) {
     assert.equal(state.belowContent, true);
     assert.ok(state.width > 150 && state.left >= 0 && state.right <= state.viewport);
     assert.ok(state.inputLeft >= state.left && state.inputRight <= state.right + 1);
+    assert.notEqual(state.background, state.cardBackground);
+    assert.ok(state.radius > 0 && state.padding > 0);
+    assert.equal(state.inputBackground, 'rgba(0, 0, 0, 0)');
+    assert.ok(state.buttons.every(button => button.height >= 44 && button.contained));
     return state;
   }
   for (const kind of ['annotation', 'comment']) {

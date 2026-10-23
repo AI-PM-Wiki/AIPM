@@ -1251,44 +1251,75 @@ button.aipm-anno__vischip:focus-visible {
   border-radius: .2rem;
   background: var(--md-default-fg-color--lightest);
 }
-/* 回复框:与新批注卡**故意不同形** —— 没有底色、没有左边那条主色、没有角标。
-   它就是个朴素的小输入框,一眼看出「这是在回话」。 */
+/* 回复区域在卡片底部保持独立的留白和背景。 */
 .aipm-anno__replybox {
   display: block;
-  margin: .6rem 0 .1rem;
+  margin: .75rem 0 .1rem;
+  padding: .55rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .5rem;
+  background: var(--md-default-bg-color);
+  transition: border-color var(--aipm-anno-dur) var(--aipm-anno-ease);
+}
+.aipm-anno__replybox:focus-within {
+  border-color: color-mix(in srgb, var(--md-accent-fg-color) 55%, var(--aipm-anno-line));
 }
 /* 回复计数与展开控件保持正文对齐。 */
 .aipm-anno__replies-count,
 .aipm-anno__replies-more {
   margin-left: var(--aipm-anno-thread-inset);
 }
-.aipm-anno__input--reply {
-  min-height: 2.2rem;
+.aipm-anno__replybox .aipm-anno__input--reply {
+  display: block;
+  min-height: 3.2rem;
+  padding: .25rem .3rem;
+  border-color: transparent;
+  background: transparent;
   font-size: .75rem;
+}
+.aipm-anno__replybox .aipm-anno__input--reply:focus {
+  border-color: transparent;
+}
+.aipm-anno__input--reply::placeholder {
+  color: var(--md-default-fg-color--light);
+  opacity: 1;
 }
 .aipm-anno__replybox-actions {
   display: flex;
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: .4rem;
-  margin-top: .4rem;
+  margin-top: .35rem;
 }
 .aipm-anno__replybox-actions .aipm-anno__cancel,
 .aipm-anno__replybox-actions .aipm-anno__save {
   min-height: 2.2rem;
-  padding: .4rem .6rem;
-  border: 1px solid var(--aipm-anno-line);
+  padding: .35rem .7rem;
+  border: 1px solid transparent;
   border-radius: .4rem;
-  color: var(--md-default-fg-color);
+  color: var(--md-default-fg-color--light);
   background: transparent;
   font-family: inherit;
   font-size: .75rem;
   cursor: pointer;
+  transition: background var(--aipm-anno-dur) var(--aipm-anno-ease),
+    color var(--aipm-anno-dur) var(--aipm-anno-ease);
+}
+.aipm-anno__replybox-actions .aipm-anno__cancel:hover {
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__replybox-actions button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
 }
 .aipm-anno__replybox-actions .aipm-anno__save {
   border-color: var(--md-primary-fg-color--dark);
   color: #fff;
   background: var(--md-primary-fg-color--dark);
+}
+.aipm-anno__replybox-actions .aipm-anno__save:hover:enabled {
+  background: var(--md-accent-fg-color);
 }
 .aipm-anno__replybox-actions .aipm-anno__save:disabled {
   opacity: .6;

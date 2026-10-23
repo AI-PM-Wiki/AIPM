@@ -1749,7 +1749,7 @@ class TestReplyThreadFollowsItsParent(unittest.TestCase):
             self.assertEqual(card.count("appendReplyEditor(wrap, anno)"), 1)
 
     def test_reply_box_uses_the_card_width(self):
-        self.assertEqual(_decl(_block(self.css, ".aipm-anno__replybox {"), "margin"), ".6rem 0 .1rem")
+        self.assertEqual(_decl(_block(self.css, ".aipm-anno__replybox {"), "margin"), ".75rem 0 .1rem")
         self.assertIn(
             "--aipm-anno-thread-inset: calc(.5rem + 2px)",
             _block(self.css, ".aipm-anno__replies {"),
