@@ -34,7 +34,7 @@
   - 列表每次 render 整体重建,所以**编辑器由 render 现场产出**,它落在列表里该在
     的位置上,而不是钉在面板底部 —— 写的时候看到的排版就是发出去之后的排版;
   - 两套卡片,两套编辑器:批注锚在正文某一段上,所以它有引文、色点、画法,空正文
-    就等于「只划线不写字」;**评论不锚正文**,所以卡片是另一套(头像 + 用户名 +
+    就等于「只划线不写字」;**评论不锚正文**,所以卡片是另一套(头像 + GitHub 登录 ID +
     发布时间),新评论的编辑卡就长在「写一条评论」那颗按钮的位置上,正文不能为空。
     回复框、回复区、底部操作链三者两套卡片共用 —— 那几件事两边长得一样;
   - 「回复 / 编辑 / 删除」只出图标不出字。这几个动作在所有评论系统里长着同一张
@@ -1521,38 +1521,21 @@
     /* 新批注按正文位置排序，整页评论的编辑器位于评论列表末尾。 */
     var draftRank = draft === null || draft.inline ? null : draftKey();
 
-    /* 面板「空不空」只看真正的内容。排序条与「写一条评论」是常驻的 chrome,
-       拿 childNodes.length 去判会把它们误判成「还有内容」,那句「还没有人…」
-       就永远露不了面。 */
-    var contentCount = 0;
-
     var groups = [
       { key: "public", list: publicList },
       { key: "private", list: privateList },
       { key: "local", list: localList }
     ];
     groups.forEach(function (g) {
-      // 未定位的那些下面单独成组,别在这里再列一遍(否则同一条批注出现两次,
-      // 一条带着「未定位」角标、一条没有)。先滤再判空 —— 只按 g.list.length
-      // 判断的话,某个分组若整组都是未定位的,会留下一个空标题挂在那儿。
+      // 未定位的批注在列表末尾单独展示。
       var visible = g.list.filter(listed).filter(function (anno) {
         return !orphanIds[anno.id];
       }).filter(inMode);
       visible.sort(panelMode === "comments" ? commentComparator(commentSort) : byPosition);
 
       var draftHere = draft !== null && !draft.inline && draft.group === g.key;
-      /* 眼睛收走的是这一栏的**内容**,不是这一栏本身 —— 所以这里只判「有没有
-         东西」,不判「眼睛开着没有」。标题、条数与那只眼睛都留在原地(标题变淡),
-         收走的只有下面那些卡片。连标题一起收的话,点过的那只眼睛会跟着没:
-         它自己就长在标题上,收走之后谁也点不回来。
-         空栏平时不露头(一页干净的时候不该挂着三行 0),被眼睛收走的那一栏例外 ——
-         标题与眼睛是唯一的回来路,栏里空了也得留着。 */
       var hidden = prefs[groupShownKey(g.key)] === false;
-      var hasSmartAction = panelMode === "annotations" && g.key === "local";
-      if (visible.length === 0 && !draftHere && !hidden && !hasSmartAction) return;
-
       els.list.appendChild(groupHead(g.key, visible.length + (draftHere ? 1 : 0), prefs));
-      if (visible.length > 0 || draftHere || hidden) contentCount++;
 
       /* 编辑器由 render 现场产出(列表每轮整体重建),而且要落在它该在的位置上:
          新批注按它选中那段文字的位置插进排序好的列表,不再钉在分组最前面。 */
@@ -1562,23 +1545,29 @@
       if (hidden || prefs[prefKey("collapsed", g.key)] === true) {
         if (pending !== null) {
           els.list.appendChild(pending);
-          contentCount++;
         }
         return;
+      }
+      if (visible.length === 0 && pending === null) {
+        var empty = document.createElement("p");
+        empty.className = "aipm-anno__empty";
+        empty.setAttribute("data-group", g.key);
+        var kind = panelMode === "comments" ? "评论" : "批注";
+        empty.textContent = g.key === "private" && !auth.isLoggedIn()
+          ? "登录 GitHub 后查看私有" + kind + "。"
+          : "暂无" + groupTitle(g.key) + kind + "。";
+        els.list.appendChild(empty);
       }
       var inComments = panelMode === "comments";
       visible.forEach(function (anno) {
         if (pending !== null && (inComments || draftRank <= positionKey(anno))) {
           els.list.appendChild(pending);
           pending = null;
-          contentCount++;
         }
         els.list.appendChild(inComments ? renderCommentItem(anno) : renderItem(anno));
-        contentCount++;
       });
       if (pending !== null) {
         els.list.appendChild(pending);
-        contentCount++;
       }
     });
 
@@ -1602,25 +1591,9 @@
       oh.appendChild(ohNum);
       oh.title = "页面改过之后这些批注找不到原来的位置了;它们没有被删掉";
       els.list.appendChild(oh);
-      contentCount++;
       shownOrphans.forEach(function (anno) {
         els.list.appendChild(renderItem(anno, true));
-        contentCount++;
       });
-    }
-
-    if (contentCount === 0) {
-      /* 面板空不空只看真正的内容。从前这里有第二条支路:三栏被眼睛收光之后补一颗
-         「显示全部」,因为那只眼睛自己也长在被收走的标题上。现在眼睛收走的是栏的
-         内容而不是栏本身,三个标题一直在,那条路就没得可走了 —— 点哪只眼睛都能
-         回来。 */
-      var empty = document.createElement("p");
-      empty.className = "aipm-anno__empty";
-      empty.textContent =
-        panelMode === "comments"
-          ? "还没有人对这一页留下评论。"
-          : "选中正文里的一段话就能加批注。";
-      els.list.appendChild(empty);
     }
 
     /* 评论入口与新建编辑器共用列表末尾的位置。 */
@@ -1958,14 +1931,7 @@
     render();
   }
 
-  /**
-   * 回复的头一行:头像 + 名字 + 楼主角标 + 时间。
-   *
-   * 头像与名字都得有 —— 回复上只挂一串 login 时,读者得靠那串字母在脑子里记住
-   * 谁是谁;头像能在一眼之内分清,这正是 B 站与 YouTube 的回复列表都带头像的原因。
-   * 名字用 GitHub 的显示名,后面再跟一个 @handle:显示名可以重名,handle 不会,
-   * 两个都给才既好认又认得出是谁。
-   */
+  /** 回复标题：头像、GitHub 登录 ID、作者标识和时间。 */
   function replyHead(anno, reply) {
     var head = document.createElement("div");
     head.className = "aipm-anno__reply-head";
@@ -1975,21 +1941,7 @@
     av.classList.add("is-sm");
     head.appendChild(av);
 
-    var login = loginOf(author);
-    var name = displayNameOf(author);
-    var who = authorNode(author, "b", "aipm-anno__reply-who");
-    who.textContent = name;
-    if (!who.title) who.title = "@" + login;
-    /* 显示名与 handle 相同时不必说两遍 —— 那就只剩一遍。handle 挂在同一个元素
-       里(而不是另起一格):名字这一格是这一行唯一有弹性的,挤不下时两个一起
-       省略,而不是把后面的时间与按钮顶出面板。 */
-    if (name !== login) {
-      var handle = document.createElement("span");
-      handle.className = "aipm-anno__reply-handle";
-      handle.textContent = "@" + login;
-      who.appendChild(handle);
-    }
-    head.appendChild(who);
+    head.appendChild(nameOf(author, "aipm-anno__reply-who"));
     /* 「这条是楼主的」—— B 站叫 UP 主、YouTube 叫创作者。几十层的高楼里,作者
        本人的一句话比别人的重,而这个信息只有 githubId 说得清;不标出来,读者
        只能拿名字去猜,而名字可以重。 */
@@ -2047,14 +1999,13 @@
       var at = document.createElement("button");
       at.type = "button";
       at.className = "aipm-anno__reply-at";
-      at.textContent = "回复 @" + displayNameOf(parent.author);
+      at.textContent = "回复 @" + loginOf(displayAuthor(parent.author));
       at.title = "跳到这条回复";
       at.addEventListener("click", function () {
         jumpToReply(anno, reply.parentId);
       });
       p.appendChild(at);
-      /* 冒号是这一行的分界:显示名可以很长(见上面那颗按钮的省略),没有它,
-         名字与正文会连成一串认不出边界。B 站与知乎的楼中楼也这么写。 */
+      /* 登录 ID 与正文用全角冒号分隔。 */
       p.appendChild(document.createTextNode("："));
     }
     p.appendChild(document.createTextNode(reply.body));
@@ -3145,7 +3096,7 @@
 
   var GITHUB_LOGIN = /^[A-Za-z0-9-]{1,39}$/;
 
-  /** GitHub 主页地址。本机记录与智能高亮的作者没有 GitHub 账号,返回 null。 */
+  /** 有 GitHub 身份的作者使用登录 ID 原有大小写构造主页地址。 */
   function profileUrl(author) {
     if (!author || !(author.githubId > 0) || !GITHUB_LOGIN.test(author.login || "")) return null;
     return "https://github.com/" + author.login;
@@ -3173,16 +3124,6 @@
   }
 
   /**
-   * 显示名。GitHub 的 name 是可选的,没填就退回 handle —— 回复列表里挂一串
-   * 空白比挂 handle 糟得多。handle 仍然由调用方另给一份(见 replyHead):
-   * 显示名可以重名,handle 不会。
-   */
-  function displayNameOf(author) {
-    var name = author && typeof author.name === "string" ? author.name.trim() : "";
-    return name || loginOf(author);
-  }
-
-  /**
    * 这条回复的作者是不是批注(楼层)的作者本人。githubId 为 0 的是「本机」那份
    * 本地落款,不是任何人的账号 —— 拿它去比对会把所有本机留言判成楼主。
    */
@@ -3201,7 +3142,7 @@
   }
 
   function initialOf(login) {
-    return String(login || "?").charAt(0).toUpperCase();
+    return String(login || "?").charAt(0);
   }
 
   /** 2026-09-21 14:03。悬停时给的完整时间,精确到分钟。 */
@@ -3279,16 +3220,15 @@
     return wrap;
   }
 
-  /** 本机记录的作者只有登录名;当前登录的正是这个人时,用账号信息补上头像与主页。 */
+  /** 按 GitHub ID 使用当前账号资料展示自己的历史内容。 */
   function displayAuthor(author) {
     var me = auth.isLoggedIn() ? auth.user() : null;
-    if (me && author && !(author.githubId > 0) && author.login === me.login) return me;
+    if (me && author && author.githubId > 0 && author.githubId === me.githubId) return me;
     return author;
   }
 
   /**
-   * 评论顶栏:头像 + 用户名 + 发布时间。`iso` 为空 = 还没有时间可言(正在写),
-   * 那时只出头像和用户名 —— 草稿的时间戳是假的,不如不给。
+   * 评论顶栏：头像、GitHub 登录 ID 和发布时间。草稿省略发布时间。
    * 名字那一行留给调用方追加可见范围(见 visChip)。
    */
   function commentHead(author, iso) {
@@ -3771,10 +3711,7 @@
     /* 在折起来的卡上点「回复」,等于说要看这块回复区 —— 把它摊开,不然输入框
        落在一块没有任何出处的空白里。 */
     replyViewOf(anno.id).folded = false;
-    var who =
-      (reply && reply.author && reply.author.login) ||
-      (anno.author && anno.author.login) ||
-      "匿名";
+    var who = loginOf(displayAuthor(reply ? reply.author : anno.author));
     beginEditor({
       kind: "reply",
       annoId: anno.id,
@@ -3922,7 +3859,7 @@
       // 服务端不保证给头像(author 里的 avatarUrl 是可选的),退回首字母。
       var initial = document.createElement("span");
       initial.className = "aipm-anno__avatar aipm-anno__avatar--letter";
-      initial.textContent = String(me.login || "?").charAt(0).toUpperCase();
+      initial.textContent = initialOf(me.login);
       els.account.appendChild(initial);
     }
   }
@@ -4166,7 +4103,7 @@
       var reply = {
         id: store.uid(),
         body: body,
-        author: { githubId: 0, login: auth && auth.user() ? auth.user().login : "本机" },
+        author: meAuthor(),
         createdAt: now,
         updatedAt: now
       };
@@ -4246,7 +4183,7 @@
         color: annoColor,
         style: annoStyle,
         body: body,
-        author: { githubId: 0, login: auth && auth.user() ? auth.user().login : "本机" },
+        author: meAuthor(),
         target: target,
         replies: [],
         createdAt: now,
@@ -4464,6 +4401,7 @@
       });
     }
     var record = {
+      author: displayAuthor(anno.author),
       body: anno.body || "",
       color: anno.color || store.DEFAULT_COLOR,
       style: styleOf(anno),
@@ -4483,7 +4421,6 @@
           id: localId,
           page: anno.page,
           visibility: "local",
-          author: { githubId: 0, login: loginOf(anno.author) },
           createdAt: anno.createdAt,
           updatedAt: new Date().toISOString()
         }, record));
@@ -5205,7 +5142,7 @@
     heading.textContent = "确认提交账号与请求";
     dialog.appendChild(heading);
     var account = document.createElement("p");
-    account.textContent = "当前账号：" + user.login + "（GitHub ID " + user.githubId + "）";
+    account.textContent = "当前账号：" + user.login;
     dialog.appendChild(account);
     var payload = document.createElement("pre");
     payload.textContent = pendingLoginConsent.request;
@@ -5723,13 +5660,22 @@
     }).observe(els.list);
   }
 
+  function syncLocalAuthor() {
+    if (window.__aipmIntegrityReady === true && auth.isLoggedIn() &&
+        store.refreshLocalAuthor(auth.user())) refreshLocal();
+  }
+
+  window.addEventListener("aipm-integrity-change", syncLocalAuthor);
+
   if (auth) {
     auth.ready().then(function () {
+      syncLocalAuthor();
       syncComposer();
       if (auth.isLoggedIn()) invalidate();
       ensureAnnotationsLoaded();
     });
     auth.onChange(function () {
+      syncLocalAuthor();
       if (pendingLoginConsent && !auth.sameStoredSession(
         pendingLoginConsent.ticket.token, pendingLoginConsent.ticket.githubId
       )) closeLoginConsent();

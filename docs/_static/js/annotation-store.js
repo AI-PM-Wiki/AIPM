@@ -206,6 +206,34 @@
     return Array.isArray(list) ? list.slice() : [];
   }
 
+  function refreshLocalAuthor(author) {
+    if (!Number.isSafeInteger(author.githubId) || author.githubId <= 0) {
+      throw new TypeError("GitHub author identity required");
+    }
+    var all = loadLocalAll();
+    var changed = false;
+    function refresh(record) {
+      var previous = record.author;
+      if (!previous || previous.githubId !== author.githubId ||
+          (previous.login === author.login && previous.name === author.name &&
+           previous.avatarUrl === author.avatarUrl)) return record;
+      changed = true;
+      return Object.assign({}, record, { author: Object.assign({}, author) });
+    }
+    Object.keys(all.pages).forEach(function (page) {
+      all.pages[page] = all.pages[page].map(function (annotation) {
+        var next = refresh(annotation);
+        var replies = (annotation.replies || []).map(refresh);
+        if (replies.some(function (reply, index) { return reply !== annotation.replies[index]; })) {
+          next = Object.assign({}, next, { replies: replies });
+        }
+        return next;
+      });
+    });
+    if (changed) writeJson(K_LOCAL, all);
+    return changed;
+  }
+
   function saveLocalPage(page, list) {
     var all = loadLocalAll();
     if (list.length === 0) delete all.pages[page];
@@ -463,6 +491,7 @@
     uid: uid,
 
     localList: localList,
+    refreshLocalAuthor: refreshLocalAuthor,
     localAdd: localAdd,
     localUpdate: localUpdate,
     localRemove: localRemove,

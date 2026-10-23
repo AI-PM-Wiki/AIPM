@@ -1204,20 +1204,18 @@ class TestUiRoundFour(unittest.TestCase):
             block.index("appendChild(groupHead("), block.index("if (hidden ||")
         )
 
-    def test_a_hidden_column_keeps_its_head_even_when_empty(self):
-        """空栏平时不露头(一页干净的时候不该挂着三行 0),被眼睛收走的那一栏例外:
-        标题与眼睛是唯一的回来路。"""
+    def test_every_column_keeps_its_head_even_when_empty(self):
+        """公开、私有和本机栏目持续显示标题与计数。"""
         block = _block(self.js, "function render()")
-        self.assertIn("if (visible.length === 0 && !draftHere && !hidden && !hasSmartAction) return;", block)
+        self.assertNotIn("if (visible.length === 0 && !draftHere", block)
+        self.assertIn("appendChild(groupHead(g.key, visible.length", block)
 
-    def test_empty_panel_counts_content_not_chrome(self):
-        """面板空不空只看真正的内容。判据不能是 childNodes.length —— 排序条与
-        「写一条评论」常驻在列表里,那样会被误判成「还有内容」,评论视图下那句
-        「还没有人…」就永远露不了面。"""
+    def test_empty_columns_show_their_visibility_and_login_state(self):
+        """展开的空栏目说明当前可见范围，私有栏目提示登录。"""
         body = _block(self.js, "function render(")
-        self.assertIn("contentCount", body)
-        self.assertIn("if (contentCount === 0) {", body)
-        self.assertNotIn("if (els.list.childNodes.length === 0)", body)
+        self.assertIn("if (visible.length === 0 && pending === null)", body)
+        self.assertIn('empty.setAttribute("data-group", g.key)', body)
+        self.assertIn('g.key === "private" && !auth.isLoggedIn()', body)
 
     # ---- 三类画法 ----
 
@@ -1759,13 +1757,7 @@ class TestReplyThreadFollowsItsParent(unittest.TestCase):
 
 
 class TestReplyShowsItsAuthor(unittest.TestCase):
-    """回复的落款:头像 + 显示名 + @handle + 楼主角标。
-
-    一条回复上只挂一串 login 时,读者得靠那串字母在脑子里记住谁是谁 —— 一条
-    几十层的高楼里这根本记不住。头像能在一眼之内分清(这也是 B 站与 YouTube 的
-    回复列表都带头像的原因);显示名与 handle 一起给,是因为显示名可以重名、
-    handle 不会,只给一个就总有一头说不清。
-    """
+    """回复展示头像、GitHub 用户名和作者标识。"""
 
     @classmethod
     def setUpClass(cls):
@@ -1780,17 +1772,8 @@ class TestReplyShowsItsAuthor(unittest.TestCase):
         self.assertIn('av.classList.add("is-sm")', self.head)
         self.assertIn("width: 1.15rem", _block(self.css, ".aipm-anno__cavatar.is-sm {"))
 
-    def test_a_reply_shows_the_display_name_and_the_handle(self):
-        """GitHub 的 name 是可以不填的,所以显示名要退回 handle;handle 则另给
-        一份,只在两个名字不一样的时候出现(一样时说两遍是口吃)。"""
-        self.assertIn("displayNameOf(author)", self.head)
-        self.assertIn("loginOf(author)", self.head)
-        self.assertIn("aipm-anno__reply-handle", self.head)
-        self.assertIn("if (name !== login)", self.head)
-        fn = _block(self.js, "function displayNameOf(author)")
-        self.assertIn("|| loginOf(author)", fn)
-        # handle 与显示名同格:名字是这一行唯一有弹性的,挤不下时两个一起省略
-        self.assertIn('who.appendChild(handle)', self.head)
+    def test_a_reply_uses_the_shared_username_node(self):
+        self.assertIn('nameOf(author, "aipm-anno__reply-who")', self.head)
         self.assertIn("text-overflow: ellipsis", _block(self.css, "\n.aipm-anno__reply-who {"))
 
     def test_the_floor_owner_wears_a_badge(self):
@@ -2165,8 +2148,8 @@ class TestDeepRepliesGoFlat(unittest.TestCase):
     def test_past_the_cap_the_depth_is_spelled_out_in_words(self):
         self.assertIn("depth > MAX_DEPTH && r.parentId", self.box)
         self.assertIn("replyBody(anno, r, over || null)", self.box)
-        self.assertIn('"回复 @" + displayNameOf(parent.author)', self.body)
-        # 名字与正文之间要有个分界 —— 显示名可以很长,没有它两句会连成一串
+        self.assertIn('"回复 @" + loginOf(displayAuthor(parent.author))', self.body)
+        # 用户名与正文用全角冒号分隔。
         self.assertIn('createTextNode("：")', self.body)
         # 父级悬空时取不到,那就不说 —— 它按顶层渲染
         self.assertIn("byId[r.parentId] : null", self.box)

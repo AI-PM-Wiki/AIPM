@@ -377,7 +377,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   scrollbar-gutter: stable;
 }
 .aipm-anno__empty {
-  margin: 1.5rem .25rem;
+  margin: .45rem .25rem .9rem;
   color: var(--md-default-fg-color--light);
   font-size: .75rem;
   line-height: 1.7;
@@ -555,9 +555,7 @@ a.aipm-anno__reply-who:hover {
   color: var(--md-accent-fg-color);
   text-decoration: underline;
 }
-/* 用户名压在时间上面两行,而不是「名字 · 时间」挤一行:顶栏要在一眼之内分得清
-   「谁」和「什么时候」,而名字长短不一,挤一行时时间会被推得忽左忽右。
-   可见范围跟在名字后面,与批注卡一致。 */
+/* 登录 ID 与时间分行显示，可见范围位于登录 ID 后方。 */
 .aipm-anno__cwho {
   display: flex;
   flex-direction: column;
@@ -1135,8 +1133,7 @@ button.aipm-anno__vischip:focus-visible {
   align-items: center;
   gap: .35rem;
 }
-/* 名字这一格是这一行里唯一有弹性的:GitHub 的显示名可以很长,头像 / 角标 /
-   时间 / 操作按钮都是定宽的,挤不下时该让名字省略,而不是把按钮顶出面板。 */
+/* GitHub 登录 ID 允许省略，保持头像、时间和操作按钮可见。 */
 .aipm-anno__reply-who {
   flex: 0 1 auto;
   min-width: 0;
@@ -1145,14 +1142,6 @@ button.aipm-anno__vischip:focus-visible {
   text-overflow: ellipsis;
   color: var(--md-default-fg-color);
   font-weight: 700;
-}
-/* 显示名后面的 @handle(与显示名相同时不出现)。同一行里两串名字,靠一档浅灰
-   与常规字重把主次分开:显示名是「他叫什么」,handle 是「他是谁」——后者只在
-   需要确认身份时才读。 */
-.aipm-anno__reply-handle {
-  margin-left: .25rem;
-  color: var(--md-default-fg-color--light);
-  font-weight: 400;
 }
 .aipm-anno__reply-time {
   flex: none;
