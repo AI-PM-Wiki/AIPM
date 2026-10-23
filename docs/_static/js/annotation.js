@@ -811,6 +811,7 @@
     var changed = next !== mode;
     mode = next;
     if (changed && open && mode === "sheet") snap = "peek";
+    if (mode === "sheet" && deleteConfirmation) snap = "expanded";
     if (mode === "sheet") panel.setAttribute("data-snap", snap);
     else panel.removeAttribute("data-snap");
     applyMetrics();
@@ -849,6 +850,7 @@
 
   function closePanel() {
     if (!open) return;
+    closeDeleteConfirmation(false);
     open = false;
     /* 先撤跟手写下那层 inline opacity 再 syncChrome:否则它会压过 data-level,
        遮罩要顶到 clearDragHeight 那一拍才跳变,而不是跟着面板一起淡出。 */
@@ -1484,6 +1486,7 @@
   }
 
   function render() {
+    closeDeleteConfirmation(false);
     /* 列表整体重建,上一轮物化出来的编辑卡已经随之消失 —— 先把 els 里那组
        指针清掉,免得后面读到已经脱开的节点。 */
     unmountEditor();
@@ -2011,7 +2014,7 @@
         if (canDeleteReply(anno, reply)) {
           var del = ibtn(ICON.trash, "删除这条回复", "delete-reply");
           del.classList.add("is-danger");
-          armDelete(del, "删除这条回复", function () {
+          confirmDelete(del, "回复", function () {
             removeReply(anno, reply);
           });
           tools.appendChild(del);
@@ -2394,7 +2397,7 @@
 
     var del = ibtn(ICON.trash, "删除这条" + what, "delete");
     del.classList.add("is-danger");
-    armDelete(del, "删除这条" + what, function () {
+    confirmDelete(del, what, function () {
       removeAnnotation(anno);
     });
     frag.appendChild(del);
@@ -2466,10 +2469,6 @@
         var b = e.target.closest("button");
         if (b && !b.disabled && !b.classList.contains("is-danger")) dismiss();
       }, true);
-      menu.addEventListener("click", function (e) {
-        var b = e.target.closest("button");
-        if (b && !b.disabled && !b.classList.contains("is-armed")) dismiss();
-      });
       wrap.addEventListener("focusout", onFocusOut);
       function onFocusOut(e) {
         if (!wrap.contains(e.relatedTarget)) closePop();
@@ -2480,9 +2479,6 @@
       wrap.appendChild(menu);
       trigger.setAttribute("aria-expanded", "true");
       openPop = { wrap: wrap, node: menu, trigger: trigger, cleanup: function () {
-        menu.querySelectorAll("button").forEach(function (b) {
-          b.dispatchEvent(new Event("aipm-menu-close"));
-        });
         wrap.removeEventListener("focusout", onFocusOut);
         document.removeEventListener("scroll", onScroll, true);
         window.removeEventListener("resize", dismiss);
@@ -2710,12 +2706,9 @@
     return canEdit(anno);
   }
 
-  /* ---- 图标按钮 ----
-     回复、编辑、删除这几个动作在所有评论系统里都长着同一张脸(回勾箭头 / 铅笔 /
-     垃圾桶),写字反而把一行按钮撑成一行文字。所以它们只出图标:名字挂在 title
-     与 aria-label 上 —— 那是这颗按钮唯一的可读副本,两个都得写。 */
+  /* ---- 菜单入口与菜单项共用的基础按钮 ---- */
 
-  /** 图标按钮的壳:只造按钮,不接行为(删除要两段式,见 armDelete)。 */
+  /** 创建带名称的图标按钮,由调用方连接操作。 */
   function ibtn(icon, label, action) {
     var b = document.createElement("button");
     b.type = "button";
@@ -2737,43 +2730,99 @@
     return b;
   }
 
-  /* 删除菜单项保留四秒二次确认,关闭菜单或点击其他位置取消确认。 */
-  var ARMED_MS = 4000;
+  var deleteConfirmation = null;
 
-  function armDelete(btn, label, onConfirm) {
-    var timer = 0;
-    function disarm() {
-      if (timer) {
-        clearTimeout(timer);
-        timer = 0;
+  function closeDeleteConfirmation(restoreFocus) {
+    if (!deleteConfirmation) return;
+    var current = deleteConfirmation;
+    deleteConfirmation = null;
+    current.observer.disconnect();
+    window.removeEventListener("resize", current.position);
+    current.dialog.close();
+    current.dialog.remove();
+    var target = restoreFocus && current.trigger.isConnected ? current.trigger : panel;
+    if (open) target.focus({ preventScroll: true });
+  }
+
+  /** 删除确认框随批注面板定位,由原生 dialog 管理模态状态与焦点。 */
+  function openDeleteConfirmation(kind, onConfirm) {
+    var trigger = openPop && openPop.trigger ? openPop.trigger : panel;
+    closePop();
+    closeDeleteConfirmation(false);
+    if (mode === "sheet" && snap === "peek") setSnap("expanded");
+
+    var dialog = document.createElement("dialog");
+    dialog.className = "aipm-anno__delete-overlay";
+    dialog.setAttribute("role", "alertdialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "aipm-anno-delete-title");
+    dialog.setAttribute("aria-describedby", "aipm-anno-delete-description");
+    dialog.innerHTML =
+      '<section class="aipm-anno__delete-card">' +
+      '<header class="aipm-anno__delete-head">' +
+      '<h2 id="aipm-anno-delete-title"></h2>' +
+      '<button type="button" class="aipm-anno__ibtn" data-action="cancel-delete" aria-label="关闭删除确认" title="关闭">' + ICON.close + '</button>' +
+      '</header>' +
+      '<p id="aipm-anno-delete-description"></p>' +
+      '<div class="aipm-anno__delete-actions">' +
+      '<button type="button" class="aipm-anno__delete-cancel" data-action="cancel-delete" autofocus>取消</button>' +
+      '<button type="button" class="aipm-anno__delete-confirm" data-action="confirm-delete"></button>' +
+      '</div></section>';
+    dialog.querySelector("h2").textContent = "删除" + kind;
+    dialog.querySelector("p").textContent = "确定要删除这条" + kind + "吗？删除后将无法恢复。";
+    dialog.querySelector('[data-action="confirm-delete"]').textContent = "删除" + kind;
+    dialog.querySelectorAll('[data-action="cancel-delete"]').forEach(function (button) {
+      button.addEventListener("click", function () { closeDeleteConfirmation(true); });
+    });
+    dialog.querySelector('[data-action="confirm-delete"]').addEventListener("click", function () {
+      closeDeleteConfirmation(false);
+      onConfirm();
+    });
+    dialog.addEventListener("cancel", function (e) {
+      e.preventDefault();
+      closeDeleteConfirmation(true);
+    });
+    dialog.addEventListener("keydown", function (e) {
+      e.stopPropagation();
+      if (e.key !== "Tab") return;
+      var buttons = dialog.querySelectorAll("button:not(:disabled)");
+      var first = buttons[0];
+      var last = buttons[buttons.length - 1];
+      var active = document.activeElement;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
       }
-      btn.classList.remove("is-armed");
-      btn.title = label;
-      btn.setAttribute("aria-label", label);
-      var text = btn.querySelector(".aipm-anno__tool-label");
-      if (text) text.textContent = label;
-      document.removeEventListener("click", onDoc, true);
-    }
-    /* 捕获阶段监听:点面板里任何别的地方都算「我改主意了」。点在按钮自己身上
-       不算 —— 那正是第二次点击。 */
-    function onDoc(e) {
-      if (!btn.contains(e.target)) disarm();
-    }
-    btn.addEventListener("aipm-menu-close", disarm);
+    });
+    dialog.addEventListener("click", function (e) {
+      if (e.target === dialog) closeDeleteConfirmation(true);
+    });
+    var position = function () {
+      var rect = panel.getBoundingClientRect();
+      var left = Math.max(0, rect.left);
+      var top = Math.max(0, rect.top);
+      dialog.style.left = left + "px";
+      dialog.style.top = top + "px";
+      dialog.style.width = Math.max(0, Math.min(window.innerWidth, rect.right) - left) + "px";
+      dialog.style.height = Math.max(0, Math.min(window.innerHeight, rect.bottom) - top) + "px";
+    };
+    var observer = new ResizeObserver(position);
+    deleteConfirmation = { dialog: dialog, trigger: trigger, observer: observer, position: position };
+    panel.appendChild(dialog);
+    position();
+    dialog.showModal();
+    observer.observe(panel);
+    window.addEventListener("resize", position);
+    dialog.querySelector(".aipm-anno__delete-cancel").focus({ preventScroll: true });
+  }
+
+  function confirmDelete(btn, kind, onConfirm) {
     btn.addEventListener("click", function (e) {
-      btn.focus({ preventScroll: true });
-      if (btn.classList.contains("is-armed")) {
-        disarm();
-        onConfirm();
-        return;
-      }
-      btn.classList.add("is-armed");
-      btn.title = "再点一次" + label;
-      btn.setAttribute("aria-label", "再点一次" + label);
-      var text = btn.querySelector(".aipm-anno__tool-label");
-      if (text) text.textContent = "再次点击确认删除";
-      document.addEventListener("click", onDoc, true);
-      timer = setTimeout(disarm, ARMED_MS);
+      e.stopPropagation();
+      openDeleteConfirmation(kind, onConfirm);
     });
     return btn;
   }

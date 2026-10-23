@@ -774,12 +774,7 @@ a.aipm-anno__reply-who:hover {
 .aipm-anno__pop .aipm-anno__tb-style.is-active {
   border-color: var(--md-default-fg-color);
 }
-/* 图标按钮。卡片右上角的「回复 / 编辑 / 删除」、每条回复右端的「回复 / 删除」
-   都是它 —— 这几个动作在所有评论系统里都长着同一张脸(铅笔 /
-   垃圾桶 / 回勾箭头),写字只会把一行按钮撑成一行文字。
-   平时是一档浅灰(不跟正文抢注意力),悬停才落到正文色并浮起一层极浅的底:
-   不描边、不铺底色块,一行图标才不至于把卡片压得很吵。名字全在 title 与
-   aria-label 上 —— 那是它唯一的可读副本。 */
+/* 菜单入口的图标按钮;菜单项在此基础上显示图标与文字。 */
 .aipm-anno__ibtn {
   display: inline-flex;
   flex: none;
@@ -816,15 +811,6 @@ a.aipm-anno__reply-who:hover {
 .aipm-anno__ibtn.is-danger:hover {
   color: var(--aipm-anno-pink);
   background: var(--aipm-anno-pink-bg);
-}
-/* 上膛(见 annotation.js 的 armDelete):再点一次就真删。这一档必须一直亮着 ——
-   「我改主意了」的那 4 秒里,得一眼看出这颗按钮已经换了意思。 */
-.aipm-anno__ibtn.is-armed,
-.aipm-anno__ibtn.is-armed:hover,
-.aipm-anno__ibtn.is-armed:focus-visible {
-  color: var(--aipm-anno-pink);
-  background: var(--aipm-anno-pink-bg);
-  box-shadow: inset 0 0 0 1px var(--aipm-anno-pink);
 }
 .aipm-anno__dot[data-color="yellow"] { background: var(--aipm-anno-yellow); }
 .aipm-anno__dot[data-color="green"]  { background: var(--aipm-anno-green); }
@@ -976,9 +962,6 @@ button.aipm-anno__vischip:focus-visible {
 .aipm-anno__toolmenu .aipm-anno__ibtn.is-danger {
   color: var(--aipm-anno-pink);
 }
-.aipm-anno__toolmenu .aipm-anno__ibtn.is-armed {
-  background: var(--aipm-anno-pink-bg);
-}
 .aipm-anno__toolmenu [data-action="edit"] {
   margin-top: .25rem;
   border-top: 1px solid var(--aipm-anno-line);
@@ -991,6 +974,94 @@ button.aipm-anno__vischip:focus-visible {
     width: 2.2rem;
     height: 2.2rem;
   }
+}
+/* 删除确认只覆盖批注面板,背景模糊与面板几何保持一致。 */
+.aipm-anno__delete-overlay {
+  position: fixed;
+  inset: auto;
+  max-width: none;
+  max-height: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: .8rem;
+  overflow: hidden;
+  border: 0;
+  color: var(--md-default-fg-color);
+  background: color-mix(in srgb, var(--md-default-bg-color) 65%, transparent);
+  backdrop-filter: blur(4px);
+  font: inherit;
+}
+.aipm-anno__delete-overlay[open] {
+  display: grid;
+  place-items: center;
+}
+.aipm-anno__delete-overlay::backdrop {
+  background: transparent;
+}
+.aipm-anno__delete-card {
+  width: 100%;
+  max-width: 20rem;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  padding: .8rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .5rem;
+  background: var(--md-default-bg-color);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .2);
+}
+.aipm-anno__delete-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+}
+.aipm-anno__delete-head h2 {
+  margin: 0;
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.aipm-anno__delete-head .aipm-anno__ibtn {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+.aipm-anno__delete-card p {
+  margin: .6rem 0 0;
+  font-size: .75rem;
+  line-height: 1.7;
+}
+.aipm-anno__delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  margin-top: 1rem;
+}
+.aipm-anno__delete-actions button {
+  min-height: 2.2rem;
+  padding: .4rem .75rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .3rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  font-family: inherit;
+  font-size: .75rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.aipm-anno__delete-actions .aipm-anno__delete-confirm {
+  border-color: var(--aipm-anno-pink);
+  color: var(--aipm-anno-pink);
+  background: var(--aipm-anno-pink-bg);
+}
+.aipm-anno__delete-actions button:hover {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.aipm-anno__delete-actions button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
 }
 /* 「作者」角标(楼主)。几十层的高楼里,作者本人的一句话比别人的重 —— 拿主色
    把它和那些中性的状态角标(未定位 / 新批注)分开:它说的是身份,不是状态。 */

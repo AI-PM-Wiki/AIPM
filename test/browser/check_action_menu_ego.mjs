@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 
+async function waitForPanel(page) {
+  await page.waitForFunction(() => {
+    const panel = document.querySelector('#aipm-annotations');
+    return panel.getAttribute('aria-hidden') === 'false' &&
+      panel.getAnimations().every(animation => animation.playState !== 'running' && !animation.pending);
+  }, undefined, { timeout: 5000 });
+}
+
 export async function checkActionMenu({ directory, taskSpace, spaceId }) {
   const config = JSON.parse(await readFile(`${directory}/runtime-config.json`, 'utf8'));
   const task = await taskSpace(spaceId);
@@ -12,6 +20,7 @@ export async function checkActionMenu({ directory, taskSpace, spaceId }) {
   const card = '.aipm-anno__comment';
   const trigger = `${card} .aipm-anno__headtools > button[data-action="options"]`;
   const menu = '.aipm-anno__toolmenu:popover-open';
+  const dialog = '.aipm-anno__delete-overlay[open]';
   async function ready() {
     await page.waitForFunction(() => window.__aipmIntegrityReady === true && window.__aipmAnno, undefined, { timeout: 20000 });
   }
@@ -19,6 +28,7 @@ export async function checkActionMenu({ directory, taskSpace, spaceId }) {
     if (await page.evaluate(() => document.querySelector('.aipm-anno-entry').getAttribute('aria-expanded') === 'false')) {
       await page.click('.aipm-anno-entry');
     }
+    await waitForPanel(page);
     if (await page.evaluate(() => document.querySelector('.aipm-anno__title').getAttribute('aria-pressed') === 'false')) {
       await page.click('.aipm-anno__title');
     }
@@ -26,6 +36,33 @@ export async function checkActionMenu({ directory, taskSpace, spaceId }) {
   }
   async function closed() {
     assert.equal(await page.evaluate(() => document.querySelectorAll('.aipm-anno__toolmenu:popover-open').length), 0);
+  }
+  async function inspectDialog(kind) {
+    await page.waitForSelector(dialog, { state: 'visible' });
+    const state = await page.evaluate(() => {
+      const overlay = document.querySelector('.aipm-anno__delete-overlay');
+      const card = overlay.querySelector('.aipm-anno__delete-card');
+      return { modal: overlay.matches(':modal'), role: overlay.getAttribute('role'),
+        title: overlay.querySelector('h2').textContent, blur: getComputedStyle(overlay).backdropFilter,
+        panel: document.querySelector('#aipm-annotations').getBoundingClientRect().toJSON(),
+        overlay: overlay.getBoundingClientRect().toJSON(), card: card.getBoundingClientRect().toJSON(),
+        confirmBottom: overlay.querySelector('.aipm-anno__delete-confirm').getBoundingClientRect().bottom,
+        cancelFocused: document.activeElement.classList.contains('aipm-anno__delete-cancel'),
+        buttons: [...overlay.querySelectorAll('button')].map(button => button.getBoundingClientRect().height) };
+    });
+    assert.equal(state.modal, true);
+    assert.equal(state.role, 'alertdialog');
+    assert.equal(state.title, `删除${kind}`);
+    assert.equal(state.blur, 'blur(4px)');
+    assert.equal(state.cancelFocused, true);
+    assert.ok(state.buttons.every(height => height >= 44));
+    assert.ok(Math.abs(state.overlay.left - state.panel.left) <= 1);
+    assert.ok(Math.abs(state.overlay.top - state.panel.top) <= 1);
+    assert.ok(Math.abs(state.card.x + state.card.width / 2 - state.panel.x - state.panel.width / 2) <= 1);
+    assert.ok(Math.abs(state.card.y + state.card.height / 2 - state.panel.y - state.panel.height / 2) <= 1);
+    assert.ok(state.card.left >= state.overlay.left && state.card.right <= state.overlay.right);
+    assert.ok(state.confirmBottom <= state.overlay.bottom);
+    return state;
   }
   async function inspect(width) {
     const state = await page.evaluate(() => {
@@ -58,6 +95,7 @@ export async function checkActionMenu({ directory, taskSpace, spaceId }) {
       await page.evaluate(scheme => document.body.setAttribute('data-md-color-scheme', scheme), scheme);
       await openComments();
       await page.click('.aipm-anno__newbtn');
+      await waitForPanel(page);
       await page.click('form[data-editor="comment"] .aipm-anno__visbtn');
       await page.click('form[data-editor="comment"] button[data-vis="local"]');
       await page.fill('form[data-editor="comment"] textarea', body);
@@ -75,15 +113,42 @@ export async function checkActionMenu({ directory, taskSpace, spaceId }) {
       assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'reply');
       await page.keyboard.press('End');
       await page.keyboard.press('Enter');
-      assert.equal(await page.evaluate(() => document.activeElement.textContent.trim()), '再次点击确认删除');
+      await closed();
+      const confirmation = await inspectDialog('评论');
+      if (width === 1280 && scheme === 'default') {
+        await page.cdp('Emulation.setDeviceMetricsOverride', { width: 320, height: 260, deviceScaleFactor: 1, mobile: false });
+        await waitForPanel(page);
+        await inspectDialog('评论');
+        await page.cdp('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+        await waitForPanel(page);
+        await inspectDialog('评论');
+      }
+      await page.screenshot({ path: `${directory}/delete-confirmation-${name}.png` });
       assert.equal(await page.evaluate(() => window.__aipmAnnoStore.localList(location.pathname).length), 1);
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'confirm-delete');
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), '关闭删除确认');
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(() => document.activeElement.classList.contains('aipm-anno__delete-cancel')), true);
       await page.keyboard.press('Escape');
       await closed();
+      assert.equal(await page.evaluate(() => document.querySelector('dialog.aipm-anno__delete-overlay')), null);
       assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-expanded')), 'false');
       assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'options');
       await page.keyboard.press('ArrowUp');
       assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'delete');
-      assert.equal(await page.evaluate(() => document.activeElement.classList.contains('is-armed')), false);
+      await page.keyboard.press('Enter');
+      await page.click(`${dialog} button[aria-label="关闭删除确认"]`);
+      await page.keyboard.press('ArrowUp');
+      await page.keyboard.press('Enter');
+      await page.click(`${dialog} .aipm-anno__delete-cancel`);
+      await page.keyboard.press('ArrowUp');
+      await page.keyboard.press('Enter');
+      const bounds = await page.evaluate(() => document.querySelector('.aipm-anno__delete-overlay').getBoundingClientRect().toJSON());
+      await page.mouse.click(bounds.left + 4, bounds.top + 4, { label: 'cancel delete outside dialog' });
+      assert.equal(await page.evaluate(() => window.__aipmAnnoStore.localList(location.pathname).length), 1);
+      await page.keyboard.press('ArrowUp');
       await page.keyboard.press('Escape');
       await page.keyboard.press('Enter');
       await page.keyboard.press('Tab');
@@ -106,8 +171,9 @@ export async function checkActionMenu({ directory, taskSpace, spaceId }) {
       assert.equal(await page.evaluate(() => document.querySelector('.aipm-anno__headtools > button').getAttribute('aria-expanded')), 'false');
       assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.aipm-anno__toolmenu button')].map(button => button.dataset.action)), ['reply', 'delete-reply']);
       await page.click(`${menu} button[data-action="delete-reply"]`);
+      await inspectDialog('回复');
       assert.equal(await page.evaluate(() => window.__aipmAnnoStore.localList(location.pathname)[0].replies.length), 1);
-      await page.click(`${menu} button[data-action="delete-reply"]`);
+      await page.click(`${dialog} button[data-action="confirm-delete"]`);
       await page.waitForFunction(() => window.__aipmAnnoStore.localList(location.pathname)[0].replies.length === 0);
       await closed();
       await page.click(trigger);
@@ -122,10 +188,11 @@ export async function checkActionMenu({ directory, taskSpace, spaceId }) {
       assert.equal(await page.evaluate(() => window.__aipmAnnoStore.localList(location.pathname)[0].body), `${body} 编辑`);
       await page.click(trigger);
       await page.click(`${menu} button[data-action="delete"]`);
-      await page.click(`${menu} button[data-action="delete"]`);
+      await inspectDialog('评论');
+      await page.click(`${dialog} button[data-action="confirm-delete"]`);
       await page.waitForFunction(() => window.__aipmAnnoStore.localList(location.pathname).length === 0);
       await closed();
-      results.push({ name, state, keyboard: true, outsideDismiss: true, singleMenu: true,
+      results.push({ name, state, confirmation, keyboard: true, outsideDismiss: true, singleMenu: true,
         replyDelete: true, commentEditRefresh: true, commentDelete: true });
       await writeFile(`${directory}/action-menu-results.json`, JSON.stringify({ spaceId: task.spaceId, results }, null, 2));
       console.log({ name, status: 'passed' });
@@ -153,6 +220,7 @@ export async function checkAnnotationActionMenu({ directory, taskSpace, spaceId 
   await page.waitForSelector('.aipm-anno__tb-annotate', { state: 'visible' });
   await page.click('.aipm-anno__tb-annotate');
   await page.waitForSelector('form[data-editor="create"] textarea', { state: 'visible' });
+  await waitForPanel(page);
   await page.click('form[data-editor="create"] .aipm-anno__visbtn');
   await page.click('form[data-editor="create"] button[data-vis="local"]');
   await page.fill('form[data-editor="create"] textarea', '批注菜单与权限检查');
@@ -186,6 +254,7 @@ export async function checkAnnotationActionMenu({ directory, taskSpace, spaceId 
   await page.reload();
   await page.waitForFunction(() => window.__aipmIntegrityReady === true && window.__aipmAnnoAuth.isLoggedIn());
   await page.click('.aipm-anno-entry');
+  await waitForPanel(page);
   await page.click('.aipm-anno__item button[data-action="visibility"]');
   await page.click('.aipm-anno__vispop button[data-vis="private"]');
   await page.waitForSelector('.aipm-anno__item .aipm-anno__vischip.is-private', { state: 'visible' });
@@ -204,10 +273,37 @@ export async function checkAnnotationActionMenu({ directory, taskSpace, spaceId 
   assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.aipm-anno__toolmenu button')].map(button => button.dataset.action)), ['ask', 'reply-login']);
   assert.equal(await page.evaluate(() => document.querySelector('.aipm-anno__toolmenu button[data-action="reply-login"]').textContent.trim()), '登录后回复');
   await page.keyboard.press('Escape');
+  await page.evaluate(async annotation => {
+    const response = await fetch(`${annotation}/api/auth/dev`, { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: '{}' });
+    if (!response.ok) throw new Error('isolated development login failed');
+    const session = await response.json();
+    localStorage.setItem('aipm-anno-auth', JSON.stringify({ token: session.token, user: session.user }));
+  }, config.annotation);
+  await page.reload();
+  await page.waitForFunction(() => window.__aipmIntegrityReady === true && window.__aipmAnnoAuth.isLoggedIn());
+  await page.click('.aipm-anno-entry');
+  await waitForPanel(page);
+  await page.waitForSelector(trigger, { state: 'visible' });
+  await page.click(trigger);
+  await page.click(`${menu} button[data-action="delete"]`);
+  await page.waitForSelector('.aipm-anno__delete-overlay[open]', { state: 'visible' });
+  assert.equal(await page.evaluate(() => document.querySelector('.aipm-anno__delete-overlay h2').textContent), '删除批注');
+  let deletionRequests = (await (await fetch(config.control)).json()).requests.filter(row => row.method === 'DELETE');
+  assert.equal(deletionRequests.length, 0);
+  await page.click('.aipm-anno__delete-cancel');
+  deletionRequests = (await (await fetch(config.control)).json()).requests.filter(row => row.method === 'DELETE');
+  assert.equal(deletionRequests.length, 0);
+  await page.click(trigger);
+  await page.click(`${menu} button[data-action="delete"]`);
+  await page.click('.aipm-anno__delete-confirm');
+  await page.waitForSelector('.aipm-anno__item', { state: 'hidden' });
+  assert.equal(await page.evaluate(() => window.__aipmAnnoStore.localList(location.pathname).length), 0);
   const service = await (await fetch(config.control)).json();
   assert.equal(service.writes, 1);
+  assert.equal(service.requests.filter(row => row.method === 'DELETE' && row.status === 200).length, 1);
   const result = { annotationEdit: true, triggerToggleFocus: true, visibilityMenuExclusion: true,
-    privateActions: true, publicAnonymousActions: true, service };
+    privateActions: true, publicAnonymousActions: true, remoteDeleteConfirmation: true, service };
   await writeFile(`${directory}/annotation-action-menu-results.json`, JSON.stringify(result, null, 2));
   console.log(result);
   return result;

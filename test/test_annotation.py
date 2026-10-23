@@ -2320,13 +2320,13 @@ class TestReplyAndDeleteAreIcons(unittest.TestCase):
 
     # ---- 回复:名字一行,操作固定在右端 ----
 
-    def test_reply_tools_are_icons_not_words(self):
+    def test_reply_tools_use_the_shared_action_menu(self):
         head = _block(self.js, "function replyHead(anno, reply)")
         self.assertIn("aipm-anno__reply-tools", head)
+        self.assertIn("actionMenu(", head)
         self.assertIn("ICON.reply", head)
         self.assertIn("ICON.trash", head)
-        for gone in ('"回复"', '"删除"', 'replyTool("回复"', 'replyTool("删除"'):
-            self.assertNotIn(gone, head)
+        self.assertIn('confirmDelete(del, "回复"', head)
 
     def test_every_reply_gets_a_head_line_of_its_own(self):
         """回复排成「头一行 + 正文」。操作按钮挂在这条回复自己的头一行右端,每条
@@ -2360,24 +2360,22 @@ class TestReplyAndDeleteAreIcons(unittest.TestCase):
         self.assertIn("ICON.trash", tools)
         self.assertNotIn("ICON.close", tools)
 
-    def test_delete_arms_first_and_fires_on_the_second_click(self):
-        fn = _block(self.js, "function armDelete(")
-        self.assertIn('classList.add("is-armed")', fn)
+    def test_delete_requires_the_panel_confirmation_dialog(self):
+        fn = _block(self.js, "function openDeleteConfirmation(")
+        self.assertIn('document.createElement("dialog")', fn)
+        self.assertIn("dialog.showModal()", fn)
+        self.assertIn('dialog.setAttribute("role", "alertdialog")', fn)
         self.assertIn("onConfirm()", fn)
-        self.assertIn("ARMED_MS", fn)
-        # 点在别处 = 改主意了;点在自己身上 = 第二次点击,不能当成「别处」
-        self.assertIn('document.addEventListener("click", onDoc, true)', fn)
-        self.assertIn("if (!btn.contains(e.target)) disarm()", fn)
-        # 上了膛的样子得一直亮着,否则看不出这颗按钮已经换了意思
-        self.assertIn("var(--aipm-anno-pink)", _block(self.css, ".aipm-anno__ibtn.is-armed,"))
+        self.assertIn("panel.getBoundingClientRect()", fn)
+        self.assertIn("backdrop-filter: blur(4px)", _block(self.css, ".aipm-anno__delete-overlay {"))
 
-    def test_both_deletes_go_through_the_same_armed_helper(self):
-        """卡片右上角那颗与回复右端那颗走同一条路 —— 两处各写一遍必然会漂。"""
+    def test_both_deletes_use_the_shared_confirmation(self):
+        """批注、评论与回复使用相同的删除确认入口。"""
         tools = _block(self.js, "function cardTools(")
-        self.assertIn("armDelete(del,", tools)
+        self.assertIn("confirmDelete(del,", tools)
         self.assertIn("removeAnnotation(anno)", tools)
         head = _block(self.js, "function replyHead(anno, reply)")
-        self.assertIn("armDelete(del,", head)
+        self.assertIn("confirmDelete(del,", head)
         self.assertIn("removeReply(anno, reply)", head)
 
     # ---- 回复按钮的位置 ----
@@ -2623,7 +2621,9 @@ class TestHidingAColumnDoesNotResizeTheList(unittest.TestCase):
         menu = _block(self.css, ".aipm-anno__toolmenu {")
         self.assertIn("position: fixed", menu)
         self.assertIn("overflow-y: auto", menu)
-        rule = _strip_comments(self.css.replace(menu, ""))
+        dialog = _block(self.css, ".aipm-anno__delete-card {")
+        self.assertIn("overflow-y: auto", dialog)
+        rule = _strip_comments(self.css.replace(menu, "").replace(dialog, ""))
         scrollables = re.findall(r"(?:^|[;{\s])overflow(?:-y)?:\s*(?:auto|scroll)", rule)
         self.assertEqual(len(scrollables), 1)
 
