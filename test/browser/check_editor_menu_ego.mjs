@@ -28,6 +28,7 @@ export async function checkEditorMenu({ directory, taskSpace, spaceId, sampledPo
   await page.waitForSelector('mark.aipm-anno-mark',{state:'visible'});
   await startEditorInputTrace(page);
   await page.click('mark.aipm-anno-mark');
+  await page.click('.aipm-anno__item .aipm-anno__headtools > button[data-action="options"]');
   await page.click('.aipm-anno__item button[data-action="edit"]');
   await page.waitForSelector('form[data-editor="edit"] textarea',{state:'visible'});
   if (synchronize) {

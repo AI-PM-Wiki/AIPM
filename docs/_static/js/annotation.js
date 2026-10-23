@@ -133,6 +133,8 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10,9V5l-7,7 7,7v-4.1c5,0 8.5,1.6 11,5.1 -1,-5 -4,-10 -11,-11z"/></svg>',
     caret:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7,10l5,5 5,-5z"/></svg>',
+    more:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
     /* 标题按钮尾巴上那对反向箭头:点一下换到另一份列表(批注 ↔ 评论)。
        用方向对立的两个箭头,而不是下拉的三角 —— 它不是菜单,是开关。 */
     swap:
@@ -855,6 +857,7 @@
     syncChrome();
     hideToolbar();
     closeVisMenu();
+    closePop();
     els.acct.hidden = true;
     entry.focus();
     void openedAt;
@@ -1653,6 +1656,7 @@
 
   function closePop() {
     if (openPop !== null) {
+      if (openPop.cleanup) openPop.cleanup();
       if (openPop.node.parentNode) openPop.node.parentNode.removeChild(openPop.node);
       if (openPop.trigger) openPop.trigger.setAttribute("aria-expanded", "false");
       openPop = null;
@@ -1994,24 +1998,27 @@
     }
     head.appendChild(spacerNode());
 
-    var tools = document.createElement("span");
-    tools.className = "aipm-anno__reply-tools";
-    if (canReply(anno)) {
-      tools.appendChild(
-        iconButton(ICON.reply, "回复这条", "reply", function () {
-          startReply(anno, reply);
-        })
-      );
+    if (canReply(anno) || canDeleteReply(anno, reply)) {
+      head.appendChild(actionMenu("aipm-anno__reply-tools", "回复选项", function () {
+        var tools = document.createDocumentFragment();
+        if (canReply(anno)) {
+          tools.appendChild(
+            iconButton(ICON.reply, "回复这条", "reply", function () {
+              startReply(anno, reply);
+            })
+          );
+        }
+        if (canDeleteReply(anno, reply)) {
+          var del = ibtn(ICON.trash, "删除这条回复", "delete-reply");
+          del.classList.add("is-danger");
+          armDelete(del, "删除这条回复", function () {
+            removeReply(anno, reply);
+          });
+          tools.appendChild(del);
+        }
+        return tools;
+      }));
     }
-    if (canDeleteReply(anno, reply)) {
-      var del = ibtn(ICON.trash, "删除这条回复", "delete-reply");
-      del.classList.add("is-danger");
-      armDelete(del, "删除这条回复", function () {
-        removeReply(anno, reply);
-      });
-      tools.appendChild(del);
-    }
-    if (tools.childNodes.length > 0) head.appendChild(tools);
     return head;
   }
 
@@ -2353,15 +2360,7 @@
     return b;
   }
 
-  /**
-   * 卡片右上角的「回复」:一支回勾箭头。与每条回复右端那颗同一张脸、同一个位置
-   * 逻辑 —— 谁的回话按钮就贴在谁那一行的右端,回复贴在每条回复的头上,卡片贴在
-   * 卡片自己头上。它原先单独落在底部那条操作链里(整张卡的左下角):离它要回的
-   * 那句话最远,也和每条回复上那颗错开了一整行。
-   *
-   * 与 cardTools 分开而不是并进去,是因为可编辑与可回复是两回事:未登录看别人的
-   * 批注时,铅笔垃圾桶都不在,这颗回勾箭头还在(见下面的 else 分支)。
-   */
+  /** 回复菜单项根据当前会话提供回复或登录入口。 */
   function cardReplyButton(anno) {
     var frag = document.createDocumentFragment();
     if (canReply(anno)) {
@@ -2381,12 +2380,7 @@
     return frag;
   }
 
-  /**
-   * 卡片右上角那两颗:铅笔 = 编辑,垃圾桶 = 删除(左边还有一颗回勾箭头,见
-   * cardReplyButton)。批注卡与评论卡共用 —— 四个操作各归其位:改色在批注卡
-   * 左上角的圆点(评论没有色可改),回复 / 编辑 / 删除都在右上角这一排。
-   * 编辑就地展开:点它,那张卡本身变成编辑态,不是另起一张。
-   */
+  /** 作者的编辑与删除菜单项。编辑直接打开当前卡片的编辑器。 */
   function cardTools(anno) {
     var frag = document.createDocumentFragment();
     if (!canEdit(anno)) return frag;
@@ -2398,9 +2392,6 @@
       })
     );
 
-    /* 删除用垃圾桶,不用叉。叉是「关掉/算了」的意思,写在卡片右上角,点的人
-       多半以为那张卡只是收起来 —— 而它一按就真没了,服务端那条直接就删。垃圾桶
-       没有第二种读法,也正好与左边那支铅笔配成一对(编辑 / 删除)。 */
     var del = ibtn(ICON.trash, "删除这条" + what, "delete");
     del.classList.add("is-danger");
     armDelete(del, "删除这条" + what, function () {
@@ -2410,14 +2401,109 @@
     return frag;
   }
 
-  /** 卡片顶栏右端那一排图标(问助手 / 回复 / 编辑 / 删除),紧挨着排,宽度留给名字。 */
+  /** 批注与评论共用右侧操作菜单。 */
   function headTools(anno) {
-    var tools = document.createElement("span");
-    tools.className = "aipm-anno__headtools";
-    tools.appendChild(askButton(anno));
-    tools.appendChild(cardReplyButton(anno));
-    tools.appendChild(cardTools(anno));
-    return tools;
+    return actionMenu("aipm-anno__headtools", isPageComment(anno) ? "评论选项" : "批注选项", function () {
+      var tools = document.createDocumentFragment();
+      tools.appendChild(askButton(anno));
+      tools.appendChild(cardReplyButton(anno));
+      tools.appendChild(cardTools(anno));
+      return tools;
+    });
+  }
+
+  function actionMenu(className, label, build) {
+    var wrap = document.createElement("span");
+    wrap.className = className;
+    var trigger = ibtn(ICON.more, label, "options");
+    trigger.setAttribute("aria-haspopup", "menu");
+    trigger.setAttribute("aria-expanded", "false");
+    wrap.appendChild(trigger);
+
+    function show(last) {
+      var same = openPop !== null && openPop.wrap === wrap;
+      closePop();
+      if (same) {
+        trigger.focus({ preventScroll: true });
+        return;
+      }
+      var menu = document.createElement("div");
+      menu.className = "aipm-anno__toolmenu";
+      menu.setAttribute("popover", "manual");
+      menu.setAttribute("role", "menu");
+      menu.setAttribute("aria-label", label);
+      menu.appendChild(build());
+      menu.querySelectorAll("button").forEach(function (b) {
+        b.setAttribute("role", "menuitem");
+        b.tabIndex = -1;
+        var text = document.createElement("span");
+        text.className = "aipm-anno__tool-label";
+        text.textContent = b.getAttribute("aria-label");
+        b.appendChild(text);
+      });
+      var dismiss = function () {
+        if (openPop === null || openPop.node !== menu) return;
+        closePop();
+        if (trigger.isConnected) trigger.focus({ preventScroll: true });
+      };
+      var position = function () {
+        var anchor = trigger.getBoundingClientRect();
+        var bounds = panel.getBoundingClientRect();
+        var edge = 8;
+        var top = Math.max(edge, bounds.top + edge);
+        var bottom = Math.min(window.innerHeight, bounds.bottom) - edge;
+        menu.style.maxHeight = Math.max(0, bottom - top) + "px";
+        var rect = menu.getBoundingClientRect();
+        var below = anchor.bottom + 4;
+        var y = below + rect.height <= bottom ? below : anchor.top - rect.height - 4;
+        menu.style.top = Math.max(top, Math.min(y, bottom - rect.height)) + "px";
+        menu.style.left = Math.max(edge, Math.min(anchor.right - rect.width, window.innerWidth - rect.width - edge)) + "px";
+      };
+      menu.addEventListener("keydown", function (e) {
+        menuKeys(e, menu, dismiss);
+      });
+      menu.addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (b && !b.disabled && !b.classList.contains("is-danger")) dismiss();
+      }, true);
+      menu.addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (b && !b.disabled && !b.classList.contains("is-armed")) dismiss();
+      });
+      wrap.addEventListener("focusout", onFocusOut);
+      function onFocusOut(e) {
+        if (!wrap.contains(e.relatedTarget)) closePop();
+      }
+      function onScroll(e) {
+        if (!menu.contains(e.target)) dismiss();
+      }
+      wrap.appendChild(menu);
+      trigger.setAttribute("aria-expanded", "true");
+      openPop = { wrap: wrap, node: menu, trigger: trigger, cleanup: function () {
+        menu.querySelectorAll("button").forEach(function (b) {
+          b.dispatchEvent(new Event("aipm-menu-close"));
+        });
+        wrap.removeEventListener("focusout", onFocusOut);
+        document.removeEventListener("scroll", onScroll, true);
+        window.removeEventListener("resize", dismiss);
+      } };
+      menu.showPopover();
+      position();
+      var options = menu.querySelectorAll("button:not(:disabled)");
+      options[last ? options.length - 1 : 0].focus({ preventScroll: true });
+      document.addEventListener("scroll", onScroll, true);
+      window.addEventListener("resize", dismiss);
+    }
+    trigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      show(false);
+    });
+    trigger.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      show(e.key === "ArrowUp");
+    });
+    return wrap;
   }
 
   /**
@@ -2651,11 +2737,7 @@
     return b;
   }
 
-  /* 删除的二次确认。
-     它以前是右上角那颗叉,现在是一颗不带字的垃圾桶 —— 图标按钮比文字链好点错,
-     而删掉的东西回不来(服务端那条是直接 DELETE)。所以第一次点只是「上膛」:
-     按钮转成警示色、title 改成「再点一次…」;再点一次才真删,点别处或者 4 秒
-     没动静就自动放下。不上模态框:为一次删除打断整个面板不值当。 */
+  /* 删除菜单项保留四秒二次确认,关闭菜单或点击其他位置取消确认。 */
   var ARMED_MS = 4000;
 
   function armDelete(btn, label, onConfirm) {
@@ -2668,6 +2750,8 @@
       btn.classList.remove("is-armed");
       btn.title = label;
       btn.setAttribute("aria-label", label);
+      var text = btn.querySelector(".aipm-anno__tool-label");
+      if (text) text.textContent = label;
       document.removeEventListener("click", onDoc, true);
     }
     /* 捕获阶段监听:点面板里任何别的地方都算「我改主意了」。点在按钮自己身上
@@ -2675,8 +2759,9 @@
     function onDoc(e) {
       if (!btn.contains(e.target)) disarm();
     }
+    btn.addEventListener("aipm-menu-close", disarm);
     btn.addEventListener("click", function (e) {
-      e.stopPropagation();
+      btn.focus({ preventScroll: true });
       if (btn.classList.contains("is-armed")) {
         disarm();
         onConfirm();
@@ -2685,6 +2770,8 @@
       btn.classList.add("is-armed");
       btn.title = "再点一次" + label;
       btn.setAttribute("aria-label", "再点一次" + label);
+      var text = btn.querySelector(".aipm-anno__tool-label");
+      if (text) text.textContent = "再次点击确认删除";
       document.addEventListener("click", onDoc, true);
       timer = setTimeout(disarm, ARMED_MS);
     });

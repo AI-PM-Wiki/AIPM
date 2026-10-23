@@ -913,7 +913,7 @@ button.aipm-anno__vischip:focus-visible {
 .aipm-anno__spacer {
   flex: 1 1 auto;
 }
-/* 卡片顶栏右端的图标一排紧挨着:每颗按钮自带留白,排得再开就是在挤名字。 */
+/* 卡片右侧的菜单入口与状态角标。 */
 .aipm-anno__headtools {
   display: inline-flex;
   flex: none;
@@ -923,6 +923,74 @@ button.aipm-anno__vischip:focus-visible {
 }
 .aipm-anno__headtools .aipm-anno__badge {
   margin-inline-end: .2rem;
+}
+.aipm-anno__headtools > .aipm-anno__ibtn,
+.aipm-anno__reply-tools > .aipm-anno__ibtn {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+.aipm-anno__ibtn[aria-expanded="true"] {
+  color: var(--md-accent-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+/* 使用浏览器顶层显示菜单,保留卡片的主题与本机内容保护属性。 */
+.aipm-anno__toolmenu {
+  position: fixed;
+  inset: auto;
+  width: 11rem;
+  max-width: calc(100vw - 1rem);
+  margin: 0;
+  padding: .25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .4rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+}
+.aipm-anno__toolmenu:popover-open {
+  display: flex;
+  flex-direction: column;
+}
+.aipm-anno__toolmenu .aipm-anno__ibtn {
+  justify-content: flex-start;
+  gap: .45rem;
+  width: 100%;
+  height: auto;
+  min-height: 2.2rem;
+  padding: .4rem .5rem;
+  color: var(--md-default-fg-color);
+  font-family: inherit;
+  font-size: .75rem;
+  line-height: 1.4;
+  text-align: left;
+}
+.aipm-anno__toolmenu .aipm-anno__ibtn svg {
+  flex: none;
+}
+.aipm-anno__toolmenu .aipm-anno__ibtn:focus-visible {
+  outline-offset: -2px;
+  background: var(--md-default-fg-color--lightest);
+}
+.aipm-anno__toolmenu .aipm-anno__ibtn.is-danger {
+  color: var(--aipm-anno-pink);
+}
+.aipm-anno__toolmenu .aipm-anno__ibtn.is-armed {
+  background: var(--aipm-anno-pink-bg);
+}
+.aipm-anno__toolmenu [data-action="edit"] {
+  margin-top: .25rem;
+  border-top: 1px solid var(--aipm-anno-line);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+@media (pointer: coarse) {
+  .aipm-anno__headtools > .aipm-anno__ibtn,
+  .aipm-anno__reply-tools > .aipm-anno__ibtn {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
 }
 /* 「作者」角标(楼主)。几十层的高楼里,作者本人的一句话比别人的重 —— 拿主色
    把它和那些中性的状态角标(未定位 / 新批注)分开:它说的是身份,不是状态。 */

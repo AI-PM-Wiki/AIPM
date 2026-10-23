@@ -415,6 +415,7 @@ class RealServiceConfirmationAcceptance(check_agent_confirmation.AgentConfirmati
         self.page.get_by_role("button", name="打开批注面板").click()
         item = self.page.locator(f'.aipm-anno__item[data-anno-id="{annotation_id}"]')
         item.wait_for(state="visible")
+        item.locator('.aipm-anno__headtools > button[data-action="options"]').click()
         item.locator('button[data-action="reply"]').click()
         reply_box = item.locator(".aipm-anno__replybox")
         reply_box.locator('textarea[aria-label="回复正文"]').fill("经真实服务保存的回复")

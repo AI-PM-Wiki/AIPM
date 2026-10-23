@@ -2619,9 +2619,11 @@ class TestHidingAColumnDoesNotResizeTheList(unittest.TestCase):
         self.assertNotIn("both-edges", rule)
 
     def test_the_list_is_the_only_scrolling_box_in_the_panel(self):
-        """修的是面板里唯一的滚动容器。再长出第二个,就另开一处同样的跳变 ——
-        这条断言是提醒,不是禁令:真要加,得照着上面那条一起给槽位。"""
-        rule = _strip_comments(self.css)
+        """列表保持独立滚动,顶层菜单在空间不足时允许滚动选项。"""
+        menu = _block(self.css, ".aipm-anno__toolmenu {")
+        self.assertIn("position: fixed", menu)
+        self.assertIn("overflow-y: auto", menu)
+        rule = _strip_comments(self.css.replace(menu, ""))
         scrollables = re.findall(r"(?:^|[;{\s])overflow(?:-y)?:\s*(?:auto|scroll)", rule)
         self.assertEqual(len(scrollables), 1)
 

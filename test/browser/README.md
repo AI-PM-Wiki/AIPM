@@ -124,6 +124,8 @@ await checkLocalConfirmation({ directory: '/absolute/repo/meta/local-confirmatio
 
 ## 交互界面检查
 
+`check_action_menu_ego.mjs` 的 `checkActionMenu` 使用相同的隔离服务目录和浏览器任务空间，在 1280、390、320 CSS 像素宽度与明暗主题下检查评论和回复的操作菜单。检查包括方向键、Home／End、Escape、Tab、外部点击、菜单互斥、删除二次确认、回复保存与删除、评论编辑和刷新恢复，并核对选项高度、窗口边界和本机内容保护属性。截图与结果保存在 `action-menu-*.png` 和 `action-menu-results.json`。同文件的 `checkAnnotationActionMenu` 检查批注创建与编辑、按钮焦点返回、可见范围菜单互斥，以及真实隔离服务登录、私有上传、公开展示和退出登录后的菜单权限，结果保存在 `annotation-action-menu-results.json`。该检查使用服务开发会话，GitHub OAuth 单独验收。
+
 `check_confirmation_ui_ego.mjs` 与 `check_editor_ui_ego.mjs` 在 1280、390、320 CSS 像素宽度下操作明暗主题。检查覆盖受保护确认区、范围选中与锁定、原生鼠标／键盘确认、本机批注编辑、评论错误提示、评论及回复保存／刷新，以及菜单的方向键、Escape 和焦点返回。可见范围与保存按钮的布局由浏览器核对实际几何尺寸、触控尺寸和菜单边界。
 
 确认脚本默认使用 4000 字符以内、含 1200 次换行的正文。六组尺寸／主题通过原生 Enter 打开真实建议卡，分别执行取消与确认入口。正文区域记录 Home、ArrowDown、PageDown、End 的可信键盘事件、实际滚动位置及末行可见几何数据，Tab 依次访问确认与取消。确认入口保持程序点击零写入、可信确认单次写入及刷新恢复断言。
