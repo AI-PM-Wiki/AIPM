@@ -48,9 +48,18 @@ class RealAnnotationApi:
     def reset(self) -> None:
         self.stop_service()
         self.data = Path(tempfile.mkdtemp(dir=self.work))
-        self.log = (self.data / "service.log").open("w", encoding="utf-8")
+        self.start_service()
+        self.requests.clear()
+        self.drop_next_write_response = False
+
+    def restart(self, login: str) -> None:
+        self.stop_service()
+        self.start_service(login)
+
+    def start_service(self, login: str = "browser-check") -> None:
+        self.log = (self.data / "service.log").open("a", encoding="utf-8")
         env = dict(os.environ, HOST="127.0.0.1", PORT=str(self.service_port),
-                   DATA_DIR=str(self.data), DEV_AUTH_BYPASS="true", DEV_AUTH_LOGIN="browser-check",
+                   DATA_DIR=str(self.data), DEV_AUTH_BYPASS="true", DEV_AUTH_LOGIN=login,
                    SITE_BASE=self.site.base, ALLOWED_ORIGINS=self.site.base, RETURN_ORIGINS=self.site.base,
                    SEARCH_INDEX_URL=self.site.base + "/search/search_index.json",
                    TMPDIR=str(self.work), HIGHLIGHT_JUDGE_PRIMARY="llm", HIGHLIGHT_JUDGE_FALLBACK="none")
@@ -69,8 +78,6 @@ class RealAnnotationApi:
         else:
             self.stop_service()
             raise RuntimeError("annotation service readiness timeout")
-        self.requests.clear()
-        self.drop_next_write_response = False
 
     def login(self) -> dict:
         request = urllib.request.Request(self.base + "/api/auth/dev", data=b"{}",

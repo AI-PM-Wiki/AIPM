@@ -182,7 +182,7 @@ export function mountProposalConfirmation({ core, proposal, session, host = docu
         const id = store.uid();
         store.localAdd({ id, requestId: claimedRequest.requestId, page: claimedRequest.page, visibility: 'local',
           color: claimedRequest.color, style: claimedRequest.style, body: claimedRequest.body, target,
-          author: { githubId: 0, login: auth.user()?.login ?? '本机' },
+          author: auth.user() ?? { githubId: 0, login: '本机' },
           replies: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
         sent = true;
         const saved = store.localList(claimedRequest.page).find((item) => item.id === id);
