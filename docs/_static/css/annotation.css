@@ -517,15 +517,61 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-weight: 600;
   line-height: 1;
 }
+/* 没有 GitHub 账号的作者画一个图示:本机记录是一台电脑,智能高亮是助手那颗星。 */
+.aipm-anno__cavatar.is-icon {
+  color: var(--md-default-fg-color--light);
+}
+.aipm-anno__cavatar.is-smart {
+  color: var(--md-accent-fg-color);
+}
+.aipm-anno__cavatar.is-icon svg {
+  width: 62%;
+  height: 62%;
+  fill: currentColor;
+}
+/* 有 GitHub 账号的作者:头像与名字都是去主页的链接。 */
+a.aipm-anno__cavatar {
+  transition: box-shadow .15s ease;
+}
+a.aipm-anno__cavatar:hover {
+  box-shadow: 0 0 0 2px var(--md-accent-fg-color);
+}
+a.aipm-anno__cavatar:focus-visible,
+a.aipm-anno__cname:focus-visible,
+a.aipm-anno__iname:focus-visible,
+a.aipm-anno__reply-who:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
+}
+a.aipm-anno__cname,
+a.aipm-anno__iname,
+a.aipm-anno__reply-who {
+  color: var(--md-default-fg-color);
+  text-decoration: none;
+}
+a.aipm-anno__cname:hover,
+a.aipm-anno__iname:hover,
+a.aipm-anno__reply-who:hover {
+  color: var(--md-accent-fg-color);
+  text-decoration: underline;
+}
 /* 用户名压在时间上面两行,而不是「名字 · 时间」挤一行:顶栏要在一眼之内分得清
-   「谁」和「什么时候」,而名字长短不一,挤一行时时间会被推得忽左忽右。 */
+   「谁」和「什么时候」,而名字长短不一,挤一行时时间会被推得忽左忽右。
+   可见范围跟在名字后面,与批注卡一致。 */
 .aipm-anno__cwho {
   display: flex;
   flex-direction: column;
   min-width: 0;
   line-height: 1.3;
 }
+.aipm-anno__cline {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
+}
 .aipm-anno__cname {
+  min-width: 0;
   overflow: hidden;
   font-size: .75rem;
   font-weight: 600;
@@ -672,7 +718,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__item-top {
   display: flex;
   align-items: center;
-  gap: .35rem;
+  gap: .3rem;
   margin-bottom: .25rem;
 }
 /* 圆点是改色入口,所以它是一颗按钮 —— 但看起来仍是个点。外面那层 wrap 只负责
@@ -785,27 +831,101 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__dot[data-color="blue"]   { background: var(--aipm-anno-blue); }
 .aipm-anno__dot[data-color="pink"]   { background: var(--aipm-anno-pink); }
 .aipm-anno__dot[data-color="purple"] { background: var(--aipm-anno-purple); }
-.aipm-anno__meta {
+/* 批注卡顶栏:色点、头像、名字、可见范围。头像比评论卡那颗小一档,顶栏还要
+   放下右侧那一排图标。 */
+.aipm-anno__item-top .aipm-anno__cavatar {
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: .625rem;
+}
+.aipm-anno__iname {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--md-default-fg-color);
+  font-size: .75rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 名字旁的可见范围。三档各有一种颜色:公开中性、私有蓝、仅本机紫。
+   自己的那条是一颗按钮(带箭头,点开三选一),别人的那条只是标签。 */
+.aipm-anno__viswrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+.aipm-anno__vischip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 1.15rem;
+  padding: 0 .35rem;
+  border: 0;
+  border-radius: 999px;
   color: var(--md-default-fg-color--light);
-  font-size: .6875rem;
+  background: var(--md-default-fg-color--lightest);
+  font-family: inherit;
+  font-size: .625rem;
+  line-height: 1;
+  white-space: nowrap;
 }
-.aipm-anno__meta[data-vis="is-private"] {
+.aipm-anno__vischip.is-private {
   color: var(--aipm-anno-blue);
+  background: var(--aipm-anno-blue-bg);
 }
-.aipm-anno__meta[data-vis="is-local"] {
+.aipm-anno__vischip.is-local {
   color: var(--aipm-anno-purple);
+  background: var(--aipm-anno-purple-bg);
+}
+button.aipm-anno__vischip {
+  padding-right: .15rem;
+  cursor: pointer;
+  transition: box-shadow .15s ease;
+}
+button.aipm-anno__vischip svg {
+  width: .8rem;
+  height: .8rem;
+  fill: currentColor;
+}
+button.aipm-anno__vischip:hover,
+button.aipm-anno__vischip[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+button.aipm-anno__vischip:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
+}
+.aipm-anno__vispop {
+  position: absolute;
+  top: calc(100% + .3rem);
+  left: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  min-width: 7.5rem;
+  padding: .25rem;
+  border: 1px solid var(--aipm-anno-line);
+  border-radius: .35rem;
+  background: var(--md-default-bg-color);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
 }
 .aipm-anno__spacer {
   flex: 1 1 auto;
 }
-/* 「仅高亮」与「已上传」是状态角标,不是警示 —— 压低一档存在感。 */
-.aipm-anno__badge.is-quiet {
-  color: var(--md-default-fg-color--light);
-  background: transparent;
-  border: 1px solid var(--aipm-anno-line);
+/* 卡片顶栏右端的图标一排紧挨着:每颗按钮自带留白,排得再开就是在挤名字。 */
+.aipm-anno__headtools {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: .1rem;
+  margin-inline-start: auto;
+}
+.aipm-anno__headtools .aipm-anno__badge {
+  margin-inline-end: .2rem;
 }
 /* 「作者」角标(楼主)。几十层的高楼里,作者本人的一句话比别人的重 —— 拿主色
-   把它和那些中性的状态角标(仅高亮 / 已上传)分开:它说的是身份,不是状态。 */
+   把它和那些中性的状态角标(未定位 / 新批注)分开:它说的是身份,不是状态。 */
 .aipm-anno__badge.is-author {
   color: var(--md-accent-bg-color);
   background: var(--md-accent-fg-color);
@@ -1043,11 +1163,10 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   opacity: .6;
   cursor: progress;
 }
-/* 卡片底部的操作链:点赞(心 + 计数)与「上传为公开 / 私有」「重新锚定」那几条
-   文字链 —— 后几件事没有通行的图标,写字比画图准。点赞那颗自带内边距,间距因此
-   收紧一档,免得一行里七长八短。
-   「回复」不在这行:它搬去了卡片右上角(见 annotation.js 的 cardReplyButton),
-   与每条回复右端那颗回勾箭头同一个位置逻辑。 */
+/* 卡片底部的操作链:点赞(心 + 计数)与「重新锚定」文字链 —— 后者没有通行的图标,
+   写字比画图准。点赞那颗自带内边距,间距因此收紧一档,免得一行里七长八短。
+   「回复」在卡片右上角(见 annotation.js 的 cardReplyButton),与每条回复右端那颗
+   回勾箭头同一个位置逻辑;可见范围在名字旁边。 */
 .aipm-anno__item-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1313,6 +1432,17 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   height: .9rem;
   fill: currentColor;
 }
+/* 图标跟着可见范围上色,与卡片名字旁那颗标签同一套颜色。 */
+.aipm-anno__visicon {
+  display: inline-flex;
+  color: var(--md-default-fg-color--light);
+}
+.aipm-anno__visbtn.is-private .aipm-anno__visicon {
+  color: var(--aipm-anno-blue);
+}
+.aipm-anno__visbtn.is-local .aipm-anno__visicon {
+  color: var(--aipm-anno-purple);
+}
 .aipm-anno__vislist {
   position: absolute;
   left: 0;
@@ -1320,7 +1450,7 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   z-index: 5;
   display: flex;
   flex-direction: column;
-  width: min(13rem, calc(100vw - 2rem));
+  width: 8.5rem;
   padding: .25rem;
   border: 1px solid var(--aipm-anno-line);
   border-radius: .35rem;
@@ -1330,11 +1460,13 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
 .aipm-anno__vislist[hidden] {
   display: none;
 }
-.aipm-anno__vislist button {
+/* 两处菜单的选项:图标 + 名称,当前那一项右侧打勾。说明在悬停提示里。 */
+.aipm-anno__vislist button,
+.aipm-anno__vispop button {
   display: flex;
-  flex-direction: column;
-  gap: .1rem;
-  padding: .35rem .5rem;
+  align-items: center;
+  gap: .45rem;
+  padding: .4rem .5rem;
   border: 0;
   border-radius: .25rem;
   color: var(--md-default-fg-color);
@@ -1342,20 +1474,33 @@ html.aipm-anno-mode--sheet .aipm-anno__head {
   font-family: inherit;
   font-size: .75rem;
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
-.aipm-anno__vislist button:hover {
+.aipm-anno__vislist button svg,
+.aipm-anno__vispop button svg {
+  flex: none;
+  width: .85rem;
+  height: .85rem;
+  fill: currentColor;
+}
+.aipm-anno__vislist button svg:last-child,
+.aipm-anno__vispop button svg:last-child {
+  margin-left: auto;
+  visibility: hidden;
+}
+.aipm-anno__vislist button:hover,
+.aipm-anno__vispop button:hover {
   background: var(--md-default-fg-color--lightest);
 }
-.aipm-anno__vislist button.is-active {
+.aipm-anno__vislist button.is-active,
+.aipm-anno__vispop button.is-active {
   color: var(--md-accent-fg-color);
-  background: var(--md-default-fg-color--lightest);
   font-weight: 600;
 }
-.aipm-anno__vislist button span {
-  color: var(--md-default-fg-color--light);
-  font-size: .625rem;
-  font-weight: 400;
+.aipm-anno__vislist button.is-active svg:last-child,
+.aipm-anno__vispop button.is-active svg:last-child {
+  visibility: visible;
 }
 .aipm-anno__input {
   width: 100%;

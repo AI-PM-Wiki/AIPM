@@ -8,12 +8,12 @@
     private 同样存服务端,但按账号隔离:只有作者本人登录后看得到,
             **换设备登录同一账号能看到**(这正是它与「仅本机」的本质区别)。
     local   匿名也能建、也能改,只存 localStorage,**绝不上传**;
-            换设备、清缓存即丢。登录后可「上传为公开 / 私有」。
+            换设备、清缓存即丢。登录后可在卡片上改为公开或私有。
 
   所以本文件里有**两套完全独立的读写路径**:服务端那几个走 fetch,本机那套走
-  localStorage,中间没有隐式桥。唯一能跨过去的是显式动作 uploadLocal(),
-  它把一条本机批注 POST 出去并在本地记下 server id 映射 —— 避免同一段话
-  在本地与云端各显示一份。
+  localStorage,中间没有隐式桥。能跨过去的只有面板里的显式动作:uploadLocal()
+  把一条本机批注 POST 出去并在本地记下 server id 映射,moveToLocal() 把服务端
+  批注写回本机后删除服务端那份 —— 同一段话不会在本地与云端各显示一份。
 
   存储分片与配额:
   - 本机批注按页面分片(localStorage 单键 aipm-anno-local),键内再按 page 分组;
@@ -22,7 +22,7 @@
   - 提供 exportJson / importJson,给用户在换设备前自救。
 
   server id 映射:上传成功后记 localId → serverId;之后本机那条标记为
-  uploadedAt,面板把它显示成「已上传」而不是重复一条。
+  uploadedAt,面板只显示服务端那份。改回仅本机时沿用这条本机记录。
 */
 (function () {
   "use strict";
