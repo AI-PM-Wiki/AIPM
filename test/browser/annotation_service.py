@@ -136,6 +136,7 @@ class _AnnotationForwarder(http.server.BaseHTTPRequestHandler):
 
     do_GET = forward
     do_POST = forward
+    do_PUT = forward
     do_PATCH = forward
     do_DELETE = forward
     do_OPTIONS = forward
