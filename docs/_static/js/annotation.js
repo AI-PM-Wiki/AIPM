@@ -1081,7 +1081,7 @@
     var revision = ++loadRevision;
     var token = auth ? auth.token() : null;
     var requests = [
-      store.request("/api/annotations?page=" + encodeURIComponent(page) + "&scope=public")
+      store.request("/api/annotations?page=" + encodeURIComponent(page) + "&scope=public", { token: token })
     ];
     if (token) {
       requests.push(
@@ -1103,6 +1103,16 @@
         return a && a.visibility === "private";
       });
       localList = store.localList(page);
+      if (results[1] && results[1].ok) {
+        localList.forEach(function (anno) {
+          if (anno.pendingLocal !== auth.user()?.githubId) return;
+          var serverId = store.serverIdOf(anno.id);
+          if (!serverId || mine.some(function (item) { return item.id === serverId; })) return;
+          store.localUpdate(page, anno.id, { pendingLocal: undefined });
+          store.forgetServerId(anno.id);
+        });
+        localList = store.localList(page);
+      }
       cache[page] = true;
       applyAll();
       render();
@@ -2314,8 +2324,7 @@
   function itemActions(anno, isOrphan) {
     var acts = document.createElement("div");
     acts.className = "aipm-anno__item-actions";
-    /* 点赞:本机批注没有服务端可言,不显示。 */
-    if (!isLocal(anno)) acts.appendChild(likeButton(anno));
+    acts.appendChild(likeButton(anno));
     if (isOrphan) {
       acts.appendChild(
         actionButton("重新锚定", "reanchor", function () {
@@ -2834,22 +2843,14 @@
     return b;
   }
 
-  /**
-   * 点赞。**按账号记名**,所以未登录点不了 —— 服务端不知道你是谁,直接引导登录
-   * (与选了公开/私有时的处置一致)。登录后 PUT / DELETE 都幂等,连点与重试都不会
-   * 把计数点乱。
-   */
+  /** 本机点赞随记录保存，服务端点赞按账号记名。 */
   function toggleLike(anno) {
-    if (!auth || !auth.isLoggedIn()) {
+    if (!isLocal(anno) && (!auth || !auth.isLoggedIn())) {
       if (auth) auth.login(location.href);
       return;
     }
     var liked = anno.likedByMe === true;
-    store
-      .request("/api/annotations/" + encodeURIComponent(anno.id) + "/like", {
-        method: liked ? "DELETE" : "PUT",
-        token: auth.token()
-      })
+    store.setLike(anno, !liked, auth ? auth.token() : null)
       .then(function (res) {
         if (res.status === 401) {
           auth.forget();
@@ -2863,6 +2864,9 @@
         anno.likeCount = res.body.annotation.likeCount;
         anno.likedByMe = res.body.annotation.likedByMe;
         render();
+      })
+      .catch(function (err) {
+        setSmartbar(err.message, "warn");
       });
   }
 
@@ -4410,6 +4414,8 @@
           visibility: visibility,
           target: anno.target
         };
+    if (anno.likeId) payload.likeId = anno.likeId;
+    if (typeof anno.likedByMe === "boolean") payload.likedByMe = anno.likedByMe;
     store.createAnnotation(payload, {
       token: token,
       isCurrent: function () { return auth.token() === token; }
@@ -4443,10 +4449,7 @@
   }
 
   /**
-   * 服务端批注改为仅本机:先在本机写好记录,再删除服务端那份。写好的本机记录在删除
-   * 成功前仍与服务端那份对应(isShadow),所以页面上不会同时出现两条;删除失败时撤回
-   * 刚写的记录。这条批注当初从本机上传而来时,沿用原来那条本机记录,本机留下的回复
-   * 与服务端的回复合在一起。
+   * 本机保存内容与点赞快照后，服务端移除内容并保留独立点赞记录。
    */
   function moveToLocal(anno) {
     var token = auth.token();
@@ -4465,7 +4468,11 @@
       color: anno.color || store.DEFAULT_COLOR,
       style: styleOf(anno),
       target: anno.target,
-      replies: replies
+      replies: replies,
+      likeId: anno.id,
+      likeCount: anno.likeCount || 0,
+      likedByMe: anno.likedByMe === true,
+      pendingLocal: auth.user().githubId
     };
     var localId = shadow ? shadow.id : store.uid();
     try {
@@ -4488,17 +4495,25 @@
     }
     setBusy(true);
     store
-      .request("/api/annotations/" + encodeURIComponent(anno.id), { method: "DELETE", token: token })
+      .request("/api/annotations/" + encodeURIComponent(anno.id) + "/local", { method: "POST", token: token })
       .then(function (res) {
         setBusy(false);
-        if (res.ok || res.status === 404) {
+        if (res.ok) {
+          store.localUpdate(anno.page, localId, {
+            likeId: res.body.likeId, likeCount: res.body.likeCount, likedByMe: res.body.likedByMe,
+            pendingLocal: undefined
+          });
           store.forgetServerId(localId);
           invalidate();
           return ensureAnnotationsLoaded();
         }
-        if (!shadow) store.localRemove(anno.page, localId);
+        if (!shadow && res.status >= 400 && res.status < 500) store.localRemove(anno.page, localId);
         if (res.status === 401) auth.forget();
         setHint(serverFailText("改为仅本机失败", res));
+      })
+      .catch(function (err) {
+        setBusy(false);
+        setHint(err.message);
       });
   }
 

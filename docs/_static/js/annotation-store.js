@@ -252,6 +252,26 @@
     return true;
   }
 
+  async function setLike(anno, liked, token) {
+    if (anno.visibility !== "local") {
+      return request("/api/annotations/" + encodeURIComponent(anno.id) + "/like", {
+        method: liked ? "PUT" : "DELETE", token: token
+      });
+    }
+    var list = localList(anno.page);
+    var index = list.findIndex(function (item) { return item.id === anno.id; });
+    if (index < 0) throw new Error("local annotation missing");
+    var current = list[index];
+    var delta = Number(liked) - Number(current.likedByMe === true);
+    var next = Object.assign({}, current, {
+      likeCount: (current.likeCount || 0) + delta, likedByMe: liked
+    });
+    if (next.likeCount < 0) throw new Error("invalid local like count");
+    list[index] = next;
+    saveLocalPage(anno.page, list);
+    return { ok: true, status: 200, body: { annotation: next } };
+  }
+
   /* ---- localId → serverId 映射 ---- */
 
   function loadMap() {
@@ -439,6 +459,7 @@
 
     request: request,
     createAnnotation: createAnnotation,
+    setLike: setLike,
     uid: uid,
 
     localList: localList,

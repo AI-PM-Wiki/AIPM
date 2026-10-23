@@ -1502,18 +1502,20 @@ class TestUiRoundFour(unittest.TestCase):
 
     # ---- 点赞 ----
 
-    def test_like_button_only_on_server_annotations(self):
+    def test_like_button_on_all_annotations(self):
         acts = _block(self.js, "function itemActions(anno, isOrphan)")
-        self.assertIn("if (!isLocal(anno)) acts.appendChild(likeButton(anno))", acts)
+        self.assertIn("acts.appendChild(likeButton(anno))", acts)
+        self.assertNotIn("if (!isLocal(anno)) acts.appendChild(likeButton(anno))", acts)
         btn = _block(self.js, "function likeButton(")
         self.assertIn("ICON.heart", btn)
         self.assertIn("ICON.heartOutline", btn)
         self.assertIn("likeCount", btn)
 
-    def test_liking_needs_login(self):
+    def test_server_liking_needs_login(self):
         fn = _block(self.js, "function toggleLike(")
         self.assertIn("auth.login(location.href)", fn)
-        self.assertIn('method: liked ? "DELETE" : "PUT"', fn)
+        self.assertIn('!isLocal(anno) &&', fn)
+        self.assertIn('store.setLike(anno, !liked,', fn)
         # 就地更新,不整页重拉(点赞是高频轻动作,重拉会把列表滚回顶部)
         self.assertIn("anno.likeCount = res.body.annotation.likeCount", fn)
 
