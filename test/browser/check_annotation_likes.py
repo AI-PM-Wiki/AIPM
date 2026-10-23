@@ -31,4 +31,3 @@ class AnnotationLikesCase(unittest.TestCase):
         for request in api.requests:
             if request["method"] == "POST" and request["path"] == "/api/annotations":
                 self.assertNotIn("likeCount", request["body"])
-
