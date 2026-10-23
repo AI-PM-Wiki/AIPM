@@ -2061,8 +2061,7 @@
     b.type = "button";
     b.className = className;
     b.textContent = label;
-    /* 档位由调用方算好 —— 只有它知道这一层最多缩到哪儿(见 repliesBox 的
-       MAX_DEPTH)。这儿只负责落到属性上,与回复 / 回复框共用同一组缩进规则。 */
+    /* 缩进由调用方按 repliesBox 的 MAX_DEPTH 计算。 */
     if (depth > 0) b.setAttribute("data-depth", String(depth));
     b.addEventListener("click", onClick);
     return b;
@@ -2070,7 +2069,7 @@
 
   /**
    * 回复区。批注卡与评论卡共用 —— 「回复」这件事两边长得一样,没理由两套。
-   * 返回 null = 这条既没有回复、也不在回复中,调用方据此决定要不要挂这一块。
+   * 没有回复时返回 null。
    *
    * 卡片级开合由两个开关决定:
    *   `opts.cardFold` = 这张卡**能**把整块回复区收起来(两张卡都传);
@@ -2094,7 +2093,7 @@
     var card = cardFold ? replyViewOf(anno.id) : null;
     var cardFolded =
       cardFold && (card.folded === undefined ? !!(opts && opts.folded) : card.folded === true);
-    /* 正在这里回复时不许折:输入框得有个落脚的地方。 */
+    /* 回复期间保持对话展开。 */
     if (cardFolded && !replyingHere) {
       var wrap = document.createElement("div");
       wrap.className = "aipm-anno__replies-foldwrap";
@@ -2106,7 +2105,7 @@
       );
       return wrap;
     }
-    if (replies.length > 0 || replyingHere) {
+    if (replies.length > 0) {
       var box = document.createElement("div");
       box.className = "aipm-anno__replies";
       var byId = {};
@@ -2167,17 +2166,6 @@
         box.appendChild(count);
       }
 
-      var placedEditor = false;
-      var appendEditor = function (depth) {
-        var form = materializeEditor();
-        placedEditor = true;
-        if (form === null) return;
-        /* 回复框跟着它将要成为的那一层缩进:写的时候看见的层次,就是发出去之后的
-           层次。回整条批注时缩进为 0,不带这个属性。 */
-        if (depth > 0) form.setAttribute("data-depth", String(Math.min(depth, MAX_DEPTH)));
-        box.appendChild(form);
-      };
-
       /* budget = 这个楼层还剩几行可铺(见 REPLY_ROWS_MAX)。返回这一趟真正铺了几行
          —— 含它自己,楼层末尾拿它跟 plannedRows 一比就知道被截掉了多少。 */
       var paintReply = function (r, depth, budget) {
@@ -2203,12 +2191,6 @@
         line.appendChild(replyBody(anno, r, over || null));
 
         box.appendChild(line);
-        /* 回这一条 → 输入框就落在这条下面、它已有的回复之前:新回复本来就是它的
-           第一条子回复,写的时候看见的位置就是发出去之后的位置。 */
-        if (replyingHere && replyParent === r.id) {
-          appendEditor(Math.min(depth + 1, MAX_DEPTH));
-        }
-
         /* 这一层自己收自己的(三态见 limitOf)。它与楼层那道总行数上限是两回事
            —— 前者说不清「还有几条」的时候,后者兜底。
 
@@ -2290,12 +2272,6 @@
         }
       });
 
-      /* 回的是这条批注自己(不是某一条回复)→ 输入框排在整棵树后面。 */
-      if (replyingHere && replyParent === null) appendEditor(0);
-      /* 要回的那条回复在别处被删了:输入框仍旧要看得见,不然这段字写进了一块没有
-         出口的空白里。落回末尾 —— 提交时服务端会说这条回复不存在。 */
-      if (replyingHere && !placedEditor) appendEditor(0);
-
       /* 顶层回复翻页。放在最后 —— 它是整段回复的下一页,不是某一个楼层的。 */
       var restFloors = floors.length - shownFloors.length;
       if (restFloors > 0) {
@@ -2319,6 +2295,12 @@
       return box;
     }
     return null;
+  }
+
+  function appendReplyEditor(card, anno) {
+    if (!editorDraft || editorDraft.kind !== "reply" || editorDraft.annoId !== anno.id) return;
+    var form = materializeEditor();
+    if (form) card.appendChild(form);
   }
 
   /**
@@ -2538,6 +2520,7 @@
 
     var acts = itemActions(anno, false);
     if (acts.childNodes.length > 0) wrap.appendChild(acts);
+    appendReplyEditor(wrap, anno);
     return wrap;
   }
 
@@ -2632,6 +2615,7 @@
 
     var acts = itemActions(anno, isOrphan);
     if (acts.childNodes.length > 0) wrap.appendChild(acts);
+    appendReplyEditor(wrap, anno);
     return wrap;
   }
 
@@ -3109,6 +3093,10 @@
     input.rows = 2;
     input.setAttribute("aria-label", "回复正文");
     input.placeholder = opts.placeholder || "写下回复…";
+    input.value = opts.body || "";
+    input.addEventListener("input", function () {
+      opts.body = input.value;
+    });
     form.appendChild(input);
 
     var hint = document.createElement("div");

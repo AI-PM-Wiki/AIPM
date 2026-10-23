@@ -1134,12 +1134,11 @@ class TestUiRoundThree(unittest.TestCase):
         restore = _block(self.js, "function maybeRestoreDraft()")
         self.assertIn("draft.resumeId", restore)
 
-    def test_reply_editor_nests_under_its_parent(self):
-        item = _block(self.js, "function renderItem(anno, isOrphan)")
-        self.assertIn("repliesBox(anno", item)
-        box = _block(self.js, "function repliesBox(anno, opts)")
-        self.assertIn('editorDraft.kind === "reply"', box)
-        self.assertIn("aipm-anno__replies", box)
+    def test_reply_editor_belongs_to_its_card(self):
+        editor = _block(self.js, "function appendReplyEditor(card, anno)")
+        self.assertIn('editorDraft.kind !== "reply"', editor)
+        self.assertIn("editorDraft.annoId !== anno.id", editor)
+        self.assertIn("materializeEditor()", editor)
 
     # ---- 账号 ----
 
@@ -1476,9 +1475,7 @@ class TestUiRoundFour(unittest.TestCase):
     def test_reply_to_a_reply_carries_parent_id(self):
         start = _block(self.js, "function startReply(anno, reply)")
         self.assertIn("parentId: reply ? reply.id : null", start)
-        box = _block(self.js, "function repliesBox(anno, opts)")
-        self.assertIn("replyParent === r.id", box)
-        self.assertIn("data-depth", box)
+        self.assertIn('placeholder: "回复 " + who + "…"', start)
 
     def test_replies_go_through_the_reply_endpoint(self):
         """回复**不能**走 PATCH 的整数组 replies —— 那条是「仅作者」的,
@@ -1745,28 +1742,14 @@ class TestReplyThreadFollowsItsParent(unittest.TestCase):
         # 平铺那条老路(照数组顺序 forEach,深度事后另算)整个撤掉
         self.assertNotIn("depthOf(", box)
 
-    def test_editor_sits_inside_the_floor_it_answers(self):
-        """回某一条回复时,输入框落在那条下面、它已有的回复之前 —— 写的时候看见的
-        位置就是发出去之后的位置(新回复成为它的第一条子回复)。"""
-        box = self.box
-        self.assertIn("if (replyingHere && replyParent === r.id) {", box)
-        self.assertIn("appendEditor(Math.min(depth + 1, MAX_DEPTH));", box)
-        self.assertLess(
-            box.index("appendEditor(Math.min(depth + 1, MAX_DEPTH))"),
-            box.index("paintReply(kids[i], depth + 1, budget)"),
-        )
-        # 回整条批注(不是某条回复)→ 排在整棵树后面
-        self.assertIn("if (replyingHere && replyParent === null) appendEditor(0);", box)
+    def test_editor_is_last_in_both_card_layouts(self):
+        for signature in ("function renderItem(anno, isOrphan)", "function renderCommentItem(anno)"):
+            card = _block(self.js, signature)
+            self.assertLess(card.index("wrap.appendChild(acts)"), card.index("appendReplyEditor(wrap, anno)"))
+            self.assertEqual(card.count("appendReplyEditor(wrap, anno)"), 1)
 
-    def test_reply_box_carries_the_depth_it_will_join(self):
-        """回复框跟着它将要成为的那一层缩进 —— 写的时候看见的层次,就是发出去之后
-        的层次。档位与 .aipm-anno__reply 的缩进一致(只封一档),两者算的是同一个值:
-        --aipm-anno-thread-inset(一条回复的正文离卡片左沿有多远)。"""
-        self.assertIn('form.setAttribute("data-depth"', self.box)
-        self.assertEqual(
-            _decl(_block(self.css, ".aipm-anno__replybox[data-depth] {"), "margin-left"),
-            _decl(_block(self.css, ".aipm-anno__reply[data-depth] {"), "margin-left"),
-        )
+    def test_reply_box_uses_the_card_width(self):
+        self.assertEqual(_decl(_block(self.css, ".aipm-anno__replybox {"), "margin"), ".6rem 0 .1rem")
         self.assertIn(
             "--aipm-anno-thread-inset: calc(.5rem + 2px)",
             _block(self.css, ".aipm-anno__replies {"),
@@ -2261,20 +2244,16 @@ class TestTheThreadBarBelongsToEachReply(unittest.TestCase):
         self.assertEqual(_decl(_block(self.css, ".aipm-anno__reply {"), "margin"), ".3rem 0")
 
     def test_the_rows_without_a_bar_line_up_with_the_ones_that_have_it(self):
-        """回复区里那几行不是回复的东西(「共 N 条回复」、「展开更多回复」、回复框)
-        没有灰条可挂,靠同一个值补齐灰条那份宽度 —— 否则它们会比回复正文更靠左,
-        整段回复的左沿就长短不一了。"""
+        """回复计数与展开控件保持正文对齐。"""
         self.assertEqual(
             _decl(_block(self.css, ".aipm-anno__replies {"), "--aipm-anno-thread-inset"),
             "calc(.5rem + 2px)",
         )
         rule = _block(
             self.css,
-            ".aipm-anno__replies-count,\n.aipm-anno__replies-more,\n.aipm-anno__replybox {",
+            ".aipm-anno__replies-count,\n.aipm-anno__replies-more {",
         )
         self.assertEqual(_decl(rule, "margin-left"), "var(--aipm-anno-thread-inset)")
-        # 这条挂在回复区那一节的末尾:三条规则各自的 margin 简写都在它前面,
-        # 否则会被那些简写里的 margin-left: 0 盖掉
         self.assertLess(self.css.index(rule), self.css.index(".aipm-anno__input--reply {"))
 
 

@@ -1255,19 +1255,11 @@ button.aipm-anno__vischip:focus-visible {
    它就是个朴素的小输入框,一眼看出「这是在回话」。 */
 .aipm-anno__replybox {
   display: block;
-  margin: .2rem 0 .1rem;
+  margin: .6rem 0 .1rem;
 }
-/* 回复框跟着它将要成为的那一层缩进。回第一层回复时不再与顶层齐平 —— 写的时候
-   看见的层次就是发出去之后的层次,档位与 .aipm-anno__reply 保持一致。 */
-.aipm-anno__replybox[data-depth] {
-  margin-left: calc(var(--aipm-anno-thread-inset) + .7rem);
-}
-/* 回复区里那几行**不是回复**的东西 —— 「共 N 条回复」、「展开更多回复」、回复框
-   —— 没有灰条可挂,靠同一个值补齐灰条那份宽度,跟回复的正文落在同一列上。少了
-   这一笔它们会比回复正文更靠左,整段回复的左沿就长短不一了。 */
+/* 回复计数与展开控件保持正文对齐。 */
 .aipm-anno__replies-count,
-.aipm-anno__replies-more,
-.aipm-anno__replybox {
+.aipm-anno__replies-more {
   margin-left: var(--aipm-anno-thread-inset);
 }
 .aipm-anno__input--reply {

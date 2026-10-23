@@ -124,6 +124,8 @@ await checkLocalConfirmation({ directory: '/absolute/repo/meta/local-confirmatio
 
 ## 交互界面检查
 
+`check_reply_placement_ego.mjs` 的 `checkReplyPlacement` 在 1280、390、320 CSS 像素宽度及明暗主题下，检查本机和公开批注／评论的回复框。通过真实界面创建卡片、后续回复与嵌套回复，要求回复框始终是卡片的最后一个直接子节点，位于全部回复、折叠控件及点赞操作下方。检查同时验证回复对象提示、取消、重绘时保留输入内容、唯一编辑器、本机内容保护，以及保存和刷新后的 `parentId`。公开内容使用隔离批注服务的开发会话与真实许可、写入接口，结果保存为 `reply-placement-results.json`。
+
 `check_action_menu_ego.mjs` 的 `checkActionMenu` 使用相同的隔离服务目录和浏览器任务空间，在 1280、390、320 CSS 像素宽度与明暗主题下检查评论和回复的操作菜单。检查包括方向键、Home／End、Escape、Tab、外部点击、菜单互斥、回复保存与删除、评论编辑和刷新恢复，并核对选项高度、窗口边界和本机内容保护属性。删除确认检查面板内居中、背景模糊、模态焦点、取消及确认删除，截图为 `delete-confirmation-*.png`。菜单截图与结果保存在 `action-menu-*.png` 和 `action-menu-results.json`。同文件的 `checkAnnotationActionMenu` 检查批注创建与编辑、按钮焦点返回、可见范围菜单互斥，以及真实隔离服务登录、私有上传、公开展示、退出登录后的菜单权限和服务端删除确认，结果保存在 `annotation-action-menu-results.json`。该检查使用服务开发会话，GitHub OAuth 单独验收。
 
 `check_confirmation_ui_ego.mjs` 与 `check_editor_ui_ego.mjs` 在 1280、390、320 CSS 像素宽度下操作明暗主题。检查覆盖受保护确认区、范围选中与锁定、原生鼠标／键盘确认、本机批注编辑、评论错误提示、评论及回复保存／刷新，以及菜单的方向键、Escape 和焦点返回。可见范围与保存按钮的布局由浏览器核对实际几何尺寸、触控尺寸和菜单边界。
