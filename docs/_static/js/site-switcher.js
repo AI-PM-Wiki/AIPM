@@ -5,10 +5,10 @@
   const name = title.querySelector(".md-header__topic:first-child .md-ellipsis");
   const home = document.querySelector('[data-md-component="logo"]').href;
   const sites = [
-    { name: "主站", path: "" },
-    { name: "产品", path: "product-manager/" },
-    { name: "科技", path: "sites/technology/", placeholder: true },
-    { name: "商业", path: "sites/business/", placeholder: true },
+    { name: "主站", path: "", sections: [] },
+    { name: "产品", path: "product-manager/", sections: ["product-manager/"] },
+    { name: "技术", path: "sites/technology/", sections: ["sites/technology/"], placeholder: true },
+    { name: "商业", path: "management/", sections: ["management/", "business/"] },
   ];
   const trigger = document.createElement("button");
   trigger.type = "button";
@@ -45,7 +45,7 @@
   });
   const links = [...menu.querySelectorAll("a")];
   const sync = () => {
-    const current = sites.findIndex((site) => site.path && location.href.startsWith(new URL(site.path, home).href));
+    const current = sites.findIndex((site) => site.sections.some((section) => location.href.startsWith(new URL(section, home).href)));
     const index = current === -1 ? 0 : current;
     for (const [position, link] of links.entries()) {
       if (position === index) link.setAttribute("aria-current", "true");
