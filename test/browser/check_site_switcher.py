@@ -8,9 +8,10 @@ from harness import ROOT, WORK, StaticSite
 
 
 MAIN_TABS = [
-    "简介", "产品方法论", "工程与架构", "工商管理", "商业与财会", "AI 基础",
+    "简介", "产品方法论", "工程与架构", "AI 基础",
     "AI 产品实战", "工具与平台", "学习资源", "求职专题", "垂直领域",
 ]
+BUSINESS_TABS = ["工商管理", "商业与财会"]
 
 
 class SiteSwitcherCase(unittest.TestCase):
@@ -47,14 +48,16 @@ class SiteSwitcherCase(unittest.TestCase):
         self.menu.wait_for(state="visible")
         self.assertEqual(self.trigger.get_attribute("aria-expanded"), "true")
         self.assertEqual(self.menu.locator("li > :is(a, button) > span:first-child").all_text_contents(),
-                         ["主站", "产品", "科技", "商业"])
+                         ["主站", "产品", "技术", "商业"])
         self.assertEqual(self.menu.get_by_role("link", name="主站", exact=True).get_attribute("href"), self.site.base + "/")
         product = self.menu.get_by_role("link", name="产品", exact=False)
         self.assertEqual(product.get_attribute("aria-current"), "true")
         self.assertEqual(product.get_attribute("href"), self.site.base + "/product-manager/")
-        for name in ("科技", "商业"):
-            placeholder = self.menu.get_by_role("link", name=f"{name} 筹备中", exact=True)
-            self.assertTrue(placeholder.get_attribute("href").startswith(self.site.base + "/sites/"))
+        placeholder = self.menu.get_by_role("link", name="技术 筹备中", exact=True)
+        self.assertEqual(placeholder.get_attribute("href"), self.site.base + "/sites/technology/")
+        business = self.menu.get_by_role("link", name="商业", exact=True)
+        self.assertEqual(business.get_attribute("href"), self.site.base + "/management/")
+        self.assertEqual(self.menu.locator(".aipm-site-switcher__status").count(), 1)
         bounds = self.menu.bounding_box()
         trigger = self.trigger.bounding_box()
         self.assertAlmostEqual(bounds["x"], trigger["x"], delta=1)
@@ -92,7 +95,7 @@ class SiteSwitcherCase(unittest.TestCase):
         product.press("Home")
         self.assertTrue(main.evaluate("node => node === document.activeElement"))
         main.press("End")
-        business = self.menu.get_by_role("link", name="商业 筹备中", exact=True)
+        business = self.menu.get_by_role("link", name="商业", exact=True)
         self.assertTrue(business.evaluate("node => node === document.activeElement"))
         business.press("Escape")
         self.menu.wait_for(state="hidden")
@@ -107,8 +110,8 @@ class SiteSwitcherCase(unittest.TestCase):
         for name, path, heading, destination in (
             ("主站", "/", "关于本项目", "/intro/htc/"),
             ("产品", "/product-manager/", "章节", "/product-manager/02/"),
-            ("科技", "/sites/technology/", "筹备中", "/sites/technology/"),
-            ("商业", "/sites/business/", "筹备中", "/sites/business/"),
+            ("技术", "/sites/technology/", "筹备中", "/sites/technology/"),
+            ("商业", "/management/", "课程列表", "/management/"),
         ):
             with self.subTest(content=name):
                 self.trigger.click()
@@ -127,7 +130,7 @@ class SiteSwitcherCase(unittest.TestCase):
         self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为商业")
         self.page.go_back(wait_until="domcontentloaded")
         self.page.wait_for_url(self.site.base + "/sites/technology/")
-        self.page.wait_for_function("document.querySelector('.aipm-site-switcher__trigger').getAttribute('aria-label') === '切换站点，当前为科技'")
+        self.page.wait_for_function("document.querySelector('.aipm-site-switcher__trigger').getAttribute('aria-label') === '切换站点，当前为技术'")
         self.assertEqual(self.page.locator(".aipm-site-switcher__trigger").count(), 1)
 
     def test_tabs_follow_space_and_highlight_current_category(self):
@@ -150,15 +153,29 @@ class SiteSwitcherCase(unittest.TestCase):
         self.assertEqual(sidebar.locator('a[href*="/product-manager/"]').count(), 0)
         self.page.reload(wait_until="domcontentloaded")
         self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "产品方法论")
-        for name, title in (("产品", "产品经理"), ("科技", "科技"), ("商业", "商业")):
+        for name, titles in (("产品", ["产品经理"]), ("技术", ["技术"]), ("商业", BUSINESS_TABS)):
             self.trigger.click()
             self.menu.get_by_role("link", name=name, exact=False).click()
-            tabs.get_by_role("link", name=title, exact=True).wait_for()
-            self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], [title])
-            self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), title)
+            tabs.get_by_role("link", name=titles[0], exact=True).wait_for()
+            self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], titles)
+            self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), titles[0])
+        tabs.get_by_role("link", name="商业与财会", exact=True).click()
+        self.page.wait_for_url(self.site.base + "/business/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "商业与财会")
+        self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为商业")
+        self.assertEqual(sidebar.locator('a[href*="/pm/"]').count(), 0)
+        sidebar.locator('a[href$="/business/01-finance/"]').first.click()
+        self.page.wait_for_url(self.site.base + "/business/01-finance/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "商业与财会")
+        self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为商业")
         self.page.go_back(wait_until="domcontentloaded")
-        tabs.get_by_role("link", name="科技", exact=True).wait_for()
-        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "科技")
+        self.page.wait_for_url(self.site.base + "/business/")
+        self.page.go_back(wait_until="domcontentloaded")
+        self.page.wait_for_url(self.site.base + "/management/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "工商管理")
+        self.page.go_back(wait_until="domcontentloaded")
+        tabs.get_by_role("link", name="技术", exact=True).wait_for()
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "技术")
         self.page.goto(self.site.base + "/404.html", wait_until="domcontentloaded")
         self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], MAIN_TABS)
 
