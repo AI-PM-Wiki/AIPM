@@ -1,6 +1,6 @@
 # Project Information
 site_name: AI-PM
-site_description: AI-PM 知识库，包含主站、产品、技术、商业与垂直领域内容
+site_description: AI-PM 知识库，包含主站、产品、技术、运营、专业知识与垂直领域内容
 site_author: AI-PM Wiki Team
 site_url: https://aipm.ac/
 strict: true
@@ -403,7 +403,9 @@ nav:
       - 12.4 其他资源: product-manager/12/04/index.md
 - 技术:
   - 技术: sites/technology/index.md
-- 商业:
+- 运营:
+  - 运营: sites/operations/index.md
+- 专业知识:
   - 工商管理:
     - 工商管理简介: management/index.md
     - 管理基础与方法:
@@ -430,8 +432,8 @@ nav:
       - IT 工程伦理和项目管理: management/17-engineering-ethics/index.md
     - 财务管理:
       - 财务管理: management/18-financial-management/index.md
-  - 商业与财会:
-    - 商业与财会简介: business/index.md
+  - 金融:
+    - 金融简介: business/index.md
     - 金融学:
       - 金融学: business/01-finance/index.md
       - 金融学课程导论: business/01-finance/00-intro.md
@@ -665,7 +667,6 @@ nav:
       - 公募基金投资方法: business/19-frontier-finance-practice/08-mutual-fund-investing.md
       - 投资入门与职业发展: business/19-frontier-finance-practice/09-investment-career-guide.md
 - 垂直领域:
-  - 垂直领域简介: vertical/index.md
   - 网络安全:
     - 网络安全: vertical/cybersecurity/index.md
     - 密码、身份与架构:
