@@ -33,8 +33,7 @@
   font-size: 11px;
 }
 
-.aipm-site-switcher__trigger svg,
-.aipm-site-switcher svg {
+.aipm-site-switcher__trigger svg {
   flex: none;
   width: 16px;
   height: 16px;
@@ -76,8 +75,7 @@
 .aipm-site-switcher a {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   box-sizing: border-box;
   width: 100%;
   min-height: 46px;
@@ -91,10 +89,10 @@
 
 .aipm-site-switcher a:hover { background: color-mix(in srgb, var(--md-default-fg-color) 5%, transparent); }
 .aipm-site-switcher a[aria-current="true"] { color: var(--md-typeset-a-color); background: var(--pm-accent-soft); font-weight: 600; }
+.aipm-site-switcher__icon { flex: none; width: 18px; height: 18px; fill: currentColor; color: var(--md-default-fg-color--light); }
+.aipm-site-switcher a[aria-current="true"] .aipm-site-switcher__icon { color: inherit; }
+.aipm-site-switcher__name { flex: 1; }
 .aipm-site-switcher__status { color: var(--md-default-fg-color--light); font-size: 11px; font-weight: 400; }
-.aipm-site-switcher__indicator { display: inline-flex; align-items: center; gap: 8px; }
-.aipm-site-switcher__indicator svg { display: none; }
-.aipm-site-switcher [aria-current="true"] svg { display: block; }
 .aipm-site-switcher__trigger:focus-visible,
 .aipm-site-switcher a:focus-visible { outline: 2px solid var(--md-typeset-a-color); outline-offset: -2px; }
 

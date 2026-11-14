@@ -189,7 +189,7 @@ flowchart TD
 ```
 
 -   **技术与平台**：模型选型、RAG、工具链、Agent 编排、部署、API 与开发者体验
--   **行业与交付**：领域流程、私有化、客户交付、规则编码、隐私与监管；领域地图见[垂直领域](../vertical/index.md)
+-   **行业与交付**：领域流程、私有化、客户交付、规则编码、隐私与监管；领域地图见[垂直领域](../vertical/cybersecurity/index.md)
 -   **数据、评测与观测**：数据治理、评测体系、线上指标、trace、质量分析和反馈闭环
 -   **商业化与运营**：定价、ROI、用量增长、留存、人工效率、成本和容量
 
@@ -225,7 +225,7 @@ Axure、Visio、XMind、Project 和墨刀可以在特定团队中继续使用，
 -   AI 产品实践：[AI 产品实战](../practice/index.md)
 -   工具与成本：[工具与平台](../tools/index.md)
 -   目标岗位：[求职专题](../job/index.md)
--   行业知识：[垂直领域](../vertical/index.md)
+-   行业知识：[垂直领域](../vertical/cybersecurity/index.md)
 
 ## 来源说明
 
