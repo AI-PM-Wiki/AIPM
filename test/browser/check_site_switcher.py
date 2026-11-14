@@ -9,9 +9,10 @@ from harness import ROOT, WORK, StaticSite
 
 MAIN_TABS = [
     "简介", "产品方法论", "工程与架构", "AI 基础",
-    "AI 产品实战", "工具与平台", "学习资源", "求职专题", "垂直领域",
+    "AI 产品实战", "工具与平台", "学习资源", "求职专题",
 ]
 BUSINESS_TABS = ["工商管理", "商业与财会"]
+VERTICAL_TABS = ["垂直领域"]
 
 
 class SiteSwitcherCase(unittest.TestCase):
@@ -48,7 +49,7 @@ class SiteSwitcherCase(unittest.TestCase):
         self.menu.wait_for(state="visible")
         self.assertEqual(self.trigger.get_attribute("aria-expanded"), "true")
         self.assertEqual(self.menu.locator("li > :is(a, button) > span:first-child").all_text_contents(),
-                         ["主站", "产品", "技术", "商业"])
+                         ["主站", "产品", "技术", "商业", "垂直领域"])
         self.assertEqual(self.menu.get_by_role("link", name="主站", exact=True).get_attribute("href"), self.site.base + "/")
         product = self.menu.get_by_role("link", name="产品", exact=False)
         self.assertEqual(product.get_attribute("aria-current"), "true")
@@ -57,6 +58,8 @@ class SiteSwitcherCase(unittest.TestCase):
         self.assertEqual(placeholder.get_attribute("href"), self.site.base + "/sites/technology/")
         business = self.menu.get_by_role("link", name="商业", exact=True)
         self.assertEqual(business.get_attribute("href"), self.site.base + "/management/")
+        vertical = self.menu.get_by_role("link", name="垂直领域", exact=True)
+        self.assertEqual(vertical.get_attribute("href"), self.site.base + "/vertical/")
         self.assertEqual(self.menu.locator(".aipm-site-switcher__status").count(), 1)
         bounds = self.menu.bounding_box()
         trigger = self.trigger.bounding_box()
@@ -95,9 +98,13 @@ class SiteSwitcherCase(unittest.TestCase):
         product.press("Home")
         self.assertTrue(main.evaluate("node => node === document.activeElement"))
         main.press("End")
-        business = self.menu.get_by_role("link", name="商业", exact=True)
-        self.assertTrue(business.evaluate("node => node === document.activeElement"))
-        business.press("Escape")
+        vertical = self.menu.get_by_role("link", name="垂直领域", exact=True)
+        self.assertTrue(vertical.evaluate("node => node === document.activeElement"))
+        vertical.press("ArrowDown")
+        self.assertTrue(main.evaluate("node => node === document.activeElement"))
+        main.press("ArrowUp")
+        self.assertTrue(vertical.evaluate("node => node === document.activeElement"))
+        vertical.press("Escape")
         self.menu.wait_for(state="hidden")
         self.assertTrue(self.trigger.evaluate("node => node === document.activeElement"))
         self.assertEqual(self.trigger.get_attribute("aria-expanded"), "false")
@@ -112,6 +119,7 @@ class SiteSwitcherCase(unittest.TestCase):
             ("产品", "/product-manager/", "章节", "/product-manager/02/"),
             ("技术", "/sites/technology/", "筹备中", "/sites/technology/"),
             ("商业", "/management/", "课程列表", "/management/"),
+            ("垂直领域", "/vertical/", "当前覆盖", "/vertical/cybersecurity/"),
         ):
             with self.subTest(content=name):
                 self.trigger.click()
@@ -127,10 +135,10 @@ class SiteSwitcherCase(unittest.TestCase):
                 self.assertEqual(selected.locator("span").first.inner_text(), name)
                 self.page.keyboard.press("Escape")
         self.page.reload(wait_until="domcontentloaded")
-        self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为商业")
+        self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为垂直领域")
         self.page.go_back(wait_until="domcontentloaded")
-        self.page.wait_for_url(self.site.base + "/sites/technology/")
-        self.page.wait_for_function("document.querySelector('.aipm-site-switcher__trigger').getAttribute('aria-label') === '切换站点，当前为技术'")
+        self.page.wait_for_url(self.site.base + "/management/")
+        self.page.wait_for_function("document.querySelector('.aipm-site-switcher__trigger').getAttribute('aria-label') === '切换站点，当前为商业'")
         self.assertEqual(self.page.locator(".aipm-site-switcher__trigger").count(), 1)
 
     def test_tabs_follow_space_and_highlight_current_category(self):
@@ -176,6 +184,20 @@ class SiteSwitcherCase(unittest.TestCase):
         self.page.go_back(wait_until="domcontentloaded")
         tabs.get_by_role("link", name="技术", exact=True).wait_for()
         self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "技术")
+        self.trigger.click()
+        self.menu.get_by_role("link", name="垂直领域", exact=True).click()
+        self.page.wait_for_url(self.site.base + "/vertical/")
+        self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], VERTICAL_TABS)
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "垂直领域")
+        self.assertEqual(sidebar.locator('a[href*="/pm/"]').count(), 0)
+        sidebar.locator('a[href$="/vertical/finance/"]').first.click()
+        self.page.wait_for_url(self.site.base + "/vertical/finance/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "垂直领域")
+        self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为垂直领域")
+        self.trigger.click()
+        self.menu.get_by_role("link", name="主站", exact=True).click()
+        tabs.get_by_role("link", name="产品方法论", exact=True).wait_for()
+        self.assertEqual(sidebar.locator('a[href*="/vertical/"]').count(), 0)
         self.page.goto(self.site.base + "/404.html", wait_until="domcontentloaded")
         self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], MAIN_TABS)
 
@@ -233,3 +255,27 @@ class SiteSwitcherCase(unittest.TestCase):
                 page.locator('.md-header label[for="__drawer"]').tap()
                 menu.wait_for(state="hidden")
                 self.assertTrue(page.locator("#__drawer").is_checked())
+
+    def test_mobile_vertical_space_label_fits_header(self):
+        for width in (320, 390):
+            with self.subTest(width=width):
+                context = self.browser.new_context(viewport={"width": width, "height": 844},
+                                                   is_mobile=True, has_touch=True)
+                self.addCleanup(context.close)
+                page = context.new_page()
+                page.on("pageerror", lambda error: self.errors.append(str(error)))
+                page.goto(self.site.base + "/vertical/finance/", wait_until="domcontentloaded")
+                trigger = page.get_by_role("button", name="切换站点，当前为垂直领域", exact=True)
+                current = trigger.locator(".aipm-site-switcher__current")
+                self.assertEqual(current.inner_text(), "垂直领域")
+                self.assertLessEqual(current.evaluate("node => node.scrollWidth - node.clientWidth"), 0)
+                settings = page.get_by_role("button", name="站点设置", exact=True)
+                trigger_bounds = trigger.bounding_box()
+                self.assertLessEqual(trigger_bounds["x"] + trigger_bounds["width"], settings.bounding_box()["x"])
+                self.assertEqual(page.evaluate("document.documentElement.scrollWidth"), width)
+                if width == 320:
+                    page.screenshot(path=str(WORK / "site-switcher/mobile-vertical.png"))
+                page.locator('.md-header label[for="__drawer"]').tap()
+                sidebar = page.locator(".md-sidebar--primary")
+                self.assertEqual(sidebar.locator(".md-nav--primary > .md-nav__list > li").count(), len(VERTICAL_TABS))
+                self.assertEqual(sidebar.locator('a[href*="/pm/"]').count(), 0)

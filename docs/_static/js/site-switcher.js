@@ -9,6 +9,7 @@
     { name: "产品", path: "product-manager/", sections: ["product-manager/"] },
     { name: "技术", path: "sites/technology/", sections: ["sites/technology/"], placeholder: true },
     { name: "商业", path: "management/", sections: ["management/", "business/"] },
+    { name: "垂直领域", path: "vertical/", sections: ["vertical/"] },
   ];
   const trigger = document.createElement("button");
   trigger.type = "button";

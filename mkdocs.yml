@@ -1,6 +1,6 @@
 # Project Information
 site_name: AI-PM
-site_description: AI-PM 知识库，包含主站、产品、技术与商业内容
+site_description: AI-PM 知识库，包含主站、产品、技术、商业与垂直领域内容
 site_author: AI-PM Wiki Team
 site_url: https://aipm.ac/
 strict: true
@@ -310,162 +310,6 @@ nav:
       - 职业发展感悟: job/insights/career.md
       - 踩坑教训: job/insights/lessons.md
       - 心态感悟: job/insights/mindset.md
-  - 垂直领域:
-    - 垂直领域简介: vertical/index.md
-    - 网络安全:
-      - 网络安全: vertical/cybersecurity/index.md
-      - 密码、身份与架构:
-        - 密码、身份与架构: vertical/cybersecurity/foundations/index.md
-        - 威胁与攻击面: vertical/cybersecurity/foundations/threats-and-attack-surface.md
-        - 身份认证与访问控制: vertical/cybersecurity/foundations/identity-and-access.md
-        - 密码学与密钥管理: vertical/cybersecurity/foundations/cryptography-and-keys.md
-        - 安全架构与零信任: vertical/cybersecurity/foundations/architecture-and-zero-trust.md
-      - 安全运营:
-        - 安全运营: vertical/cybersecurity/operations/index.md
-        - 漏洞管理: vertical/cybersecurity/operations/vulnerability-management.md
-        - 检测与响应: vertical/cybersecurity/operations/detection-and-response.md
-        - 安全运营中心: vertical/cybersecurity/operations/soc.md
-        - 威胁情报: vertical/cybersecurity/operations/threat-intelligence.md
-      - 数据与系统安全:
-        - 数据与系统安全: vertical/cybersecurity/data-app-cloud/index.md
-        - 数据安全: vertical/cybersecurity/data-app-cloud/data-security.md
-        - 应用安全: vertical/cybersecurity/data-app-cloud/application-security.md
-        - 云与供应链安全: vertical/cybersecurity/data-app-cloud/cloud-and-supply-chain.md
-        - 终端与网络安全: vertical/cybersecurity/data-app-cloud/endpoint-and-network.md
-      - 治理与合规:
-        - 治理与合规: vertical/cybersecurity/governance/index.md
-        - 等保与关基: vertical/cybersecurity/governance/mlps-and-cii.md
-        - 隐私与个人信息保护: vertical/cybersecurity/governance/privacy.md
-        - 安全产品与市场: vertical/cybersecurity/governance/security-products.md
-    - 金融:
-      - 金融: vertical/finance/index.md
-      - 银行业:
-        - 银行业: vertical/finance/banking/index.md
-        - 零售银行: vertical/finance/banking/retail-banking.md
-        - 对公与交易银行: vertical/finance/banking/corporate-banking.md
-        - 信贷与风控: vertical/finance/banking/credit-and-risk.md
-      - 资本市场:
-        - 资本市场: vertical/finance/capital-markets/index.md
-        - 证券经纪与财富管理: vertical/finance/capital-markets/brokerage-and-wealth.md
-        - 投行与一级市场: vertical/finance/capital-markets/ib-and-primary.md
-        - 资产管理: vertical/finance/capital-markets/asset-management.md
-        - 交易与市场结构: vertical/finance/capital-markets/trading-and-market-structure.md
-      - 保险业:
-        - 保险业: vertical/finance/insurance/index.md
-        - 寿险与健康险: vertical/finance/insurance/life-and-health.md
-        - 财产险: vertical/finance/insurance/property-casualty.md
-        - 再保险与精算: vertical/finance/insurance/reinsurance-and-actuarial.md
-      - 支付清算与金融监管:
-        - 支付清算与金融监管: vertical/finance/infrastructure-regulation/index.md
-        - 支付与清算: vertical/finance/infrastructure-regulation/payments-and-clearing.md
-        - 征信与反欺诈: vertical/finance/infrastructure-regulation/credit-reporting-and-fraud.md
-        - 反洗钱与合规: vertical/finance/infrastructure-regulation/aml-and-compliance.md
-        - 监管科技与开放银行: vertical/finance/infrastructure-regulation/regtech-and-open-banking.md
-    - 法律:
-      - 法律: vertical/law/index.md
-      - 部门法:
-        - 部门法: vertical/law/legal-system/index.md
-        - 宪法与行政法: vertical/law/legal-system/constitutional-and-admin.md
-        - 民商法: vertical/law/legal-system/civil-and-commercial.md
-        - 刑法: vertical/law/legal-system/criminal.md
-        - 国际法与比较法: vertical/law/legal-system/international-and-comparative.md
-      - 法律实务:
-        - 法律实务: vertical/law/practice/index.md
-        - 合同与尽调: vertical/law/practice/contracts-and-dd.md
-        - 诉讼与仲裁: vertical/law/practice/litigation-and-arbitration.md
-        - 知识产权: vertical/law/practice/intellectual-property.md
-        - 劳动与合规: vertical/law/practice/labor-and-compliance.md
-      - 法律科技:
-        - 法律科技: vertical/law/legaltech/index.md
-        - 法律检索与知识库: vertical/law/legaltech/legal-search.md
-        - 合同审查: vertical/law/legaltech/contract-review.md
-        - 电子取证: vertical/law/legaltech/e-discovery.md
-        - 智慧司法: vertical/law/legaltech/smart-justice.md
-    - 教育:
-      - 教育: vertical/education/index.md
-      - 教育阶段:
-        - 教育阶段: vertical/education/stages/index.md
-        - 基础教育: vertical/education/stages/k12.md
-        - 高等教育: vertical/education/stages/higher-education.md
-        - 职业教育: vertical/education/stages/vocational.md
-        - 企业培训与终身学习: vertical/education/stages/corporate-and-lifelong.md
-      - 课程、教学与评价:
-        - 课程、教学与评价: vertical/education/teaching-assessment/index.md
-        - 课程与教学内容: vertical/education/teaching-assessment/curriculum.md
-        - 教学设计: vertical/education/teaching-assessment/instructional-design.md
-        - 测评与考试: vertical/education/teaching-assessment/assessment.md
-        - 学习分析: vertical/education/teaching-assessment/learning-analytics.md
-      - 教育技术:
-        - 教育技术: vertical/education/edtech/index.md
-        - 自适应学习: vertical/education/edtech/adaptive-learning.md
-        - 智能辅导: vertical/education/edtech/intelligent-tutoring.md
-        - 教育管理与教务: vertical/education/edtech/admin-and-sis.md
-        - 学术诚信: vertical/education/edtech/academic-integrity.md
-    - 地球科学:
-      - 地球科学: vertical/earth-science/index.md
-      - 大气科学:
-        - 大气科学: vertical/earth-science/atmosphere-climate/index.md
-        - 天气预报: vertical/earth-science/atmosphere-climate/weather-forecast.md
-        - 气候系统: vertical/earth-science/atmosphere-climate/climate-system.md
-        - 空气质量: vertical/earth-science/atmosphere-climate/air-quality.md
-      - 固体地球科学:
-        - 固体地球科学: vertical/earth-science/solid-earth/index.md
-        - 地质与矿产: vertical/earth-science/solid-earth/geology-and-minerals.md
-        - 地震与地球物理: vertical/earth-science/solid-earth/seismology.md
-        - 灾害风险: vertical/earth-science/solid-earth/disaster-risk.md
-      - 水文与海洋科学:
-        - 水文与海洋科学: vertical/earth-science/hydrosphere-ocean/index.md
-        - 水文与水资源: vertical/earth-science/hydrosphere-ocean/hydrology.md
-        - 海洋学: vertical/earth-science/hydrosphere-ocean/oceanography.md
-      - 地球信息科学:
-        - 地球信息科学: vertical/earth-science/geospatial/index.md
-        - 遥感: vertical/earth-science/geospatial/remote-sensing.md
-        - GIS 与测绘: vertical/earth-science/geospatial/gis-and-surveying.md
-        - 地球观测产品: vertical/earth-science/geospatial/earth-observation-products.md
-      - 空间数据库:
-        - 空间数据库: vertical/earth-science/spatial-database/index.md
-        - 概论: vertical/earth-science/spatial-database/01-overview.md
-        - 关系模型与关系代数: vertical/earth-science/spatial-database/02-relational-model.md
-        - SQL: vertical/earth-science/spatial-database/03-sql.md
-        - 几何对象与 PostGIS: vertical/earth-science/spatial-database/04-geometry-and-postgis.md
-        - 空间扩展 E/R: vertical/earth-science/spatial-database/05-spatial-er.md
-        - 关系设计理论: vertical/earth-science/spatial-database/06-normalization.md
-        - 空间存储与索引: vertical/earth-science/spatial-database/07-storage-and-index.md
-        - 空间查询处理: vertical/earth-science/spatial-database/08-query-processing.md
-        - 空间网络: vertical/earth-science/spatial-database/09-spatial-network.md
-        - 安全与完整性: vertical/earth-science/spatial-database/10-security-and-integrity.md
-        - 服务器编程: vertical/earth-science/spatial-database/11-server-programming.md
-        - 事务处理: vertical/earth-science/spatial-database/12-transactions.md
-        - OLAP: vertical/earth-science/spatial-database/13-olap.md
-        - 要点检查: vertical/earth-science/spatial-database/14-review.md
-        - 实践路径: vertical/earth-science/spatial-database/15-practice.md
-    - 医疗健康:
-      - 医疗健康: vertical/healthcare/index.md
-      - 临床医学:
-        - 临床医学: vertical/healthcare/clinical/index.md
-        - 诊疗路径与临床决策: vertical/healthcare/clinical/clinical-pathways.md
-        - 医学影像: vertical/healthcare/clinical/medical-imaging.md
-        - 检验与病理: vertical/healthcare/clinical/lab-and-pathology.md
-      - 药学与医疗器械:
-        - 药学与医疗器械: vertical/healthcare/pharma-device/index.md
-        - 药物研发: vertical/healthcare/pharma-device/drug-discovery.md
-        - 器械与数字疗法: vertical/healthcare/pharma-device/devices-and-dtx.md
-      - 卫生事业管理:
-        - 卫生事业管理: vertical/healthcare/operations/index.md
-        - 医院信息化: vertical/healthcare/operations/hospital-it.md
-        - 医保与支付: vertical/healthcare/operations/insurance-and-payment.md
-        - 公共卫生: vertical/healthcare/operations/public-health.md
-      - 卫生信息与监管:
-        - 卫生信息与监管: vertical/healthcare/data-compliance/index.md
-        - 医疗数据与互操作: vertical/healthcare/data-compliance/health-data.md
-        - 药械监管与合规: vertical/healthcare/data-compliance/regulatory.md
-    - 企业服务:
-      - 企业服务: vertical/enterprise/index.md
-      - CRM 与客户运营: vertical/enterprise/crm.md
-      - ERP 与资源计划: vertical/enterprise/erp.md
-      - HCM 与人力资源: vertical/enterprise/hcm.md
-      - 工单与 IT 服务: vertical/enterprise/itsm.md
-      - 主数据、集成与权限: vertical/enterprise/integration.md
 - 产品:
   - 产品经理:
     - 产品经理: product-manager/index.md
@@ -820,6 +664,163 @@ nav:
       - 大宗商品期货实务: business/19-frontier-finance-practice/07-commodity-futures-practice.md
       - 公募基金投资方法: business/19-frontier-finance-practice/08-mutual-fund-investing.md
       - 投资入门与职业发展: business/19-frontier-finance-practice/09-investment-career-guide.md
+- 垂直领域:
+  - 垂直领域:
+    - 垂直领域简介: vertical/index.md
+    - 网络安全:
+      - 网络安全: vertical/cybersecurity/index.md
+      - 密码、身份与架构:
+        - 密码、身份与架构: vertical/cybersecurity/foundations/index.md
+        - 威胁与攻击面: vertical/cybersecurity/foundations/threats-and-attack-surface.md
+        - 身份认证与访问控制: vertical/cybersecurity/foundations/identity-and-access.md
+        - 密码学与密钥管理: vertical/cybersecurity/foundations/cryptography-and-keys.md
+        - 安全架构与零信任: vertical/cybersecurity/foundations/architecture-and-zero-trust.md
+      - 安全运营:
+        - 安全运营: vertical/cybersecurity/operations/index.md
+        - 漏洞管理: vertical/cybersecurity/operations/vulnerability-management.md
+        - 检测与响应: vertical/cybersecurity/operations/detection-and-response.md
+        - 安全运营中心: vertical/cybersecurity/operations/soc.md
+        - 威胁情报: vertical/cybersecurity/operations/threat-intelligence.md
+      - 数据与系统安全:
+        - 数据与系统安全: vertical/cybersecurity/data-app-cloud/index.md
+        - 数据安全: vertical/cybersecurity/data-app-cloud/data-security.md
+        - 应用安全: vertical/cybersecurity/data-app-cloud/application-security.md
+        - 云与供应链安全: vertical/cybersecurity/data-app-cloud/cloud-and-supply-chain.md
+        - 终端与网络安全: vertical/cybersecurity/data-app-cloud/endpoint-and-network.md
+      - 治理与合规:
+        - 治理与合规: vertical/cybersecurity/governance/index.md
+        - 等保与关基: vertical/cybersecurity/governance/mlps-and-cii.md
+        - 隐私与个人信息保护: vertical/cybersecurity/governance/privacy.md
+        - 安全产品与市场: vertical/cybersecurity/governance/security-products.md
+    - 金融:
+      - 金融: vertical/finance/index.md
+      - 银行业:
+        - 银行业: vertical/finance/banking/index.md
+        - 零售银行: vertical/finance/banking/retail-banking.md
+        - 对公与交易银行: vertical/finance/banking/corporate-banking.md
+        - 信贷与风控: vertical/finance/banking/credit-and-risk.md
+      - 资本市场:
+        - 资本市场: vertical/finance/capital-markets/index.md
+        - 证券经纪与财富管理: vertical/finance/capital-markets/brokerage-and-wealth.md
+        - 投行与一级市场: vertical/finance/capital-markets/ib-and-primary.md
+        - 资产管理: vertical/finance/capital-markets/asset-management.md
+        - 交易与市场结构: vertical/finance/capital-markets/trading-and-market-structure.md
+      - 保险业:
+        - 保险业: vertical/finance/insurance/index.md
+        - 寿险与健康险: vertical/finance/insurance/life-and-health.md
+        - 财产险: vertical/finance/insurance/property-casualty.md
+        - 再保险与精算: vertical/finance/insurance/reinsurance-and-actuarial.md
+      - 支付清算与金融监管:
+        - 支付清算与金融监管: vertical/finance/infrastructure-regulation/index.md
+        - 支付与清算: vertical/finance/infrastructure-regulation/payments-and-clearing.md
+        - 征信与反欺诈: vertical/finance/infrastructure-regulation/credit-reporting-and-fraud.md
+        - 反洗钱与合规: vertical/finance/infrastructure-regulation/aml-and-compliance.md
+        - 监管科技与开放银行: vertical/finance/infrastructure-regulation/regtech-and-open-banking.md
+    - 法律:
+      - 法律: vertical/law/index.md
+      - 部门法:
+        - 部门法: vertical/law/legal-system/index.md
+        - 宪法与行政法: vertical/law/legal-system/constitutional-and-admin.md
+        - 民商法: vertical/law/legal-system/civil-and-commercial.md
+        - 刑法: vertical/law/legal-system/criminal.md
+        - 国际法与比较法: vertical/law/legal-system/international-and-comparative.md
+      - 法律实务:
+        - 法律实务: vertical/law/practice/index.md
+        - 合同与尽调: vertical/law/practice/contracts-and-dd.md
+        - 诉讼与仲裁: vertical/law/practice/litigation-and-arbitration.md
+        - 知识产权: vertical/law/practice/intellectual-property.md
+        - 劳动与合规: vertical/law/practice/labor-and-compliance.md
+      - 法律科技:
+        - 法律科技: vertical/law/legaltech/index.md
+        - 法律检索与知识库: vertical/law/legaltech/legal-search.md
+        - 合同审查: vertical/law/legaltech/contract-review.md
+        - 电子取证: vertical/law/legaltech/e-discovery.md
+        - 智慧司法: vertical/law/legaltech/smart-justice.md
+    - 教育:
+      - 教育: vertical/education/index.md
+      - 教育阶段:
+        - 教育阶段: vertical/education/stages/index.md
+        - 基础教育: vertical/education/stages/k12.md
+        - 高等教育: vertical/education/stages/higher-education.md
+        - 职业教育: vertical/education/stages/vocational.md
+        - 企业培训与终身学习: vertical/education/stages/corporate-and-lifelong.md
+      - 课程、教学与评价:
+        - 课程、教学与评价: vertical/education/teaching-assessment/index.md
+        - 课程与教学内容: vertical/education/teaching-assessment/curriculum.md
+        - 教学设计: vertical/education/teaching-assessment/instructional-design.md
+        - 测评与考试: vertical/education/teaching-assessment/assessment.md
+        - 学习分析: vertical/education/teaching-assessment/learning-analytics.md
+      - 教育技术:
+        - 教育技术: vertical/education/edtech/index.md
+        - 自适应学习: vertical/education/edtech/adaptive-learning.md
+        - 智能辅导: vertical/education/edtech/intelligent-tutoring.md
+        - 教育管理与教务: vertical/education/edtech/admin-and-sis.md
+        - 学术诚信: vertical/education/edtech/academic-integrity.md
+    - 地球科学:
+      - 地球科学: vertical/earth-science/index.md
+      - 大气科学:
+        - 大气科学: vertical/earth-science/atmosphere-climate/index.md
+        - 天气预报: vertical/earth-science/atmosphere-climate/weather-forecast.md
+        - 气候系统: vertical/earth-science/atmosphere-climate/climate-system.md
+        - 空气质量: vertical/earth-science/atmosphere-climate/air-quality.md
+      - 固体地球科学:
+        - 固体地球科学: vertical/earth-science/solid-earth/index.md
+        - 地质与矿产: vertical/earth-science/solid-earth/geology-and-minerals.md
+        - 地震与地球物理: vertical/earth-science/solid-earth/seismology.md
+        - 灾害风险: vertical/earth-science/solid-earth/disaster-risk.md
+      - 水文与海洋科学:
+        - 水文与海洋科学: vertical/earth-science/hydrosphere-ocean/index.md
+        - 水文与水资源: vertical/earth-science/hydrosphere-ocean/hydrology.md
+        - 海洋学: vertical/earth-science/hydrosphere-ocean/oceanography.md
+      - 地球信息科学:
+        - 地球信息科学: vertical/earth-science/geospatial/index.md
+        - 遥感: vertical/earth-science/geospatial/remote-sensing.md
+        - GIS 与测绘: vertical/earth-science/geospatial/gis-and-surveying.md
+        - 地球观测产品: vertical/earth-science/geospatial/earth-observation-products.md
+      - 空间数据库:
+        - 空间数据库: vertical/earth-science/spatial-database/index.md
+        - 概论: vertical/earth-science/spatial-database/01-overview.md
+        - 关系模型与关系代数: vertical/earth-science/spatial-database/02-relational-model.md
+        - SQL: vertical/earth-science/spatial-database/03-sql.md
+        - 几何对象与 PostGIS: vertical/earth-science/spatial-database/04-geometry-and-postgis.md
+        - 空间扩展 E/R: vertical/earth-science/spatial-database/05-spatial-er.md
+        - 关系设计理论: vertical/earth-science/spatial-database/06-normalization.md
+        - 空间存储与索引: vertical/earth-science/spatial-database/07-storage-and-index.md
+        - 空间查询处理: vertical/earth-science/spatial-database/08-query-processing.md
+        - 空间网络: vertical/earth-science/spatial-database/09-spatial-network.md
+        - 安全与完整性: vertical/earth-science/spatial-database/10-security-and-integrity.md
+        - 服务器编程: vertical/earth-science/spatial-database/11-server-programming.md
+        - 事务处理: vertical/earth-science/spatial-database/12-transactions.md
+        - OLAP: vertical/earth-science/spatial-database/13-olap.md
+        - 要点检查: vertical/earth-science/spatial-database/14-review.md
+        - 实践路径: vertical/earth-science/spatial-database/15-practice.md
+    - 医疗健康:
+      - 医疗健康: vertical/healthcare/index.md
+      - 临床医学:
+        - 临床医学: vertical/healthcare/clinical/index.md
+        - 诊疗路径与临床决策: vertical/healthcare/clinical/clinical-pathways.md
+        - 医学影像: vertical/healthcare/clinical/medical-imaging.md
+        - 检验与病理: vertical/healthcare/clinical/lab-and-pathology.md
+      - 药学与医疗器械:
+        - 药学与医疗器械: vertical/healthcare/pharma-device/index.md
+        - 药物研发: vertical/healthcare/pharma-device/drug-discovery.md
+        - 器械与数字疗法: vertical/healthcare/pharma-device/devices-and-dtx.md
+      - 卫生事业管理:
+        - 卫生事业管理: vertical/healthcare/operations/index.md
+        - 医院信息化: vertical/healthcare/operations/hospital-it.md
+        - 医保与支付: vertical/healthcare/operations/insurance-and-payment.md
+        - 公共卫生: vertical/healthcare/operations/public-health.md
+      - 卫生信息与监管:
+        - 卫生信息与监管: vertical/healthcare/data-compliance/index.md
+        - 医疗数据与互操作: vertical/healthcare/data-compliance/health-data.md
+        - 药械监管与合规: vertical/healthcare/data-compliance/regulatory.md
+    - 企业服务:
+      - 企业服务: vertical/enterprise/index.md
+      - CRM 与客户运营: vertical/enterprise/crm.md
+      - ERP 与资源计划: vertical/enterprise/erp.md
+      - HCM 与人力资源: vertical/enterprise/hcm.md
+      - 工单与 IT 服务: vertical/enterprise/itsm.md
+      - 主数据、集成与权限: vertical/enterprise/integration.md
 
 # Theme
 theme:
