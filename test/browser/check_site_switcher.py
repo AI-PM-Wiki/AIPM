@@ -12,7 +12,7 @@ MAIN_TABS = [
     "AI 产品实战", "工具与平台", "学习资源", "求职专题",
 ]
 BUSINESS_TABS = ["工商管理", "商业与财会"]
-VERTICAL_TABS = ["垂直领域"]
+VERTICAL_TABS = ["垂直领域简介", "网络安全", "金融", "法律", "教育", "地球科学", "医疗健康", "企业服务"]
 
 
 class SiteSwitcherCase(unittest.TestCase):
@@ -119,7 +119,7 @@ class SiteSwitcherCase(unittest.TestCase):
             ("产品", "/product-manager/", "章节", "/product-manager/02/"),
             ("技术", "/sites/technology/", "筹备中", "/sites/technology/"),
             ("商业", "/management/", "课程列表", "/management/"),
-            ("垂直领域", "/vertical/", "当前覆盖", "/vertical/cybersecurity/"),
+            ("垂直领域", "/vertical/", "当前覆盖", "/vertical/"),
         ):
             with self.subTest(content=name):
                 self.trigger.click()
@@ -188,11 +188,21 @@ class SiteSwitcherCase(unittest.TestCase):
         self.menu.get_by_role("link", name="垂直领域", exact=True).click()
         self.page.wait_for_url(self.site.base + "/vertical/")
         self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], VERTICAL_TABS)
-        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "垂直领域")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "垂直领域简介")
         self.assertEqual(sidebar.locator('a[href*="/pm/"]').count(), 0)
-        sidebar.locator('a[href$="/vertical/finance/"]').first.click()
+        tabs.get_by_role("link", name="金融", exact=True).click()
         self.page.wait_for_url(self.site.base + "/vertical/finance/")
-        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "垂直领域")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "金融")
+        self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为垂直领域")
+        sidebar.locator('a[href$="/vertical/finance/banking/"]').first.click()
+        self.page.wait_for_url(self.site.base + "/vertical/finance/banking/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "金融")
+        self.assertEqual(sidebar.locator('a[href$="/vertical/law/legal-system/"]').count(), 0)
+        tabs.get_by_role("link", name="企业服务", exact=True).click()
+        self.page.wait_for_url(self.site.base + "/vertical/enterprise/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "企业服务")
+        self.assertTrue(sidebar.locator('a[href$="/vertical/enterprise/crm/"]').first.is_visible())
+        self.assertEqual(sidebar.locator('a[href$="/vertical/finance/banking/"]').count(), 0)
         self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为垂直领域")
         self.trigger.click()
         self.menu.get_by_role("link", name="主站", exact=True).click()
