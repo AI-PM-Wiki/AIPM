@@ -46,6 +46,8 @@ flowchart LR
 
     供应商怎么选见 [LLM API 与供应商](llm-api.md)。
 
+初步筛选型号时，可用 [AIHOT 大模型 API 价格对比](https://aihot.news/leaderboard/prices) 按人民币每百万 token 比较输入、输出和缓存命中单价。
+
 ## 成本估算三步法
 
 ### 第一步:算单次调用成本
