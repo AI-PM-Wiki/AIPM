@@ -237,18 +237,31 @@
   background: var(--pm-accent);
 }
 
-/* 5.1 顶栏:全站唯一玻璃(blur 8px,无边框、无渐变高光条) */
+/* 5.1 顶栏:全站唯一玻璃(blur 8px,无边框、无渐变高光条)。
+   底色与模糊放在 ::before 上:带 backdrop-filter 的元素会成为 fixed 后代的
+   包含块,页头里的搜索遮罩(.md-search__overlay)需要以视口为准铺满整页。 */
 .md-header {
-  background-color: rgba(255, 255, 255, .7);
+  background-color: transparent;
   box-shadow: rgba(0, 0, 0, .05) 0 1px 0 0;
   color: var(--pm-ink);
+}
+
+.md-header::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: rgba(255, 255, 255, .7);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
+  content: "";
 }
 
 [data-md-color-scheme="slate"] .md-header {
-  background-color: rgba(11, 12, 15, .54);
   box-shadow: rgba(0, 0, 0, .3) 0 1px 0 0;
+}
+
+[data-md-color-scheme="slate"] .md-header::before {
+  background-color: rgba(11, 12, 15, .54);
 }
 
 /* 滚动时仅阴影加深,无高光 */
@@ -269,8 +282,8 @@
 
 /* 不支持 backdrop-filter 时回退为实色 */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .md-header { background-color: #ffffff; }
-  [data-md-color-scheme="slate"] .md-header { background-color: #0B0C0F; }
+  .md-header::before { background-color: #ffffff; }
+  [data-md-color-scheme="slate"] .md-header::before { background-color: #0B0C0F; }
 }
 
 /* 5.2 Tab 栏:透明底,激活项 accent 胶囊 */
@@ -394,27 +407,49 @@
 }
 
 /* 5.4 搜索:顶栏浅灰胶囊,下拉纯色卡片 */
-/* 搜索展开时,顶栏(含搜索框与候选框)整体置于发丝线之上:
-   .md-header__line 与页头同级但 DOM 靠后,默认盖住页头内容;
-   搜索打开时页头提级到 5,盖住发丝线,避免线横穿搜索框/候选框 */
+/* 搜索展开期间是全页模态:页头提到问答、批注、总结面板(最高 80)之上,
+   页头里的遮罩连同停靠在右侧的面板一起压暗;页头同时盖住与它同级、
+   DOM 靠后的发丝线 .md-header__line,线不会横穿搜索框和候选框。 */
 [data-md-toggle="search"]:checked ~ .md-header {
-  z-index: 5;
+  z-index: 100;
 }
 
-/* 移动端搜索是 fixed 容器,但它位于 sticky 页头内;用视口单位避免
-   height:100% 解析为页头的 48px,否则放大的白色 overlay 会盖住结果。
-   同时暂时隐藏 body 顶层的问答入口和面板,避免固定层级压住搜索结果。 */
+/* 页头右缘的总结与批注入口与遮罩同为 z-index 1,DOM 排在遮罩之后;
+   搜索期间降到遮罩之下,和页头其他内容一起压暗。 */
+[data-md-toggle="search"]:checked ~ .md-header .aipm-summary-entry,
+[data-md-toggle="search"]:checked ~ .md-header .aipm-anno-entry {
+  z-index: 0;
+}
+
+/* 页头内嵌搜索(≥960px)按页头的实际宽度排布:面板停靠时页头随之收窄,
+   主题按视口宽度给出的展开宽度可能放不下。站点切换按钮保持完整宽度;
+   空间不足时仓库信息先收缩,最窄保留 2rem 的图标,其余不足由搜索框收缩承担,
+   结果列表跟随搜索框的宽度。
+   flex-shrink 的权重乘以基准宽度,1000 让仓库信息先于搜索框收缩。 */
+@media screen and (min-width: 60em) {
+  [data-md-toggle="search"]:checked ~ .md-header .md-header__title {
+    flex-shrink: 0;
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-header .md-search {
+    min-width: 0;
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__inner,
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__scrollwrap {
+    max-width: 100%;
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-header .md-header__source {
+    flex-shrink: 1000;
+    min-width: 2rem;
+    overflow: hidden;
+  }
+}
+
+/* 移动端全屏搜索期间隐藏 body 顶层的问答入口和面板,
+   它们同时退出键盘焦点顺序。 */
 @media screen and (max-width: 59.984375em) {
-  [data-md-toggle="search"]:checked ~ .md-header {
-    z-index: 100;
-  }
-
-  [data-md-toggle="search"]:checked ~ .md-header .md-search__inner {
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-  }
-
   [data-md-toggle="search"]:checked ~ .aipm-chat {
     visibility: hidden !important;
     pointer-events: none;
