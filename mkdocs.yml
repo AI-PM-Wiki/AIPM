@@ -1,6 +1,6 @@
 # Project Information
 site_name: AI-PM
-site_description: AI-PM 知识库，包含主站、产品、科技与商业内容
+site_description: AI-PM 知识库，包含主站、产品、技术与商业内容
 site_author: AI-PM Wiki Team
 site_url: https://aipm.ac/
 strict: true
@@ -68,266 +68,6 @@ nav:
       - 消息队列与异步系统: tech/message-queues.md
       - 第三方服务与外部依赖: tech/third-party-services.md
       - 可观测性: tech/observability.md
-  - 工商管理:
-    - 工商管理简介: management/index.md
-    - 管理基础与方法:
-      - 管理研究方法: management/01-management-research/index.md
-      - 管理统计: management/02-management-statistics/index.md
-      - 管理决策: management/03-management-decision/index.md
-    - 组织与沟通:
-      - 组织行为学: management/04-organizational-behavior/index.md
-      - 管理沟通: management/05-management-communication/index.md
-    - 市场与消费者:
-      - 市场营销学: management/06-marketing/index.md
-      - 消费者行为: management/07-consumer-behavior/index.md
-      - 消费者信息处理与决策: management/08-consumer-information-decision/index.md
-      - 消费者神经科学: management/09-consumer-neuroscience/index.md
-    - 战略、创新与创业:
-      - 战略管理: management/10-strategy/index.md
-      - 创新管理: management/11-innovation/index.md
-      - 商业模式设计与创新: management/12-business-model/index.md
-      - 创业管理: management/13-entrepreneurship/index.md
-    - 设计、项目与运营:
-      - 设计思维: management/14-design-thinking/index.md
-      - 项目管理: management/15-project-management/index.md
-      - 应用运筹学Ⅰ: management/16-operations-research/index.md
-      - IT 工程伦理和项目管理: management/17-engineering-ethics/index.md
-    - 财务管理:
-      - 财务管理: management/18-financial-management/index.md
-  - 商业与财会:
-    - 商业与财会简介: business/index.md
-    - 金融学:
-      - 金融学: business/01-finance/index.md
-      - 金融学课程导论: business/01-finance/00-intro.md
-      - 货币的起源与形态: business/01-finance/01-origins-and-forms-of-money.md
-      - 货币的职能: business/01-finance/02-functions-of-money.md
-      - 货币制度: business/01-finance/03-monetary-systems.md
-      - 货币的层次划分与人民币制度: business/01-finance/04-monetary-aggregates-and-rmb-system.md
-      - 信用与信用形式: business/01-finance/05-credit-and-credit-forms.md
-      - 消费信用与金融风险: business/01-finance/06-consumer-credit-and-financial-risk.md
-      - 信用工具：票据: business/01-finance/07-credit-instruments-bills.md
-      - 信用工具：债券与股票: business/01-finance/08-credit-instruments-bonds-and-stocks.md
-      - 利息与利息率: business/01-finance/09-interest-and-interest-rates.md
-      - 金融机构体系: business/01-finance/10-financial-institution-system.md
-      - 商业银行: business/01-finance/11-commercial-banks.md
-      - 金融市场: business/01-finance/12-financial-markets.md
-      - 证券投资与市场构成: business/01-finance/13-securities-investment-and-market-structure.md
-      - 货币政策: business/01-finance/14-monetary-policy.md
-    - 会计学:
-      - 会计学: business/02-accounting/index.md
-      - 会计学课程导论: business/02-accounting/00-intro.md
-      - 会计确认与计量基础: business/02-accounting/01-accounting-recognition-and-measurement.md
-      - 会计要素与复式记账: business/02-accounting/02-accounting-elements-and-double-entry.md
-      - 会计循环: business/02-accounting/03-accounting-cycle.md
-      - 货币资金与交易性金融资产: business/02-accounting/04-cash-and-trading-financial-assets.md
-      - 应收款项与坏账: business/02-accounting/05-receivables-and-bad-debts.md
-      - 存货: business/02-accounting/06-inventory.md
-      - 固定资产: business/02-accounting/07-fixed-assets.md
-      - 负债与所有者权益: business/02-accounting/08-liabilities-and-equity.md
-      - 收入、费用与利润: business/02-accounting/09-revenue-expenses-and-profit.md
-    - 中级微观经济学:
-      - 中级微观经济学: business/03-intermediate-microeconomics/index.md
-      - 中级微观经济学课程导论: business/03-intermediate-microeconomics/00-intro.md
-      - 预算约束与消费者偏好: business/03-intermediate-microeconomics/01-budget-constraints-and-preferences.md
-      - 效用函数与消费者最优选择: business/03-intermediate-microeconomics/02-utility-functions-and-optimal-choice.md
-      - 需求变动与显示偏好: business/03-intermediate-microeconomics/03-demand-and-revealed-preference.md
-      - 斯勒茨基方程与禀赋模型: business/03-intermediate-microeconomics/04-slutsky-equation-and-endowment-model.md
-      - 跨期选择与消费者福利: business/03-intermediate-microeconomics/05-intertemporal-choice-and-consumer-welfare.md
-      - 市场需求与弹性: business/03-intermediate-microeconomics/06-market-demand-and-elasticity.md
-      - 生产者理论: business/03-intermediate-microeconomics/07-producer-theory.md
-      - 完全竞争市场: business/03-intermediate-microeconomics/08-perfectly-competitive-markets.md
-      - 垄断与价格歧视: business/03-intermediate-microeconomics/09-monopoly-and-price-discrimination.md
-      - 寡头与垄断竞争: business/03-intermediate-microeconomics/10-oligopoly-and-monopolistic-competition.md
-      - 一般均衡与福利: business/03-intermediate-microeconomics/11-general-equilibrium-and-welfare.md
-    - 宏观经济学:
-      - 宏观经济学: business/04-macroeconomics/index.md
-      - 宏观经济学课程导论: business/04-macroeconomics/00-intro.md
-      - 国民收入核算与基本指标: business/04-macroeconomics/01-national-income-accounting.md
-      - 收入-支出模型: business/04-macroeconomics/02-income-expenditure-model.md
-      - IS-LM 模型: business/04-macroeconomics/03-is-lm-model.md
-      - AD-AS 模型: business/04-macroeconomics/04-ad-as-model.md
-      - 失业与奥肯定律: business/04-macroeconomics/05-unemployment-and-okun-law.md
-      - 通货膨胀与菲利普斯曲线: business/04-macroeconomics/06-inflation-and-phillips-curve.md
-      - 开放经济与蒙代尔-弗莱明模型: business/04-macroeconomics/07-open-economy-and-mundell-fleming.md
-      - 宏观经济政策: business/04-macroeconomics/08-macroeconomic-policy.md
-      - 经济增长: business/04-macroeconomics/09-economic-growth.md
-    - 公司金融:
-      - 公司金融: business/05-corporate-finance/index.md
-      - 公司金融课程导论: business/05-corporate-finance/00-intro.md
-      - 公司治理: business/05-corporate-finance/01-corporate-governance.md
-      - 财务报表分析与财务模型: business/05-corporate-finance/02-financial-statement-analysis-and-modeling.md
-      - 货币时间价值: business/05-corporate-finance/03-time-value-of-money.md
-      - 项目评估方法: business/05-corporate-finance/04-project-evaluation-methods.md
-      - 投资决策与自由现金流: business/05-corporate-finance/05-investment-decisions-and-free-cash-flow.md
-      - 风险分析与实物期权: business/05-corporate-finance/06-risk-analysis-and-real-options.md
-      - 债券估值: business/05-corporate-finance/07-bond-valuation.md
-      - 股票估值: business/05-corporate-finance/08-stock-valuation.md
-      - 风险、收益与资本资产定价: business/05-corporate-finance/09-risk-return-and-capm.md
-      - 资本成本与长期融资: business/05-corporate-finance/10-cost-of-capital-and-long-term-financing.md
-      - 资本结构: business/05-corporate-finance/11-capital-structure.md
-      - 股利政策: business/05-corporate-finance/12-dividend-policy.md
-    - 商业银行经营与管理:
-      - 商业银行经营与管理: business/06-commercial-banking/index.md
-      - 商业银行经营与管理课程导论: business/06-commercial-banking/00-intro.md
-      - 商业银行的地位与类型: business/06-commercial-banking/01-role-and-types-of-commercial-banks.md
-      - 商业银行的组织结构与经营原则: business/06-commercial-banking/02-organization-and-operating-principles.md
-      - 资本金与巴塞尔协议: business/06-commercial-banking/03-capital-and-basel-accords.md
-      - 商业银行负债业务: business/06-commercial-banking/04-liability-operations.md
-      - 商业银行资产业务与贷款管理: business/06-commercial-banking/05-asset-operations-and-loan-management.md
-      - 商业银行信用分析与担保: business/06-commercial-banking/06-credit-analysis-and-guarantees.md
-      - 商业银行中间业务与表外业务: business/06-commercial-banking/07-intermediary-and-off-balance-sheet-business.md
-      - 商业银行国际业务与离岸金融: business/06-commercial-banking/08-international-and-offshore-finance.md
-      - 商业银行资产负债管理: business/06-commercial-banking/09-asset-liability-management.md
-    - 政治经济学:
-      - 政治经济学: business/07-political-economy/index.md
-      - 政治经济学课程导论: business/07-political-economy/00-intro.md
-      - 前资本主义经济制度: business/07-political-economy/01-pre-capitalist-economic-systems.md
-      - 垄断资本主义与金融资本: business/07-political-economy/02-monopoly-capitalism-and-finance-capital.md
-      - 剩余价值理论: business/07-political-economy/03-surplus-value-theory.md
-      - 中国经济的历史兴衰: business/07-political-economy/04-rise-and-fall-of-chinese-economy.md
-      - 重工业优先发展战略: business/07-political-economy/05-heavy-industry-first-strategy.md
-      - 改革开放与乡村工业化: business/07-political-economy/06-reform-and-opening-and-rural-industrialization.md
-      - 经济转轨与国有企业: business/07-political-economy/07-economic-transition-and-soes.md
-      - 人力资本与共同富裕: business/07-political-economy/08-human-capital-and-common-prosperity.md
-      - 经济全球化与中国对外开放: business/07-political-economy/09-globalization-and-china-opening-up.md
-    - 计量经济学:
-      - 计量经济学: business/08-econometrics/index.md
-      - 计量经济学课程导论: business/08-econometrics/00-intro.md
-      - 简单线性回归: business/08-econometrics/01-simple-linear-regression.md
-      - 多元线性回归: business/08-econometrics/02-multiple-linear-regression.md
-      - 虚拟变量与非线性回归: business/08-econometrics/03-dummy-variables-and-nonlinear-regression.md
-      - 多重共线性与异方差: business/08-econometrics/04-multicollinearity-and-heteroskedasticity.md
-      - 内生性与工具变量: business/08-econometrics/05-endogeneity-and-instrumental-variables.md
-      - 模型设定偏误: business/08-econometrics/06-model-specification-bias.md
-      - 时间序列平稳性: business/08-econometrics/07-time-series-stationarity.md
-      - Stata 与 EViews 操作入门: business/08-econometrics/08-stata-and-eviews-intro.md
-      - 因果推断与实验: business/08-econometrics/09-causal-inference-and-experiments.md
-    - 国际金融学:
-      - 国际金融学: business/09-international-finance/index.md
-      - 国际金融学课程导论: business/09-international-finance/00-intro.md
-      - 国际收支与国际收支平衡表: business/09-international-finance/01-balance-of-payments.md
-      - 国际收支调节理论: business/09-international-finance/02-balance-of-payments-adjustment-theories.md
-      - 外汇与汇率: business/09-international-finance/03-foreign-exchange-and-exchange-rates.md
-      - 外汇市场与外汇交易: business/09-international-finance/04-fx-markets-and-trading.md
-      - 汇率决定理论: business/09-international-finance/05-exchange-rate-determination.md
-      - 国际储备与汇率制度: business/09-international-finance/06-international-reserves-and-exchange-rate-regimes.md
-      - 开放经济下的宏观经济政策协调: business/09-international-finance/07-open-economy-policy-coordination.md
-      - 国际金融市场与国际资本流动: business/09-international-finance/08-international-financial-markets-and-capital-flows.md
-      - 国际货币体系: business/09-international-finance/09-international-monetary-system.md
-      - 国际金融机构与国际金融创新: business/09-international-finance/10-international-financial-institutions-and-innovation.md
-    - 证券投资学:
-      - 证券投资学: business/10-securities-investment/index.md
-      - 证券投资学课程导论: business/10-securities-investment/00-intro.md
-      - 投资基础: business/10-securities-investment/01-investment-basics.md
-      - 证券投资工具: business/10-securities-investment/02-securities-investment-instruments.md
-      - 证券发行与上市制度: business/10-securities-investment/03-securities-issuance-and-listing.md
-      - 资产组合理论: business/10-securities-investment/04-portfolio-theory.md
-      - 债券估值与久期: business/10-securities-investment/05-bond-valuation-and-duration.md
-      - 股票估值: business/10-securities-investment/06-stock-valuation.md
-      - 宏观经济分析: business/10-securities-investment/07-macroeconomic-analysis.md
-      - 行业与公司分析: business/10-securities-investment/08-industry-and-company-analysis.md
-      - 技术分析: business/10-securities-investment/09-technical-analysis.md
-      - 投资策略与行为金融: business/10-securities-investment/10-investment-strategies-and-behavioral-finance.md
-    - 中级财务会计学:
-      - 中级财务会计学: business/11-intermediate-financial-accounting/index.md
-      - 中级财务会计学课程导论: business/11-intermediate-financial-accounting/00-intro.md
-      - 存货: business/11-intermediate-financial-accounting/01-inventory.md
-      - 应收款项: business/11-intermediate-financial-accounting/02-receivables.md
-      - 金融工具：债务工具: business/11-intermediate-financial-accounting/03-financial-instruments-debt.md
-      - 金融工具：权益工具与交易性金融资产: business/11-intermediate-financial-accounting/04-financial-instruments-equity-and-trading.md
-      - 长期股权投资: business/11-intermediate-financial-accounting/05-long-term-equity-investments.md
-      - 固定资产: business/11-intermediate-financial-accounting/06-fixed-assets.md
-      - 无形资产与投资性房地产: business/11-intermediate-financial-accounting/07-intangibles-and-investment-property.md
-      - 流动负债: business/11-intermediate-financial-accounting/08-current-liabilities.md
-      - 非流动负债: business/11-intermediate-financial-accounting/09-non-current-liabilities.md
-      - 或有事项与预计负债: business/11-intermediate-financial-accounting/10-contingencies-and-provisions.md
-      - 所有者权益: business/11-intermediate-financial-accounting/11-owners-equity.md
-      - 收入确认与所得税会计: business/11-intermediate-financial-accounting/12-revenue-recognition-and-income-tax.md
-      - 财务报表: business/11-intermediate-financial-accounting/13-financial-statements.md
-    - 中级宏观经济学:
-      - 中级宏观经济学: business/12-intermediate-macroeconomics/index.md
-      - 中级宏观经济学课程导论: business/12-intermediate-macroeconomics/00-intro.md
-      - 代表性行为人模型: business/12-intermediate-macroeconomics/01-representative-agent-model.md
-      - 两期动态模型与欧拉方程: business/12-intermediate-macroeconomics/02-two-period-model-and-euler-equation.md
-      - 动态规划: business/12-intermediate-macroeconomics/03-dynamic-programming.md
-      - 无限期动态模型: business/12-intermediate-macroeconomics/04-infinite-horizon-dynamic-models.md
-      - 真实经济周期模型: business/12-intermediate-macroeconomics/05-real-business-cycle-model.md
-      - 代际交叠模型: business/12-intermediate-macroeconomics/06-overlapping-generations-model.md
-      - Diamond-Dybvig 银行模型: business/12-intermediate-macroeconomics/07-diamond-dybvig-bank-model.md
-      - 数学方法专题: business/12-intermediate-macroeconomics/08-mathematical-methods.md
-    - 随机过程:
-      - 随机过程: business/13-stochastic-processes/index.md
-      - 随机过程课程导论: business/13-stochastic-processes/00-intro.md
-      - Poisson 过程: business/13-stochastic-processes/01-poisson-process.md
-      - 马尔可夫链: business/13-stochastic-processes/02-markov-chains.md
-      - 分支过程: business/13-stochastic-processes/03-branching-processes.md
-      - 平稳过程与遍历性: business/13-stochastic-processes/04-stationary-processes-and-ergodicity.md
-      - 布朗运动: business/13-stochastic-processes/05-brownian-motion.md
-      - MCMC 与随机模拟: business/13-stochastic-processes/06-mcmc-and-stochastic-simulation.md
-    - 金融计量模型:
-      - 金融计量模型: business/14-financial-econometrics/index.md
-      - 金融计量模型课程导论: business/14-financial-econometrics/00-intro.md
-      - 平稳性与 ARMA 模型: business/14-financial-econometrics/01-stationarity-and-arma-models.md
-      - ARMA 模型识别、估计与检验: business/14-financial-econometrics/02-arma-identification-estimation-and-testing.md
-      - ARMA 模型预测: business/14-financial-econometrics/03-arma-forecasting.md
-      - 波动率建模：ARCH 与 GARCH: business/14-financial-econometrics/04-volatility-modeling-arch-and-garch.md
-      - 趋势、单位根与 ARIMA: business/14-financial-econometrics/05-trends-unit-roots-and-arima.md
-      - 向量自回归模型: business/14-financial-econometrics/06-vector-autoregression.md
-      - 协整与误差修正模型: business/14-financial-econometrics/07-cointegration-and-error-correction.md
-    - 量化投资:
-      - 量化投资: business/15-quantitative-investing/index.md
-      - 量化投资课程导论: business/15-quantitative-investing/00-intro.md
-      - 因子投资理论基础: business/15-quantitative-investing/01-factor-investing-foundations.md
-      - 多因子模型与因子收益度量: business/15-quantitative-investing/02-multi-factor-models-and-factor-returns.md
-      - 多因子选股实践: business/15-quantitative-investing/03-multi-factor-stock-selection.md
-      - 风险模型: business/15-quantitative-investing/04-risk-models.md
-      - 另类数据与事件驱动: business/15-quantitative-investing/05-alternative-data-and-event-driven.md
-      - 大模型在量化投资中的应用: business/15-quantitative-investing/06-llms-in-quantitative-investing.md
-    - 金融学论文写作:
-      - 金融学论文写作: business/16-finance-writing/index.md
-      - 金融学论文写作课程导论: business/16-finance-writing/00-intro.md
-      - 选题与文献综述: business/16-finance-writing/01-topic-selection-and-literature-review.md
-      - 找基本事实: business/16-finance-writing/02-finding-basic-facts.md
-      - 写理论机制: business/16-finance-writing/03-writing-theoretical-mechanisms.md
-      - 实证方法：面板数据与 Stata: business/16-finance-writing/04-empirical-methods-panel-data-and-stata.md
-      - 稳健性检验与内生性: business/16-finance-writing/05-robustness-checks-and-endogeneity.md
-      - 论文结构与格式规范: business/16-finance-writing/06-paper-structure-and-format.md
-      - 数字金融研究专题: business/16-finance-writing/07-digital-finance-research.md
-      - 宏观金融研究专题: business/16-finance-writing/08-macro-finance-research.md
-    - 固定收益证券分析和模型:
-      - 固定收益证券分析和模型: business/17-fixed-income/index.md
-      - 固定收益证券课程导论: business/17-fixed-income/00-intro.md
-      - 贴现因子、利率与期限结构: business/17-fixed-income/01-discount-factors-and-term-structure.md
-      - 利率风险管理：久期与免疫: business/17-fixed-income/02-duration-and-immunization.md
-      - 利率风险管理：凸性: business/17-fixed-income/03-convexity.md
-      - 远期与利率互换: business/17-fixed-income/04-forward-rates-and-interest-rate-swaps.md
-      - 利率期货与期权: business/17-fixed-income/05-interest-rate-futures-and-options.md
-      - 二叉树框架与风险中性定价: business/17-fixed-income/06-binomial-tree-and-risk-neutral-pricing.md
-      - 利率树模型：Ho-Lee 与 BDT: business/17-fixed-income/07-rate-tree-models-ho-lee-and-bdt.md
-      - 连续时间利率模型与中国市场: business/17-fixed-income/08-continuous-time-rate-models-and-china.md
-    - 金融工程学:
-      - 金融工程学: business/18-financial-engineering/index.md
-      - 金融工程学课程导论: business/18-financial-engineering/00-intro.md
-      - 衍生品基础与市场结构: business/18-financial-engineering/01-derivatives-basics-and-market-structure.md
-      - 远期与期货: business/18-financial-engineering/02-forwards-and-futures.md
-      - 互换: business/18-financial-engineering/03-swaps.md
-      - 期权的回报与价格分析: business/18-financial-engineering/04-option-payoffs-and-pricing.md
-      - 期权定价：布莱克-舒尔斯-默顿模型: business/18-financial-engineering/05-black-scholes-merton-model.md
-      - 期权定价数值方法: business/18-financial-engineering/06-option-pricing-numerical-methods.md
-      - 期权交易策略: business/18-financial-engineering/07-option-trading-strategies.md
-      - 奇异期权与结构性产品: business/18-financial-engineering/08-exotic-options-and-structured-products.md
-    - 前沿金融实务专题:
-      - 前沿金融实务专题: business/19-frontier-finance-practice/index.md
-      - 前沿金融实务专题课程导论: business/19-frontier-finance-practice/00-intro.md
-      - 公募基金行业的改革与发展: business/19-frontier-finance-practice/01-mutual-fund-industry-reform.md
-      - 券商业务全景: business/19-frontier-finance-practice/02-securities-firm-business-overview.md
-      - 交易所与交易机制: business/19-frontier-finance-practice/03-exchanges-and-trading-mechanisms.md
-      - 一级市场股权投资: business/19-frontier-finance-practice/04-primary-market-equity-investing.md
-      - 投资银行业务流程: business/19-frontier-finance-practice/05-investment-banking-process.md
-      - 北京证券交易所业务: business/19-frontier-finance-practice/06-beijing-stock-exchange.md
-      - 大宗商品期货实务: business/19-frontier-finance-practice/07-commodity-futures-practice.md
-      - 公募基金投资方法: business/19-frontier-finance-practice/08-mutual-fund-investing.md
-      - 投资入门与职业发展: business/19-frontier-finance-practice/09-investment-career-guide.md
   - AI 基础:
     - AI 基础简介: ai/index.md
     - AI 黑话与定理:
@@ -817,10 +557,269 @@ nav:
       - 12.2 重新定义“读书会”: product-manager/12/02/index.md
       - 12.3 七印部落翻译的书: product-manager/12/03/index.md
       - 12.4 其他资源: product-manager/12/04/index.md
-- 科技:
-  - 科技: sites/technology/index.md
+- 技术:
+  - 技术: sites/technology/index.md
 - 商业:
-  - 商业: sites/business/index.md
+  - 工商管理:
+    - 工商管理简介: management/index.md
+    - 管理基础与方法:
+      - 管理研究方法: management/01-management-research/index.md
+      - 管理统计: management/02-management-statistics/index.md
+      - 管理决策: management/03-management-decision/index.md
+    - 组织与沟通:
+      - 组织行为学: management/04-organizational-behavior/index.md
+      - 管理沟通: management/05-management-communication/index.md
+    - 市场与消费者:
+      - 市场营销学: management/06-marketing/index.md
+      - 消费者行为: management/07-consumer-behavior/index.md
+      - 消费者信息处理与决策: management/08-consumer-information-decision/index.md
+      - 消费者神经科学: management/09-consumer-neuroscience/index.md
+    - 战略、创新与创业:
+      - 战略管理: management/10-strategy/index.md
+      - 创新管理: management/11-innovation/index.md
+      - 商业模式设计与创新: management/12-business-model/index.md
+      - 创业管理: management/13-entrepreneurship/index.md
+    - 设计、项目与运营:
+      - 设计思维: management/14-design-thinking/index.md
+      - 项目管理: management/15-project-management/index.md
+      - 应用运筹学Ⅰ: management/16-operations-research/index.md
+      - IT 工程伦理和项目管理: management/17-engineering-ethics/index.md
+    - 财务管理:
+      - 财务管理: management/18-financial-management/index.md
+  - 商业与财会:
+    - 商业与财会简介: business/index.md
+    - 金融学:
+      - 金融学: business/01-finance/index.md
+      - 金融学课程导论: business/01-finance/00-intro.md
+      - 货币的起源与形态: business/01-finance/01-origins-and-forms-of-money.md
+      - 货币的职能: business/01-finance/02-functions-of-money.md
+      - 货币制度: business/01-finance/03-monetary-systems.md
+      - 货币的层次划分与人民币制度: business/01-finance/04-monetary-aggregates-and-rmb-system.md
+      - 信用与信用形式: business/01-finance/05-credit-and-credit-forms.md
+      - 消费信用与金融风险: business/01-finance/06-consumer-credit-and-financial-risk.md
+      - 信用工具：票据: business/01-finance/07-credit-instruments-bills.md
+      - 信用工具：债券与股票: business/01-finance/08-credit-instruments-bonds-and-stocks.md
+      - 利息与利息率: business/01-finance/09-interest-and-interest-rates.md
+      - 金融机构体系: business/01-finance/10-financial-institution-system.md
+      - 商业银行: business/01-finance/11-commercial-banks.md
+      - 金融市场: business/01-finance/12-financial-markets.md
+      - 证券投资与市场构成: business/01-finance/13-securities-investment-and-market-structure.md
+      - 货币政策: business/01-finance/14-monetary-policy.md
+    - 会计学:
+      - 会计学: business/02-accounting/index.md
+      - 会计学课程导论: business/02-accounting/00-intro.md
+      - 会计确认与计量基础: business/02-accounting/01-accounting-recognition-and-measurement.md
+      - 会计要素与复式记账: business/02-accounting/02-accounting-elements-and-double-entry.md
+      - 会计循环: business/02-accounting/03-accounting-cycle.md
+      - 货币资金与交易性金融资产: business/02-accounting/04-cash-and-trading-financial-assets.md
+      - 应收款项与坏账: business/02-accounting/05-receivables-and-bad-debts.md
+      - 存货: business/02-accounting/06-inventory.md
+      - 固定资产: business/02-accounting/07-fixed-assets.md
+      - 负债与所有者权益: business/02-accounting/08-liabilities-and-equity.md
+      - 收入、费用与利润: business/02-accounting/09-revenue-expenses-and-profit.md
+    - 中级微观经济学:
+      - 中级微观经济学: business/03-intermediate-microeconomics/index.md
+      - 中级微观经济学课程导论: business/03-intermediate-microeconomics/00-intro.md
+      - 预算约束与消费者偏好: business/03-intermediate-microeconomics/01-budget-constraints-and-preferences.md
+      - 效用函数与消费者最优选择: business/03-intermediate-microeconomics/02-utility-functions-and-optimal-choice.md
+      - 需求变动与显示偏好: business/03-intermediate-microeconomics/03-demand-and-revealed-preference.md
+      - 斯勒茨基方程与禀赋模型: business/03-intermediate-microeconomics/04-slutsky-equation-and-endowment-model.md
+      - 跨期选择与消费者福利: business/03-intermediate-microeconomics/05-intertemporal-choice-and-consumer-welfare.md
+      - 市场需求与弹性: business/03-intermediate-microeconomics/06-market-demand-and-elasticity.md
+      - 生产者理论: business/03-intermediate-microeconomics/07-producer-theory.md
+      - 完全竞争市场: business/03-intermediate-microeconomics/08-perfectly-competitive-markets.md
+      - 垄断与价格歧视: business/03-intermediate-microeconomics/09-monopoly-and-price-discrimination.md
+      - 寡头与垄断竞争: business/03-intermediate-microeconomics/10-oligopoly-and-monopolistic-competition.md
+      - 一般均衡与福利: business/03-intermediate-microeconomics/11-general-equilibrium-and-welfare.md
+    - 宏观经济学:
+      - 宏观经济学: business/04-macroeconomics/index.md
+      - 宏观经济学课程导论: business/04-macroeconomics/00-intro.md
+      - 国民收入核算与基本指标: business/04-macroeconomics/01-national-income-accounting.md
+      - 收入-支出模型: business/04-macroeconomics/02-income-expenditure-model.md
+      - IS-LM 模型: business/04-macroeconomics/03-is-lm-model.md
+      - AD-AS 模型: business/04-macroeconomics/04-ad-as-model.md
+      - 失业与奥肯定律: business/04-macroeconomics/05-unemployment-and-okun-law.md
+      - 通货膨胀与菲利普斯曲线: business/04-macroeconomics/06-inflation-and-phillips-curve.md
+      - 开放经济与蒙代尔-弗莱明模型: business/04-macroeconomics/07-open-economy-and-mundell-fleming.md
+      - 宏观经济政策: business/04-macroeconomics/08-macroeconomic-policy.md
+      - 经济增长: business/04-macroeconomics/09-economic-growth.md
+    - 公司金融:
+      - 公司金融: business/05-corporate-finance/index.md
+      - 公司金融课程导论: business/05-corporate-finance/00-intro.md
+      - 公司治理: business/05-corporate-finance/01-corporate-governance.md
+      - 财务报表分析与财务模型: business/05-corporate-finance/02-financial-statement-analysis-and-modeling.md
+      - 货币时间价值: business/05-corporate-finance/03-time-value-of-money.md
+      - 项目评估方法: business/05-corporate-finance/04-project-evaluation-methods.md
+      - 投资决策与自由现金流: business/05-corporate-finance/05-investment-decisions-and-free-cash-flow.md
+      - 风险分析与实物期权: business/05-corporate-finance/06-risk-analysis-and-real-options.md
+      - 债券估值: business/05-corporate-finance/07-bond-valuation.md
+      - 股票估值: business/05-corporate-finance/08-stock-valuation.md
+      - 风险、收益与资本资产定价: business/05-corporate-finance/09-risk-return-and-capm.md
+      - 资本成本与长期融资: business/05-corporate-finance/10-cost-of-capital-and-long-term-financing.md
+      - 资本结构: business/05-corporate-finance/11-capital-structure.md
+      - 股利政策: business/05-corporate-finance/12-dividend-policy.md
+    - 商业银行经营与管理:
+      - 商业银行经营与管理: business/06-commercial-banking/index.md
+      - 商业银行经营与管理课程导论: business/06-commercial-banking/00-intro.md
+      - 商业银行的地位与类型: business/06-commercial-banking/01-role-and-types-of-commercial-banks.md
+      - 商业银行的组织结构与经营原则: business/06-commercial-banking/02-organization-and-operating-principles.md
+      - 资本金与巴塞尔协议: business/06-commercial-banking/03-capital-and-basel-accords.md
+      - 商业银行负债业务: business/06-commercial-banking/04-liability-operations.md
+      - 商业银行资产业务与贷款管理: business/06-commercial-banking/05-asset-operations-and-loan-management.md
+      - 商业银行信用分析与担保: business/06-commercial-banking/06-credit-analysis-and-guarantees.md
+      - 商业银行中间业务与表外业务: business/06-commercial-banking/07-intermediary-and-off-balance-sheet-business.md
+      - 商业银行国际业务与离岸金融: business/06-commercial-banking/08-international-and-offshore-finance.md
+      - 商业银行资产负债管理: business/06-commercial-banking/09-asset-liability-management.md
+    - 政治经济学:
+      - 政治经济学: business/07-political-economy/index.md
+      - 政治经济学课程导论: business/07-political-economy/00-intro.md
+      - 前资本主义经济制度: business/07-political-economy/01-pre-capitalist-economic-systems.md
+      - 垄断资本主义与金融资本: business/07-political-economy/02-monopoly-capitalism-and-finance-capital.md
+      - 剩余价值理论: business/07-political-economy/03-surplus-value-theory.md
+      - 中国经济的历史兴衰: business/07-political-economy/04-rise-and-fall-of-chinese-economy.md
+      - 重工业优先发展战略: business/07-political-economy/05-heavy-industry-first-strategy.md
+      - 改革开放与乡村工业化: business/07-political-economy/06-reform-and-opening-and-rural-industrialization.md
+      - 经济转轨与国有企业: business/07-political-economy/07-economic-transition-and-soes.md
+      - 人力资本与共同富裕: business/07-political-economy/08-human-capital-and-common-prosperity.md
+      - 经济全球化与中国对外开放: business/07-political-economy/09-globalization-and-china-opening-up.md
+    - 计量经济学:
+      - 计量经济学: business/08-econometrics/index.md
+      - 计量经济学课程导论: business/08-econometrics/00-intro.md
+      - 简单线性回归: business/08-econometrics/01-simple-linear-regression.md
+      - 多元线性回归: business/08-econometrics/02-multiple-linear-regression.md
+      - 虚拟变量与非线性回归: business/08-econometrics/03-dummy-variables-and-nonlinear-regression.md
+      - 多重共线性与异方差: business/08-econometrics/04-multicollinearity-and-heteroskedasticity.md
+      - 内生性与工具变量: business/08-econometrics/05-endogeneity-and-instrumental-variables.md
+      - 模型设定偏误: business/08-econometrics/06-model-specification-bias.md
+      - 时间序列平稳性: business/08-econometrics/07-time-series-stationarity.md
+      - Stata 与 EViews 操作入门: business/08-econometrics/08-stata-and-eviews-intro.md
+      - 因果推断与实验: business/08-econometrics/09-causal-inference-and-experiments.md
+    - 国际金融学:
+      - 国际金融学: business/09-international-finance/index.md
+      - 国际金融学课程导论: business/09-international-finance/00-intro.md
+      - 国际收支与国际收支平衡表: business/09-international-finance/01-balance-of-payments.md
+      - 国际收支调节理论: business/09-international-finance/02-balance-of-payments-adjustment-theories.md
+      - 外汇与汇率: business/09-international-finance/03-foreign-exchange-and-exchange-rates.md
+      - 外汇市场与外汇交易: business/09-international-finance/04-fx-markets-and-trading.md
+      - 汇率决定理论: business/09-international-finance/05-exchange-rate-determination.md
+      - 国际储备与汇率制度: business/09-international-finance/06-international-reserves-and-exchange-rate-regimes.md
+      - 开放经济下的宏观经济政策协调: business/09-international-finance/07-open-economy-policy-coordination.md
+      - 国际金融市场与国际资本流动: business/09-international-finance/08-international-financial-markets-and-capital-flows.md
+      - 国际货币体系: business/09-international-finance/09-international-monetary-system.md
+      - 国际金融机构与国际金融创新: business/09-international-finance/10-international-financial-institutions-and-innovation.md
+    - 证券投资学:
+      - 证券投资学: business/10-securities-investment/index.md
+      - 证券投资学课程导论: business/10-securities-investment/00-intro.md
+      - 投资基础: business/10-securities-investment/01-investment-basics.md
+      - 证券投资工具: business/10-securities-investment/02-securities-investment-instruments.md
+      - 证券发行与上市制度: business/10-securities-investment/03-securities-issuance-and-listing.md
+      - 资产组合理论: business/10-securities-investment/04-portfolio-theory.md
+      - 债券估值与久期: business/10-securities-investment/05-bond-valuation-and-duration.md
+      - 股票估值: business/10-securities-investment/06-stock-valuation.md
+      - 宏观经济分析: business/10-securities-investment/07-macroeconomic-analysis.md
+      - 行业与公司分析: business/10-securities-investment/08-industry-and-company-analysis.md
+      - 技术分析: business/10-securities-investment/09-technical-analysis.md
+      - 投资策略与行为金融: business/10-securities-investment/10-investment-strategies-and-behavioral-finance.md
+    - 中级财务会计学:
+      - 中级财务会计学: business/11-intermediate-financial-accounting/index.md
+      - 中级财务会计学课程导论: business/11-intermediate-financial-accounting/00-intro.md
+      - 存货: business/11-intermediate-financial-accounting/01-inventory.md
+      - 应收款项: business/11-intermediate-financial-accounting/02-receivables.md
+      - 金融工具：债务工具: business/11-intermediate-financial-accounting/03-financial-instruments-debt.md
+      - 金融工具：权益工具与交易性金融资产: business/11-intermediate-financial-accounting/04-financial-instruments-equity-and-trading.md
+      - 长期股权投资: business/11-intermediate-financial-accounting/05-long-term-equity-investments.md
+      - 固定资产: business/11-intermediate-financial-accounting/06-fixed-assets.md
+      - 无形资产与投资性房地产: business/11-intermediate-financial-accounting/07-intangibles-and-investment-property.md
+      - 流动负债: business/11-intermediate-financial-accounting/08-current-liabilities.md
+      - 非流动负债: business/11-intermediate-financial-accounting/09-non-current-liabilities.md
+      - 或有事项与预计负债: business/11-intermediate-financial-accounting/10-contingencies-and-provisions.md
+      - 所有者权益: business/11-intermediate-financial-accounting/11-owners-equity.md
+      - 收入确认与所得税会计: business/11-intermediate-financial-accounting/12-revenue-recognition-and-income-tax.md
+      - 财务报表: business/11-intermediate-financial-accounting/13-financial-statements.md
+    - 中级宏观经济学:
+      - 中级宏观经济学: business/12-intermediate-macroeconomics/index.md
+      - 中级宏观经济学课程导论: business/12-intermediate-macroeconomics/00-intro.md
+      - 代表性行为人模型: business/12-intermediate-macroeconomics/01-representative-agent-model.md
+      - 两期动态模型与欧拉方程: business/12-intermediate-macroeconomics/02-two-period-model-and-euler-equation.md
+      - 动态规划: business/12-intermediate-macroeconomics/03-dynamic-programming.md
+      - 无限期动态模型: business/12-intermediate-macroeconomics/04-infinite-horizon-dynamic-models.md
+      - 真实经济周期模型: business/12-intermediate-macroeconomics/05-real-business-cycle-model.md
+      - 代际交叠模型: business/12-intermediate-macroeconomics/06-overlapping-generations-model.md
+      - Diamond-Dybvig 银行模型: business/12-intermediate-macroeconomics/07-diamond-dybvig-bank-model.md
+      - 数学方法专题: business/12-intermediate-macroeconomics/08-mathematical-methods.md
+    - 随机过程:
+      - 随机过程: business/13-stochastic-processes/index.md
+      - 随机过程课程导论: business/13-stochastic-processes/00-intro.md
+      - Poisson 过程: business/13-stochastic-processes/01-poisson-process.md
+      - 马尔可夫链: business/13-stochastic-processes/02-markov-chains.md
+      - 分支过程: business/13-stochastic-processes/03-branching-processes.md
+      - 平稳过程与遍历性: business/13-stochastic-processes/04-stationary-processes-and-ergodicity.md
+      - 布朗运动: business/13-stochastic-processes/05-brownian-motion.md
+      - MCMC 与随机模拟: business/13-stochastic-processes/06-mcmc-and-stochastic-simulation.md
+    - 金融计量模型:
+      - 金融计量模型: business/14-financial-econometrics/index.md
+      - 金融计量模型课程导论: business/14-financial-econometrics/00-intro.md
+      - 平稳性与 ARMA 模型: business/14-financial-econometrics/01-stationarity-and-arma-models.md
+      - ARMA 模型识别、估计与检验: business/14-financial-econometrics/02-arma-identification-estimation-and-testing.md
+      - ARMA 模型预测: business/14-financial-econometrics/03-arma-forecasting.md
+      - 波动率建模：ARCH 与 GARCH: business/14-financial-econometrics/04-volatility-modeling-arch-and-garch.md
+      - 趋势、单位根与 ARIMA: business/14-financial-econometrics/05-trends-unit-roots-and-arima.md
+      - 向量自回归模型: business/14-financial-econometrics/06-vector-autoregression.md
+      - 协整与误差修正模型: business/14-financial-econometrics/07-cointegration-and-error-correction.md
+    - 量化投资:
+      - 量化投资: business/15-quantitative-investing/index.md
+      - 量化投资课程导论: business/15-quantitative-investing/00-intro.md
+      - 因子投资理论基础: business/15-quantitative-investing/01-factor-investing-foundations.md
+      - 多因子模型与因子收益度量: business/15-quantitative-investing/02-multi-factor-models-and-factor-returns.md
+      - 多因子选股实践: business/15-quantitative-investing/03-multi-factor-stock-selection.md
+      - 风险模型: business/15-quantitative-investing/04-risk-models.md
+      - 另类数据与事件驱动: business/15-quantitative-investing/05-alternative-data-and-event-driven.md
+      - 大模型在量化投资中的应用: business/15-quantitative-investing/06-llms-in-quantitative-investing.md
+    - 金融学论文写作:
+      - 金融学论文写作: business/16-finance-writing/index.md
+      - 金融学论文写作课程导论: business/16-finance-writing/00-intro.md
+      - 选题与文献综述: business/16-finance-writing/01-topic-selection-and-literature-review.md
+      - 找基本事实: business/16-finance-writing/02-finding-basic-facts.md
+      - 写理论机制: business/16-finance-writing/03-writing-theoretical-mechanisms.md
+      - 实证方法：面板数据与 Stata: business/16-finance-writing/04-empirical-methods-panel-data-and-stata.md
+      - 稳健性检验与内生性: business/16-finance-writing/05-robustness-checks-and-endogeneity.md
+      - 论文结构与格式规范: business/16-finance-writing/06-paper-structure-and-format.md
+      - 数字金融研究专题: business/16-finance-writing/07-digital-finance-research.md
+      - 宏观金融研究专题: business/16-finance-writing/08-macro-finance-research.md
+    - 固定收益证券分析和模型:
+      - 固定收益证券分析和模型: business/17-fixed-income/index.md
+      - 固定收益证券课程导论: business/17-fixed-income/00-intro.md
+      - 贴现因子、利率与期限结构: business/17-fixed-income/01-discount-factors-and-term-structure.md
+      - 利率风险管理：久期与免疫: business/17-fixed-income/02-duration-and-immunization.md
+      - 利率风险管理：凸性: business/17-fixed-income/03-convexity.md
+      - 远期与利率互换: business/17-fixed-income/04-forward-rates-and-interest-rate-swaps.md
+      - 利率期货与期权: business/17-fixed-income/05-interest-rate-futures-and-options.md
+      - 二叉树框架与风险中性定价: business/17-fixed-income/06-binomial-tree-and-risk-neutral-pricing.md
+      - 利率树模型：Ho-Lee 与 BDT: business/17-fixed-income/07-rate-tree-models-ho-lee-and-bdt.md
+      - 连续时间利率模型与中国市场: business/17-fixed-income/08-continuous-time-rate-models-and-china.md
+    - 金融工程学:
+      - 金融工程学: business/18-financial-engineering/index.md
+      - 金融工程学课程导论: business/18-financial-engineering/00-intro.md
+      - 衍生品基础与市场结构: business/18-financial-engineering/01-derivatives-basics-and-market-structure.md
+      - 远期与期货: business/18-financial-engineering/02-forwards-and-futures.md
+      - 互换: business/18-financial-engineering/03-swaps.md
+      - 期权的回报与价格分析: business/18-financial-engineering/04-option-payoffs-and-pricing.md
+      - 期权定价：布莱克-舒尔斯-默顿模型: business/18-financial-engineering/05-black-scholes-merton-model.md
+      - 期权定价数值方法: business/18-financial-engineering/06-option-pricing-numerical-methods.md
+      - 期权交易策略: business/18-financial-engineering/07-option-trading-strategies.md
+      - 奇异期权与结构性产品: business/18-financial-engineering/08-exotic-options-and-structured-products.md
+    - 前沿金融实务专题:
+      - 前沿金融实务专题: business/19-frontier-finance-practice/index.md
+      - 前沿金融实务专题课程导论: business/19-frontier-finance-practice/00-intro.md
+      - 公募基金行业的改革与发展: business/19-frontier-finance-practice/01-mutual-fund-industry-reform.md
+      - 券商业务全景: business/19-frontier-finance-practice/02-securities-firm-business-overview.md
+      - 交易所与交易机制: business/19-frontier-finance-practice/03-exchanges-and-trading-mechanisms.md
+      - 一级市场股权投资: business/19-frontier-finance-practice/04-primary-market-equity-investing.md
+      - 投资银行业务流程: business/19-frontier-finance-practice/05-investment-banking-process.md
+      - 北京证券交易所业务: business/19-frontier-finance-practice/06-beijing-stock-exchange.md
+      - 大宗商品期货实务: business/19-frontier-finance-practice/07-commodity-futures-practice.md
+      - 公募基金投资方法: business/19-frontier-finance-practice/08-mutual-fund-investing.md
+      - 投资入门与职业发展: business/19-frontier-finance-practice/09-investment-career-guide.md
 
 # Theme
 theme:
@@ -901,7 +900,7 @@ extra_javascript:
   - '_static/js/mathjax.js?v=2'
   - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
   - '_static/js/header-line.js?v=1'
-  - '_static/js/site-switcher.js'
+  - '_static/js/site-switcher.js?v=2'
   - '_static/js/reading-style.js'
   - '_static/js/umami.js?v=1'
   - '_static/js/mermaid-zoom.js?v=6'

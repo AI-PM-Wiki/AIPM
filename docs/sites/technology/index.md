@@ -1,8 +1,8 @@
 ---
-title: 科技
-description: 科技内容
+title: 技术
+description: 技术内容
 ---
 
 ## 筹备中
 
-科技内容将在这里持续更新。
+技术内容将在这里持续更新。
