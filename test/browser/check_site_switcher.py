@@ -11,6 +11,8 @@ MAIN_TABS = [
     "简介", "产品方法论", "工程与架构", "AI 基础",
     "AI 产品实战", "工具与平台", "学习资源", "求职专题",
 ]
+PRODUCT_TABS = ["产品经理"]
+TECH_TABS = ["给产品经理讲技术"]
 KNOWLEDGE_TABS = ["工商管理", "金融"]
 VERTICAL_TABS = ["网络安全", "金融", "法律", "教育", "地球科学", "医疗健康", "企业服务"]
 
@@ -65,13 +67,16 @@ class SiteSwitcherCase(unittest.TestCase):
                                product_name["y"] + product_name["height"] / 2, delta=1)
         self.assertEqual(product.locator(".aipm-site-switcher__icon").evaluate("node => getComputedStyle(node).fill"),
                          product.evaluate("node => getComputedStyle(node).color"))
-        for name, path in (("技术", "/sites/technology/"), ("运营", "/sites/operations/"),
+        for name, path in (("运营", "/sites/operations/"),
                            ("垂直领域", "/vertical/cybersecurity/")):
             placeholder = self.menu.get_by_role("link", name=f"{name} 筹备中", exact=True)
             self.assertEqual(placeholder.get_attribute("href"), self.site.base + path)
+        technology = self.menu.get_by_role("link", name="技术", exact=True)
+        self.assertEqual(technology.get_attribute("href"), self.site.base + "/product-manager-tech/")
+        self.assertEqual(technology.locator(".aipm-site-switcher__status").count(), 0)
         knowledge = self.menu.get_by_role("link", name="专业知识", exact=True)
         self.assertEqual(knowledge.get_attribute("href"), self.site.base + "/management/")
-        self.assertEqual(self.menu.locator(".aipm-site-switcher__status").count(), 3)
+        self.assertEqual(self.menu.locator(".aipm-site-switcher__status").count(), 2)
         bounds = self.menu.bounding_box()
         trigger = self.trigger.bounding_box()
         self.assertAlmostEqual(bounds["x"], trigger["x"], delta=1)
@@ -128,7 +133,7 @@ class SiteSwitcherCase(unittest.TestCase):
         for name, path, heading, destination in (
             ("主站", "/", "关于本项目", "/intro/htc/"),
             ("产品", "/product-manager/", "章节", "/product-manager/02/"),
-            ("技术", "/sites/technology/", "筹备中", "/sites/technology/"),
+            ("技术", "/product-manager-tech/", "章节", "/product-manager-tech/01/"),
             ("运营", "/sites/operations/", "筹备中", "/sites/operations/"),
             ("专业知识", "/management/", "课程列表", "/management/"),
             ("垂直领域", "/vertical/cybersecurity/", "产品约束", "/vertical/cybersecurity/"),
@@ -156,7 +161,7 @@ class SiteSwitcherCase(unittest.TestCase):
     def test_tabs_follow_space_and_highlight_current_category(self):
         tabs = self.page.locator('[data-md-component="tabs"]')
         self.assertTrue(tabs.is_visible())
-        self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], ["产品经理"])
+        self.assertEqual([text.strip() for text in tabs.locator("a").all_text_contents()], PRODUCT_TABS)
         self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "产品经理")
         self.trigger.click()
         self.menu.get_by_role("link", name="主站", exact=True).click()
@@ -173,7 +178,7 @@ class SiteSwitcherCase(unittest.TestCase):
         self.assertEqual(sidebar.locator('a[href*="/product-manager/"]').count(), 0)
         self.page.reload(wait_until="domcontentloaded")
         self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "产品方法论")
-        for name, titles in (("产品", ["产品经理"]), ("技术", ["技术"]), ("运营", ["运营"]),
+        for name, titles in (("产品", PRODUCT_TABS), ("技术", TECH_TABS), ("运营", ["运营"]),
                              ("专业知识", KNOWLEDGE_TABS)):
             self.trigger.click()
             self.menu.get_by_role("link", name=name, exact=False).click()

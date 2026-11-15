@@ -35,7 +35,10 @@ class BookNavigationCase(unittest.TestCase):
         for name in ("introduction", "preface", "contents", "copyright", "reader-services", "reviews", "back-cover"):
             self.assertFalse((ROOT / "docs/product-manager" / f"{name}.md").exists())
             self.assertFalse((ROOT / "site/product-manager" / name).exists())
-        referenced_images = set()
+        referenced_images = {
+            "product-manager": set(),
+            "product-manager-tech": set(),
+        }
         for source in (ROOT / "site").rglob("*.html"):
             document = BeautifulSoup(source.read_text(), "html.parser")
             body = document.select_one(".book-original")
@@ -43,10 +46,12 @@ class BookNavigationCase(unittest.TestCase):
                 continue
             self.assertIsNone(document.select_one(".page-copyright"))
             self.assertIsNone(document.select_one(".md-copyright__highlight"))
+            book = source.relative_to(ROOT / "site").parts[0]
+            self.assertIn(book, referenced_images, source)
             for image in body.select("img[src]"):
                 destination = source.parent.joinpath(unquote(urlsplit(image["src"]).path)).resolve()
                 self.assertTrue(destination.is_file(), (source, image["src"]))
-                referenced_images.add(destination.name)
+                referenced_images[book].add(destination.name)
             for link in body.select("a[href]"):
                 target = urlsplit(link["href"])
                 if target.scheme or target.netloc:
@@ -58,7 +63,9 @@ class BookNavigationCase(unittest.TestCase):
                 if target.fragment:
                     target_document = BeautifulSoup(destination.read_text(), "html.parser")
                     self.assertIsNotNone(target_document.find(id=unquote(target.fragment)), (source, link["href"]))
-        self.assertEqual(referenced_images, {path.name for path in (ROOT / "docs/product-manager/images").iterdir() if path.is_file()})
+        for book, names in referenced_images.items():
+            images = {path.name for path in (ROOT / "docs" / book / "images").iterdir() if path.is_file()}
+            self.assertEqual(names, images, book)
         for number, title in enumerate(CHAPTERS):
             document = BeautifulSoup((ROOT / f"site/product-manager/{number:02}/index.html").read_text(), "html.parser")
             self.assertEqual([node.get_text(strip=True) for node in document.select(".md-content__inner > h1")], [title])
@@ -120,3 +127,22 @@ class BookNavigationCase(unittest.TestCase):
                 page.locator(".book-original img").wait_for()
                 self.assertFalse(page.locator("#__drawer").is_checked())
                 self.assertEqual(page.evaluate("document.documentElement.scrollWidth"), width)
+
+    def test_technology_book_belongs_to_technology_space(self):
+        context = self.browser.new_context(viewport={"width": 1280, "height": 900})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        page.goto(self.site.base + "/product-manager-tech/", wait_until="domcontentloaded")
+        page.wait_for_function(
+            "document.querySelector('.aipm-site-switcher__trigger')?.getAttribute('aria-label') === '切换站点，当前为技术'"
+        )
+        self.assertEqual(
+            page.locator(".aipm-site-switcher__current").inner_text(),
+            "技术",
+        )
+        tabs = page.locator('[data-md-component="tabs"]')
+        self.assertEqual(
+            [text.strip() for text in tabs.locator("a").all_text_contents()],
+            ["给产品经理讲技术"],
+        )
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "给产品经理讲技术")
