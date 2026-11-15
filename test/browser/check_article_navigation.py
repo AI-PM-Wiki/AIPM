@@ -133,7 +133,7 @@ class ArticleNavigationCase(unittest.TestCase):
                 self.assertFalse(navigation.is_visible())
 
     def test_single_link_fills_the_navigation_row(self):
-        for path, direction in (("/product-manager/", "next"), ("/product-manager/12/04/", "prev")):
+        for path, direction in (("/product-manager/", "next"), ("/product-manager-tech/09/08/", "prev")):
             for width, scheme in ((1440, "light"), (1440, "dark"), (390, "light"), (320, "dark")):
                 with self.subTest(path=path, width=width, scheme=scheme):
                     page = self.open_page(path, width, scheme)
