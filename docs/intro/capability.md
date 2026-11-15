@@ -205,7 +205,7 @@ flowchart TD
 
     具体 JD 的关键词、面试准备和作品建议见求职专题：[产品经理岗位类别](../job/product-manager-types/index.md)、[产品经理协作团队与岗位](../job/positions/index.md)、[AI 产品经理岗位解读](../job/positions/ai-pm.md)。
 
-    行业与交付型岗位需要的领域规则、工作流和监管约束见[垂直领域](../vertical/index.md)。
+    行业与交付型岗位需要的领域规则、工作流和监管约束见[垂直领域](../vertical/cybersecurity/index.md)。
 
 ## 五、识别“伪 AI 产品经理岗”
 

@@ -1,4 +1,5 @@
 docs/_static/* linguist-vendored
+docs/_static/js/vendor/** -whitespace
 *.sh linguist-vendored
 *.js linguist-vendored
 *.json linguist-vendored

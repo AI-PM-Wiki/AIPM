@@ -1,6 +1,10 @@
 // MathJax v3 + pymdownx.arithmatex。配置必须在 tex-chtml.js 之前执行。
 // instant 导航重排按 mkdocs-material 官方配方：先清缓存再 typeset。
+// document$ 在首次加载时同样发出一次，所以启动阶段不排版，每页只由 typesetMathJax 排版一次。
 window.MathJax = {
+  startup: {
+    typeset: false
+  },
   tex: {
     inlineMath: [["\\(", "\\)"]],
     displayMath: [["\\[", "\\]"]],

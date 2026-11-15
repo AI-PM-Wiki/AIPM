@@ -4,11 +4,21 @@
   const title = document.querySelector('[data-md-component="header-title"]');
   const name = title.querySelector(".md-header__topic:first-child .md-ellipsis");
   const home = document.querySelector('[data-md-component="logo"]').href;
+  const icons = {
+    "home-outline": "m12 5.69 5 4.5V18h-2v-6H9v6H7v-7.81zM12 3 2 12h3v8h6v-6h2v6h6v-8h3",
+    "cube-outline": "M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.12-.36.18-.57.18s-.41-.06-.57-.18l-7.9-4.44A.99.99 0 0 1 3 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.16-.12.36-.18.57-.18s.41.06.57.18l7.9 4.44c.32.17.53.5.53.88zM12 4.15 6.04 7.5 12 10.85l5.96-3.35zM5 15.91l6 3.38v-6.71L5 9.21zm14 0v-6.7l-6 3.37v6.71z",
+    "code-tags": "m14.6 16.6 4.6-4.6-4.6-4.6L16 6l6 6-6 6zm-5.2 0L4.8 12l4.6-4.6L8 6l-6 6 6 6z",
+    "briefcase-outline": "M20 6c.58 0 1.05.2 1.42.59.38.41.58.86.58 1.41v11c0 .55-.2 1-.58 1.41-.37.39-.84.59-1.42.59H4c-.58 0-1.05-.2-1.42-.59C2.2 20 2 19.55 2 19V8c0-.55.2-1 .58-1.41C2.95 6.2 3.42 6 4 6h4V4c0-.58.2-1.05.58-1.42C8.95 2.2 9.42 2 10 2h4c.58 0 1.05.2 1.42.58.38.37.58.84.58 1.42v2zM4 8v11h16V8zm10-2V4h-4v2z",
+    domain: "M18 15h-2v2h2m0-6h-2v2h2m2 6h-8v-2h2v-2h-2v-2h2v-2h-2V9h8M10 7H8V5h2m0 6H8V9h2m0 6H8v-2h2m0 6H8v-2h2M6 7H4V5h2m0 6H4V9h2m0 6H4v-2h2m0 6H4v-2h2m6-10V3H2v18h20V7z",
+    "school-outline": "M12 3 1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9zm6.82 6L12 12.72 5.18 9 12 5.28zM17 16l-5 2.72L7 16v-3.73L12 15l5-2.73z",
+  };
   const sites = [
-    { name: "主站", path: "", sections: [] },
-    { name: "产品", path: "product-manager/", sections: ["product-manager/"] },
-    { name: "技术", path: "sites/technology/", sections: ["sites/technology/"], placeholder: true },
-    { name: "商业", path: "management/", sections: ["management/", "business/"] },
+    { name: "主站", path: "", sections: [], icon: "home-outline" },
+    { name: "产品", path: "product-manager/", sections: ["product-manager/"], icon: "cube-outline" },
+    { name: "技术", path: "sites/technology/", sections: ["sites/technology/"], icon: "code-tags", placeholder: true },
+    { name: "运营", path: "sites/operations/", sections: ["sites/operations/"], icon: "briefcase-outline", placeholder: true },
+    { name: "专业知识", path: "management/", sections: ["management/", "business/"], icon: "school-outline" },
+    { name: "垂直领域", path: "vertical/cybersecurity/", sections: ["vertical/"], icon: "domain", placeholder: true },
   ];
   const trigger = document.createElement("button");
   trigger.type = "button";
@@ -28,7 +38,7 @@
   menu.setAttribute("aria-label", "站点列表");
   menu.innerHTML = `
     <ul>
-      ${sites.map((site) => `<li><a href="${new URL(site.path, home).href}"><span>${site.name}</span><span class="aipm-site-switcher__indicator">${site.placeholder ? '<span class="aipm-site-switcher__status">筹备中</span>' : ""}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span></a></li>`).join("")}
+      ${sites.map((site) => `<li><a href="${new URL(site.path, home).href}"><svg class="aipm-site-switcher__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[site.icon]}"/></svg><span class="aipm-site-switcher__name">${site.name}</span>${site.placeholder ? '<span class="aipm-site-switcher__status">筹备中</span>' : ""}</a></li>`).join("")}
     </ul>`;
   document.body.append(menu);
 
