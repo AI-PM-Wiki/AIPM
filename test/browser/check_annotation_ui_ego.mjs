@@ -76,6 +76,11 @@ export async function checkAnnotationUi(configPath, phase) {
 
   await page.goto(config.site + '/ai/rag/');
   await ready();
+  /* 每个阶段都从桌面宽度开始。CDP 的设备尺寸覆盖不跨 ego 会话保留:上一阶段
+     收尾设的 1280 在这一阶段拿不到,页面沿用浏览器窗口的实际宽度。窗口窄时
+     批注面板切成抽屉,桌面步骤(如「新建」按钮)会被挤出视口,点击超时。 */
+  await page.cdp('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+  await page.waitForFunction(() => innerWidth === 1280);
   console.log(await page.snapshot());
 
   if (phase === 'empty') {

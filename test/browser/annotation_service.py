@@ -58,11 +58,32 @@ class RealAnnotationApi:
 
     def start_service(self, login: str = "browser-check") -> None:
         self.log = (self.data / "service.log").open("a", encoding="utf-8")
-        env = dict(os.environ, HOST="127.0.0.1", PORT=str(self.service_port),
-                   DATA_DIR=str(self.data), DEV_AUTH_BYPASS="true", DEV_AUTH_LOGIN=login,
-                   SITE_BASE=self.site.base, ALLOWED_ORIGINS=self.site.base, RETURN_ORIGINS=self.site.base,
-                   SEARCH_INDEX_URL=self.site.base + "/search/search_index.json",
-                   TMPDIR=str(self.work), HIGHLIGHT_JUDGE_PRIMARY="llm", HIGHLIGHT_JUDGE_FALLBACK="none")
+        # 这份环境由用例完全决定,不从启动它的 shell 继承任何变量:继承会把开发机上的
+        # ANTHROPIC_API_KEY 这类凭据带进服务,让判分 provider 由「未配置」变成「可用」,
+        # 真实调用失败后返回 503 highlight_unavailable,前端据此冷却 30 秒,页面上连续
+        # 的自动判分请求就会被压掉。PATH 与 HOME 留给 Node 解析命令与缓存。
+        env = {
+            "PATH": os.environ.get("PATH", ""),
+            "HOME": os.environ.get("HOME", ""),
+            "HOST": "127.0.0.1",
+            "PORT": str(self.service_port),
+            "DATA_DIR": str(self.data),
+            "DEV_AUTH_BYPASS": "true",
+            "DEV_AUTH_LOGIN": login,
+            "SITE_BASE": self.site.base,
+            "ALLOWED_ORIGINS": self.site.base,
+            "RETURN_ORIGINS": self.site.base,
+            "SEARCH_INDEX_URL": self.site.base + "/search/search_index.json",
+            "TMPDIR": str(self.work),
+            # 判分 provider 显式留空:这一层要的是「未配置」那条通路,前端对它不设冷却。
+            # 空串也挡住 annotation-server/.env 里的同名变量(Node 的 loadEnvFile 不覆盖
+            # 已存在的环境变量)。
+            "HIGHLIGHT_JUDGE_PRIMARY": "llm",
+            "HIGHLIGHT_JUDGE_FALLBACK": "none",
+            "TYPESAFE_API_KEY": "",
+            "ANTHROPIC_API_KEY": "",
+            "ANTHROPIC_BASE_URL": "",
+        }
         self.service = subprocess.Popen(["node", "--import", "tsx", "src/server.ts"],
                                         cwd=self.root / "annotation-server", env=env,
                                         stdout=self.log, stderr=subprocess.STDOUT)
