@@ -176,6 +176,19 @@ class TestMinifyStaticAssets(unittest.TestCase):
         _minify_static_assets({"site_dir": str(self.site)})
         self.assertEqual(self.other.read_text(encoding="utf-8"), "<html><!-- keep --></html>")
 
+    def test_publishes_vendor_files_as_is(self):
+        vendor = self.site / "_static" / "js" / "vendor" / "lib-1.0.0" / "sub"
+        vendor.mkdir(parents=True)
+        source = "/*! License */\nvar a = 1;\nfor(;a-- >0;);\n"
+        nested = vendor / "x.js"
+        nested.write_text(source, encoding="utf-8")
+        flat = vendor.parents[1] / "y.js"
+        flat.write_text(source, encoding="utf-8")
+        _minify_static_assets({"site_dir": str(self.site)})
+        self.assertEqual(nested.read_text(encoding="utf-8"), source)
+        self.assertEqual(flat.read_text(encoding="utf-8"), source)
+        self.assertNotIn("注释", self.js.read_text(encoding="utf-8"))
+
     def test_missing_site_dir_is_not_fatal(self):
         _minify_static_assets({"site_dir": str(self.tmp / "nope")})
 
@@ -245,8 +258,9 @@ class TestCompressionIsReal(unittest.TestCase):
             self.skipTest("rcssmin/rjsmin 未安装")
 
         total_before = total_after = 0
+        vendor = ROOT / "docs" / "_static" / "js" / "vendor"
         for path in sorted((ROOT / "docs" / "_static").rglob("*")):
-            if path.suffix not in (".css", ".js"):
+            if path.suffix not in (".css", ".js") or vendor in path.parents:
                 continue
             source = path.read_text(encoding="utf-8")
             minified = cssmin(source) if path.suffix == ".css" else jsmin(source)

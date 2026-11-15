@@ -1016,9 +1016,9 @@ class ServiceWorkerReadLimitTest(ChartFlowCase):
         字节不同,于是装上来、接管本页。
 
         这几处 reload 等的是**文档与页面自己的入口**(`window.__aipmChat` 那一对),
-        不等 `load`:主题的 MathJax 由 jsdelivr 提供,`load` 事件因此挂在一条与本案
-        无关的外部请求上,它慢一下这条用例就跟着慢。页面自己那几份资源没到齐的话,
-        下面等入口的那一句照样会报出来。"""
+        不等 `load`:旧构建的 MathJax 由 jsdelivr 提供,两份构建也都加载字体等外部
+        资源,`load` 事件因此挂在与本案无关的外部请求上,它慢一下这条用例就跟着慢。
+        页面自己那几份资源没到齐的话,下面等入口的那一句照样会报出来。"""
         old_dir = build_site(WORK / "site-flow-old", ref=OLD_REF)
         self.addCleanup(self.site.serve, self.stack.site_dir)
         self.site.serve(old_dir)

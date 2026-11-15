@@ -125,8 +125,9 @@ class CacheUpgradeTest(unittest.TestCase):
             page.wait_for_function("() => navigator.serviceWorker.controller !== null")
             # 首次加载时页面还没被 SW 接管,它请求的那些资源不过 SW;再加载一次,
             # 这一遍才走 SW 的 cache-first,旧脚本这才真正进了缓存。
-            # 这几处 reload 等的是文档与页面自己的入口,不等 `load`:主题的 MathJax
-            # 由 jsdelivr 提供,`load` 事件因此挂在一条与本案无关的外部请求上。
+            # 这几处 reload 等的是文档与页面自己的入口,不等 `load`:旧构建的 MathJax
+            # 由 jsdelivr 提供,两份构建也都加载字体等外部资源,`load` 事件因此挂在
+            # 与本案无关的外部请求上。
             page.reload(wait_until="domcontentloaded")
             stale = self.cached(page, f"chat-widget.js?v={old_version}")
             self.assertIsNotNone(stale, "旧脚本没有进缓存 —— 这条用例的前提不成立")

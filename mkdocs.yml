@@ -899,7 +899,7 @@ extra:
 
 extra_javascript:
   - '_static/js/mathjax.js?v=2'
-  - 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'
+  - '_static/js/vendor/mathjax-3.2.2/tex-chtml.js'
   - '_static/js/header-line.js?v=1'
   - '_static/js/site-switcher.js?v=2'
   - '_static/js/reading-style.js'
