@@ -15,7 +15,7 @@
   const sites = [
     { name: "主站", path: "", sections: [], icon: "home-outline" },
     { name: "产品", path: "product-manager/", sections: ["product-manager/"], icon: "cube-outline" },
-    { name: "技术", path: "sites/technology/", sections: ["sites/technology/", "product-manager-tech/"], icon: "code-tags", placeholder: true },
+    { name: "技术", path: "product-manager-tech/", sections: ["product-manager-tech/"], icon: "code-tags" },
     { name: "运营", path: "sites/operations/", sections: ["sites/operations/"], icon: "briefcase-outline", placeholder: true },
     { name: "专业知识", path: "management/", sections: ["management/", "business/"], icon: "school-outline" },
     { name: "垂直领域", path: "vertical/cybersecurity/", sections: ["vertical/"], icon: "domain", placeholder: true },

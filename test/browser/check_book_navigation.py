@@ -143,6 +143,6 @@ class BookNavigationCase(unittest.TestCase):
         tabs = page.locator('[data-md-component="tabs"]')
         self.assertEqual(
             [text.strip() for text in tabs.locator("a").all_text_contents()],
-            ["技术", "给产品经理讲技术"],
+            ["给产品经理讲技术"],
         )
         self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "给产品经理讲技术")
