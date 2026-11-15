@@ -12,7 +12,7 @@ MAIN_TABS = [
     "AI 产品实战", "工具与平台", "学习资源", "求职专题",
 ]
 PRODUCT_TABS = ["产品经理"]
-TECH_TABS = ["技术", "给产品经理讲技术"]
+TECH_TABS = ["给产品经理讲技术"]
 KNOWLEDGE_TABS = ["工商管理", "金融"]
 VERTICAL_TABS = ["网络安全", "金融", "法律", "教育", "地球科学", "医疗健康", "企业服务"]
 
@@ -67,13 +67,16 @@ class SiteSwitcherCase(unittest.TestCase):
                                product_name["y"] + product_name["height"] / 2, delta=1)
         self.assertEqual(product.locator(".aipm-site-switcher__icon").evaluate("node => getComputedStyle(node).fill"),
                          product.evaluate("node => getComputedStyle(node).color"))
-        for name, path in (("技术", "/sites/technology/"), ("运营", "/sites/operations/"),
+        for name, path in (("运营", "/sites/operations/"),
                            ("垂直领域", "/vertical/cybersecurity/")):
             placeholder = self.menu.get_by_role("link", name=f"{name} 筹备中", exact=True)
             self.assertEqual(placeholder.get_attribute("href"), self.site.base + path)
+        technology = self.menu.get_by_role("link", name="技术", exact=True)
+        self.assertEqual(technology.get_attribute("href"), self.site.base + "/product-manager-tech/")
+        self.assertEqual(technology.locator(".aipm-site-switcher__status").count(), 0)
         knowledge = self.menu.get_by_role("link", name="专业知识", exact=True)
         self.assertEqual(knowledge.get_attribute("href"), self.site.base + "/management/")
-        self.assertEqual(self.menu.locator(".aipm-site-switcher__status").count(), 3)
+        self.assertEqual(self.menu.locator(".aipm-site-switcher__status").count(), 2)
         bounds = self.menu.bounding_box()
         trigger = self.trigger.bounding_box()
         self.assertAlmostEqual(bounds["x"], trigger["x"], delta=1)
@@ -130,7 +133,7 @@ class SiteSwitcherCase(unittest.TestCase):
         for name, path, heading, destination in (
             ("主站", "/", "关于本项目", "/intro/htc/"),
             ("产品", "/product-manager/", "章节", "/product-manager/02/"),
-            ("技术", "/sites/technology/", "筹备中", "/sites/technology/"),
+            ("技术", "/product-manager-tech/", "章节", "/product-manager-tech/01/"),
             ("运营", "/sites/operations/", "筹备中", "/sites/operations/"),
             ("专业知识", "/management/", "课程列表", "/management/"),
             ("垂直领域", "/vertical/cybersecurity/", "产品约束", "/vertical/cybersecurity/"),
