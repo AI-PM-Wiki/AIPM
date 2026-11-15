@@ -401,6 +401,8 @@ nav:
       - 12.2 重新定义“读书会”: product-manager/12/02/index.md
       - 12.3 七印部落翻译的书: product-manager/12/03/index.md
       - 12.4 其他资源: product-manager/12/04/index.md
+- 技术:
+  - 技术: sites/technology/index.md
   - 给产品经理讲技术:
     - 给产品经理讲技术: product-manager-tech/index.md
     - 0 内容简介与前言:
@@ -570,8 +572,6 @@ nav:
       - 9.6 你只是在为自己工作: product-manager-tech/09/06/index.md
       - 9.7 为什么产品经理经常焦虑: product-manager-tech/09/07/index.md
       - 9.8 精益创业的作用: product-manager-tech/09/08/index.md
-- 技术:
-  - 技术: sites/technology/index.md
 - 运营:
   - 运营: sites/operations/index.md
 - 专业知识:

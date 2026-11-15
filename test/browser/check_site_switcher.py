@@ -11,7 +11,8 @@ MAIN_TABS = [
     "简介", "产品方法论", "工程与架构", "AI 基础",
     "AI 产品实战", "工具与平台", "学习资源", "求职专题",
 ]
-PRODUCT_TABS = ["产品经理", "给产品经理讲技术"]
+PRODUCT_TABS = ["产品经理"]
+TECH_TABS = ["技术", "给产品经理讲技术"]
 KNOWLEDGE_TABS = ["工商管理", "金融"]
 VERTICAL_TABS = ["网络安全", "金融", "法律", "教育", "地球科学", "医疗健康", "企业服务"]
 
@@ -174,7 +175,7 @@ class SiteSwitcherCase(unittest.TestCase):
         self.assertEqual(sidebar.locator('a[href*="/product-manager/"]').count(), 0)
         self.page.reload(wait_until="domcontentloaded")
         self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "产品方法论")
-        for name, titles in (("产品", PRODUCT_TABS), ("技术", ["技术"]), ("运营", ["运营"]),
+        for name, titles in (("产品", PRODUCT_TABS), ("技术", TECH_TABS), ("运营", ["运营"]),
                              ("专业知识", KNOWLEDGE_TABS)):
             self.trigger.click()
             self.menu.get_by_role("link", name=name, exact=False).click()
