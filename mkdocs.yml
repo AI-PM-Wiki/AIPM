@@ -401,6 +401,175 @@ nav:
       - 12.2 重新定义“读书会”: product-manager/12/02/index.md
       - 12.3 七印部落翻译的书: product-manager/12/03/index.md
       - 12.4 其他资源: product-manager/12/04/index.md
+  - 给产品经理讲技术:
+    - 给产品经理讲技术: product-manager-tech/index.md
+    - 0 内容简介与前言:
+      - 0 内容简介与前言: product-manager-tech/00/index.md
+    - 1 Web 前端技术:
+      - 1 Web 前端技术: product-manager-tech/01/index.md
+      - 1.1 AJAX 技术的妙用: product-manager-tech/01/01/index.md
+      - 1.2 DOM 是什么: product-manager-tech/01/02/index.md
+      - 1.3 静态网页与动态网页: product-manager-tech/01/03/index.md
+      - 1.4 分析 URL 的结构: product-manager-tech/01/04/index.md
+      - 1.5 网页基础知识：表单: product-manager-tech/01/05/index.md
+      - 1.6 H5 应用程序缓存简介: product-manager-tech/01/06/index.md
+      - 1.7 Chrome 里的冷知识: product-manager-tech/01/07/index.md
+      - 1.8 JS DDoS 攻击的原理与防御: product-manager-tech/01/08/index.md
+      - 1.9 UA 的故事: product-manager-tech/01/09/index.md
+      - 1.10 URL 编码: product-manager-tech/01/10/index.md
+      - 1.11 简单理解 HTML、CSS 和 JavaScript: product-manager-tech/01/11/index.md
+      - 1.12 跨域与同源: product-manager-tech/01/12/index.md
+      - 1.13 Cookie 和广告联盟: product-manager-tech/01/13/index.md
+      - 1.14 HTTP Header 是什么: product-manager-tech/01/14/index.md
+      - 1.15 简单理解 HTTP 的 GET 和 POST: product-manager-tech/01/15/index.md
+      - 1.16 WebSocket 是什么: product-manager-tech/01/16/index.md
+      - 1.17 “直出”是什么: product-manager-tech/01/17/index.md
+      - 1.18 互联网的黄金矿工：爬虫: product-manager-tech/01/18/index.md
+      - 1.19 简单理解单页 Web 应用: product-manager-tech/01/19/index.md
+      - 1.20 锚点与网页内跳转的实现: product-manager-tech/01/20/index.md
+      - 1.21 前端如何适配手机屏幕: product-manager-tech/01/21/index.md
+      - 1.22 简单理解“盗链”与“反盗链”: product-manager-tech/01/22/index.md
+      - 1.23 广告过滤机制科普: product-manager-tech/01/23/index.md
+    - 2 客户端技术:
+      - 2 客户端技术: product-manager-tech/02/index.md
+      - 2.1 “骗人”的动画: product-manager-tech/02/01/index.md
+      - 2.2 细说 Android 应用的“续命大法”: product-manager-tech/02/02/index.md
+      - 2.3 Hybrid APP: product-manager-tech/02/03/index.md
+      - 2.4 手机传感器知多少: product-manager-tech/02/04/index.md
+      - 2.5 定位终端设备位置的方法有哪些: product-manager-tech/02/05/index.md
+      - 2.6 客户端推送实现方式: product-manager-tech/02/06/index.md
+      - 2.7 为什么美颜 APP 可以美颜: product-manager-tech/02/07/index.md
+      - 2.8 听歌识曲的基本原理: product-manager-tech/02/08/index.md
+      - 2.9 朋友圈中的图片缓存系统: product-manager-tech/02/09/index.md
+      - 2.10 应用的生命周期: product-manager-tech/02/10/index.md
+    - 3 开发技术:
+      - 3 开发技术: product-manager-tech/03/index.md
+      - 3.1 “空指针”是什么: product-manager-tech/03/01/index.md
+      - 3.2 程序中的“越界”是什么: product-manager-tech/03/02/index.md
+      - 3.3 编程五分钟，命名两小时: product-manager-tech/03/03/index.md
+      - 3.4 开发动画需要多少工作量: product-manager-tech/03/04/index.md
+      - 3.5 耦合与解耦: product-manager-tech/03/05/index.md
+      - 3.6 栈与队列: product-manager-tech/03/06/index.md
+      - 3.7 为什么有些 Bug 不能改: product-manager-tech/03/07/index.md
+      - 3.8 加载等待的艺术: product-manager-tech/03/08/index.md
+      - 3.9 并行计算: product-manager-tech/03/09/index.md
+      - 3.10 简单了解进程间通信: product-manager-tech/03/10/index.md
+      - 3.11 “编不过”是怎么回事: product-manager-tech/03/11/index.md
+      - 3.12 程序“挂了”是怎么回事: product-manager-tech/03/12/index.md
+      - 3.13 简单说说操作系统: product-manager-tech/03/13/index.md
+      - 3.14 什么是代码混淆: product-manager-tech/03/14/index.md
+      - 3.15 程序员遇到 Bug 时会做些什么: product-manager-tech/03/15/index.md
+      - 3.16 应用“续命”大法之异常捕获: product-manager-tech/03/16/index.md
+      - 3.17 搜索引擎的基石：倒排索引: product-manager-tech/03/17/index.md
+      - 3.18 简单理解面向对象: product-manager-tech/03/18/index.md
+      - 3.19 简单理解重构: product-manager-tech/03/19/index.md
+      - 3.20 流水线技术: product-manager-tech/03/20/index.md
+      - 3.21 多线程是什么: product-manager-tech/03/21/index.md
+      - 3.22 复用的艺术：线程池: product-manager-tech/03/22/index.md
+    - 4 网络技术:
+      - 4 网络技术: product-manager-tech/04/index.md
+      - 4.1 网络基础之协议栈: product-manager-tech/04/01/index.md
+      - 4.2 互联网是如何提供服务的: product-manager-tech/04/02/index.md
+      - 4.3 IP 地址枯竭的后悔药：网络地址转换: product-manager-tech/04/03/index.md
+      - 4.4 PING 和网关: product-manager-tech/04/04/index.md
+      - 4.5 端口二三话: product-manager-tech/04/05/index.md
+      - 4.6 TCP 与 UDP: product-manager-tech/04/06/index.md
+      - 4.7 TCP 凭什么说自己可靠: product-manager-tech/04/07/index.md
+      - 4.8 谈谈 UDP 的可靠性: product-manager-tech/04/08/index.md
+      - 4.9 什么是反向代理: product-manager-tech/04/09/index.md
+      - 4.10 CDN 是什么: product-manager-tech/04/10/index.md
+      - 4.11 断点续传奥义: product-manager-tech/04/11/index.md
+      - 4.12 推送服务的核心：长连接: product-manager-tech/04/12/index.md
+      - 4.13 HTTPS 技术简介: product-manager-tech/04/13/index.md
+      - 4.14 讲讲代理服务器: product-manager-tech/04/14/index.md
+      - 4.15 聊聊 Wi-Fi 技术: product-manager-tech/04/15/index.md
+      - 4.16 就近接入：怎样让用户找到最近的机房: product-manager-tech/04/16/index.md
+      - 4.17 Socket 简介: product-manager-tech/04/17/index.md
+      - 4.18 什么是 HTTP 302 跳转: product-manager-tech/04/18/index.md
+      - 4.19 神奇的 Hosts 文件: product-manager-tech/04/19/index.md
+      - 4.20 释放你的小水管：说说下载速度那些事儿: product-manager-tech/04/20/index.md
+      - 4.21 下载劫持简介: product-manager-tech/04/21/index.md
+      - 4.22 VPN 简介: product-manager-tech/04/22/index.md
+    - 5 网络安全与后端技术:
+      - 5 网络安全与后端技术: product-manager-tech/05/index.md
+      - 5.1 密码存储之开发指南: product-manager-tech/05/01/index.md
+      - 5.2 密码存储指南: product-manager-tech/05/02/index.md
+      - 5.3 Web 安全之 SQL 语句: product-manager-tech/05/03/index.md
+      - 5.4 Web 安全之 XSS: product-manager-tech/05/04/index.md
+      - 5.5 Web 安全之 CSRF: product-manager-tech/05/05/index.md
+      - 5.6 ARP 欺骗的原理: product-manager-tech/05/06/index.md
+      - 5.7 DDoS 的原理: product-manager-tech/05/07/index.md
+      - 5.8 Android 应用二次打包: product-manager-tech/05/08/index.md
+      - 5.9 那些年中过的病毒: product-manager-tech/05/09/index.md
+      - 5.10 家庭 Wi-Fi 防“蹭网”指南: product-manager-tech/05/10/index.md
+      - 5.11 后台服务之 RPC 框架: product-manager-tech/05/11/index.md
+      - 5.12 后台服务之 RESTful API: product-manager-tech/05/12/index.md
+      - 5.13 Session 是用来做什么的: product-manager-tech/05/13/index.md
+      - 5.14 后台服务之流量控制: product-manager-tech/05/14/index.md
+      - 5.15 后台服务如何生成唯一 ID: product-manager-tech/05/15/index.md
+    - 6 名词解释:
+      - 6 名词解释: product-manager-tech/06/index.md
+      - 6.1 抽象、封装、类、实例和对象: product-manager-tech/06/01/index.md
+      - 6.2 SDK、API 和架构: product-manager-tech/06/02/index.md
+      - 6.3 控件、组件和框架: product-manager-tech/06/03/index.md
+      - 6.4 二进制文件: product-manager-tech/06/04/index.md
+      - 6.5 脚本: product-manager-tech/06/05/index.md
+      - 6.6 内存泄漏: product-manager-tech/06/06/index.md
+      - 6.7 中间件: product-manager-tech/06/07/index.md
+      - 6.8 打底数据与云端控制: product-manager-tech/06/08/index.md
+      - 6.9 变量与函数: product-manager-tech/06/09/index.md
+      - 6.10 散列表: product-manager-tech/06/10/index.md
+      - 6.11 钩子: product-manager-tech/06/11/index.md
+      - 6.12 配置文件: product-manager-tech/06/12/index.md
+      - 6.13 算法复杂度: product-manager-tech/06/13/index.md
+      - 6.14 模板: product-manager-tech/06/14/index.md
+      - 6.15 RGB 通识: product-manager-tech/06/15/index.md
+      - 6.16 应用程序、进程和线程: product-manager-tech/06/16/index.md
+      - 6.17 视频文件与编解码标准: product-manager-tech/06/17/index.md
+      - 6.18 同步、异步和回调: product-manager-tech/06/18/index.md
+      - 6.19 时间戳、MD5 和 GUID: product-manager-tech/06/19/index.md
+      - 6.20 栈的含义: product-manager-tech/06/20/index.md
+      - 6.21 JSON: product-manager-tech/06/21/index.md
+      - 6.22 理解 OpenGL: product-manager-tech/06/22/index.md
+      - 6.23 引擎: product-manager-tech/06/23/index.md
+      - 6.24 开源许可证: product-manager-tech/06/24/index.md
+      - 6.25 渲染: product-manager-tech/06/25/index.md
+      - 6.26 WLAN、Wi-Fi 与 IEEE 802.11: product-manager-tech/06/26/index.md
+      - 6.27 位图与矢量图: product-manager-tech/06/27/index.md
+      - 6.28 接口: product-manager-tech/06/28/index.md
+      - 6.29 线程池、对象池和连接池: product-manager-tech/06/29/index.md
+      - 6.30 向前兼容和向后兼容: product-manager-tech/06/30/index.md
+      - 6.31 游戏引擎: product-manager-tech/06/31/index.md
+    - 7 大前端:
+      - 7 大前端: product-manager-tech/07/index.md
+      - 7.1 React：流行的前端技术: product-manager-tech/07/01/index.md
+      - 7.2 React Native：专治急性子的产品经理: product-manager-tech/07/02/index.md
+      - 7.3 一个 React Native 的应用是什么样的: product-manager-tech/07/03/index.md
+      - 7.4 什么样的业务适合用 React Native 来改造: product-manager-tech/07/04/index.md
+      - 7.5 终端开发新思路：Flutter: product-manager-tech/07/05/index.md
+      - 7.6 一窥微信小程序的技术思路: product-manager-tech/07/06/index.md
+      - 7.7 如何自己开发小程序: product-manager-tech/07/07/index.md
+    - 8 人工智能:
+      - 8 人工智能: product-manager-tech/08/index.md
+      - 8.1 如何通俗地理解机器学习: product-manager-tech/08/01/index.md
+      - 8.2 人工智能从业者：专家、工程师和调参程序员: product-manager-tech/08/02/index.md
+      - 8.3 TensorFlow：几行代码写一个神经网络的时代来了: product-manager-tech/08/03/index.md
+      - 8.4 人工智能里的套话该怎么理解: product-manager-tech/08/04/index.md
+      - 8.5 一个最简单的机器学习模型: product-manager-tech/08/05/index.md
+      - 8.6 什么是神经网络: product-manager-tech/08/06/index.md
+      - 8.7 神经网络的数据处理: product-manager-tech/08/07/index.md
+      - 8.8 为什么你的神经网络像个傻瓜: product-manager-tech/08/08/index.md
+      - 8.9 懂你的推荐算法：你应该懂的一些知识: product-manager-tech/08/09/index.md
+    - 9 沟通:
+      - 9 沟通: product-manager-tech/09/index.md
+      - 9.1 程序员的分工: product-manager-tech/09/01/index.md
+      - 9.2 如何正确地提需求: product-manager-tech/09/02/index.md
+      - 9.3 程序员想要的需求文档: product-manager-tech/09/03/index.md
+      - 9.4 为什么项目会延期: product-manager-tech/09/04/index.md
+      - 9.5 目标设定的两种方法: product-manager-tech/09/05/index.md
+      - 9.6 你只是在为自己工作: product-manager-tech/09/06/index.md
+      - 9.7 为什么产品经理经常焦虑: product-manager-tech/09/07/index.md
+      - 9.8 精益创业的作用: product-manager-tech/09/08/index.md
 - 技术:
   - 技术: sites/technology/index.md
 - 运营:
