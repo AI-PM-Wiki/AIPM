@@ -336,7 +336,7 @@ class SitemapPlugin:
 
 
 # ----------------------------------------------------------------------------
-# 3.2 llms.txt + 3.3 .md 镜像 + 3.5 JSON-LD + 3.6 MathJax 按页加载
+# 3.2 llms.txt + 3.3 .md 镜像 + 3.5 JSON-LD
 # ----------------------------------------------------------------------------
 def _generate_llms_txt(config):
     site_dir = config["site_dir"]
@@ -546,7 +546,8 @@ def _inject_jsonld(config):
 # 三步都在构建产物上就地生效,源码保持可读:
 #   1. _minify_static_assets —— site/_static/{css,js} 就地压缩(rcssmin/rjsmin,
 #      纯去注释与空白,不做标识符改名)。压缩器缺依赖/自检不过时保留原文件并告警,
-#      任何情况下都不会把「压坏了」的资源发上线。
+#      任何情况下都不会把「压坏了」的资源发上线。_static/js/vendor/ 的第三方文件
+#      按原样发布,不参与压缩。
 #   2. _optimize_pages —— 一次遍历每页 HTML,做两件事:
 #      a) 把 _static 引用的 ?v= 换成产物内容哈希。原方案靠人工 bump 版本号,
 #         漏 bump 就会让用户吃满一年的旧资源;内容哈希让击穿自动且必然。
@@ -627,17 +628,25 @@ def _js_syntax_ok(code):
 
 
 def _minify_static_assets(config):
-    """就地压缩 site/_static 下的 CSS/JS,失败则保留原文件。"""
+    """就地压缩 site/_static 下的 CSS/JS,失败则保留原文件。
+
+    _static/js/vendor/ 存放上游已压缩的第三方发布文件,按原样发布:再压缩一遍会删掉
+    其中 /*! ... */ 形式的许可证声明。
+    """
     static_dir = os.path.join(config["site_dir"], "_static")
     if not os.path.isdir(static_dir):
         return
+    vendor_dir = os.path.join(static_dir, "js", "vendor")
     minifiers = {
         ".css": _load_minifier("rcssmin", "cssmin"),
         ".js": _load_minifier("rjsmin", "jsmin"),
     }
     log = logging.getLogger("mkdocs")
     saved = 0
-    for dirpath, _dirnames, filenames in os.walk(static_dir):
+    for dirpath, dirnames, filenames in os.walk(static_dir):
+        if dirpath == vendor_dir:
+            dirnames.clear()
+            continue
         for name in filenames:
             ext = os.path.splitext(name)[1].lower()
             if ext not in STATIC_ASSET_EXTS:

@@ -15,7 +15,8 @@
     - `minify-html` 压缩构建产物中的 HTML
 - `hooks/on_env.py` 的 `on_post_build` 另做三件构建后优化(2026-09-22,issue #91):
   - 压缩 `site/_static/{css,js}` 的 CSS/JS(`_minify_static_assets`,依赖 `rcssmin`/`rjsmin`;
-    压缩器缺失或自检不通过时保留原文件并告警,不会把可疑产物发上线)
+    压缩器缺失或自检不通过时保留原文件并告警,不会把可疑产物发上线;`_static/js/vendor/`
+    的第三方文件按原样发布,保留其中的许可证声明)
   - 把页面里 `_static` 引用的 `?v=` 换成产物内容哈希(`_optimize_pages`),
     `mkdocs.yml` 里的版本号因此不再是缓存击穿的必要条件
   - 把 Google Fonts 样式表改成非阻塞加载(`media=print` + `onload` 切换,附 `<noscript>` 兜底)
@@ -32,4 +33,12 @@
 - `check-doc-links.py` 扫描 `docs/**/*.md` 的站内 Markdown/HTML 链接与标题锚点（外链跳过，
   与 CI htmltest 的 `skip_external` 一致）。实现见 `doc_links.py`。为仓库门禁之一。
 - `gen-favicon.py` 生成站点 favicon（用法见文件头部注释）
+- `vendor-mathjax.sh` 下载 MathJax npm 包，校验 sha512 摘要后复制到
+  `docs/_static/js/vendor/mathjax-<版本>/`。除 `tex-chtml.js` 外，还包含 MathJax 运行时按需加载的
+  CHTML 字体、TeX 扩展、右键菜单的无障碍组件与语音规则数据、SVG 输出，均按 npm 包 `es5/` 的目录结构
+  存放，MathJax 根据 `tex-chtml.js` 自身的地址推算这些文件的路径。目录名带版本号：service worker 对
+  `_static/` 使用缓存优先策略，Netlify 对 `_static/js/` 设置一年缓存，升级后所有文件的地址随版本号一起变化。
+  升级时修改脚本中的 `VERSION` 与 `INTEGRITY`（取自 `npm view mathjax@<版本> dist.integrity`），执行
+  `bash scripts/vendor-mathjax.sh meta/mathjax-vendor-<版本>`，再把 `mkdocs.yml` 的 `extra_javascript`
+  改为新目录。MathJax 使用 Apache-2.0 许可，许可证保存在同一目录
 - `utils/find_jk.py` 遗留小工具：查找源文件中非中文码位的汉字字符
