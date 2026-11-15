@@ -125,28 +125,35 @@ uv run mkdocs serve -v
 # 构建静态站点(产物在 site/)
 uv run mkdocs build -v
 
-# 浏览器用例(真实 Chromium + 真实构建产物;不在默认门禁里,见 test/browser/README.md)
+# 浏览器用例(真实 Chromium + 真实构建产物;不在零 Node 依赖的 gates 里,见 test/browser/README.md)
 uv sync --group browser && uv run playwright install chromium   # 首次
 uv run python3 test/browser/run.py
 ```
 
-> 门禁刻意只选零 Node 依赖的命令(见下)。
+> `gates` 刻意只选零 Node 依赖的命令(见下);浏览器用例组带 Node 依赖,归入 PR 前的全量测试。
 
 ## 门禁
 
-本地门禁以 `.claude/workflow.json` 的 `gates` 为准,改动提交前必须全过:
+日常改动的提交不做全量测试。全量测试只在两种时机执行:
+
+- 向 `dev` 发起 PR 之前
+- 向 `main` 发起 PR 之前
+
+全量测试的命令集(`gates` 以 `.claude/workflow.json` 为准,浏览器用例组另列):
 
 ```bash
 git diff --check                       # 无空白错误
 uv run mkdocs build -q                 # 站点能构建(-q 只留告警)
 python3 scripts/check-characters.py    # 无问题字符
 bash scripts/check-upstream-remnants.sh  # 无上游 fork 残留(2026-08 新增,防 oi-wiki 残留回流)
+uv run python3 test/browser/run.py     # 浏览器用例组(真实 Chromium,见 test/browser/README.md)
 ```
 
-改动前端脚本(`docs/_static/js/`、`docs/_static/css/`)与注入钩子时,另跑浏览器用例
-组:`uv run python3 test/browser/run.py`。它要真 Chromium,所以不进上面这份零依赖
-门禁,但**改了资源就必须跑** —— 那里锁的是「页面上实际执行了哪份脚本、实际发出了
-什么请求」,静态断言看不出来。
+浏览器用例组锁的是「页面上实际执行了哪份脚本、实际发出了什么请求」,静态断言看不出来,
+所以并入全量测试。首次运行需要先执行 `uv sync --group browser && uv run playwright install chromium`。
+
+改动让原本通过的测试不再通过时,先判断这条测试描述的行为是否仍然成立。测试已经过时的,
+直接删除该用例;测试仍然成立的,修改代码让测试通过。
 
 ## 开发工作流
 
