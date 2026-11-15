@@ -16,7 +16,7 @@ title: 1.1 AJAX 技术的妙用
 <figure id="figure-1-1" tabindex="-1" markdown="1">
 
 <p markdown="span" style="margin:0">
-![img](../../../images/fig_1_1.jpg){ width="573" height="303" }
+![img](../../images/fig_1_1.jpg){ width="573" height="303" }
 </p>
 
 <figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">

@@ -23,7 +23,19 @@ DDoS（Distributed Denial of Service）的中文译名是分布式拒绝服务�
 
 下面作者介绍一个比较典型的 SYN Flood 攻击方式。
 
-说到 SYN Flood，就必须详细介绍一下 TCP 的三次握手过程（如图5-1所示）。
+说到 SYN Flood，就必须详细介绍一下 TCP 的三次握手过程（如[图5-1](#figure-5-1)所示）。
+
+<figure id="figure-5-1" tabindex="-1" markdown="1">
+
+<p markdown="span" style="margin:0">
+![img](../../images/fig_5_1.jpg){ width="767" height="533" }
+</p>
+
+<figcaption markdown="span" style="margin:0.5em auto;font-size:0.8em;font-style:normal;line-height:1.5">
+图5-1
+</figcaption>
+
+</figure>
 
 - 第一次握手，客户端向服务器发送一个 SYN 报文，意思是“Hi，我要跟你建立 TCP 连接”。
 - 第二次握手，服务器向客户端发送一个“SYN+ACK”报文，ACK 是对第一次握手中 SYN 报文的确认，意思是“同意建立连接”。前两次握手过程中，服务器和客户端相互确认了 TCP 连接的一些参数，如 Seq 等。
