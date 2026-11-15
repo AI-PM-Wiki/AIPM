@@ -127,3 +127,22 @@ class BookNavigationCase(unittest.TestCase):
                 page.locator(".book-original img").wait_for()
                 self.assertFalse(page.locator("#__drawer").is_checked())
                 self.assertEqual(page.evaluate("document.documentElement.scrollWidth"), width)
+
+    def test_technology_book_belongs_to_technology_space(self):
+        context = self.browser.new_context(viewport={"width": 1280, "height": 900})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        page.goto(self.site.base + "/product-manager-tech/", wait_until="domcontentloaded")
+        page.wait_for_function(
+            "document.querySelector('.aipm-site-switcher__trigger')?.getAttribute('aria-label') === '切换站点，当前为技术'"
+        )
+        self.assertEqual(
+            page.locator(".aipm-site-switcher__current").inner_text(),
+            "技术",
+        )
+        tabs = page.locator('[data-md-component="tabs"]')
+        self.assertEqual(
+            [text.strip() for text in tabs.locator("a").all_text_contents()],
+            ["技术", "给产品经理讲技术"],
+        )
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "给产品经理讲技术")
