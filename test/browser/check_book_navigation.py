@@ -35,7 +35,10 @@ class BookNavigationCase(unittest.TestCase):
         for name in ("introduction", "preface", "contents", "copyright", "reader-services", "reviews", "back-cover"):
             self.assertFalse((ROOT / "docs/product-manager" / f"{name}.md").exists())
             self.assertFalse((ROOT / "site/product-manager" / name).exists())
-        referenced_images = set()
+        referenced_images = {
+            "product-manager": set(),
+            "product-manager-tech": set(),
+        }
         for source in (ROOT / "site").rglob("*.html"):
             document = BeautifulSoup(source.read_text(), "html.parser")
             body = document.select_one(".book-original")
@@ -43,10 +46,12 @@ class BookNavigationCase(unittest.TestCase):
                 continue
             self.assertIsNone(document.select_one(".page-copyright"))
             self.assertIsNone(document.select_one(".md-copyright__highlight"))
+            book = source.relative_to(ROOT / "site").parts[0]
+            self.assertIn(book, referenced_images, source)
             for image in body.select("img[src]"):
                 destination = source.parent.joinpath(unquote(urlsplit(image["src"]).path)).resolve()
                 self.assertTrue(destination.is_file(), (source, image["src"]))
-                referenced_images.add(destination.name)
+                referenced_images[book].add(destination.name)
             for link in body.select("a[href]"):
                 target = urlsplit(link["href"])
                 if target.scheme or target.netloc:
@@ -58,7 +63,9 @@ class BookNavigationCase(unittest.TestCase):
                 if target.fragment:
                     target_document = BeautifulSoup(destination.read_text(), "html.parser")
                     self.assertIsNotNone(target_document.find(id=unquote(target.fragment)), (source, link["href"]))
-        self.assertEqual(referenced_images, {path.name for path in (ROOT / "docs/product-manager/images").iterdir() if path.is_file()})
+        for book, names in referenced_images.items():
+            images = {path.name for path in (ROOT / "docs" / book / "images").iterdir() if path.is_file()}
+            self.assertEqual(names, images, book)
         for number, title in enumerate(CHAPTERS):
             document = BeautifulSoup((ROOT / f"site/product-manager/{number:02}/index.html").read_text(), "html.parser")
             self.assertEqual([node.get_text(strip=True) for node in document.select(".md-content__inner > h1")], [title])
