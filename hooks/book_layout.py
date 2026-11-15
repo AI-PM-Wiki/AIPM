@@ -20,7 +20,7 @@ def on_page_content(html, **kwargs):
 
 
 def on_post_page(output, page, **kwargs):
-    if not page.file.src_uri.startswith("product-manager/"):
+    if not page.file.src_uri.startswith(("product-manager/", "product-manager-tech/")):
         return output
     document = BeautifulSoup(output, "html.parser")
     credits = document.select_one(".page-copyright")
