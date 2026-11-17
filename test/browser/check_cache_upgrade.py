@@ -121,7 +121,8 @@ class CacheUpgradeTest(unittest.TestCase):
             browser.context.route(LEGACY_ANNO_ORIGIN + "/**", lambda route:
                                   route.continue_(url=ANNO_ORIGIN + urlsplit(route.request.url).path +
                                                   ("?" + urlsplit(route.request.url).query if urlsplit(route.request.url).query else "")))
-            page = browser.goto(PAGE)
+            page = browser.page
+            page.goto(self.site.base + PAGE, wait_until="domcontentloaded")
             page.wait_for_function("() => navigator.serviceWorker.controller !== null")
             # 首次加载时页面还没被 SW 接管,它请求的那些资源不过 SW;再加载一次,
             # 这一遍才走 SW 的 cache-first,旧脚本这才真正进了缓存。
