@@ -13,7 +13,7 @@ MAIN_TABS = [
 ]
 PRODUCT_TABS = ["产品经理"]
 TECH_TABS = ["给产品经理讲技术"]
-KNOWLEDGE_TABS = ["工商管理", "金融"]
+KNOWLEDGE_TABS = ["计算机科学", "人工智能", "工商管理", "金融"]
 VERTICAL_TABS = ["网络安全", "金融", "法律", "教育", "地球科学", "医疗健康", "企业服务"]
 
 
@@ -75,7 +75,7 @@ class SiteSwitcherCase(unittest.TestCase):
         self.assertEqual(technology.get_attribute("href"), self.site.base + "/product-manager-tech/")
         self.assertEqual(technology.locator(".aipm-site-switcher__status").count(), 0)
         knowledge = self.menu.get_by_role("link", name="专业知识", exact=True)
-        self.assertEqual(knowledge.get_attribute("href"), self.site.base + "/management/")
+        self.assertEqual(knowledge.get_attribute("href"), self.site.base + "/computer-science/")
         self.assertEqual(self.menu.locator(".aipm-site-switcher__status").count(), 2)
         bounds = self.menu.bounding_box()
         trigger = self.trigger.bounding_box()
@@ -135,7 +135,7 @@ class SiteSwitcherCase(unittest.TestCase):
             ("产品", "/product-manager/", "章节", "/product-manager/02/"),
             ("技术", "/product-manager-tech/", "章节", "/product-manager-tech/01/"),
             ("运营", "/sites/operations/", "筹备中", "/sites/operations/"),
-            ("专业知识", "/management/", "课程列表", "/management/"),
+            ("专业知识", "/computer-science/", "计算机科学简介", "/computer-science/"),
             ("垂直领域", "/vertical/cybersecurity/", "产品约束", "/vertical/cybersecurity/"),
         ):
             with self.subTest(content=name):
@@ -154,7 +154,7 @@ class SiteSwitcherCase(unittest.TestCase):
         self.page.reload(wait_until="domcontentloaded")
         self.assertEqual(self.trigger.get_attribute("aria-label"), "切换站点，当前为垂直领域")
         self.page.go_back(wait_until="domcontentloaded")
-        self.page.wait_for_url(self.site.base + "/management/")
+        self.page.wait_for_url(self.site.base + "/computer-science/")
         self.page.wait_for_function("document.querySelector('.aipm-site-switcher__trigger').getAttribute('aria-label') === '切换站点，当前为专业知识'")
         self.assertEqual(self.page.locator(".aipm-site-switcher__trigger").count(), 1)
 
@@ -197,8 +197,8 @@ class SiteSwitcherCase(unittest.TestCase):
         self.page.go_back(wait_until="domcontentloaded")
         self.page.wait_for_url(self.site.base + "/business/")
         self.page.go_back(wait_until="domcontentloaded")
-        self.page.wait_for_url(self.site.base + "/management/")
-        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "工商管理")
+        self.page.wait_for_url(self.site.base + "/computer-science/")
+        self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "计算机科学")
         self.page.go_back(wait_until="domcontentloaded")
         tabs.get_by_role("link", name="运营", exact=True).wait_for()
         self.assertEqual(tabs.locator(".md-tabs__item--active").inner_text(), "运营")

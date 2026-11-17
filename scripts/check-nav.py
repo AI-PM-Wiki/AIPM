@@ -12,6 +12,7 @@
 
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import yaml
 
@@ -33,16 +34,14 @@ def collect_nav_paths(nav, paths):
     """递归收集 nav 中的源文件路径(相对 docs_dir)。"""
     if isinstance(nav, dict):
         for children in nav.values():
-            if isinstance(children, str):
-                paths.add(children)
-            else:
-                collect_nav_paths(children, paths)
+            collect_nav_paths(children, paths)
     elif isinstance(nav, list):
         for item in nav:
-            if isinstance(item, str):
-                paths.add(item)
-            else:
-                collect_nav_paths(item, paths)
+            collect_nav_paths(item, paths)
+    elif isinstance(nav, str):
+        target = urlsplit(nav)
+        if target.path and not target.scheme and not target.netloc:
+            paths.add(target.path)
 
 
 def main():

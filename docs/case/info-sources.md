@@ -86,6 +86,8 @@ flowchart TD
 | GitHub Docs | https://docs.github.com | GitHub 官方文档 | 公开 |
 | GitHub Skills | https://skills.github.com | GitHub 交互式教程（已并入 GitHub Learn） | 公开 |
 | awesome 清单 | https://github.com/sindresorhus/awesome | 各领域精选列表索引 | 公开 |
+| Hello-Algo | https://www.hello-algo.com/chapter_hello_algo/ | 数据结构与算法教程，含动画图解与代码示例 | 公开 |
+| 蒋炎岩操作系统课程 | https://jyywiki.cn/OS/2026/ | 操作系统课程讲义、编程实验与授课视频入口 | 公开 |
 | Prompt 工程指南 | https://github.com/dair-ai/Prompt-Engineering-Guide | Prompt 教程与资源 | 公开 |
 | Awesome-LLM | https://github.com/Hannibal046/Awesome-LLM | 大模型学习资源索引 | 公开 |
 | 大模型官方文档（OpenAI/Anthropic 等） | 见 [资源清单](resources.md) 官方文档一节 | 官方能力与定价 | 公开 |
@@ -109,5 +111,7 @@ flowchart TD
 
 | 日期 | 变更 | 说明 |
 | --- | --- | --- |
+| 2026-11-16 | 新增 | Hello-Algo 作为数据结构与算法学习资源渠道 |
+| 2026-11-16 | 新增 | 蒋炎岩操作系统课程作为计算机科学学习资源渠道 |
 | 2026-08-23 | 新增 | 读书笔记作为本站新信息源（俞军/苏杰/启示录/精益创业四篇原创精读笔记） |
 | 2026-08-23 | 建页 | 初版信息源索引 |
