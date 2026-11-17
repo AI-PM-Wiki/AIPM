@@ -574,6 +574,21 @@ nav:
 - 运营:
   - 运营: sites/operations/index.md
 - 专业知识:
+  - 计算机科学:
+    - 计算机科学简介: computer-science/index.md
+    - 数学基础: computer-science/mathematical-foundations.md
+    - 电子基础: computer-science/electronics-foundations.md
+    - 数据结构与算法:
+      - Hello-Algo: https://www.hello-algo.com/chapter_hello_algo/
+    - 软件工程: computer-science/software-engineering.md
+    - 计算机组成: computer-science/computer-organization.md
+    - 计算机体系结构: computer-science/computer-architecture.md
+    - 操作系统:
+      - 南京大学操作系统原理（2026）: computer-science/operating-systems/nju-os-2026.md
+    - 计算机网络: computer-science/computer-networks.md
+    - 编译原理: computer-science/compiler-principles.md
+  - 人工智能:
+    - 人工智能简介: artificial-intelligence/index.md
   - 工商管理:
     - 工商管理简介: management/index.md
     - 管理基础与方法:
@@ -1050,6 +1065,22 @@ hooks:
   - hooks/annotation_integrity.py
 
 extra:
+  # 模块入口和页面归属由 nav 生成；此处配置图标与展示状态。
+  site_switcher:
+    主站:
+      icon: home-outline
+    产品:
+      icon: cube-outline
+    技术:
+      icon: code-tags
+    运营:
+      icon: briefcase-outline
+      placeholder: true
+    专业知识:
+      icon: school-outline
+    垂直领域:
+      icon: domain
+      placeholder: true
   copyright: '<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh">CC BY-SA 4.0</a> 和 <a href="https://github.com/zTrix/sata-license">SATA</a>'
   manifest: 'manifest.webmanifest'
   chat_agent:
@@ -1081,7 +1112,7 @@ extra_javascript:
   - '_static/js/panel-shared.js?v=1'
 extra_css:
   - '_static/css/panel-shared.css'
-  - '_static/css/extra.css?v=43'
+  - '_static/css/extra.css?v=44'
   - '_static/css/book-typography.css'
   - '_static/css/reading-style.css'
   - '_static/css/site-switcher.css'

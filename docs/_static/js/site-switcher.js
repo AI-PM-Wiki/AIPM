@@ -12,14 +12,8 @@
     domain: "M18 15h-2v2h2m0-6h-2v2h2m2 6h-8v-2h2v-2h-2v-2h2v-2h-2V9h8M10 7H8V5h2m0 6H8V9h2m0 6H8v-2h2m0 6H8v-2h2M6 7H4V5h2m0 6H4V9h2m0 6H4v-2h2m0 6H4v-2h2m6-10V3H2v18h20V7z",
     "school-outline": "M12 3 1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9zm6.82 6L12 12.72 5.18 9 12 5.28zM17 16l-5 2.72L7 16v-3.73L12 15l5-2.73z",
   };
-  const sites = [
-    { name: "主站", path: "", sections: [], icon: "home-outline" },
-    { name: "产品", path: "product-manager/", sections: ["product-manager/"], icon: "cube-outline" },
-    { name: "技术", path: "product-manager-tech/", sections: ["product-manager-tech/"], icon: "code-tags" },
-    { name: "运营", path: "sites/operations/", sections: ["sites/operations/"], icon: "briefcase-outline", placeholder: true },
-    { name: "专业知识", path: "management/", sections: ["management/", "business/"], icon: "school-outline" },
-    { name: "垂直领域", path: "vertical/cybersecurity/", sections: ["vertical/"], icon: "domain", placeholder: true },
-  ];
+  const readNavigation = () => JSON.parse(document.getElementById("aipm-site-navigation").dataset.navigation);
+  const sites = readNavigation().sites;
   const trigger = document.createElement("button");
   trigger.type = "button";
   trigger.className = "aipm-site-switcher__trigger";
@@ -38,7 +32,7 @@
   menu.setAttribute("aria-label", "站点列表");
   menu.innerHTML = `
     <ul>
-      ${sites.map((site) => `<li><a href="${new URL(site.path, home).href}"><svg class="aipm-site-switcher__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[site.icon]}"/></svg><span class="aipm-site-switcher__name">${site.name}</span>${site.placeholder ? '<span class="aipm-site-switcher__status">筹备中</span>' : ""}</a></li>`).join("")}
+      ${sites.map((site) => `<li><a href="${new URL(site.url, home).href}"><svg class="aipm-site-switcher__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[site.icon]}"/></svg><span class="aipm-site-switcher__name">${site.name}</span>${site.placeholder ? '<span class="aipm-site-switcher__status">筹备中</span>' : ""}</a></li>`).join("")}
     </ul>`;
   document.body.append(menu);
 
@@ -55,14 +49,13 @@
   });
   const links = [...menu.querySelectorAll("a")];
   const sync = () => {
-    const current = sites.findIndex((site) => site.sections.some((section) => location.href.startsWith(new URL(section, home).href)));
-    const index = current === -1 ? 0 : current;
+    const current = readNavigation().current;
     for (const [position, link] of links.entries()) {
-      if (position === index) link.setAttribute("aria-current", "true");
+      if (sites[position].name === current) link.setAttribute("aria-current", "true");
       else link.removeAttribute("aria-current");
     }
-    trigger.querySelector(".aipm-site-switcher__current").textContent = sites[index].name;
-    trigger.setAttribute("aria-label", `切换站点，当前为${sites[index].name}`);
+    trigger.querySelector(".aipm-site-switcher__current").textContent = current;
+    trigger.setAttribute("aria-label", `切换站点，当前为${current}`);
   };
   trigger.addEventListener("keydown", (event) => {
     if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;

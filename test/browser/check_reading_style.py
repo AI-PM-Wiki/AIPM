@@ -88,7 +88,7 @@ class ReadingStyleCase(unittest.TestCase):
         self.assertTrue(panel.get_by_role("group", name="行距", exact=True).get_by_role("radio", name="宽松").is_checked())
         panel.get_by_role("button", name="关闭站点设置").click()
         self.page.locator('.md-sidebar--primary a[href$="/product-manager/02/02/"]').click()
-        self.page.wait_for_url("**/product-manager/02/02/")
+        self.page.wait_for_url("**/product-manager/02/02/", wait_until="domcontentloaded")
         self.assertEqual(self.styles()["size"], "22px")
         self.assertEqual(self.page.locator(".aipm-reading-entry").count(), 1)
         self.open()
